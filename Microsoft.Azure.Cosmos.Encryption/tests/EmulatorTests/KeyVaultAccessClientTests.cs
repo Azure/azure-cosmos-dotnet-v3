@@ -8,6 +8,7 @@
     using global::Azure.Core;
     using global::Azure.Security.KeyVault.Keys;
     using global::Azure.Security.KeyVault.Keys.Cryptography;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using System.IO;
     using System.Security.Cryptography;
     using System.Collections.Generic;

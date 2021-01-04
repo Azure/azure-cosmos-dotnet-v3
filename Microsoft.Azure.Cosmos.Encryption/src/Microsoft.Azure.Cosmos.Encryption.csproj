@@ -38,8 +38,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Custom\" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <Reference Include="Microsoft.Data.Encryption.Cryptography">
-      <HintPath>..\src\MdeServices\MdeCryptographyLib\Microsoft.Data.Encryption.Cryptography.dll</HintPath>
+      <HintPath>..\src\Custom\MdeServices\MdeCryptographyLib\Microsoft.Data.Encryption.Cryptography.dll</HintPath>
     </Reference>
   </ItemGroup>
 

@@ -208,6 +208,7 @@ namespace Microsoft.Azure.Cosmos
             this.CosmosMessageHeaders = nameValueCollection switch
             {
                 StoreResponseNameValueCollection storeResponseNameValueCollection => new StoreResponseHeaders(storeResponseNameValueCollection),
+                HttpResponseHeadersWrapper httpResponseHeaders => httpResponseHeaders,
                 _ => new NameValueResponseHeaders(nameValueCollection),
             };
         }
