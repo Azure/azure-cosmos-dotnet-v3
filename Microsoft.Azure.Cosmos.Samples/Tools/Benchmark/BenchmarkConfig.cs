@@ -157,7 +157,8 @@ namespace CosmosBenchmark
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
-                MaxRetryAttemptsOnRateLimitedRequests = 0
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
+                MaxRequestsPerTcpConnection = 10,
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
