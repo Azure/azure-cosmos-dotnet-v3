@@ -379,12 +379,17 @@ namespace Microsoft.Azure.Cosmos
 
             public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
             {
-                Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
-                this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
                 this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
-                DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
+                // Only the first context needs to be validated. Inner contexts that were appended only
+                // require the content to validated.
+                if (!this.isContextVisited)
+                {
+                    DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
+                }
+
+                this.isContextVisited = true;
 
                 foreach (CosmosDiagnosticsInternal diagnosticsInternal in cosmosDiagnosticsContext)
                 {
