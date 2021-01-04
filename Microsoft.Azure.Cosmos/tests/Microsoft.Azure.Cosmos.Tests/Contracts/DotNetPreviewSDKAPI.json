@@ -210,54 +210,9 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.ClientEncryptionDataType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
-      "Subclasses": {},
-      "Members": {
-        "Int32 value__": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
-        },
-        "Microsoft.Azure.Cosmos.ClientEncryptionDataType Bool": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionDataType Bool;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.ClientEncryptionDataType Double": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionDataType Double;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.ClientEncryptionDataType Long": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionDataType Long;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.ClientEncryptionDataType String": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionDataType String;IsInitOnly:False;IsStatic:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.ClientEncryptionDataType ClientEncryptionDataType[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"clientEncryptionDataType\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionDataType ClientEncryptionDataType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ClientEncryptionDataType get_ClientEncryptionDataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ClientEncryptionDataType(Microsoft.Azure.Cosmos.ClientEncryptionDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.ClientEncryptionDataType get_ClientEncryptionDataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionDataType get_ClientEncryptionDataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.String ClientEncryptionKeyId[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"clientEncryptionKeyId\")]": {
           "Type": "Property",
           "Attributes": [
@@ -319,13 +274,6 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
-        "Void set_ClientEncryptionDataType(Microsoft.Azure.Cosmos.ClientEncryptionDataType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_ClientEncryptionDataType(Microsoft.Azure.Cosmos.ClientEncryptionDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Void set_ClientEncryptionKeyId(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -360,19 +308,17 @@
     "Microsoft.Azure.Cosmos.ClientEncryptionPolicy;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] IncludedPaths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"includedPaths\")]": {
+        "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] IncludedPaths[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"includedPaths\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
-          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] IncludedPaths;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] IncludedPaths;CanRead:True;CanWrite:True;System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",

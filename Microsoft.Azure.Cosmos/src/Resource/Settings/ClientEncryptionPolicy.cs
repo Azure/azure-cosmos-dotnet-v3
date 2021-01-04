@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Cosmos
 #endif
         sealed class ClientEncryptionPolicy
     {
+        private readonly List<string> includedPathsList = new List<string>();
+        private IEnumerable<ClientEncryptionIncludedPath> includedPath = new List<ClientEncryptionIncludedPath>();
+        
         /// <summary>
         /// Initializes a new instance of ClientEncryptionPolicy.
         /// </summary>
@@ -25,8 +28,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.PolicyFormatVersion = 1;
         }
-
-        private IEnumerable<ClientEncryptionIncludedPath> includedPath = new List<ClientEncryptionIncludedPath>();
 
         /// <summary>
         /// Paths of the item that need encryption along with path-specific settings.
@@ -90,6 +91,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw new ArgumentException("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'.", nameof(clientEncryptionIncludedPath));
             }
+
+            if (this.includedPathsList.Contains(clientEncryptionIncludedPath.Path))
+            {
+                throw new ArgumentException("Duplicate Path found.", nameof(clientEncryptionIncludedPath));
+            }
+
+            this.includedPathsList.Add(clientEncryptionIncludedPath.Path);
         }
     }
 }

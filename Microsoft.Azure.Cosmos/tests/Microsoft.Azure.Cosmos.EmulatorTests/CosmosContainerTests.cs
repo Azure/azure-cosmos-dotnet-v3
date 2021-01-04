@@ -1328,6 +1328,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
+            
             ContainerProperties setting = new ContainerProperties()
             {
                 Id = containerName,
@@ -1343,7 +1344,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                             EncryptionType = "Randomized"
                         },
-
                         new ClientEncryptionIncludedPath()
                         {
                             Path = "/path2",
@@ -1393,15 +1393,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ClientEncryptionPolicy = new ClientEncryptionPolicy()
                     {
                         IncludedPaths = new Collection<ClientEncryptionIncludedPath>()
-                    {
-                        new ClientEncryptionIncludedPath()
                         {
-                            Path = "/path1",
-                            ClientEncryptionKeyId = "dekId1",
-                            EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256",
-                            EncryptionType = "Randomized"
-                        },
-                    }
+                            new ClientEncryptionIncludedPath()
+                            {
+                                Path = "/path1",
+                                ClientEncryptionKeyId = "dekId1",
+                                EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256",
+                                EncryptionType = "Randomized"
+                            },
+                        }
                     }
                 };
 
@@ -1410,6 +1410,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."));
+            }
+
+            try
+            {
+                ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path1",
+                    ClientEncryptionKeyId = "dekId2",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    EncryptionType = "Deterministic"
+                };
+                
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy()
+                    {
+                        IncludedPaths = new Collection<ClientEncryptionIncludedPath>()
+                        {
+                            path1,
+                            new ClientEncryptionIncludedPath()
+                            {
+                                Path = "/path1",
+                                ClientEncryptionKeyId = "dekId1",
+                                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                                EncryptionType = "Randomized"
+                            },
+                        }
+                    }
+                };
+
+                Assert.Fail("Creating ContainerProperties should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Duplicate Path found."));
             }
         }
 
