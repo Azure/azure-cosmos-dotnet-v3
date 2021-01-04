@@ -118,54 +118,66 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
             List<(FeedRangeEpk, PartitionedToken)> splitRangesAndTokens = new List<(FeedRangeEpk, PartitionedToken)>();
             foreach (PartitionedToken partitionedToken in tokens)
             {
-                foreach (FeedRangeEpk feedRange in remainingRanges)
-                {
-                    bool rightOfStart = (feedRange.Range.Min == string.Empty)
-                        || ((partitionedToken.Range.Min != string.Empty) && (partitionedToken.Range.Min.CompareTo(feedRange.Range.Min) >= 0));
-                    bool leftOfEnd = (feedRange.Range.Max == string.Empty)
-                        || ((partitionedToken.Range.Max != string.Empty) && (partitionedToken.Range.Max.CompareTo(feedRange.Range.Max) <= 0));
-
-                    bool rangeOverlapsToken = rightOfStart && leftOfEnd;
-                    if (rangeOverlapsToken)
+                List<FeedRangeEpk> rangesThatOverlapToken = remainingRanges
+                    .Where(feedRange =>
                     {
-                        // Remove the range and split it into 3 sections:
-                        remainingRanges.Remove(feedRange);
+                        bool rightOfStart = (feedRange.Range.Min == string.Empty)
+                            || ((partitionedToken.Range.Min != string.Empty) && (partitionedToken.Range.Min.CompareTo(feedRange.Range.Min) >= 0));
+                        bool leftOfEnd = (feedRange.Range.Max == string.Empty)
+                            || ((partitionedToken.Range.Max != string.Empty) && (partitionedToken.Range.Max.CompareTo(feedRange.Range.Max) <= 0));
 
-                        // 1) Left of Token Range
-                        if (feedRange.Range.Min != partitionedToken.Range.Min)
-                        {
-                            FeedRangeEpk leftOfOverlap = new FeedRangeEpk(
-                                new Documents.Routing.Range<string>(
-                                    min: feedRange.Range.Min,
-                                    max: partitionedToken.Range.Min,
-                                    isMinInclusive: true,
-                                    isMaxInclusive: false));
-                            remainingRanges.Add(leftOfOverlap);
-                        }
+                        bool rangeOverlapsToken = rightOfStart && leftOfEnd;
 
-                        // 2) Token Range
-                        FeedRangeEpk overlappingSection = new FeedRangeEpk(
+                        return rangeOverlapsToken;
+                    })
+                    .ToList();
+
+                if (rangesThatOverlapToken.Count == 0)
+                {
+                    // Do nothing
+                }
+                else if (rangesThatOverlapToken.Count == 1)
+                {
+                    FeedRangeEpk feedRange = remainingRanges.First();
+                    // Remove the range and split it into 3 sections:
+                    remainingRanges.Remove(feedRange);
+
+                    // 1) Left of Token Range
+                    if (feedRange.Range.Min != partitionedToken.Range.Min)
+                    {
+                        FeedRangeEpk leftOfOverlap = new FeedRangeEpk(
                             new Documents.Routing.Range<string>(
-                                min: partitionedToken.Range.Min,
-                                max: partitionedToken.Range.Max,
+                                min: feedRange.Range.Min,
+                                max: partitionedToken.Range.Min,
                                 isMinInclusive: true,
                                 isMaxInclusive: false));
-                        splitRangesAndTokens.Add((overlappingSection, partitionedToken));
-
-                        // 3) Right of Token Range
-                        if (partitionedToken.Range.Max != feedRange.Range.Max)
-                        {
-                            FeedRangeEpk rightOfOverlap = new FeedRangeEpk(
-                                new Documents.Routing.Range<string>(
-                                    min: partitionedToken.Range.Max,
-                                    max: feedRange.Range.Max,
-                                    isMinInclusive: true,
-                                    isMaxInclusive: false));
-                            remainingRanges.Add(rightOfOverlap);
-                        }
-
-                        break;
+                        remainingRanges.Add(leftOfOverlap);
                     }
+
+                    // 2) Token Range
+                    FeedRangeEpk overlappingSection = new FeedRangeEpk(
+                        new Documents.Routing.Range<string>(
+                            min: partitionedToken.Range.Min,
+                            max: partitionedToken.Range.Max,
+                            isMinInclusive: true,
+                            isMaxInclusive: false));
+                    splitRangesAndTokens.Add((overlappingSection, partitionedToken));
+
+                    // 3) Right of Token Range
+                    if (partitionedToken.Range.Max != feedRange.Range.Max)
+                    {
+                        FeedRangeEpk rightOfOverlap = new FeedRangeEpk(
+                            new Documents.Routing.Range<string>(
+                                min: partitionedToken.Range.Max,
+                                max: feedRange.Range.Max,
+                                isMinInclusive: true,
+                                isMaxInclusive: false));
+                        remainingRanges.Add(rightOfOverlap);
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException("Token was overlapped by multiple ranges.");
                 }
             }
 
@@ -194,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
 
             return targetFeedRange;
         }
-        
+
         /// <summary>
         /// Segments the ranges and their tokens into a partition mapping.
         /// </summary>

@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool Equals(object obj)
         {
-            return obj is FeedRangeEpk objAsFeedRangeEpk && this.Equals(objAsFeedRangeEpk);
+            return this.Equals(obj as FeedRangeEpk);
         }
 
         public bool Equals(FeedRangeEpk other)
@@ -97,7 +97,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override int GetHashCode()
         {
-            return this.Range.Min.GetHashCode() ^ this.Range.Max.GetHashCode();
+            return this.Range.Min.GetHashCode() 
+                ^ this.Range.Max.GetHashCode()
+                ^ this.Range.IsMinInclusive.GetHashCode()
+                ^ this.Range.IsMaxInclusive.GetHashCode();
         }
     }
 }
