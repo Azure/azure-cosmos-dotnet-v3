@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly TimeSpan clientEncryptionKeyPropertiesCacheTimeToLive;
 
-        private readonly HashSet<string> encryptedDatabaseIds = new HashSet<string>();
-
         public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
             this.cosmosClient = cosmosClient;
@@ -33,77 +31,83 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.clientEncryptionPolicyCache = new AsyncCache<string, ClientEncryptionPolicy>();
             this.clientEncryptionKeyPropertiesCache = new AsyncCache<string, CachedClientEncryptionProperties>();
             this.clientEncryptionKeyPropertiesCacheTimeToLive = TimeSpan.FromMinutes(60);
-            this.ClientEncryptionPolicyRefreshManager = new ClientEncryptionPropertiesRefreshManager(this, TimeSpan.FromMinutes(30));
+            this.cachedClientEncryptionKeyList = new Dictionary<string, HashSet<string>>();
         }
 
         private static readonly SemaphoreSlim CekPropertiesCacheSema = new SemaphoreSlim(1, 1);
-
-        private static readonly SemaphoreSlim EncryptedDatabaseListSema = new SemaphoreSlim(1, 1);
+        private static readonly SemaphoreSlim KeyListSema = new SemaphoreSlim(1, 1);
 
         internal EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
-        internal HashSet<string> GetEncryptedDatabaseIds()
-        {
-            this.ThrowIfDisposed();
+        private readonly Dictionary<string, HashSet<string>> cachedClientEncryptionKeyList;
 
-            if (EncryptedDatabaseListSema.Wait(-1))
+        public void UpdateCachedClientEncryptionKeyList(string key, string value)
+        {
+            if (KeyListSema.Wait(-1))
             {
                 try
                 {
-                    return this.encryptedDatabaseIds;
-                }
-                finally
-                {
-                    EncryptedDatabaseListSema.Release(1);
-                }
-            }
-
-            return null;
-        }
-
-        internal void SetEncryptedDatabaseId(string id)
-        {
-            this.ThrowIfDisposed();
-
-            if (EncryptedDatabaseListSema.Wait(-1))
-            {
-                try
-                {
-                    if (!this.encryptedDatabaseIds.Contains(id))
+                    if (this.cachedClientEncryptionKeyList.ContainsKey(key))
                     {
-                        this.encryptedDatabaseIds.Add(id);
+                        HashSet<string> list = this.cachedClientEncryptionKeyList[key];
+                        if (list.Contains(value) == false)
+                        {
+                            list.Add(value);
+                        }
+                    }
+                    else
+                    {
+                        HashSet<string> list = new HashSet<string>
+                        {
+                            value,
+                        };
+
+                        this.cachedClientEncryptionKeyList.Add(key, list);
                     }
                 }
                 finally
                 {
-                    EncryptedDatabaseListSema.Release(1);
+                    KeyListSema.Release(1);
                 }
             }
         }
 
-        internal void RemoveEncryptedDatabaseId(string id)
+        public Dictionary<string, HashSet<string>> GetClientEncryptionKeyList()
         {
-            this.ThrowIfDisposed();
-
-            if (EncryptedDatabaseListSema.Wait(-1))
+            if (KeyListSema.Wait(-1))
             {
                 try
                 {
-                    if (!this.encryptedDatabaseIds.Contains(id))
+                    return this.cachedClientEncryptionKeyList;
+                }
+                finally
+                {
+                    KeyListSema.Release(1);
+                }
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public void RemoveCachedClientEncryptionKeyEntry(string key)
+        {
+            if (KeyListSema.Wait(-1))
+            {
+                try
+                {
+                    if (this.cachedClientEncryptionKeyList.ContainsKey(key))
                     {
-                        this.encryptedDatabaseIds.Remove(id);
+                        this.cachedClientEncryptionKeyList.Remove(key);
                     }
                 }
                 finally
                 {
-                    EncryptedDatabaseListSema.Release(1);
+                    KeyListSema.Release(1);
                 }
             }
         }
-
-        internal ClientEncryptionPropertiesRefreshManager ClientEncryptionPolicyRefreshManager { get; }
-
-        private bool isDisposed = false;
 
         /// <summary>
         /// Gets or Adds ClientEncryptionPolicy. The Cache gets seeded initially either via InitializeEncryptionAsync call on the container,
@@ -118,8 +122,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default,
             bool shouldforceRefresh = false)
         {
-            this.ThrowIfDisposed();
-
             string cacheKey = container.Database.Id + container.Id;
 
             // cache it against Database and Container ID key.
@@ -148,7 +150,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default,
             bool shouldforceRefresh = false)
         {
-            this.ThrowIfDisposed();
             string cacheKey = container.Database.Id + clientEncryptionKeyId;
 
             if (await CekPropertiesCacheSema.WaitAsync(-1))
@@ -173,40 +174,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        internal async Task<bool> UpdateClientEncryptionPropertyCacheAsync(
-            string clientEncryptionKeyId,
-            string databaseId,
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties)
+        internal void RemoveClientEncryptionPropertyCache(string id)
         {
-            this.ThrowIfDisposed();
-
-            string cacheKey = databaseId + clientEncryptionKeyId;
-            if (await CekPropertiesCacheSema.WaitAsync(-1))
+            if (CekPropertiesCacheSema.Wait(-1))
             {
                 try
                 {
-                    CachedClientEncryptionProperties cachedClientEncryptionProperties = new CachedClientEncryptionProperties(
-                        clientEncryptionKeyProperties,
-                        DateTime.UtcNow + this.clientEncryptionKeyPropertiesCacheTimeToLive);
-
-                    this.clientEncryptionKeyPropertiesCache.Set(cacheKey, cachedClientEncryptionProperties);
+                    this.clientEncryptionKeyPropertiesCache.Remove(id);
                 }
                 finally
                 {
                     CekPropertiesCacheSema.Release(1);
                 }
             }
-            else
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        internal void RemoveClientEncryptionPropertyCache(string id)
-        {
-            this.clientEncryptionKeyPropertiesCache.Remove(id);
         }
 
         internal async Task<CachedClientEncryptionProperties> GetClientEncryptionKeyPropertiesAsync(
@@ -214,8 +194,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string clientEncryptionKeyId,
             CancellationToken cancellationToken = default)
         {
-            this.ThrowIfDisposed();
-
             cancellationToken.ThrowIfCancellationRequested();
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties;
@@ -237,6 +215,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clientEncryptionKeyProperties,
                 DateTime.UtcNow + this.clientEncryptionKeyPropertiesCacheTimeToLive);
 
+            // manage a list of keys associated with a database, required for cleanup.
+            this.UpdateCachedClientEncryptionKeyList(container.Database.Id, clientEncryptionKeyId);
             return cachedClientEncryptionProperties;
         }
 
@@ -325,7 +305,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override Database GetDatabase(string id)
         {
-            this.ThrowIfDisposed();
             return new EncryptionDatabase(this.cosmosClient.GetDatabase(id), this);
         }
 
@@ -373,19 +352,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.cosmosClient.ReadAccountAsync();
         }
 
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException(nameof(EncryptionCosmosClient));
-            }
-        }
-
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)
         {
-            this.ClientEncryptionPolicyRefreshManager.Dispose();
-            this.isDisposed = true;
             this.cosmosClient.Dispose();
         }
     }

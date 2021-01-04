@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class MdeContainer : Container
     {
-        internal Container Container { get; }
+        internal Container Container { get; private set; }
 
         public CosmosSerializer CosmosSerializer { get; }
 

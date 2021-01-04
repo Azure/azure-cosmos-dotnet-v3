@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
-    using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.database = database;
             this.encryptionCosmosClient = encryptionCosmosClient;
-            this.encryptionCosmosClient.SetEncryptedDatabaseId(this.database.Id);
         }
 
         private readonly EncryptionCosmosClient encryptionCosmosClient;
@@ -209,17 +208,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            FeedIterator<ContainerProperties> feedIterator = this.database.GetContainerQueryIterator<ContainerProperties>();
-            while (feedIterator.HasMoreResults)
-            {
-                foreach (ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
-                {
-                    // clear the cached policies for this container.
-                    this.encryptionCosmosClient.RemoveClientEncryptionPolicy(this.database.GetContainer(containerProperties.Id));
-                }
-            }
-
-            this.encryptionCosmosClient.RemoveEncryptedDatabaseId(this.database.Id);
+            // clean up the container and database cache entries.
+            await this.DatabaseCacheCleanupAsync();
             return await this.database.DeleteAsync(requestOptions, cancellationToken);
         }
 
@@ -227,6 +217,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            // clean up the container and database cache entries.
+            await this.DatabaseCacheCleanupAsync();
+            return await this.database.DeleteStreamAsync(requestOptions, cancellationToken);
+        }
+
+        internal async Task DatabaseCacheCleanupAsync()
+        {
+            // clean up all the container specific Client Encryption Policy cache entries.
             FeedIterator<ContainerProperties> feedIterator = this.database.GetContainerQueryIterator<ContainerProperties>();
             while (feedIterator.HasMoreResults)
             {
@@ -237,8 +235,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            this.encryptionCosmosClient.RemoveEncryptedDatabaseId(this.database.Id);
-            return await this.database.DeleteStreamAsync(requestOptions, cancellationToken);
+            // Remove all the Keys cached.
+            if (this.encryptionCosmosClient.GetClientEncryptionKeyList().TryGetValue(this.Id, out HashSet<string> keyList))
+            {
+                foreach (string keyId in keyList)
+                {
+                    string cacheKey = this.Id + keyId;
+                    this.encryptionCosmosClient.RemoveClientEncryptionPropertyCache(cacheKey);
+                }
+
+                this.encryptionCosmosClient.RemoveCachedClientEncryptionKeyEntry(this.Id);
+            }
         }
 
         public override ClientEncryptionKey GetClientEncryptionKey(string id)

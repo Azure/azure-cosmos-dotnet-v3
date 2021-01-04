@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CachedEncryptionSettings cachedEncryptionSettings = await this.PerPropertyEncryptionSettingCache.GetAsync(
                 propertyName,
                 null,
-                async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, mdeEncryptionProcessor, cancellationToken),
+                async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, mdeEncryptionProcessor, cancellationToken, shouldForceRefresh: false),
                 cancellationToken);
 
             if (cachedEncryptionSettings == null)
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cachedEncryptionSettings = await this.PerPropertyEncryptionSettingCache.GetAsync(
                 propertyName,
                 null,
-                async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, mdeEncryptionProcessor, cancellationToken),
+                async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, mdeEncryptionProcessor, cancellationToken, shouldForceRefresh: true),
                 cancellationToken,
                 forceRefresh: true);
             }
@@ -60,7 +60,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private async Task<CachedEncryptionSettings> FetchCachedEncryptionSettingsAsync(
             string propertyName,
             MdeEncryptionProcessor mdeEncryptionProcessor,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool shouldForceRefresh = false)
         {
             ClientEncryptionPolicy clientEncryptionPolicy = await mdeEncryptionProcessor.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(
                 mdeEncryptionProcessor.Container,
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         propertyToEncrypt.ClientEncryptionKeyId,
                         mdeEncryptionProcessor.Container,
                         cancellationToken,
-                        false);
+                        shouldForceRefresh);
 
                     ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
 
