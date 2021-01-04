@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Encryption.KeyVaultAccessClientTests;
+    using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
 
     [TestClass]
     public class LegacyEncryptionTests
