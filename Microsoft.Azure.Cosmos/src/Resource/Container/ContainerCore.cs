@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -71,12 +72,14 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<ContainerResponse> ReadContainerAsync(
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             ResponseMessage response = await this.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
@@ -85,6 +88,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ContainerResponse> ReplaceContainerAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             ContainerProperties containerProperties,
+            ITrace trace,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -98,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
@@ -105,12 +110,14 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<ContainerResponse> DeleteContainerAsync(
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             ResponseMessage response = await this.DeleteContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateContainerResponse(this, response);
@@ -118,6 +125,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<int?> ReadThroughputAsync(
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             ThroughputResponse response = await this.ReadThroughputIfExistsAsync(null, cancellationToken);
@@ -127,11 +135,13 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ThroughputResponse> ReadThroughputAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             ThroughputResponse throughputResponse = await this.ReadThroughputIfExistsAsync(
                 diagnosticsContext,
                 requestOptions,
+                trace,
                 cancellationToken);
 
             if (throughputResponse.StatusCode == HttpStatusCode.NotFound)
@@ -148,18 +158,21 @@ namespace Microsoft.Azure.Cosmos
         public Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             CosmosOffers cosmosOffers = new CosmosOffers(this.ClientContext);
             return this.OfferRetryHelperForStaleRidCacheAsync(
                 (rid) => cosmosOffers.ReadThroughputIfExistsAsync(rid, requestOptions, cancellationToken),
                 diagnosticsContext,
+                trace,
                 cancellationToken);
         }
 
         public Task<ThroughputResponse> ReplaceThroughputAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             int throughput,
+            ITrace trace,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -167,12 +180,14 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 throughputProperties: ThroughputProperties.CreateManualThroughput(throughput),
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<ThroughputResponse> ReplaceThroughputIfExistsAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             ThroughputProperties throughput,
+            ITrace trace,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -184,18 +199,21 @@ namespace Microsoft.Azure.Cosmos
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken),
                 diagnosticsContext,
+                trace,
                 cancellationToken);
         }
 
         public async Task<ThroughputResponse> ReplaceThroughputAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             ThroughputProperties throughputProperties,
+            ITrace trace,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             ThroughputResponse throughputResponse = await this.ReplaceThroughputIfExistsAsync(
                 diagnosticsContext,
                 throughputProperties,
+                trace,
                 requestOptions,
                 cancellationToken);
 
@@ -212,6 +230,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Task<ResponseMessage> DeleteContainerStreamAsync(
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -220,11 +239,13 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<ResponseMessage> ReadContainerStreamAsync(
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -233,12 +254,14 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<ResponseMessage> ReplaceContainerStreamAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             ContainerProperties containerProperties,
+            ITrace trace,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -252,11 +275,13 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: diagnosticsContext,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public async Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
@@ -423,12 +448,12 @@ namespace Microsoft.Azure.Cosmos
             return containerProperties?.ResourceId;
         }
 
-        public override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default)
+        public override async Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default)
         {
-            return this.GetCachedContainerPropertiesAsync(
+            ContainerProperties cachedContainerPropertiesAsync = await this.GetCachedContainerPropertiesAsync(
                 forceRefresh: false,
-                cancellationToken: cancellationToken)
-                .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
+                cancellationToken: cancellationToken);
+            return cachedContainerPropertiesAsync?.PartitionKey;
         }
 
         /// <summary>
@@ -470,33 +495,40 @@ namespace Microsoft.Azure.Cosmos
             return containerProperties.GetNoneValue();
         }
 
-        public override Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
+        public override async Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
-            string collectionRID = null;
-            return this.GetCachedRIDAsync(
+            string collectionRid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
-                cancellationToken: cancellationToken)
-                .ContinueWith(ridTask =>
-                {
-                    collectionRID = ridTask.Result;
-                    return this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                })
-                .Unwrap()
-                .ContinueWith(partitionKeyRangeCachetask =>
-                {
-                    PartitionKeyRangeCache partitionKeyRangeCache = partitionKeyRangeCachetask.Result;
-                    return partitionKeyRangeCache.TryLookupAsync(
-                            collectionRID,
-                            null,
-                            null,
-                            cancellationToken);
-                })
-                .Unwrap();
+                cancellationToken);
+
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
+                collectionRid,
+                previousValue: null,
+                request: null,
+                cancellationToken);
+
+            // Not found.
+            if (collectionRoutingMap == null)
+            {
+                collectionRid = await this.GetCachedRIDAsync(
+                    forceRefresh: true,
+                    cancellationToken);
+
+                collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
+                    collectionRid,
+                    previousValue: null,
+                    request: null,
+                    cancellationToken);
+            }
+
+            return collectionRoutingMap;
         }
 
         private async Task<ThroughputResponse> OfferRetryHelperForStaleRidCacheAsync(
             Func<string, Task<ThroughputResponse>> executeOfferOperation,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             string rid = await this.GetCachedRIDAsync(
@@ -512,6 +544,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage = await this.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
                 requestOptions: null,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             // Container does not exist
@@ -541,6 +574,7 @@ namespace Microsoft.Azure.Cosmos
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
+            ITrace trace,
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -549,6 +583,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -557,6 +592,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessResourceOperationStreamAsync(
@@ -566,6 +602,7 @@ namespace Microsoft.Azure.Cosmos
                 linkUri: this.LinkUri,
                 resourceType: ResourceType.Collection,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -575,6 +612,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             string linkUri,
             ResourceType resourceType,
+            ITrace trace,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -583,11 +621,12 @@ namespace Microsoft.Azure.Cosmos
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,
-              partitionKey: null,
+              feedRange: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
               diagnosticsContext: diagnosticsContext,
+              trace: trace,
               cancellationToken: cancellationToken);
         }
     }

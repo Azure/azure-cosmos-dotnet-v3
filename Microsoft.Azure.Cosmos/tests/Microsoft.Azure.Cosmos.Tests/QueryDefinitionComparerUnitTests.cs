@@ -53,8 +53,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             QueryDefinition sqlQueryDefinition2 = new QueryDefinition("select * from s where s.Account = 1234");
 
             Assert.IsFalse(QueryDefinitionEqualityComparer.Instance.Equals(sqlQueryDefinition, sqlQueryDefinition2));
-
-            sqlQueryDefinition2.WithParameter("@name", "ABC");
+            string param = new string(new[] { 'A', 'B', 'C' });
+            sqlQueryDefinition2.WithParameter("@name", param);
             sqlQueryDefinition2.WithParameter("@account", "12345");
 
             Assert.IsTrue(QueryDefinitionEqualityComparer.Instance.Equals(sqlQueryDefinition, sqlQueryDefinition2));

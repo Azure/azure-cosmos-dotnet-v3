@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -40,11 +41,13 @@ namespace Microsoft.Azure.Cosmos
         public async Task<PermissionResponse> DeleteAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.DeletePermissionStreamAsync(
                 diagnosticsContext: diagnosticsContext,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreatePermissionResponse(this, response);
@@ -53,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
         public Task<ResponseMessage> DeletePermissionStreamAsync(
             CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
@@ -61,6 +65,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Delete,
                 tokenExpiryInSeconds: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -68,12 +73,14 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ReadPermissionStreamAsync(
                 diagnosticsContext: diagnosticsContext,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreatePermissionResponse(this, response);
@@ -83,6 +90,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
@@ -91,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Read,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -99,6 +108,7 @@ namespace Microsoft.Azure.Cosmos
             PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (permissionProperties == null)
@@ -112,6 +122,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreatePermissionResponse(this, response);
@@ -121,6 +132,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             PermissionProperties permissionProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (permissionProperties == null)
@@ -134,6 +146,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -142,6 +155,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
@@ -150,6 +164,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Replace,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -159,6 +174,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessResourceOperationStreamAsync(
@@ -169,6 +185,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: ResourceType.Permission,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -180,6 +197,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -187,7 +205,7 @@ namespace Microsoft.Azure.Cosmos
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,
-              partitionKey: null,
+              feedRange: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: (requestMessage) =>
@@ -198,6 +216,7 @@ namespace Microsoft.Azure.Cosmos
                   }
               },
               diagnosticsContext: diagnosticsContext,
+              trace: trace,
               cancellationToken: cancellationToken);
         }
     }
