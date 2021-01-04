@@ -361,16 +361,7 @@ namespace Microsoft.Azure.Cosmos.Json
             Span<char> charArray = stackalloc char[1];
             charArray[0] = value;
 
-            unsafe
-            {
-                fixed (char* charArrayPointer = charArray)
-                {
-                    fixed (byte* byteArrayPointer = multiByteBuffer)
-                    {
-                        return Encoding.UTF8.GetBytes(charArrayPointer, charArray.Length, byteArrayPointer, multiByteBuffer.Length);
-                    }
-                }
-            }
+            return Encoding.UTF8.GetBytes(charArray, multiByteBuffer);
         }
 
         private static int WideCharToMultiByte(char highSurrogate, char lowSurrogate, Span<byte> multiByteBuffer)
@@ -379,16 +370,7 @@ namespace Microsoft.Azure.Cosmos.Json
             charArray[0] = highSurrogate;
             charArray[1] = lowSurrogate;
 
-            unsafe
-            {
-                fixed (char* charArrayPointer = charArray)
-                {
-                    fixed (byte* byteArrayPointer = multiByteBuffer)
-                    {
-                        return Encoding.UTF8.GetBytes(charArrayPointer, charArray.Length, byteArrayPointer, multiByteBuffer.Length);
-                    }
-                }
-            }
+            return Encoding.UTF8.GetBytes(charArray, multiByteBuffer);
         }
     }
 }
