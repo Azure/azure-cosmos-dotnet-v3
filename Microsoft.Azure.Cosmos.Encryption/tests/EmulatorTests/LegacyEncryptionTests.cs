@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure.Core;
     using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Encryption;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;

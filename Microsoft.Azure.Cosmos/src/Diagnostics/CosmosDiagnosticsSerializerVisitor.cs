@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     {
         private const string DiagnosticsVersion = "2";
         private readonly JsonWriter jsonWriter;
+        private bool rootDiagnosticContextVisited = false;
 
         public CosmosDiagnosticsSerializerVisitor(TextWriter textWriter)
         {
@@ -63,6 +64,19 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
+            // Nested diagnostics should not include the summary
+            if (this.rootDiagnosticContextVisited)
+            {
+                foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in cosmosDiagnosticsContext)
+                {
+                    cosmosDiagnosticsInternal.Accept(this);
+                }
+
+                return;
+            }
+
+            this.rootDiagnosticContextVisited = true;
+
             this.jsonWriter.WriteStartObject();
 
             this.jsonWriter.WritePropertyName("DiagnosticVersion");
