@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -11,6 +12,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -30,14 +32,9 @@
         };
 
         internal override async Task<(IQueryableContainer, List<CosmosObject>)> CreateContainerAsync(
-            IReadOnlyList<CosmosObject> documentsToInsert,
-            FlakyDocumentContainer.FailureConfigs failureConfigs)
+            IReadOnlyList<CosmosObject> documentsToInsert)
         {
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
-            if (failureConfigs != null)
-            {
-                monadicDocumentContainer = new FlakyDocumentContainer(monadicDocumentContainer, failureConfigs);
-            }
 
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
@@ -143,6 +140,61 @@
 
                 info.ThrowIfFailed();
                 return info.Result.QueryInfo;
+            }
+
+            public async Task<Dictionary<string, PartitionKeyRange>> GetRidToPartitionKeyRangeAsync()
+            {
+                List<FeedRangeEpk> ranges = await this.documentContainer.GetFeedRangesAsync(
+                    NoOpTrace.Singleton,
+                    cancellationToken: default);
+
+                Dictionary<string, PartitionKeyRange> ridToPartitionKeyRange = new Dictionary<string, PartitionKeyRange>();
+                foreach (FeedRangeEpk range in ranges)
+                {
+                    ReadFeedPage readFeedPage = await this.documentContainer.ReadFeedAsync(
+                        ReadFeedState.Beginning(),
+                        range,
+                        queryRequestOptions: null,
+                        pageSize: int.MaxValue,
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+
+                    foreach (Record record in readFeedPage.GetRecords())
+                    {
+                        ridToPartitionKeyRange[record.ResourceIdentifier.ToString()] = new PartitionKeyRange()
+                        {
+                            MinInclusive = range.Range.Min,
+                            MaxExclusive = range.Range.Max,
+                        };
+                    }
+                }
+
+                return ridToPartitionKeyRange;
+            }
+
+            public async Task<List<CosmosElement>> GetDataSourceAsync()
+            {
+                List<FeedRangeEpk> ranges = await this.documentContainer.GetFeedRangesAsync(
+                    NoOpTrace.Singleton,
+                    cancellationToken: default);
+
+                List<CosmosElement> documents = new List<CosmosElement>();
+
+                foreach(FeedRangeEpk range in ranges)
+                {
+                    IEnumerable<CosmosElement> elements = (await this.documentContainer.ReadFeedAsync(
+                        ReadFeedState.Beginning(),
+                        range,
+                        queryRequestOptions: null,
+                        pageSize: int.MaxValue,
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default))
+                        .GetRecords()
+                        .Select(r => (CosmosElement)r.ToDocument());
+                    documents.AddRange(elements);
+                }
+
+                return documents;
             }
         }
 

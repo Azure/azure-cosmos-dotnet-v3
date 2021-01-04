@@ -27,6 +27,18 @@
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Poco\Person.cs" Link="Query\EndToEndTests\Person.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\EndToEndTests\EndToEndTestsBase.cs" Link="Query\EndToEndTests\EndToEndTestsBase.cs" />
     <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\EndToEndTests\EndToEndTestsBase.Sanity.cs" Link="Query\EndToEndTests\EndToEndTestsBase.Sanity.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\Aggregate.cs" Link="Query\OfflineEngine\Aggregate.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\AggregateProjectionDector.cs" Link="Query\OfflineEngine\AggregateProjectionDector.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\AggregateProjectionTransformer.cs" Link="Query\OfflineEngine\AggregateProjectionTransformer.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\BuiltinFunctionEvaluator.cs" Link="Query\OfflineEngine\BuiltinFunctionEvaluator.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\CosmosElementToJsonType.cs" Link="Query\OfflineEngine\CosmosElementToJsonType.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\DataSourceEvaluator.cs" Link="Query\OfflineEngine\DataSourceEvaluator.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\InvalidJsonValueDetector.cs" Link="Query\OfflineEngine\InvalidJsonValueDetector.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\JsonType.cs" Link="Query\OfflineEngine\JsonType.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\Projector.cs" Link="Query\OfflineEngine\Projector.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\ScalarExpressionEvaluator.cs" Link="Query\OfflineEngine\ScalarExpressionEvaluator.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\SqlInterpreter.cs" Link="Query\OfflineEngine\SqlInterpreter.cs" />
+    <Compile Include="..\Microsoft.Azure.Cosmos.Tests\Query\OfflineEngine\Utils.cs" Link="Query\OfflineEngine\Utils.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -237,6 +249,9 @@
     <None Update="Query\AggregateQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Query\OfflineEngine\" />
   </ItemGroup>
 
   <PropertyGroup>

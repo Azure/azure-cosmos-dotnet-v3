@@ -8,18 +8,14 @@
     public abstract partial class EndToEndTestsBase
     {
         [TestMethod]
-        public async Task SimplestTest()
+        public async Task SimplestTestAsync()
         {
             List<CosmosObject> documents = GenerateRandomDocuments(numberOfDocuments: 1000);
             static async Task ImplementationAsync(IQueryableContainer container, IReadOnlyList<CosmosObject> documents)
             {
-                List<CosmosElement> queryResults = await RunQueryAsync(
+                _ = await ValidateQueryAsync(
                     container,
                     "SELECT * FROM c");
-
-                Assert.AreEqual(
-                    documents.Count,
-                    queryResults.Count);
             }
             
             await this.RunQueryTestAsync(

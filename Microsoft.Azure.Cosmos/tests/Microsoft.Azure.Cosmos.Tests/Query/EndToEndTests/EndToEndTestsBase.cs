@@ -7,8 +7,12 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tests.Poco;
+    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -66,13 +70,13 @@
             return documents;
         }
 
-        private static Task<List<CosmosElement>> RunQueryAsync(
+        private static Task<List<CosmosElement>> ValidateQueryAsync(
             IQueryableContainer container,
             string query,
             int pageSize = 10,
             int maxConcurrency = 10)
         {
-            return RunQueryCombinationsAsync(
+            return ValidateQueryCombinationsAsync(
                 container,
                 query,
                 QueryDrainingMode.ClientWithoutState | QueryDrainingMode.ClientWithState | QueryDrainingMode.ComputeWithoutState | QueryDrainingMode.ComputeWithState,
@@ -90,7 +94,7 @@
             ComputeWithState = 1 << 3,
         }
 
-        private static async Task<List<CosmosElement>> RunQueryCombinationsAsync(
+        private static async Task<List<CosmosElement>> ValidateQueryCombinationsAsync(
             IQueryableContainer container,
             string query,
             QueryDrainingMode queryDrainingMode,
@@ -173,7 +177,25 @@
                 }
             }
 
-            return queryExecutionResults.Values.First();
+            Dictionary<string, PartitionKeyRange> ridToPartitionKeyRange = await container.GetRidToPartitionKeyRangeAsync();
+            List<CosmosElement> documents = await container.GetDataSourceAsync();
+
+            SqlQuery parsedQuery = SqlQueryParser.Parse(query);
+
+            IEnumerable<CosmosElement> oracleResults = SqlInterpreter.ExecuteQuery(
+                documents,
+                parsedQuery,
+                ridToPartitionKeyRange);
+
+            List<CosmosElement> actualResults = queryExecutionResults.Values.First();
+
+            Assert.IsTrue(
+                actualResults.SequenceEqual(oracleResults),
+                $"{query} returned different results.\n" +
+                $"Oracle: {JsonConvert.SerializeObject(oracleResults)}\n" +
+                $"Actual: {JsonConvert.SerializeObject(actualResults)}\n");
+
+            return actualResults;
         }
 
         private static async Task<List<CosmosElement>> DrainQueryAsync(
@@ -244,6 +266,10 @@
                 int maxConcurrency,
                 ExecutionEnvironment executionEnvironment,
                 CosmosElement requestContinuationToken);
+
+            Task<Dictionary<string, Microsoft.Azure.Documents.PartitionKeyRange>> GetRidToPartitionKeyRangeAsync();
+
+            Task<List<CosmosElement>> GetDataSourceAsync();
         }
 
         internal interface IQueryPipeline : IAsyncEnumerable<TryCatch<QueryPage>>

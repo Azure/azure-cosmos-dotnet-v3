@@ -11,6 +11,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Tests.Query.EndToEndTests;
+    using Microsoft.Azure.Documents;
     using Microsoft.IdentityModel.Tokens;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -84,6 +85,16 @@
             public void Dispose()
             {
                 this.container.DeleteContainerAsync().Wait();
+            }
+
+            public Task<List<CosmosElement>> GetDataSourceAsync()
+            {
+                throw new NotImplementedException();
+            }
+
+            public Task<Dictionary<string, PartitionKeyRange>> GetRidToPartitionKeyRangeAsync()
+            {
+                throw new NotImplementedException();
             }
 
             public TryCatch<IQueryPipeline> MonadicCreateQueryPipeline(
