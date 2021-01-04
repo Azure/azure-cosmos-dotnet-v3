@@ -123,18 +123,22 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Get(string key)
         {
-            if (!this.httpResponseHeaders.TryGetValues(key, out IEnumerable<string> result))
+            if (this.httpResponseHeaders.TryGetValues(key, out IEnumerable<string> results))
             {
-                if (this.httpContentHeaders == null || !this.httpContentHeaders.TryGetValues(key, out result))
-                {
-                    if (this.dictionaryNameValueCollection.IsValueCreated)
-                    {
-                        return this.dictionaryNameValueCollection.Value.Get(key);
-                    }
-                }
+                return this.JoinHeaders(results);
             }
 
-            return this.JoinHeaders(result);
+            if (this.httpContentHeaders != null && this.httpContentHeaders.TryGetValues(key, out results))
+            {
+                return this.JoinHeaders(results);
+            }
+
+            if (this.dictionaryNameValueCollection.IsValueCreated)
+            {
+                return this.dictionaryNameValueCollection.Value.Get(key);
+            }
+
+            return null;
         }
 
         public override IEnumerator<string> GetEnumerator()
