@@ -15,31 +15,53 @@ namespace CosmosCTL
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Extensions.Logging;
     using Newtonsoft.Json.Linq;
 
     public sealed class Program
     {
-        /// <summary>
-        /// Main method for the sample.
-        /// </summary>
-        /// <param name="args">command line arguments.</param>
         public static async Task Main(string[] args)
         {
+            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
+                        .AddConsole());
+            
+            ILogger logger = loggerFactory.CreateLogger<Program>();
+
             try
             {
                 CTLConfig config = CTLConfig.From(args);
-                Program program = new Program();
-            }
-            finally
-            {
-                Console.WriteLine($"{nameof(CosmosCTL)} completed successfully.");
-                if (Debugger.IsAttached)
+                CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(config.EndPoint, config.Key);
+
+                if (!string.IsNullOrWhiteSpace(config.ConsistencyLevel))
                 {
-                    Console.WriteLine("Press any key to exit...");
-                    Console.ReadLine();
+                    if (Enum.TryParse<ConsistencyLevel>(config.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
+                    {
+                        cosmosClientBuilder.WithConsistencyLevel(consistencyLevel);
+                    }
+                    else
+                    {
+                        logger.LogWarning($"Cannot parse consistency {config.ConsistencyLevel}");
+                    }
+                }
+
+                using CosmosClient client = cosmosClientBuilder.Build();
+
+                using (logger.BeginScope(config.WorkloadType))
+                {
+
+
+                    logger.LogInformation($"{nameof(CosmosCTL)} completed successfully.");
                 }
             }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Unhandled exception during execution");
+            }
         }
+
+
+
 
         private static void ClearCoreSdkListeners()
         {

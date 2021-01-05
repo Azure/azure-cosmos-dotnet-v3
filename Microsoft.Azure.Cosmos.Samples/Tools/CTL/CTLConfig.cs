@@ -22,6 +22,12 @@ namespace CosmosCTL
         [JsonIgnore]
         public string Key { get; set; }
 
+        [Option("ctl_database", Required = false, HelpText = "Database name")]
+        public string Database { get; set; } = "CTLDatabase";
+
+        [Option("ctl_collection", Required = false, HelpText = "Collection name")]
+        public string Collection { get; set; } = "CTLCollection";
+
         [Option("ctl_operation", Required = false, HelpText = "Workload type")]
         public string WorkloadType { get; set; } = "ReadWriteQuery";
 
@@ -48,6 +54,12 @@ namespace CosmosCTL
 
         [Option("ctl_diagnostics_threshold_duration", Required = false, HelpText = "Threshold to log diagnostics")]
         public string DiagnosticsThreshold { get; set; } = "PT60S";
+
+        [Option("ctl_content_response_on_write", Required = false, HelpText = "Should return content response on writes")]
+        public bool IsContentResponseOnWriteEnabled { get; set; } = true;
+
+        [Option("ctl_output_event_traces", Required = false, HelpText = "Should return content response on writes")]
+        public bool OutputEventTraces { get; set; } = true;
 
         internal static CTLConfig From(string[] args)
         {
