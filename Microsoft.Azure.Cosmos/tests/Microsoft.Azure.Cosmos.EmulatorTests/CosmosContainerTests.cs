@@ -1328,31 +1328,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
-            
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path1",
+                    ClientEncryptionKeyId = "dekId1",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    EncryptionType = "Randomized"
+                },
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path2",
+                    ClientEncryptionKeyId = "dekId2",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    EncryptionType = "Deterministic"
+                }
+            };
+
             ContainerProperties setting = new ContainerProperties()
             {
                 Id = containerName,
                 PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
-                ClientEncryptionPolicy = new ClientEncryptionPolicy()
-                {
-                    IncludedPaths = new Collection<ClientEncryptionIncludedPath>()
-                    {
-                        new ClientEncryptionIncludedPath()
-                        {
-                            Path = "/path1",
-                            ClientEncryptionKeyId = "dekId1",
-                            EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                            EncryptionType = "Randomized"
-                        },
-                        new ClientEncryptionIncludedPath()
-                        {
-                            Path = "/path2",
-                            ClientEncryptionKeyId = "dekId2",
-                            EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                            EncryptionType = "Deterministic"
-                        }
-                    }
-                }
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
             };
 
             ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
@@ -1383,6 +1381,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path1",
+                    ClientEncryptionKeyId = "dekId1",
+                    EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256",
+                    EncryptionType = "Randomized"
+                },
+            };
 
             try
             {
@@ -1390,19 +1398,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Id = containerName,
                     PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy()
-                    {
-                        IncludedPaths = new Collection<ClientEncryptionIncludedPath>()
-                        {
-                            new ClientEncryptionIncludedPath()
-                            {
-                                Path = "/path1",
-                                ClientEncryptionKeyId = "dekId1",
-                                EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256",
-                                EncryptionType = "Randomized"
-                            },
-                        }
-                    }
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
                 };
 
                 Assert.Fail("Creating ContainerProperties should have failed.");
@@ -1421,16 +1417,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                     EncryptionType = "Deterministic"
                 };
-                
-                ContainerProperties setting = new ContainerProperties()
-                {
-                    Id = containerName,
-                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
-                    ClientEncryptionPolicy = new ClientEncryptionPolicy()
-                    {
-                        IncludedPaths = new Collection<ClientEncryptionIncludedPath>()
+
+                Collection<ClientEncryptionIncludedPath> pathsList = new Collection<ClientEncryptionIncludedPath>()
                         {
-                            path1,
                             new ClientEncryptionIncludedPath()
                             {
                                 Path = "/path1",
@@ -1438,8 +1427,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                                 EncryptionType = "Randomized"
                             },
-                        }
-                    }
+                        };
+                pathsList.Add(path1);
+
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsList)                    
                 };
 
                 Assert.Fail("Creating ContainerProperties should have failed.");

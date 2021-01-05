@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos
         sealed class ClientEncryptionPolicy
     {
         private readonly List<string> includedPathsList = new List<string>();
-        private IEnumerable<ClientEncryptionIncludedPath> includedPath = new List<ClientEncryptionIncludedPath>();
         
         /// <summary>
         /// Initializes a new instance of ClientEncryptionPolicy.
@@ -30,17 +29,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="ClientEncryptionPolicy"/> class.
+        /// </summary>
+        /// <param name="includedPaths">List of paths to include in the policy definition.</param>
+        public ClientEncryptionPolicy(IEnumerable<ClientEncryptionIncludedPath> includedPaths)
+        {
+            this.ValidateIncludedPaths(includedPaths);
+            this.IncludedPaths = includedPaths;
+            this.PolicyFormatVersion = 1;
+        }
+
+        /// <summary>
         /// Paths of the item that need encryption along with path-specific settings.
         /// </summary>
         [JsonProperty(PropertyName = "includedPaths")]
         public IEnumerable<ClientEncryptionIncludedPath> IncludedPaths
         {
-            get => this.includedPath;
-            internal set
-            {
-                this.ValidateIncludedPaths(value);
-                this.includedPath = value;
-            }
+            get; private set;
         } 
 
         [JsonProperty(PropertyName = "policyFormatVersion")]

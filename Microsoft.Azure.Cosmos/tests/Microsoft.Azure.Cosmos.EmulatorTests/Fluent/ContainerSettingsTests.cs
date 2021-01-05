@@ -42,6 +42,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EncryptionType = "Randomized"
             };
 
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                clientEncryptionIncludedPath1
+            };
+
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
             {
                 IndexingPolicy = new IndexingPolicy()
@@ -90,13 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }
                     }
                 },
-                ClientEncryptionPolicy = new ClientEncryptionPolicy()
-                {
-                    IncludedPaths = new Collection<ClientEncryptionIncludedPath>()
-                    {
-                        clientEncryptionIncludedPath1
-                    }
-                }
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
             };
 
             CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
