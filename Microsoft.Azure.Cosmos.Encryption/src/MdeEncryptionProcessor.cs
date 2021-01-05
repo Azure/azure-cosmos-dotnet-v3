@@ -235,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 itemJObj.Property(propertyValue.Path).Value = await this.EncryptAndSerializeValueAsync(
                     itemJObj.Property(propertyValue.Path).Value,
                     settings);
+
                 await Task.Yield();
                 return;
             }

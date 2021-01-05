@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
@@ -33,7 +34,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 
-            EncryptionCosmosClient encryptionCosmosClient = (EncryptionCosmosClient)database.Client;
+            EncryptionCosmosClient encryptionCosmosClient;
+
+            if (database is EncryptionDatabase encryptionDatabase)
+            {
+                encryptionCosmosClient = encryptionDatabase.EncryptionCosmosClient;
+            }
+            else
+            {
+                throw new ArgumentException("Unsupported database type.For Creating Client Encryption Keys please configure Cosmos Client with Encryption Support");
+            }
+
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
@@ -81,7 +92,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
 
-            EncryptionCosmosClient encryptionCosmosClient = (EncryptionCosmosClient)database.Client;
+            EncryptionCosmosClient encryptionCosmosClient;
+
+            if (database is EncryptionDatabase encryptionDatabase)
+            {
+                encryptionCosmosClient = encryptionDatabase.EncryptionCosmosClient;
+            }
+            else
+            {
+                throw new ArgumentException("Unsupported database type.For rewraping Client Encryption Keys please configure Cosmos Client with Encryption Support");
+            }
+
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
