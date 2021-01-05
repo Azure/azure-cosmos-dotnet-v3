@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>CosmosCTL</RootNamespace>
+    <AssemblyName>CosmosCTL</AssemblyName>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <!-- Enabled easier integration into master -->
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" />
+  </ItemGroup>
+</Project>
