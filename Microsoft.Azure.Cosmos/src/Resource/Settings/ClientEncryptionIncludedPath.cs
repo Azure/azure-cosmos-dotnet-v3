@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         public string EncryptionType { get; set; }
 
         /// <summary>
-        /// Gets or sets the encryption algorithm which will be used. Eg - AEAes256CbcHmacSha256
+        /// Gets or sets the encryption algorithm which will be used. Eg - AEAD_AES_256_CBC_HMAC_SHA256
         /// </summary>
         [JsonProperty(PropertyName = "encryptionAlgorithm")]
         public string EncryptionAlgorithm { get; set; }
