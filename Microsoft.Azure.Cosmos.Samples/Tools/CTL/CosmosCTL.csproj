@@ -9,7 +9,11 @@
     <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="App.Metrics" Version="4.1.0" />
+    <PackageReference Include="App.Metrics.Graphite" Version="4.1.0" />
+    <PackageReference Include="App.Metrics.Reporting.Console" Version="4.1.0" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
+    <PackageReference Include="Microsoft.Diagnostics.NETCore.Client" Version="0.2.160202" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="3.1.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.10" />
   </ItemGroup>
