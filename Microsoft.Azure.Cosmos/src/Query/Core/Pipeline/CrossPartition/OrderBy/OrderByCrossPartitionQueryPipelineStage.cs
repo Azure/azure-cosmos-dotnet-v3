@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             IReadOnlyList<FeedRangeEpk> childRanges = await this.documentContainer.GetChildRangeAsync(
                 uninitializedEnumerator.Range,
                 trace,
-                this.cancellationToken); 
+                this.cancellationToken);
             if (childRanges.Count == 0)
             {
                 throw new InvalidOperationException("Got back no children");
@@ -816,15 +816,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 (OrderByColumn orderByColumn, CosmosElement orderByItem) = columnAndItems.Span[0];
                 (string expression, SortOrder sortOrder) = (orderByColumn.Expression, orderByColumn.SortOrder);
 
-                StringBuilder sb = new StringBuilder();
-                CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
-                orderByItem.Accept(cosmosElementToQueryLiteral);
+                if (orderByItem == default)
+                {
+                    // User is ordering by undefined, so we need to avoid a null reference exception.
 
-                string orderByItemToString = sb.ToString();
+                    // To solve this consider the following items and partition tuples in ASC order:
+                    // (undefined, 1)
+                    // (undefined, 2)
+                    // (undefined, 3)
+                    // (A, 1)
+                    // (A, 2)
+                    // (A, 3)
 
-                left.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan)} {orderByItemToString}");
-                target.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
-                right.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
+                    // Suppose we are resuming from (undefined, 2)
+                    // then we are done reading undefined from all the left partitions.
+
+                    // For target and right partitions we still need to read undefined, 
+                    // so just don't do any filtering
+
+                    // You can repeat the process for DESC order:
+                    // (A, 1)
+                    // (A, 2)
+                    // (A, 3)
+                    // (undefined, 1)
+                    // (undefined, 2)
+                    // (undefined, 3)
+
+                    // And come to the set set of filters needed.
+
+                    left.Append($"IS_DEFINED({expression})");
+                }
+                else
+                {
+                    StringBuilder sb = new StringBuilder();
+                    CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                    orderByItem.Accept(cosmosElementToQueryLiteral);
+
+                    string orderByItemToString = sb.ToString();
+
+                    left.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan)} {orderByItemToString}");
+                    target.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
+                    right.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
+                }
             }
             else
             {
@@ -872,33 +905,41 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         CosmosElement orderByItem = columnAndItemPrefix[index].orderByItem;
                         bool lastItem = index == prefixLength - 1;
 
-                        // Append Expression
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, expression);
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
-
-                        // Append binary operator
-                        if (lastItem)
+                        if (orderByItem == default)
                         {
-                            string inequality = sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan;
-                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, inequality);
-                            if (lastPrefix)
-                            {
-                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, string.Empty, Expressions.EqualTo, Expressions.EqualTo);
-                            }
+                            // Refer to the logic from single order by for how we are handling order by undefined
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, $"IS_DEFINED({expression})", "true", "true");
                         }
                         else
                         {
-                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, Expressions.EqualTo);
-                        }
+                            // Append Expression
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, expression);
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
 
-                        // Append SortOrder
-                        StringBuilder sb = new StringBuilder();
-                        CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
-                        orderByItem.Accept(cosmosElementToQueryLiteral);
-                        string orderByItemToString = sb.ToString();
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, orderByItemToString);
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
+                            // Append binary operator
+                            if (lastItem)
+                            {
+                                string inequality = sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan;
+                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, inequality);
+                                if (lastPrefix)
+                                {
+                                    OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, string.Empty, Expressions.EqualTo, Expressions.EqualTo);
+                                }
+                            }
+                            else
+                            {
+                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, Expressions.EqualTo);
+                            }
+
+                            // Append SortOrder
+                            StringBuilder sb = new StringBuilder();
+                            CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                            orderByItem.Accept(cosmosElementToQueryLiteral);
+                            string orderByItemToString = sb.ToString();
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, orderByItemToString);
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
+                        }
 
                         if (!lastItem)
                         {
