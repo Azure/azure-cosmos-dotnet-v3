@@ -18,19 +18,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public EncryptionDatabase(Database database, EncryptionCosmosClient encryptionCosmosClient)
         {
             this.database = database;
-            this.encryptionCosmosClient = encryptionCosmosClient;
+            this.EncryptionCosmosClient = encryptionCosmosClient;
         }
 
-        private readonly EncryptionCosmosClient encryptionCosmosClient;
+        internal EncryptionCosmosClient EncryptionCosmosClient { get; private set; }
 
         public override string Id => this.database.Id;
 
-        public override CosmosClient Client => this.encryptionCosmosClient;
+        public override CosmosClient Client => this.database.Client;
 
         public override Container GetContainer(string id)
         {
             this.container = this.database.GetContainer(id);
-            return new MdeContainer(this.container, this.encryptionCosmosClient);
+            return new MdeContainer(this.container, this.EncryptionCosmosClient);
         }
 
         public override Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.encryptionCosmosClient));
+                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.encryptionCosmosClient));
+                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.encryptionCosmosClient));
+                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.encryptionCosmosClient));
+                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.encryptionCosmosClient));
+                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.encryptionCosmosClient));
+                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -231,20 +231,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 foreach (ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
                 {
                     // clear the cached policies for this container.
-                    this.encryptionCosmosClient.RemoveClientEncryptionPolicy(this.database.GetContainer(containerProperties.Id));
+                    this.EncryptionCosmosClient.RemoveClientEncryptionPolicy(this.database.GetContainer(containerProperties.Id));
                 }
             }
 
             // Remove all the Keys cached.
-            if (this.encryptionCosmosClient.GetClientEncryptionKeyList().TryGetValue(this.Id, out HashSet<string> keyList))
+            if (this.EncryptionCosmosClient.GetClientEncryptionKeyList().TryGetValue(this.Id, out HashSet<string> keyList))
             {
                 foreach (string keyId in keyList)
                 {
                     string cacheKey = this.Id + keyId;
-                    this.encryptionCosmosClient.RemoveClientEncryptionPropertyCache(cacheKey);
+                    this.EncryptionCosmosClient.RemoveClientEncryptionPropertyCache(cacheKey);
                 }
 
-                this.encryptionCosmosClient.RemoveCachedClientEncryptionKeyEntry(this.Id);
+                this.EncryptionCosmosClient.RemoveCachedClientEncryptionKeyEntry(this.Id);
             }
         }
 
