@@ -344,7 +344,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore] // Ignored until updated emulator is released
         public async Task TestChangeFeedPolicy()
         {
             Database databaseForChangeFeed = await this.cosmosClient.CreateDatabaseAsync("changeFeedRetentionContainerTest",
