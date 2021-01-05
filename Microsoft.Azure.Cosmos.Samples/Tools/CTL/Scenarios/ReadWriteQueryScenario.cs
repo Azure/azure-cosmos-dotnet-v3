@@ -5,11 +5,12 @@
 namespace CosmosCTL
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Logging;
 
     internal class ReadWriteQueryScenario : CTLScenario
@@ -43,12 +44,11 @@ namespace CosmosCTL
             {
                 SemaphoreSlim concurrencySemaphore = new SemaphoreSlim(config.Concurrency);
                 logger.LogInformation("Pre-populating {0} documents", config.Operations);
-
+                IReadOnlyCollection<Dictionary<string, string>> createdDocuments = await PopulateDocumentsAsync(config, logger, initializationResult.Containers);
             }
-            catch (Exception)
+            catch (Exception unhandledException)
             {
-
-                throw;
+                logger.LogError(unhandledException, "Unhandled exception executing {0}", nameof(ReadWriteQueryScenario));
             }
             finally
             {
@@ -64,6 +64,52 @@ namespace CosmosCTL
                     }
                 }
             }
+        }
+
+        private static async Task<IReadOnlyCollection<Dictionary<string, string>>> PopulateDocumentsAsync(
+            CTLConfig config,
+            ILogger logger,
+            IEnumerable<Container> containers)
+        {
+            ConcurrentBag<Dictionary<string, string>> createdDocuments = new ConcurrentBag<Dictionary<string, string>>();
+            foreach (Container container in containers)
+            {
+                long successes = 0;
+                long failures = 0;
+
+                List<Dictionary<string, string>> documentsToCreate = new List<Dictionary<string, string>>(config.Operations);
+                await Utils.ForEachAsync(documentsToCreate, (Dictionary<string, string> doc) 
+                    => container.CreateItemAsync(doc).ContinueWith(task =>
+                    {
+                        if (task.IsCompletedSuccessfully)
+                        {
+                            createdDocuments.Add(doc);
+                            Interlocked.Increment(ref successes);
+                        }
+                        else
+                        {
+                            AggregateException innerExceptions = task.Exception.Flatten();
+                            if (innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
+                            {
+                                logger.LogError(cosmosException, "Failure pre-populating container {0}", container.Id);
+                            }
+
+                            Interlocked.Increment(ref failures);
+                        }
+                    }), 100);
+
+                if (successes > 0)
+                {
+                    logger.LogInformation("Completed pre-populating {0} documents in container {1].", successes, container.Id);
+                }
+
+                if (failures > 0)
+                {
+                    logger.LogWarning("Failed pre-populating {0} documents in container {1].", failures, container.Id);
+                }
+            }
+
+            return createdDocuments;
         }
 
         /// <summary>
