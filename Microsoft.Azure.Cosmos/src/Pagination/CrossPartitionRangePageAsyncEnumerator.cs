@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -16,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Coordinates draining pages from multiple <see cref="PartitionRangePageAsyncEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).

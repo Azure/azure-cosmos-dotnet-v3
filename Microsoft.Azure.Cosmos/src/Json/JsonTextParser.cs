@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Buffers.Text;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Common utility class for JsonTextReader and JsonTextNavigator.
@@ -13,8 +14,23 @@ namespace Microsoft.Azure.Cosmos.Json
     /// </summary>
     internal static class JsonTextParser
     {
-        private const int MaxStackAlloc = 1024;
         private static readonly ReadOnlyMemory<byte> ReverseSolidusBytes = new byte[] { (byte)'\\' };
+
+        private static class Utf16Surrogate
+        {
+            public static class High
+            {
+                public const char Min = (char)0xD800;
+                public const char Max = (char)0xDBFF;
+            }
+
+            public static class Low
+            {
+                public const char Min = (char)0xDC00;
+                public const char Max = (char)0xDFFF;
+            }
+        }
+
         public static Number64 GetNumberValue(ReadOnlySpan<byte> token)
         {
             Number64 numberValue;
@@ -35,10 +51,10 @@ namespace Microsoft.Azure.Cosmos.Json
             return numberValue;
         }
 
-        public static string GetStringValue(ReadOnlySpan<byte> token)
+        public static Utf8String GetStringValue(Utf8Memory token)
         {
-            // Offsetting by an additional character and removing 2 from the length since I want to skip the quotes.
-            ReadOnlySpan<byte> stringToken = token.Slice(1, token.Length - 2);
+            // Offsetting by an additional character and removing 2 from the length since we want to skip the quotes.
+            Utf8Memory stringToken = token.Slice(1, token.Length - 2);
             return JsonTextParser.UnescapeJson(stringToken);
         }
 
@@ -201,108 +217,80 @@ namespace Microsoft.Azure.Cosmos.Json
             return value;
         }
 
-        /// <summary>
-        /// Unescapes a json.
-        /// </summary>
-        /// <param name="escapedString">The escaped json.</param>
-        /// <returns>The unescaped json.</returns>
-        private static string UnescapeJson(ReadOnlySpan<byte> escapedString)
+        private static Utf8String UnescapeJson(Utf8Memory escapedString, bool checkIfNeedsEscaping = true)
         {
             if (escapedString.IsEmpty)
             {
-                return string.Empty;
+                return Utf8String.Empty;
             }
 
-            if (escapedString.IndexOf(JsonTextParser.ReverseSolidusBytes.Span) < 0)
+            if (checkIfNeedsEscaping && (escapedString.Span.Span.IndexOf(JsonTextParser.ReverseSolidusBytes.Span) < 0))
             {
-                // String doesn't need escaping
-                unsafe
-                {
-                    fixed (byte* escapedStringPointer = escapedString)
-                    {
-                        return Encoding.UTF8.GetString(escapedStringPointer, escapedString.Length);
-                    }
-                }
+                // String doesn't need unescaping
+                return Utf8String.UnsafeFromUtf8BytesNoValidation(escapedString.Memory);
             }
+
+            Memory<byte> stringBuffer = new byte[escapedString.Length];
+            escapedString.Memory.CopyTo(stringBuffer);
+
+            Span<byte> stringBufferSpan = stringBuffer.Span;
 
             int readOffset = 0;
             int writeOffset = 0;
-
-            int bufferLength;
-            unsafe
-            {
-                fixed (byte* pointer = escapedString)
-                {
-                    bufferLength = Encoding.UTF8.GetCharCount(pointer, escapedString.Length);
-                }
-            }
-
-            Span<char> stringBuffer = bufferLength <= MaxStackAlloc ? stackalloc char[bufferLength] : new char[bufferLength];
-            unsafe
-            {
-                fixed (char* stringBufferPointer = stringBuffer)
-                {
-                    fixed (byte* escapedStringPointer = escapedString)
-                    {
-                        Encoding.UTF8.GetChars(escapedStringPointer, escapedString.Length, stringBufferPointer, bufferLength);
-                    }
-                }
-            }
-
             while (readOffset != stringBuffer.Length)
             {
-                if (stringBuffer[readOffset] == '\\')
+                if (stringBufferSpan[readOffset] == '\\')
                 {
                     // Consume the '\' character
                     readOffset++;
 
                     // Figure out how to escape.
-                    switch (stringBuffer[readOffset++])
+                    switch (stringBufferSpan[readOffset++])
                     {
-                        case 'b':
-                            stringBuffer[writeOffset++] = '\b';
+                        case (byte)'b':
+                            stringBufferSpan[writeOffset++] = (byte)'\b';
                             break;
-                        case 'f':
-                            stringBuffer[writeOffset++] = '\f';
+                        case (byte)'f':
+                            stringBufferSpan[writeOffset++] = (byte)'\f';
                             break;
-                        case 'n':
-                            stringBuffer[writeOffset++] = '\n';
+                        case (byte)'n':
+                            stringBufferSpan[writeOffset++] = (byte)'\n';
                             break;
-                        case 'r':
-                            stringBuffer[writeOffset++] = '\r';
+                        case (byte)'r':
+                            stringBufferSpan[writeOffset++] = (byte)'\r';
                             break;
-                        case 't':
-                            stringBuffer[writeOffset++] = '\t';
+                        case (byte)'t':
+                            stringBufferSpan[writeOffset++] = (byte)'\t';
                             break;
-                        case '\\':
-                            stringBuffer[writeOffset++] = '\\';
+                        case (byte)'\\':
+                            stringBufferSpan[writeOffset++] = (byte)'\\';
                             break;
-                        case '"':
-                            stringBuffer[writeOffset++] = '"';
+                        case (byte)'"':
+                            stringBufferSpan[writeOffset++] = (byte)'"';
                             break;
-                        case '/':
-                            stringBuffer[writeOffset++] = '/';
+                        case (byte)'/':
+                            stringBufferSpan[writeOffset++] = (byte)'/';
                             break;
-                        case 'u':
-                            // parse Json unicode sequence: \uXXXX(\uXXXX)*
-                            // Start by reading XXXX. \u is already read.
-                            char unescpaedUnicodeCharacter = (char)0;
-                            for (int sequenceIndex = 0; sequenceIndex < 4; sequenceIndex++)
+                        case (byte)'u':
+                            // parse JSON unicode code point: \uXXXX(\uYYYY)
+                            // Start by reading XXXX, since \u is already read.
+                            char escapeSequence = (char)0;
+                            for (int escapeSequenceIndex = 0; escapeSequenceIndex < 4; escapeSequenceIndex++)
                             {
-                                unescpaedUnicodeCharacter <<= 4;
+                                escapeSequence <<= 4;
 
-                                char currentCharacter = stringBuffer[readOffset++];
+                                byte currentCharacter = stringBufferSpan[readOffset++];
                                 if (currentCharacter >= '0' && currentCharacter <= '9')
                                 {
-                                    unescpaedUnicodeCharacter += (char)(currentCharacter - '0');
+                                    escapeSequence += (char)(currentCharacter - '0');
                                 }
                                 else if (currentCharacter >= 'A' && currentCharacter <= 'F')
                                 {
-                                    unescpaedUnicodeCharacter += (char)(10 + currentCharacter - 'A');
+                                    escapeSequence += (char)(10 + currentCharacter - 'A');
                                 }
                                 else if (currentCharacter >= 'a' && currentCharacter <= 'f')
                                 {
-                                    unescpaedUnicodeCharacter += (char)(10 + currentCharacter - 'a');
+                                    escapeSequence += (char)(10 + currentCharacter - 'a');
                                 }
                                 else
                                 {
@@ -310,26 +298,79 @@ namespace Microsoft.Azure.Cosmos.Json
                                 }
                             }
 
-                            stringBuffer[writeOffset++] = unescpaedUnicodeCharacter;
+                            if ((escapeSequence >= Utf16Surrogate.High.Min) && (escapeSequence <= Utf16Surrogate.High.Max))
+                            {
+                                // We have a high surrogate + low surrogate pair
+                                if (stringBufferSpan[readOffset++] != '\\')
+                                {
+                                    throw new JsonInvalidEscapedCharacterException();
+                                }
+
+                                if (stringBufferSpan[readOffset++] != 'u')
+                                {
+                                    throw new JsonInvalidEscapedCharacterException();
+                                }
+
+                                char highSurrogate = escapeSequence;
+
+                                char lowSurrogate = (char)0;
+                                for (int escapeSequenceIndex = 0; escapeSequenceIndex < 4; escapeSequenceIndex++)
+                                {
+                                    lowSurrogate <<= 4;
+
+                                    byte currentCharacter = stringBufferSpan[readOffset++];
+                                    if (currentCharacter >= '0' && currentCharacter <= '9')
+                                    {
+                                        lowSurrogate += (char)(currentCharacter - '0');
+                                    }
+                                    else if (currentCharacter >= 'A' && currentCharacter <= 'F')
+                                    {
+                                        lowSurrogate += (char)(10 + currentCharacter - 'A');
+                                    }
+                                    else if (currentCharacter >= 'a' && currentCharacter <= 'f')
+                                    {
+                                        lowSurrogate += (char)(10 + currentCharacter - 'a');
+                                    }
+                                    else
+                                    {
+                                        throw new JsonInvalidEscapedCharacterException();
+                                    }
+                                }
+
+                                writeOffset += WideCharToMultiByte(highSurrogate, lowSurrogate, stringBufferSpan.Slice(start: writeOffset));
+                            }
+                            else
+                            {
+                                writeOffset += WideCharToMultiByte(escapeSequence, stringBufferSpan.Slice(start: writeOffset));
+                            }
+
                             break;
                     }
                 }
                 else
                 {
-                    stringBuffer[writeOffset++] = stringBuffer[readOffset++];
+                    stringBufferSpan[writeOffset++] = stringBufferSpan[readOffset++];
                 }
             }
 
-            string value;
-            unsafe
-            {
-                fixed (char* stringBufferPointer = stringBuffer)
-                {
-                    value = new string(stringBufferPointer, 0, writeOffset);
-                }
-            }
+            return Utf8String.UnsafeFromUtf8BytesNoValidation(stringBuffer.Slice(start: 0, writeOffset));
+        }
 
-            return value;
+        private static int WideCharToMultiByte(char value, Span<byte> multiByteBuffer)
+        {
+            Span<char> charArray = stackalloc char[1];
+            charArray[0] = value;
+
+            return Encoding.UTF8.GetBytes(charArray, multiByteBuffer);
+        }
+
+        private static int WideCharToMultiByte(char highSurrogate, char lowSurrogate, Span<byte> multiByteBuffer)
+        {
+            Span<char> charArray = stackalloc char[2];
+            charArray[0] = highSurrogate;
+            charArray[1] = lowSurrogate;
+
+            return Encoding.UTF8.GetBytes(charArray, multiByteBuffer);
         }
     }
 }
