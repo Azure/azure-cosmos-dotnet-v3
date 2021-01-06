@@ -101,6 +101,17 @@
             Console.WriteLine("The demo will create a 1000 RU/s container, press any key to continue.");
             Console.ReadKey();
 
+            // Create the Client Encryption Keys for Encrypting the configured Paths.
+            await database.CreateClientEncryptionKeyAsync(
+                    "key1",
+                    CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    new Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata("key1", "metadata1"));
+
+            await database.CreateClientEncryptionKeyAsync(
+                    "key2",
+                    CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    new Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata("key2", "metadata2"));
+
             // Configure the required Paths to be Encrypted with appropriate settings.
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
             {
@@ -139,18 +150,7 @@
                 .CreateAsync(throughput: 1000);
 
             // gets a Container with Encryption Support.
-            containerWithEncryption = await database.GetContainer(Program.encryptedcontainerId).InitializeEncryptionAsync();
-
-            // Create the Client Encryption Keys for Encrypting the configured Paths.
-            await database.CreateClientEncryptionKeyAsync(
-                    "key1",
-                    CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-                    new Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata("key1", "metadata1"));
-
-            await database.CreateClientEncryptionKeyAsync(
-                    "key2",
-                    CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-                    new Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata("key2", "metadata2"));                     
+            containerWithEncryption = await database.GetContainer(Program.encryptedcontainerId).InitializeEncryptionAsync();                               
         }
 
         private static async Task RunDemoAsync()
