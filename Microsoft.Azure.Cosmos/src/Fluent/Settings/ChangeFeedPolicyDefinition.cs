@@ -22,22 +22,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
 
         internal ChangeFeedPolicyDefinition(
             ContainerBuilder parent,
+            TimeSpan retention,
             Action<ChangeFeedPolicy> attachCallback)
         {
             this.parent = parent ?? throw new ArgumentNullException(nameof(parent));
             this.attachCallback = attachCallback ?? throw new ArgumentNullException(nameof(attachCallback));
-        }
-
-        /// <summary>
-        /// Defines the path used to resolve LastWrtierWins resolution mode <see cref="ConflictResolutionPolicy"/>.
-        /// </summary>
-        /// <param name="retention"> Indicates for how long operation logs have to be retained. <see cref="ChangeFeedPolicy.FullFidelityRetention"/>.</param>
-        /// <returns>An instance of the current <see cref="ChangeFeedPolicyDefinition"/>.</returns>
-        public ChangeFeedPolicyDefinition WithFullFidelityRetention(TimeSpan retention)
-        {
             this.changeFeedPolicyRetention = retention;
-
-            return this;
         }
 
         /// <summary>

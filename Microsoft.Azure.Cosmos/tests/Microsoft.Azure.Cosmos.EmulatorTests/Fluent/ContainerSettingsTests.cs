@@ -358,8 +358,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ContainerResponse containerResponse =
                     await databaseForChangeFeed.DefineContainer(containerName, partitionKeyPath)
-                        .WithChangeFeedPolicy()
-                            .WithFullFidelityRetention(retention)
+                        .WithChangeFeedPolicy(retention)
                             .Attach()
                         .CreateAsync();
 

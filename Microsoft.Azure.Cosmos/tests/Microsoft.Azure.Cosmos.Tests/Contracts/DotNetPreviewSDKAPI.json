@@ -403,11 +403,6 @@
     "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition WithFullFidelityRetention(System.TimeSpan)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition WithFullFidelityRetention(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach()": {
           "Type": "Method",
           "Attributes": [],
@@ -419,10 +414,10 @@
     "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder;Microsoft.Azure.Cosmos.Fluent.ContainerDefinition`1[[Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, ]];IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition WithChangeFeedPolicy()": {
+        "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition WithChangeFeedPolicy(System.TimeSpan)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition WithChangeFeedPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ChangeFeedPolicyDefinition WithChangeFeedPolicy(System.TimeSpan);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

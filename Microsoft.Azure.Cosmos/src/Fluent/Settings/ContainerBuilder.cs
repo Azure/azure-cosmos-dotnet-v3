@@ -64,16 +64,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <summary>
         /// Defined the change feed policy for this Azure Cosmos container
         /// </summary>
+        /// <param name="retention"> Indicates for how long operation logs have to be retained. <see cref="ChangeFeedPolicy.FullFidelityRetention"/>.</param>
         /// <returns>An instance of <see cref="ChangeFeedPolicyDefinition"/>.</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        ChangeFeedPolicyDefinition WithChangeFeedPolicy()
+        ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention)
         {
             return new ChangeFeedPolicyDefinition(
                 this,
+                retention,
                 (changeFeedPolicy) => this.AddChangeFeedPolicy(changeFeedPolicy));
         }
 
