@@ -10,6 +10,9 @@ namespace CosmosCTL
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using App.Metrics.Counter;
+    using App.Metrics.Histogram;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
@@ -17,11 +20,13 @@ namespace CosmosCTL
     {
         private static readonly string DefaultPartitionKeyPath = "/pk";
 
+        private readonly Random random = new Random();
+
         public override async Task RunAsync(
             CTLConfig config, 
             CosmosClient cosmosClient,
             ILogger logger, 
-            ILogger metricsCounter)
+            IMetrics metrics)
         {
             if (!TryParseReadWriteQueryPercentages(config.ReadWriteQueryPercentage, out ReadWriteQueryPercentage readWriteQueryPercentage))
             {
@@ -42,9 +47,7 @@ namespace CosmosCTL
 
             try
             {
-                SemaphoreSlim concurrencySemaphore = new SemaphoreSlim(config.Concurrency);
-                logger.LogInformation("Pre-populating {0} documents", config.Operations);
-                IReadOnlyCollection<Dictionary<string, string>> createdDocuments = await PopulateDocumentsAsync(config, logger, initializationResult.Containers);
+                await ExecuteOperationsAsync(config, logger, metrics, initializationResult);
             }
             catch (Exception unhandledException)
             {
@@ -64,6 +67,44 @@ namespace CosmosCTL
                     }
                 }
             }
+        }
+
+        private static async Task ExecuteOperationsAsync(
+            CTLConfig config,
+            ILogger logger,
+            IMetrics metrics,
+            InitializationResult initializationResult)
+        {
+            logger.LogInformation("Pre-populating {0} documents", config.Operations);
+            IReadOnlyCollection<Dictionary<string, string>> createdDocuments = await PopulateDocumentsAsync(config, logger, initializationResult.Containers);
+
+            CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations" };
+            CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations" };
+            CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations" };
+            CounterOptions writeFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations" };
+            CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations" };
+            CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations" };
+
+            HistogramOptions readLatencyHistogram = new HistogramOptions
+            {
+                Name = "Read latency",
+                MeasurementUnit = Unit.Custom("Milliseconds"),
+                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+            };
+
+            HistogramOptions writeLatencyHistogram = new HistogramOptions
+            {
+                Name = "Write latency",
+                MeasurementUnit = Unit.Custom("Milliseconds"),
+                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+            };
+
+            HistogramOptions queryLatencyHistogram = new HistogramOptions
+            {
+                Name = "Query latency",
+                MeasurementUnit = Unit.Custom("Milliseconds"),
+                Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
+            };
         }
 
         private static async Task<IReadOnlyCollection<Dictionary<string, string>>> PopulateDocumentsAsync(

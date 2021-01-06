@@ -6,6 +6,7 @@
 namespace CosmosCTL
 {
     using System.Threading.Tasks;
+    using App.Metrics;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
@@ -15,6 +16,6 @@ namespace CosmosCTL
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger,
-            ILogger metricsCounter);
+            IMetrics metrics);
     }
 }
