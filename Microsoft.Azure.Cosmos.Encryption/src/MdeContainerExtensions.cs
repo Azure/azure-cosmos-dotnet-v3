@@ -16,7 +16,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     public static class MdeContainerExtensions
     {
         /// <summary>
-        /// Initializes and Caches the Client Encryption Policy configured for the container.
+        /// Initializes and Caches the Client Encryption Policy and the corresponding keys configured for the container.
+        /// All the keys configured as per the Client Encryption Policy for the container must be created before its used in the policy.
         /// </summary>
         /// <param name="container">MdeContainer.</param>
         /// <param name="cancellationToken"> cancellation token </param>
@@ -29,7 +30,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (container is MdeContainer mdeContainer)
             {
                 EncryptionCosmosClient encryptionCosmosClient = mdeContainer.EncryptionCosmosClient;
-                await encryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(container, cancellationToken, false);
+                ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(container, cancellationToken, false);
+
+                if (clientEncryptionPolicy != null)
+                {
+                    foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
+                    {
+                        try
+                        {
+                            CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeContainer.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
+                                clientEncryptionKeyId,
+                                container,
+                                cancellationToken,
+                                false);
+                        }
+                        catch
+                        {
+                            throw;
+                        }
+                    }
+                }
+
                 return mdeContainer;
             }
             else

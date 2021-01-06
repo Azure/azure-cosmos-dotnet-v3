@@ -29,13 +29,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static CosmosClient encryptionCosmosClient;
         private static Database database;
         private static Container encryptionContainer;
+        private static TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider;
 
         [ClassInitialize]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
         public static async Task ClassInitialize(TestContext context)
         {
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
-            MdeEncryptionTests.encryptionCosmosClient = MdeEncryptionTests.client.WithEncryption(new TestEncryptionKeyStoreProvider());
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            MdeEncryptionTests.encryptionCosmosClient = MdeEncryptionTests.client.WithEncryption(testEncryptionKeyStoreProvider);
             MdeEncryptionTests.database = await MdeEncryptionTests.encryptionCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
             await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
@@ -347,17 +349,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
 
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);           
 
             try
             {
+                await encryptionContainer.InitializeEncryptionAsync();
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
                 Assert.Fail("Expected item creation should fail since client encryption policy is configured with unknown key.");
             }
             catch (Exception ex)
             {
-                Assert.IsTrue(ex is ArgumentException);
+                Assert.IsTrue(ex is InvalidOperationException);
             }
         }
 
@@ -921,6 +923,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
         }
 
+        [TestMethod]
+        public async Task ValidateCachingofProtectedDataEncryptionKey()
+        {
+            for (int i = 0; i < 6; i++)
+                await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+
+            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
+            Assert.AreEqual(4, unwrapcount);
+        }
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             Container container,
             TestDoc testDoc1,
@@ -1408,17 +1419,51 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         internal class TestEncryptionKeyStoreProvider : EncryptionKeyStoreProvider
         {
+            readonly Dictionary<string, int> keyinfo = new Dictionary<string, int>
+            {
+                {"tempmetadata1", 1},
+                {"tempmetadata2", 2},
+            };
+
+            public Dictionary<string, int> WrapKeyCallsCount { get; set; }
+            public Dictionary<string, int> UnWrapKeyCallsCount { get; set; }
+            public TestEncryptionKeyStoreProvider()
+            {
+                this.WrapKeyCallsCount = new Dictionary<string, int>();
+                this.UnWrapKeyCallsCount = new Dictionary<string, int>();
+            }
+
             public override string ProviderName => "TESTKEYSTORE_VAULT";
 
             public override byte[] UnwrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] encryptedKey)
             {
-                byte[] plainkey = encryptedKey.Select(b => (byte)(b - 1)).ToArray();
+                if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
+                {
+                    this.UnWrapKeyCallsCount[masterKeyPath] = 1;
+                }
+                else
+                {
+                    this.UnWrapKeyCallsCount[masterKeyPath]++;
+                }
+
+                this.keyinfo.TryGetValue(masterKeyPath, out int moveBy);
+                byte[] plainkey = encryptedKey.Select(b => (byte)(b - moveBy)).ToArray();
                 return plainkey;
             }
 
             public override byte[] WrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] key)
             {
-                byte[] encryptedkey = key.Select(b => (byte)(b + 1)).ToArray();
+                if (!this.WrapKeyCallsCount.ContainsKey(masterKeyPath))
+                {
+                    this.WrapKeyCallsCount[masterKeyPath] = 1;
+                }
+                else
+                {
+                    this.WrapKeyCallsCount[masterKeyPath]++;
+                }
+
+                this.keyinfo.TryGetValue(masterKeyPath, out int moveBy);
+                byte[] encryptedkey = key.Select(b => (byte)(b + moveBy)).ToArray();
                 return encryptedkey;
             }
 

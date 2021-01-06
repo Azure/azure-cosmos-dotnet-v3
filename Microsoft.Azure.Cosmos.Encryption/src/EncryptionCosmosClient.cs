@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider;
             this.clientEncryptionPolicyCache = new AsyncCache<string, ClientEncryptionPolicy>();
             this.clientEncryptionKeyPropertiesCache = new AsyncCache<string, CachedClientEncryptionProperties>();
-            this.clientEncryptionKeyPropertiesCacheTimeToLive = TimeSpan.FromMinutes(60);
+            this.clientEncryptionKeyPropertiesCacheTimeToLive = TimeSpan.FromMinutes(Constants.CekPropertiesDefaultTTLInMinutes);
             this.cachedClientEncryptionKeyList = new Dictionary<string, HashSet<string>>();
         }
 
@@ -163,6 +163,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                          cancellationToken,
                          forceRefresh: shouldforceRefresh);
                 }
+                catch
+                {
+                    throw;
+                }
                 finally
                 {
                     CekPropertiesCacheSema.Release(1);
@@ -208,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             catch (Exception ex)
             {
-                throw new ArgumentException("Encryption Based Container without Data Encryption Keys.Please make sure you have created the Client Encryption Keys", ex.Message);
+                throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys.Please make sure you have created the Client Encryption Keys:{ex.Message}");
             }
 
             CachedClientEncryptionProperties cachedClientEncryptionProperties = new CachedClientEncryptionProperties(
