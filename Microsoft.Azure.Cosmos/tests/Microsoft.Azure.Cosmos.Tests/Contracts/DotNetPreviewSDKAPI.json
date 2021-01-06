@@ -227,6 +227,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] ReadAsync(Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] ReplaceAsync(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] ReplaceAsync(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -588,20 +593,15 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionKey GetClientEncryptionKey(System.String);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties] GetClientEncryptionKeyIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+        "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties] GetClientEncryptionKeyQueryIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties] GetClientEncryptionKeyIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties] GetClientEncryptionKeyQueryIterator(Microsoft.Azure.Cosmos.QueryDefinition, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKey, Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKey, Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] ReplaceClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKey, Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] ReplaceClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKey, Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
