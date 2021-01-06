@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Net.Http;
 
     internal sealed class HttpTimeoutPolicyControlPlaneRead : HttpTimeoutPolicy
     {
@@ -28,6 +29,15 @@ namespace Microsoft.Azure.Cosmos
 
         public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
 
-        public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutEnumerator => this.TimeoutsAndDelays.GetEnumerator();
+        public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()
+        {
+            return this.TimeoutsAndDelays.GetEnumerator();
+        }
+
+        // This is for control plane reads which should always be safe to retry on.
+        public override bool IsSafeToRetry(HttpMethod httpMethod)
+        {
+            return true;
+        }
     }
 }

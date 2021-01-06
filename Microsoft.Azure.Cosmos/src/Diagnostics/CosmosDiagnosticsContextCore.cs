@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.AddSummaryInfo(newContext);
 
-            this.ContextList.AddRange(newContext);
+            this.ContextList.Add(newContext);
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)

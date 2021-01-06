@@ -8,6 +8,7 @@
     using global::Azure.Core;
     using global::Azure.Security.KeyVault.Keys;
     using global::Azure.Security.KeyVault.Keys.Cryptography;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using System.IO;
     using System.Security.Cryptography;
     using System.Collections.Generic;
@@ -20,10 +21,7 @@
         /// </summary>
         internal class TestKeyClient : KeyClient
         {
-            Uri vaultUri { get; }
-            TokenCredential credential { get; }
-
-            Dictionary<string, string> keyinfo = new Dictionary<string, string>
+            readonly Dictionary<string, string> keyinfo = new Dictionary<string, string>
             {
                 {"testkey1","Recoverable"},
                 {"testkey2","nothingset"}               
@@ -40,9 +38,6 @@
                 {
                     throw new ArgumentNullException("Value is null.");
                 }
-
-                this.vaultUri = vaultUri;
-                this.credential = credential;
             }
 
             /// <summary>
@@ -99,11 +94,10 @@
         /// </summary>
         internal class TestCryptographyClient : CryptographyClient
         {
-            Uri keyId { get; }
-            TokenCredential credential { get; }
+            private Uri KeyUri { get; }
 
-            byte[] secretkey = new byte[16] { 0x12, 0x10, 0x20, 0x40, 060, 0x23, 0x12, 0x19, 0x22, 0x10, 0x09, 0x12, 0x99, 0x12, 0x11, 0x22 };
-            byte[] iv = new byte[16] { 0x99, 0x99, 0x88, 0x88, 0x77, 0x77, 0x66, 0x66, 0x55, 0x55, 0x44, 0x44, 0x33, 0x33, 0x22, 0x22 };
+            readonly byte[] secretkey = new byte[16] { 0x12, 0x10, 0x20, 0x40, 060, 0x23, 0x12, 0x19, 0x22, 0x10, 0x09, 0x12, 0x99, 0x12, 0x11, 0x22 };
+            readonly byte[] iv = new byte[16] { 0x99, 0x99, 0x88, 0x88, 0x77, 0x77, 0x66, 0x66, 0x55, 0x55, 0x44, 0x44, 0x33, 0x33, 0x22, 0x22 };
 
             /// <summary>
             /// Initializes a new instance of the TestCryptographyClient class for the specified keyid.
@@ -116,8 +110,8 @@
                 {
                     throw new ArgumentNullException("Value is null.");
                 }
-                this.keyId = keyid;
-                this.credential = credential;
+
+                this.KeyUri = keyid;
             }
 
             /// <summary>
@@ -138,7 +132,7 @@
                 byte[] wrappedKey = this.Encrypt(key, this.secretkey, this.iv);
 
                 // simulate a null wrapped key
-                if (this.keyId.ToString().Contains(KeyVaultTestConstants.ValidateNullWrappedKey))
+                if (this.KeyUri.ToString().Contains(KeyVaultTestConstants.ValidateNullWrappedKey))
                 {
                     wrappedKey = null;
                 }
@@ -166,7 +160,7 @@
                 byte[] unwrappedKey = this.Decrypt(encryptedKey, this.secretkey, this.iv);
 
                 // simulate a null unwrapped key.
-                if (this.keyId.ToString().Contains(KeyVaultTestConstants.ValidateNullUnwrappedKey))
+                if (this.KeyUri.ToString().Contains(KeyVaultTestConstants.ValidateNullUnwrappedKey))
                 {
                     unwrappedKey = null;
                 }
