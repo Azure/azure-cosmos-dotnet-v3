@@ -845,6 +845,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     // And come to the set set of filters needed.
 
                     left.Append($"IS_DEFINED({expression})");
+                    target.Append("true");
+                    right.Append("true");
                 }
                 else
                 {

@@ -428,10 +428,10 @@
 
             FeedResponse<Document> responseWithEmptyContinuationExpected = await container.GetItemQueryIterator<Document>(
                 $"SELECT TOP 0 * FROM r",
-                requestOptions: new QueryRequestOptions() 
-                {  
-                    MaxConcurrency = 10, 
-                    MaxItemCount = -1 
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxConcurrency = 10,
+                    MaxItemCount = -1
                 }).ReadNextAsync();
 
             Assert.AreEqual(null, responseWithEmptyContinuationExpected.ContinuationToken);
@@ -861,6 +861,284 @@
                         expected: {JsonConvert.SerializeObject(expected).Replace(".0", "")}
                         actual: {JsonConvert.SerializeObject(actual).Replace(".0", "")}");
             }
+        }
+
+        [TestMethod]
+        public async Task TestOrderByWithUndefinedFieldsAsync()
+        {
+            const string possiblyUndefinedFieldName = "possiblyUndefinedField";
+            const string alwaysDefinedFieldName = "alwaysDefinedFieldName";
+            List<string> inputDocuments = new List<string>();
+            Random random = new Random();
+            for (int i = 0; i < 100; i++)
+            {
+                Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>();
+                bool shouldHaveDefinedField = (random.Next() % 2) == 0;
+                if (shouldHaveDefinedField)
+                {
+                    keyValuePairs[possiblyUndefinedFieldName] = CosmosNumber64.Create(random.Next(0, 100));
+                }
+
+                keyValuePairs[alwaysDefinedFieldName] = CosmosNumber64.Create(random.Next(0, 100));
+
+                CosmosObject document = CosmosObject.Create(keyValuePairs);
+                inputDocuments.Add(document.ToString());
+            }
+
+            Cosmos.IndexingPolicy indexingPolicy = new Cosmos.IndexingPolicy()
+            {
+                IncludedPaths = new Collection<Cosmos.IncludedPath>()
+                {
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = "/*",
+                    },
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = $"/{possiblyUndefinedFieldName}/?",
+                    },
+                    new Cosmos.IncludedPath()
+                    {
+                        Path = $"/{alwaysDefinedFieldName}/?",
+                    }
+                },
+
+                CompositeIndexes = new Collection<Collection<Cosmos.CompositePath>>()
+            };
+
+            foreach (bool switchColumns in new bool[] { true, false })
+            {
+                foreach (bool firstColumnAscending in new bool[] { true, false })
+                {
+                    foreach (bool secondColumnAscending in new bool[] { true, false })
+                    {
+                        Collection<Cosmos.CompositePath> compositeIndex = new Collection<Cosmos.CompositePath>()
+                        {
+                            new Cosmos.CompositePath()
+                            {
+                                Path = "/" + (switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName),
+                                Order = firstColumnAscending ? Cosmos.CompositePathSortOrder.Ascending : Cosmos.CompositePathSortOrder.Descending,
+                            },
+                            new Cosmos.CompositePath()
+                            {
+                                Path = "/" + (switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName),
+                                Order = secondColumnAscending ? Cosmos.CompositePathSortOrder.Ascending : Cosmos.CompositePathSortOrder.Descending,
+                            },
+                        };
+
+                        indexingPolicy.CompositeIndexes.Add(compositeIndex);
+                    }
+                }
+            }
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                const string possiblyUndefinedFieldName = "possiblyUndefinedField";
+                const string alwaysDefinedFieldName = "alwaysDefinedFieldName";
+
+                // Handle all the single order by cases
+                foreach (bool ascending in new bool[] { true, false })
+                {
+                    List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                        container,
+                        $"SELECT * FROM c ORDER BY c.{possiblyUndefinedFieldName} {(ascending ? "ASC" : "DESC")}",
+                        new QueryRequestOptions()
+                        {
+                            MaxItemCount = 1,
+                        });
+
+                    Assert.AreEqual(
+                        documents.Count(),
+                        queryResults.Count);
+
+                    IEnumerable<CosmosElement> actual = queryResults
+                        .Select(x =>
+                        {
+                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                            {
+                                cosmosElement = null;
+                            }
+
+                            return cosmosElement;
+                        });
+
+                    IEnumerable<CosmosElement> expected = documents
+                        .Select(x =>
+                        {
+                            if (!x.TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                            {
+                                cosmosElement = null;
+                            }
+
+                            return cosmosElement;
+                        });
+
+                    if (ascending)
+                    {
+                        expected = expected.OrderBy(x => x, MockOrderByComparer.Value);
+                    }
+                    else
+                    {
+                        expected = expected.OrderByDescending(x => x, MockOrderByComparer.Value);
+                    }
+
+                    Assert.IsTrue(expected.SequenceEqual(actual));
+                }
+
+                // Handle all the multi order by cases
+                foreach (bool switchColumns in new bool[] { true, false })
+                {
+                    foreach (bool firstColumnAscending in new bool[] { true, false })
+                    {
+                        foreach (bool secondColumnAscending in new bool[] { true, false })
+                        {
+                            string query = $"" +
+                                $"SELECT * " +
+                                $"FROM c " +
+                                $"ORDER BY " +
+                                $"  c.{(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName)} {(firstColumnAscending ? "ASC" : "DESC")}" +
+                                $"  c.{(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName)} {(secondColumnAscending ? "ASC" : "DESC")}";
+
+                            List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
+                                container,
+                                query,
+                                new QueryRequestOptions()
+                                {
+                                    MaxItemCount = 1,
+                                });
+
+                            Assert.AreEqual(
+                                documents.Count(),
+                                queryResults.Count);
+
+                            IEnumerable<CosmosElement> actual = queryResults
+                                .Select(x =>
+                                {
+                                    if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                    {
+                                        cosmosElement = null;
+                                    }
+
+                                    return cosmosElement;
+                                });
+
+                            IOrderedEnumerable<CosmosElement> expected;
+                            if (switchColumns)
+                            {
+                                expected = firstColumnAscending
+                                    ? queryResults.OrderBy(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value)
+                                    : queryResults.OrderByDescending(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value);
+
+                                expected = secondColumnAscending
+                                    ? queryResults.OrderBy(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value)
+                                    : queryResults.OrderByDescending(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value);
+                            }
+                            else
+                            {
+                                expected = firstColumnAscending
+                                    ? queryResults.OrderBy(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value)
+                                    : queryResults.OrderByDescending(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value);
+
+                                expected = secondColumnAscending
+                                    ? queryResults.OrderBy(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value)
+                                    : queryResults.OrderByDescending(
+                                        x =>
+                                        {
+                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                            {
+                                                cosmosElement = null;
+                                            }
+
+                                            return cosmosElement;
+                                        }, MockOrderByComparer.Value);
+                            }
+
+                            IEnumerable<CosmosElement> expectedFinal = expected
+                                .Select(x =>
+                                {
+                                     if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                     {
+                                         cosmosElement = null;
+                                     }
+
+                                     return cosmosElement;
+                                });
+
+                            Assert.IsTrue(expectedFinal.SequenceEqual(actual));
+                        }
+                    }
+                }
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync,
+                indexingPolicy: indexingPolicy);
         }
 
         [TestMethod]
