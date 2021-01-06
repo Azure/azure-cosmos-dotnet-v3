@@ -755,7 +755,7 @@ namespace Microsoft.Azure.Cosmos
                 string continuationToken = null,
                 QueryRequestOptions requestOptions = null)
         {
-            if (!(this.GetClientEncryptionKeyStreamIterator(
+            if (!(this.GetClientEncryptionKeyQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
                     requestOptions) is FeedIteratorInternal cekStreamIterator))
@@ -772,7 +772,7 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        internal FeedIterator GetClientEncryptionKeyStreamIterator(
+        internal FeedIterator GetClientEncryptionKeyQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
