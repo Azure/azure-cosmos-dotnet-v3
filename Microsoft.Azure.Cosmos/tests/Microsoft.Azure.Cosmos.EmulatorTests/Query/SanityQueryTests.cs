@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Net;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -237,9 +238,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 bool hasOrderBy)
                             {
                                 List<CosmosObject> queryResults = await queryFunc(container, query, queryRequestOptions);
-                                HashSet<string> expectedIds = new HashSet<string>(inputDocuments
+                                HashSet<UtfAnyString> expectedIds = new HashSet<UtfAnyString>(inputDocuments
                                     .Select(document => ((CosmosString)document["id"]).Value));
-                                HashSet<string> actualIds = new HashSet<string>(queryResults
+                                HashSet<UtfAnyString> actualIds = new HashSet<UtfAnyString>(queryResults
                                     .Select(queryResult => ((CosmosString)queryResult["id"]).Value));
                                 Assert.IsTrue(
                                     expectedIds.SetEquals(actualIds),
