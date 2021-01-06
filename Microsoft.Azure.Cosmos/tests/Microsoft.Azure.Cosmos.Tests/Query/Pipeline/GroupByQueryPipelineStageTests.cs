@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             Assert.AreEqual(1, elements.Count);
             Assert.AreEqual(42, Number64.ToLong(((elements[0] as CosmosObject)["count"] as CosmosNumber).Value));
-            Assert.AreEqual("John", ((elements[0] as CosmosObject)["name"] as CosmosString).Value);
+            Assert.AreEqual("John", ((elements[0] as CosmosObject)["name"] as CosmosString).Value.ToString());
         }
 
         private static async Task<List<CosmosElement>> CreateAndDrainAsync(

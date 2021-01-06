@@ -599,15 +599,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 {
                     CosmosObject.Create(new Dictionary<string, CosmosElement>()
                     {
-                        {"Name", CosmosString.Create(((CosmosString)adam["Name"]).Value.ToUpperInvariant())}
+                        {"Name", CosmosString.Create(((CosmosString)adam["Name"]).Value.ToString().ToUpperInvariant())}
                     }),
                     CosmosObject.Create(new Dictionary<string, CosmosElement>()
                     {
-                        {"Name", CosmosString.Create(((CosmosString)stacy["Name"]).Value.ToUpperInvariant())}
+                        {"Name", CosmosString.Create(((CosmosString)stacy["Name"]).Value.ToString().ToUpperInvariant())}
                     }),
                     CosmosObject.Create(new Dictionary<string, CosmosElement>()
                     {
-                        {"Name", CosmosString.Create(((CosmosString)john["Name"]).Value.ToUpperInvariant())}
+                        {"Name", CosmosString.Create(((CosmosString)john["Name"]).Value.ToString().ToUpperInvariant())}
                     }),
                 },
                 groupByWithArbitaryScalarExpression,
