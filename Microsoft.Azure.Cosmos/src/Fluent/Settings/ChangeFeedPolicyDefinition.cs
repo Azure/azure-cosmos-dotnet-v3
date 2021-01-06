@@ -9,12 +9,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="ChangeFeedPolicy"/> fluent definition.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class ChangeFeedPolicyDefinition
+    internal class ChangeFeedPolicyDefinition
     {
         private readonly ContainerBuilder parent;
         private readonly Action<ChangeFeedPolicy> attachCallback;
