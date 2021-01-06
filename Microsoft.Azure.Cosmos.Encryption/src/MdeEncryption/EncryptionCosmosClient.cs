@@ -163,6 +163,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                          cancellationToken,
                          forceRefresh: shouldforceRefresh);
                 }
+                catch
+                {
+                    throw;
+                }
                 finally
                 {
                     CekPropertiesCacheSema.Release(1);

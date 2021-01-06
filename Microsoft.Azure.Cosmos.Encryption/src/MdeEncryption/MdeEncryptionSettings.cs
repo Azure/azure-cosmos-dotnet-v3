@@ -72,47 +72,54 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (string.Equals(propertyToEncrypt.Path.Substring(1), propertyName))
                 {
-                    CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeEncryptionProcessor.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
-                        propertyToEncrypt.ClientEncryptionKeyId,
-                        mdeEncryptionProcessor.Container,
-                        cancellationToken,
-                        shouldForceRefresh);
-
-                    ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
-
-                    KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                               mdeEncryptionProcessor.EncryptionKeyStoreProvider);
-
-                    ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                               keyEncryptionKey,
-                               clientEncryptionKeyProperties.WrappedDataEncryptionKey);
-
-                    MdeEncryptionSettings mdeEncryptionSettings = new MdeEncryptionSettings
+                    try
                     {
-                        EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
-                        ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
-                        DataEncryptionKey = protectedDataEncryptionKey,
-                    };
+                        CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeEncryptionProcessor.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
+                            propertyToEncrypt.ClientEncryptionKeyId,
+                            mdeEncryptionProcessor.Container,
+                            cancellationToken,
+                            shouldForceRefresh);
 
-                    Data.Encryption.Cryptography.EncryptionType encryptionType = Data.Encryption.Cryptography.EncryptionType.Plaintext;
-                    switch (propertyToEncrypt.EncryptionType)
-                    {
-                        case "Deterministic":
-                            encryptionType = Data.Encryption.Cryptography.EncryptionType.Deterministic;
-                            break;
-                        case "Randomized":
-                            encryptionType = Data.Encryption.Cryptography.EncryptionType.Randomized;
-                            break;
-                        default:
-                            Debug.Fail(string.Format("Invalid encryption type {0}", propertyToEncrypt.EncryptionType));
-                            break;
+                        ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
+
+                        KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                                   mdeEncryptionProcessor.EncryptionKeyStoreProvider);
+
+                        ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                                   keyEncryptionKey,
+                                   clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+                        MdeEncryptionSettings mdeEncryptionSettings = new MdeEncryptionSettings
+                        {
+                            EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
+                            ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
+                            DataEncryptionKey = protectedDataEncryptionKey,
+                        };
+
+                        Data.Encryption.Cryptography.EncryptionType encryptionType = Data.Encryption.Cryptography.EncryptionType.Plaintext;
+                        switch (propertyToEncrypt.EncryptionType)
+                        {
+                            case "Deterministic":
+                                encryptionType = Data.Encryption.Cryptography.EncryptionType.Deterministic;
+                                break;
+                            case "Randomized":
+                                encryptionType = Data.Encryption.Cryptography.EncryptionType.Randomized;
+                                break;
+                            default:
+                                Debug.Fail(string.Format("Invalid encryption type {0}", propertyToEncrypt.EncryptionType));
+                                break;
+                        }
+
+                        mdeEncryptionSettings = MdeEncryptionSettings.Create(mdeEncryptionSettings, encryptionType);
+                        return new CachedEncryptionSettings(mdeEncryptionSettings, mdeEncryptionSettings.EncryptionSettingTimeToLive);
                     }
-
-                    mdeEncryptionSettings = MdeEncryptionSettings.Create(mdeEncryptionSettings, encryptionType);
-                    return new CachedEncryptionSettings(mdeEncryptionSettings, mdeEncryptionSettings.EncryptionSettingTimeToLive);
+                    catch
+                    {
+                        throw;
+                    }
                 }
             }
 

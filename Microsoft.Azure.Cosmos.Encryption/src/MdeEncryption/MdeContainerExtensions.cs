@@ -29,7 +29,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (container is MdeContainer mdeContainer)
             {
                 EncryptionCosmosClient encryptionCosmosClient = mdeContainer.EncryptionCosmosClient;
-                await encryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(container, cancellationToken, false);
+                ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(container, cancellationToken, false);
+
+                if (clientEncryptionPolicy != null)
+                {
+                    foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
+                    {
+                        try
+                        {
+                            CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeContainer.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
+                                clientEncryptionKeyId,
+                                container,
+                                cancellationToken,
+                                false);
+                        }
+                        catch
+                        {
+                            throw;
+                        }
+                    }
+                }
+
                 return mdeContainer;
             }
             else

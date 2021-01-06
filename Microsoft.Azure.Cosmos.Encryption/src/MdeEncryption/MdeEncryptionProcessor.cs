@@ -83,36 +83,43 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (string clientEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
             {
-                CachedClientEncryptionProperties cachedClientEncryptionProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
-                    clientEncryptionKeyId,
-                    this.Container,
-                    cancellationToken,
-                    false);
-
-                ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
-
-                if (clientEncryptionKeyProperties != null)
+                try
                 {
-                    KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        this.EncryptionKeyStoreProvider);
+                    CachedClientEncryptionProperties cachedClientEncryptionProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
+                        clientEncryptionKeyId,
+                        this.Container,
+                        cancellationToken,
+                        false);
 
-                    ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                               keyEncryptionKey,
-                               clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+                    ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
 
-                    settingsByDekId[clientEncryptionKeyId] = new MdeEncryptionSettings
+                    if (clientEncryptionKeyProperties != null)
                     {
-                        EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
-                        ClientEncryptionKeyId = clientEncryptionKeyId,
-                        DataEncryptionKey = protectedDataEncryptionKey,
-                    };
+                        KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                            clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                            clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                            this.EncryptionKeyStoreProvider);
+
+                        ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                                   keyEncryptionKey,
+                                   clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+                        settingsByDekId[clientEncryptionKeyId] = new MdeEncryptionSettings
+                        {
+                            EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
+                            ClientEncryptionKeyId = clientEncryptionKeyId,
+                            DataEncryptionKey = protectedDataEncryptionKey,
+                        };
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Failed to retrieve ClientEncryptionProperties for the Client Encryption Key : {clientEncryptionKeyId}.");
+                    }
                 }
-                else
+                catch
                 {
-                    throw new InvalidOperationException($"Failed to retrieve ClientEncryptionProperties for the Client Encryption Key : {clientEncryptionKeyId}.");
+                    throw;
                 }
             }
 
