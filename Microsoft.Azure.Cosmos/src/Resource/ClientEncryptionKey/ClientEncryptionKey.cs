@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Provides operations for reading a specific client data encryption key (aka ClientEncryptionKey on the backend) by Id.
@@ -64,6 +63,31 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ClientEncryptionKeyResponse> ReadAsync(
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replace a <see cref="ClientEncryptionKeyProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="clientEncryptionKeyProperties">The <see cref="ClientEncryptionKeyProperties"/> object.</param>
+        /// <param name="requestOptions">(Optional) The options for the request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ClientEncryptionKeyResponse"/> which wraps a <see cref="ClientEncryptionKeyProperties"/> containing the replace resource record.
+        /// </returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ClientEncryptionKeyProperties clientEncryptionKeyProperties = keyReadResponse;
+        /// clientEncryptionKeyProperties.Id = "newkey";
+        /// ClientEncryptionKeyResponse response = await user.ReplaceClientEncryptionKeyAsync(clientEncryptionKeyProperties);
+        /// ClientEncryptionKeyProperties replacedProperties = response;
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ClientEncryptionKeyResponse> ReplaceAsync(
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
     }

@@ -26,12 +26,15 @@ namespace Microsoft.Azure.Cosmos
 
         public ClientEncryptionKeyCore(
             CosmosClientContext clientContext,
-            DatabaseCore database,
+            DatabaseInternal database,
             string keyId)
         {
             this.Id = keyId;
             this.ClientContext = clientContext;
-            this.LinkUri = ClientEncryptionKeyCore.CreateLinkUri(clientContext, database, keyId);
+            this.LinkUri = ClientEncryptionKeyCore.CreateLinkUri(
+                clientContext,
+                database,
+                keyId);
             this.Database = database;
         }
 
@@ -52,11 +55,30 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            ClientEncryptionKeyResponse response = await this.ReadInternalAsync(requestOptions, diagnosticsContext: null, cancellationToken: cancellationToken);
+            ClientEncryptionKeyResponse response = await this.ReadInternalAsync(
+                requestOptions,
+                diagnosticsContext: null,
+                cancellationToken: cancellationToken);
+
             return response;
         }
 
-        public static string CreateLinkUri(CosmosClientContext clientContext, DatabaseCore database, string keyId)
+        /// <inheritdoc/>
+        public override async Task<ClientEncryptionKeyResponse> ReplaceAsync(
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            ClientEncryptionKeyResponse response = await this.ReplaceInternalAsync(
+                clientEncryptionKeyProperties,
+                requestOptions,
+                diagnosticsContext: null,
+                cancellationToken: cancellationToken);
+
+            return response;
+        }
+
+        public static string CreateLinkUri(CosmosClientContext clientContext, DatabaseInternal database, string keyId)
         {
             return clientContext.CreateLink(
                 parentLink: database.LinkUri,
@@ -78,6 +100,26 @@ namespace Microsoft.Azure.Cosmos
 
             ClientEncryptionKeyResponse response = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(this, responseMessage);
             Debug.Assert(response.Resource != null);
+
+            return response;
+        }
+
+        private async Task<ClientEncryptionKeyResponse> ReplaceInternalAsync(
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+            RequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            ResponseMessage responseMessage = await this.ProcessStreamAsync(
+                streamPayload: this.ClientContext.SerializerCore.ToStream(clientEncryptionKeyProperties),
+                operationType: OperationType.Replace,
+                requestOptions: requestOptions,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
+
+            ClientEncryptionKeyResponse response = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(this, responseMessage);
+            Debug.Assert(response.Resource != null);
+
             return response;
         }
 

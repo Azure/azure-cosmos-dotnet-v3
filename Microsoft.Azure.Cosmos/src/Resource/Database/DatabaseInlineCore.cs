@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class DatabaseInlineCore : DatabaseCore
@@ -315,12 +314,12 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-            override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyIterator(
+            override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
                 QueryDefinition queryDefinition,
                 string continuationToken = null,
                 QueryRequestOptions requestOptions = null)  
         {
-            return base.GetClientEncryptionKeyIterator(queryDefinition, continuationToken, requestOptions);
+            return base.GetClientEncryptionKeyQueryIterator(queryDefinition, continuationToken, requestOptions);
         }
 
 #if PREVIEW
@@ -329,7 +328,6 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
             override Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
-                ClientEncryptionKey clientEncryptionKey,
                 ClientEncryptionKeyProperties clientEncryptionKeyProperties,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
@@ -337,24 +335,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateClientEncryptionKeyAsync),
                 requestOptions,
-                (diagnostics, trace) => base.CreateClientEncryptionKeyAsync(clientEncryptionKey, clientEncryptionKeyProperties, requestOptions, cancellationToken));
-        }
-
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-            override Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
-                ClientEncryptionKey clientEncryptionKey,
-                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-                RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default)
-        {
-            return this.ClientContext.OperationHelperAsync(
-                nameof(ReplaceClientEncryptionKeyAsync),
-                requestOptions,
-                (diagnostics, trace) => base.ReplaceClientEncryptionKeyAsync(clientEncryptionKey, clientEncryptionKeyProperties, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.CreateClientEncryptionKeyAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken));
         }
     }
 }

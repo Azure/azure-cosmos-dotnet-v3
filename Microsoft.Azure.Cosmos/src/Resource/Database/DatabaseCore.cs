@@ -740,10 +740,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new ClientEncryptionKeyInlineCore(
-                new ClientEncryptionKeyCore(
                     this.ClientContext,
-                    database: this,
-                    id));
+                    this,
+                    id);
         }
 
 #if PREVIEW
@@ -751,7 +750,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal virtual
 #endif
-            FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyIterator(
+            FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
                 QueryDefinition queryDefinition,
                 string continuationToken = null,
                 QueryRequestOptions requestOptions = null)
@@ -793,7 +792,6 @@ namespace Microsoft.Azure.Cosmos
         internal virtual
 #endif
             async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
-                ClientEncryptionKey clientEncryptionKey,
                 ClientEncryptionKeyProperties clientEncryptionKeyProperties,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
@@ -804,31 +802,10 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 cancellationToken);
 
-            ClientEncryptionKeyResponse dekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(clientEncryptionKey, responseMessage);
-            Debug.Assert(dekResponse.Resource != null);
+            ClientEncryptionKeyResponse dekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(
+                this.GetClientEncryptionKey(clientEncryptionKeyProperties.Id),
+                responseMessage);
 
-            return dekResponse;
-        }
-
-#if PREVIEW
-        public override
-#else
-        internal virtual
-#endif
-            async Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
-                ClientEncryptionKey clientEncryptionKey,
-                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-                RequestOptions requestOptions = null,
-                CancellationToken cancellationToken = default)
-        {
-            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(clientEncryptionKeyProperties);
-            ResponseMessage responseMessage = await this.ReplaceClientEncryptionKeyStreamAsync(
-                streamPayload,
-                clientEncryptionKey,
-                requestOptions,
-                cancellationToken);
-
-            ClientEncryptionKeyResponse dekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(clientEncryptionKey, responseMessage);
             Debug.Assert(dekResponse.Resource != null);
 
             return dekResponse;
@@ -948,32 +925,6 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 cosmosContainerCore: null,
                 feedRange: null,
-                streamPayload: streamPayload,
-                requestOptions: requestOptions,
-                requestEnricher: null,
-                diagnosticsContext: null,
-                trace: NoOpTrace.Singleton,
-                cancellationToken: cancellationToken);
-        }
-
-        private Task<ResponseMessage> ReplaceClientEncryptionKeyStreamAsync(
-            Stream streamPayload,
-            ClientEncryptionKey clientEncryptionKey,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
-        {
-            if (streamPayload == null)
-            {
-                throw new ArgumentNullException(nameof(streamPayload));
-            }
-
-            return this.ClientContext.ProcessResourceOperationStreamAsync(
-                resourceUri: this.GetResourceUriForReplaceClientEncryptionKey(clientEncryptionKey.Id),
-                resourceType: ResourceType.ClientEncryptionKey,
-                operationType: OperationType.Replace,
-                cosmosContainerCore: null,
-                partitionKey: null,
-                itemId: clientEncryptionKey.Id,
                 streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 requestEnricher: null,
