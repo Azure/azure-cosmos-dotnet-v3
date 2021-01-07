@@ -689,15 +689,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
                 {
-                    if (initialContinuation == null)
-                    {
-                        // Initially its empty, insert 1 document to generate some continuation
-                        await this.CreateRandomItems(container, 1, randomPartitionKey: true);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    initialContinuation = cosmosException.Headers.ContinuationToken;
+                    break;
                 }
             }
 
