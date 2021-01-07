@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new ChangeFeedRequestOptions()
             {
-                PageSizeHint = this.pageSizeHint
+                PageSizeHint = this.pageSizeHint,
             };
         }
     }
