@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
     using System;
     using System.Text;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
     [MemoryDiagnoser]
@@ -200,16 +201,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Json
                         break;
 
                     case JsonTokenType.String:
+                        UtfAnyString value = jsonReader.GetStringValue();
                         if (useUtf8)
                         {
-                            if (!jsonReader.TryGetBufferedStringValue(out Utf8Memory value))
-                            {
-                                throw new InvalidOperationException("Failed to get utf8 string.");
-                            }
+                            Utf8String _ = value.ToUtf8String();
                         }
                         else
                         {
-                            string value = jsonReader.GetStringValue();
+                            string _ = value.ToString();
                         }
                         break;
 

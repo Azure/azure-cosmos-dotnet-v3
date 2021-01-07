@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
@@ -236,7 +237,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Thread.Sleep(TimeSpan.FromMilliseconds(100));
                 }
 
+                bool insertIntoDiagnostics1 = true;
+                bool isInsertDiagnostics = false;
+                // Start a background thread and ensure that no exception occurs even if items are getting added to the context
+                // when 2 contexts are appended.
+                Task.Run(() =>
+                {
+                    isInsertDiagnostics = true;
+                    CosmosSystemInfo cosmosSystemInfo = new CosmosSystemInfo(
+                        cpuLoadHistory: new Documents.Rntbd.CpuLoadHistory(new List<Documents.Rntbd.CpuLoad>().AsReadOnly(), TimeSpan.FromSeconds(1)));
+                    while (insertIntoDiagnostics1)
+                    {
+                        cosmosDiagnostics.AddDiagnosticsInternal(cosmosSystemInfo);
+                    }
+                });
+
+                while (!isInsertDiagnostics)
+                {
+                    Task.Delay(TimeSpan.FromMilliseconds(10)).Wait();
+                }
+
                 cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
+
+                // Stop the background inserts
+                insertIntoDiagnostics1 = false;
             }
 
             string diagnostics = cosmosDiagnostics2.ToString();
