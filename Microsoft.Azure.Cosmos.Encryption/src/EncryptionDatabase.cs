@@ -210,7 +210,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             // clean up the container and database cache entries.
             await this.DatabaseCacheCleanupAsync();
-            return await this.database.DeleteAsync(requestOptions, cancellationToken);
+
+            EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
+                await this.database.DeleteAsync(requestOptions, cancellationToken),
+                this.EncryptionCosmosClient);
+
+            return encryptionDatabaseResponse;
         }
 
         public override async Task<ResponseMessage> DeleteStreamAsync(
@@ -339,7 +344,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.database.ReadAsync(requestOptions, cancellationToken);
+            EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
+                await this.database.ReadAsync(requestOptions, cancellationToken),
+                this.EncryptionCosmosClient);
+
+            return encryptionDatabaseResponse;
         }
 
         public override Task<ResponseMessage> ReadStreamAsync(
