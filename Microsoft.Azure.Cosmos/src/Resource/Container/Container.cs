@@ -1173,7 +1173,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
-#if PREVIEW        
+#if INTERNAL
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
         /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
@@ -1189,7 +1189,9 @@ namespace Microsoft.Azure.Cosmos
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
+#endif
 
+#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
         /// </summary>
