@@ -359,6 +359,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal CosmosMessageHeadersInternal CosmosMessageHeaders { get; }
 
+        internal static int GetIntValueOrDefault(string value)
+        {
+            int.TryParse(value, out int number);
+            return number;
+        }
+
         internal static SubStatusCodes GetSubStatusCodes(string value)
         {
             if (uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out uint nSubStatus))

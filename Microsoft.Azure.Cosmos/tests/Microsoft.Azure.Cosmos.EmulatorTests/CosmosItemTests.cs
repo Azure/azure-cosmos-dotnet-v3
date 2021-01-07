@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
@@ -129,6 +131,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
+        }
+
+        [TestMethod]
+        public async Task NegativeCreateItemTest()
+        {
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper();
+            HttpClient httpClient = new HttpClient(httpHandler);
+            using CosmosClient client = TestCommon.CreateCosmosClient(x => x.WithHttpClientFactory(() => httpClient));
+
+            httpHandler.RequestCallBack = (request, cancellation) =>
+            {
+                if(request.Method == HttpMethod.Get &&
+                    request.RequestUri.AbsolutePath == "//addresses/")
+                {
+                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.Forbidden);
+
+                    // Add a substatus code that is not part of the enum. 
+                    // This ensures that if the backend adds a enum the status code is not lost.
+                    result.Headers.Add(WFConstants.BackendHeaders.SubStatus, 999999.ToString(CultureInfo.InvariantCulture));
+                    string payload = JsonConvert.SerializeObject(new Error() { Message = "test message" });
+                    result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                    return Task.FromResult(result);
+                }
+
+                return null;
+            };
+            
+            try
+            {
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                await client.GetContainer(this.database.Id, this.Container.Id).CreateItemAsync<ToDoActivity>(item: testItem);
+                Assert.Fail("Request should throw exception.");
+            }
+            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Assert.AreEqual(999999, ce.SubStatusCode);
+                string exception = ce.ToString();
+                Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
+                string diagnostics = ce.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("\"SubStatusCode\":999999"));
+            }
         }
 
         [TestMethod]
