@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System;
     using System.IO;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using Microsoft.Azure.Documents;
 
     internal static class CosmosExceptionFactory
