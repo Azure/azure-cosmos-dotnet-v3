@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>
@@ -33,14 +34,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(CancellationToken cancellationToken)
-        {
-            return this.changeFeedDataSource.MonadicChangeFeedAsync(
-                this.State,
-                this.Range,
-                this.pageSize,
-                this.changeFeedMode,
-                cancellationToken);
-        }
+        protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken) => this.changeFeedDataSource.MonadicChangeFeedAsync(
+            this.State,
+            this.Range,
+            this.pageSize,
+            this.changeFeedMode,
+            trace,
+            cancellationToken);
     }
 }

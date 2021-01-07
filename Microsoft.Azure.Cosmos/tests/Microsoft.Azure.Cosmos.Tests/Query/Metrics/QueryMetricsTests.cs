@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 
             // Spot check
             Assert.AreEqual(2 * BackendMetricsTests.MockBackendMetrics.IndexLookupTime, doubleQueryMetrics.BackendMetrics.IndexLookupTime);
-            Assert.AreEqual(2 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialIndexes.Count, doubleQueryMetrics.IndexUtilizationInfo.PotentialIndexes.Count);
+            Assert.AreEqual(2 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialSingleIndexes.Count, doubleQueryMetrics.IndexUtilizationInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(2 * ClientSideMetricsTests.MockClientSideMetrics.RequestCharge, doubleQueryMetrics.ClientSideMetrics.RequestCharge);
         }
 
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 
             // Spot check
             Assert.AreEqual(2 * BackendMetricsTests.MockBackendMetrics.IndexLookupTime, doubleQueryMetrics.BackendMetrics.IndexLookupTime);
-            Assert.AreEqual(2 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialIndexes.Count, doubleQueryMetrics.IndexUtilizationInfo.PotentialIndexes.Count);
+            Assert.AreEqual(2 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialSingleIndexes.Count, doubleQueryMetrics.IndexUtilizationInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(2 * ClientSideMetricsTests.MockClientSideMetrics.RequestCharge, doubleQueryMetrics.ClientSideMetrics.RequestCharge);
         }
 
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 
             // Spot check
             Assert.AreEqual(3 * BackendMetricsTests.MockBackendMetrics.IndexLookupTime, tripleQueryMetrics.BackendMetrics.IndexLookupTime);
-            Assert.AreEqual(3 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialIndexes.Count, tripleQueryMetrics.IndexUtilizationInfo.PotentialIndexes.Count);
+            Assert.AreEqual(3 * IndexUtilizationInfoTests.MockIndexUtilizationInfo.PotentialSingleIndexes.Count, tripleQueryMetrics.IndexUtilizationInfo.PotentialSingleIndexes.Count);
             Assert.AreEqual(3 * ClientSideMetricsTests.MockClientSideMetrics.RequestCharge, tripleQueryMetrics.ClientSideMetrics.RequestCharge);
         }
 

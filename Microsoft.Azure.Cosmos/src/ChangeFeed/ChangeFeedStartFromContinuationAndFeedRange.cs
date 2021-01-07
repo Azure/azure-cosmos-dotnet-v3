@@ -14,14 +14,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedStartFromContinuationAndFeedRange : ChangeFeedStartFrom
     {
         public ChangeFeedStartFromContinuationAndFeedRange(string etag, FeedRangeInternal feedRange)
+            : base(feedRange)
         {
             this.Etag = etag;
-            this.FeedRange = feedRange ?? throw new ArgumentNullException(nameof(feedRange));
         }
 
         public string Etag { get; }
-
-        public FeedRangeInternal FeedRange { get; }
 
         internal override void Accept(ChangeFeedStartFromVisitor visitor)
         {

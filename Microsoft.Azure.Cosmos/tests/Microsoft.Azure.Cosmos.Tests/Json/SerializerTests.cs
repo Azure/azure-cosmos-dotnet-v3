@@ -21,7 +21,7 @@
             CosmosObject cosmosObject = (CosmosObject)CosmosElement.CreateFromBuffer(result);
 
             Assert.IsTrue(cosmosObject.TryGetValue("Name", out CosmosString personName));
-            Assert.AreEqual(person.Name, personName.Value);
+            Assert.AreEqual(person.Name, personName.Value.ToString());
 
             Assert.IsTrue(cosmosObject.TryGetValue("Age", out CosmosNumber personAge));
             Assert.AreEqual(person.Age, personAge.Value);
@@ -131,7 +131,7 @@
             string value = "asdf";
             ReadOnlyMemory<byte> result = JsonSerializer.Serialize(value);
             CosmosString cosmosString = (CosmosString)CosmosElement.CreateFromBuffer(result);
-            Assert.AreEqual(expected: value, actual: cosmosString.Value);
+            Assert.AreEqual(expected: value, actual: cosmosString.Value.ToString());
         }
 
         [TestMethod]

@@ -278,10 +278,10 @@
                                     string allDocs = JsonConvert.SerializeObject(documents);
 
                                     string expectedResultDocs = JsonConvert.SerializeObject(filteredDocuments);
-                                    IEnumerable<string> expectedResult = filteredDocuments.Select(doc => ((CosmosString)doc["id"]).Value);
+                                    IEnumerable<string> expectedResult = filteredDocuments.Select(doc => ((CosmosString)doc["id"]).Value.ToString());
 
                                     string actualResultDocs = JsonConvert.SerializeObject(actualDocuments);
-                                    IEnumerable<string> actualResult = actualDocuments.Select(doc => ((CosmosString)doc["id"]).Value);
+                                    IEnumerable<string> actualResult = actualDocuments.Select(doc => ((CosmosString)doc["id"]).Value.ToString());
 
                                     Assert.AreEqual(
                                         string.Join(", ", expectedResult),

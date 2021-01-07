@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ChangeFeedIteratorCore : FeedIteratorInternal
     {
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
-                valueFactory: async (cancellationToken) =>
+                valueFactory: async (trace, cancellationToken) =>
                 {
                     if (changeFeedStartFrom is ChangeFeedStartFromContinuation startFromContinuation)
                     {
@@ -132,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                     message: $"Wrong version number: {versionedAndRidCheckedCompositeToken.VersionNumber}."));
                         }
 
-                        string collectionRid = await documentContainer.GetResourceIdentifierAsync(cancellationToken);
+                        string collectionRid = await documentContainer.GetResourceIdentifierAsync(trace, cancellationToken);
                         if (versionedAndRidCheckedCompositeToken.Rid != collectionRid)
                         {
                             return TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromException(
@@ -167,12 +168,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
-            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await this.lazyMonadicEnumerator.GetValueAsync(cancellationToken);
-
+            TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await this.lazyMonadicEnumerator.GetValueAsync(trace, cancellationToken);
             if (monadicEnumerator.Failed)
             {
                 Exception createException = monadicEnumerator.Exception;
@@ -186,8 +196,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
-
-            if (!await enumerator.MoveNextAsync())
+            if (!await enumerator.MoveNextAsync(trace))
             {
                 throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
             }
@@ -243,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 }
 
                 FeedRangeCompositeContinuation feedRangeCompositeContinuationToken = new FeedRangeCompositeContinuation(
-                    await this.documentContainer.GetResourceIdentifierAsync(cancellationToken),
+                    await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken),
                     FeedRangeEpk.FullRange,
                     compositeContinuationTokens);
 
@@ -256,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     new VersionedAndRidCheckedCompositeToken(
                         VersionedAndRidCheckedCompositeToken.Version.V2,
                         changeFeedCrossFeedRangeState.ToCosmosElement(),
-                        await this.documentContainer.GetResourceIdentifierAsync(cancellationToken))).ToString();
+                        await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken))).ToString();
             }
 
             responseMessage.Headers.ContinuationToken = continuationToken;
