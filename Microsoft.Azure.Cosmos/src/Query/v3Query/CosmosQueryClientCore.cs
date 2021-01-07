@@ -11,19 +11,26 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
+
     using Newtonsoft.Json;
+
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryClientCore : CosmosQueryClient
@@ -50,10 +57,12 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,
             PartitionKey? partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
                 containerLink,
+                trace,
                 cancellationToken);
 
             string effectivePartitionKeyString = null;
@@ -102,13 +111,14 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             OperationType operationType,
             Guid clientQueryCorrelationId,
+            FeedRange feedRange,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             requestOptions.MaxItemCount = pageSize;
@@ -118,12 +128,11 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
-                partitionKey: requestOptions.PartitionKey,
+                feedRange: feedRange,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (cosmosRequestMessage) =>
                 {
-                    this.PopulatePartitionKeyRangeInfo(cosmosRequestMessage, partitionKeyRange);
                     cosmosRequestMessage.Headers.Add(
                         HttpConstants.HttpHeaders.IsContinuationExpected,
                         isContinuationExpected.ToString());
@@ -134,6 +143,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
                 diagnosticsContext: null,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return CosmosQueryClientCore.GetCosmosElementResponse(
@@ -141,8 +151,9 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 resourceType,
                 message,
-                partitionKeyRange,
-                queryPageDiagnostics);
+                feedRange,
+                queryPageDiagnostics,
+                trace);
         }
 
         public override async Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -153,6 +164,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
@@ -161,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: null,
-                partitionKey: partitionKey,
+                feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (requestMessage) =>
@@ -173,6 +185,7 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.UseGatewayMode = true;
                 },
                 diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken))
             {
                 // Syntax exception are argument exceptions and thrown to the user.
@@ -186,7 +199,9 @@ namespace Microsoft.Azure.Cosmos
         public override Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
-            string effectivePartitionKeyString)
+            string effectivePartitionKeyString,
+            bool forceRefresh,
+            ITrace trace)
         {
             return this.GetTargetPartitionKeyRangesAsync(
                 resourceLink,
@@ -194,28 +209,39 @@ namespace Microsoft.Azure.Cosmos
                 new List<Range<string>>
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
-                });
+                },
+                forceRefresh,
+                trace);
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
             PartitionKeyDefinition partitionKeyDefinition,
-            FeedRangeInternal feedRangeInternal)
+            FeedRangeInternal feedRangeInternal,
+            bool forceRefresh,
+            ITrace trace)
         {
-            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-            List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+            using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
+            {
+                IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
+                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
 
-            return await this.GetTargetPartitionKeyRangesAsync(
-                resourceLink,
-                collectionResourceId,
-                ranges);
+                return await this.GetTargetPartitionKeyRangesAsync(
+                    resourceLink,
+                    collectionResourceId,
+                    ranges,
+                    forceRefresh,
+                    childTrace);
+            }
         }
 
         public override async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Range<string>> providedRanges)
+            List<Range<string>> providedRanges,
+            bool forceRefresh,
+            ITrace trace)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -229,26 +255,29 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(providedRanges));
             }
 
-            IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
-            if (ranges == null && PathsHelper.IsNameBased(resourceLink))
+            using (ITrace getPKRangesTrace = trace.StartChild("Get Partition Key Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
-                // Refresh the cache and don't try to re-resolve collection as it is not clear what already
-                // happened based on previously resolved collection rid.
-                // Return NotFoundException this time. Next query will succeed.
-                // This can only happen if collection is deleted/created with same name and client was not restarted
-                // in between.
-                CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
-                collectionCache.Refresh(resourceLink);
-            }
+                IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-            if (ranges == null)
-            {
-                throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
-            }
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+                if (ranges == null && PathsHelper.IsNameBased(resourceLink))
+                {
+                    // Refresh the cache and don't try to re-resolve collection as it is not clear what already
+                    // happened based on previously resolved collection rid.
+                    // Return NotFoundException this time. Next query will succeed.
+                    // This can only happen if collection is deleted/created with same name and client was not restarted
+                    // in between.
+                    CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+                    collectionCache.Refresh(resourceLink);
+                }
 
-            return ranges;
+                if (ranges == null)
+                {
+                    throw new NotFoundException($"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: GetTargetPartitionKeyRanges(collectionResourceId:{collectionResourceId}, providedRanges: {string.Join(",", providedRanges)} failed due to stale cache");
+                }
+
+                return ranges;
+            }
         }
 
         public override bool ByPassQueryParsing()
@@ -267,81 +296,94 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
-            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
-            Action<QueryPageDiagnostics> queryPageDiagnostics)
+            FeedRange feedRange,
+            Action<QueryPageDiagnostics> queryPageDiagnostics,
+            ITrace trace)
         {
-            using (cosmosResponseMessage)
+            using (ITrace getCosmosElementResponse = trace.StartChild("Get Cosmos Element Response", TraceComponent.Json, Tracing.TraceLevel.Info))
             {
-                QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
-                    clientQueryCorrelationId: clientQueryCorrelationId,
-                    partitionKeyRangeId: partitionKeyRangeIdentity.PartitionKeyRangeId,
-                    queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
-                    indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                    diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
-                queryPageDiagnostics(queryPage);
-
-                if (!cosmosResponseMessage.IsSuccessStatusCode)
+                using (cosmosResponseMessage)
                 {
-                    CosmosException exception;
-                    if (cosmosResponseMessage.CosmosException != null)
+                    QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
+                        clientQueryCorrelationId: clientQueryCorrelationId,
+                        partitionKeyRangeId: feedRange is FeedRangePartitionKey feedRangePartitionKey && feedRangePartitionKey.PartitionKey.IsNone ? "None" : feedRange.ToJsonString(),
+                        queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
+                        indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
+                        diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
+                    queryPageDiagnostics(queryPage);
+
+                    if (
+                        cosmosResponseMessage.Headers.QueryMetricsText != null &&
+                        BackendMetricsParser.TryParse(cosmosResponseMessage.Headers.QueryMetricsText, out BackendMetrics backendMetrics))
                     {
-                        exception = cosmosResponseMessage.CosmosException;
+                        QueryMetricsTraceDatum datum = new QueryMetricsTraceDatum(
+                            new QueryMetrics(backendMetrics, IndexUtilizationInfo.Empty, ClientSideMetrics.Empty));
+                        trace.AddDatum("Query Metrics", datum);
+                    }
+
+                    if (!cosmosResponseMessage.IsSuccessStatusCode)
+                    {
+                        CosmosException exception;
+                        if (cosmosResponseMessage.CosmosException != null)
+                        {
+                            exception = cosmosResponseMessage.CosmosException;
+                        }
+                        else
+                        {
+                            exception = new CosmosException(
+                                cosmosResponseMessage.ErrorMessage,
+                                cosmosResponseMessage.StatusCode,
+                                (int)cosmosResponseMessage.Headers.SubStatusCode,
+                                cosmosResponseMessage.Headers.ActivityId,
+                                cosmosResponseMessage.Headers.RequestCharge);
+                        }
+
+                        return TryCatch<QueryPage>.FromException(exception);
+                    }
+
+                    if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
+                    {
+                        memoryStream = new MemoryStream();
+                        cosmosResponseMessage.Content.CopyTo(memoryStream);
+                    }
+
+                    long responseLengthBytes = memoryStream.Length;
+                    CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
+                        memoryStream,
+                        resourceType,
+                        requestOptions.CosmosSerializationFormatOptions);
+
+                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
+                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                    {
+                        cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
                     }
                     else
                     {
-                        exception = new CosmosException(
-                            cosmosResponseMessage.ErrorMessage,
-                            cosmosResponseMessage.StatusCode,
-                            (int)cosmosResponseMessage.Headers.SubStatusCode,
-                            cosmosResponseMessage.Headers.ActivityId,
-                            cosmosResponseMessage.Headers.RequestCharge);
+                        cosmosQueryExecutionInfo = default;
                     }
 
-                    return TryCatch<QueryPage>.FromException(exception);
-                }
+                    QueryState queryState;
+                    if (cosmosResponseMessage.Headers.ContinuationToken != null)
+                    {
+                        queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
+                    }
+                    else
+                    {
+                        queryState = default;
+                    }
 
-                if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
-                {
-                    memoryStream = new MemoryStream();
-                    cosmosResponseMessage.Content.CopyTo(memoryStream);
-                }
+                    QueryPage response = new QueryPage(
+                        documents,
+                        cosmosResponseMessage.Headers.RequestCharge,
+                        cosmosResponseMessage.Headers.ActivityId,
+                        responseLengthBytes,
+                        cosmosQueryExecutionInfo,
+                        disallowContinuationTokenMessage: null,
+                        queryState);
 
-                long responseLengthBytes = memoryStream.Length;
-                CosmosArray documents = CosmosQueryClientCore.ParseElementsFromRestStream(
-                    memoryStream,
-                    resourceType,
-                    requestOptions.CosmosSerializationFormatOptions);
-
-                CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
-                if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
-                {
-                    cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
+                    return TryCatch<QueryPage>.FromResult(response);
                 }
-                else
-                {
-                    cosmosQueryExecutionInfo = default;
-                }
-
-                QueryState queryState;
-                if (cosmosResponseMessage.Headers.ContinuationToken != null)
-                {
-                    queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
-                }
-                else
-                {
-                    queryState = default;
-                }
-
-                QueryPage response = new QueryPage(
-                    documents,
-                    cosmosResponseMessage.Headers.RequestCharge,
-                    cosmosResponseMessage.Headers.ActivityId,
-                    responseLengthBytes,
-                    cosmosQueryExecutionInfo,
-                    disallowContinuationTokenMessage: null,
-                    queryState);
-
-                return TryCatch<QueryPage>.FromResult(response);
             }
         }
 
@@ -402,21 +444,27 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Converts a list of CosmosElements into a memory stream.
         /// </summary>
-        /// <param name="memoryStream">The memory stream response for the query REST response Azure Cosmos</param>
+        /// <param name="stream">The memory stream response for the query REST response Azure Cosmos</param>
         /// <param name="resourceType">The resource type</param>
         /// <param name="cosmosSerializationOptions">The custom serialization options. This allows custom serialization types like BSON, JSON, or other formats</param>
         /// <returns>An array of CosmosElements parsed from the response body.</returns>
-        private static CosmosArray ParseElementsFromRestStream(
-            MemoryStream memoryStream,
+        public static CosmosArray ParseElementsFromRestStream(
+            Stream stream,
             ResourceType resourceType,
             CosmosSerializationFormatOptions cosmosSerializationOptions)
         {
+            if (!(stream is MemoryStream memoryStream))
+            {
+                memoryStream = new MemoryStream();
+                stream.CopyTo(memoryStream);
+            }
+
             if (!memoryStream.CanRead)
             {
                 throw new InvalidDataException("Stream can not be read");
             }
 
-            // Parse out the document from the REST response this:
+            // Parse out the document from the REST response like this:
             // {
             //    "_rid": "qHVdAImeKAQ=",
             //    "Documents": [{
@@ -462,67 +510,22 @@ namespace Microsoft.Azure.Cosmos
                 _ => resourceType.ToResourceTypeString() + "s",
             };
 
-            CosmosArray documents;
-            if ((jsonNavigator.SerializationFormat == JsonSerializationFormat.Binary) && jsonNavigator.TryGetObjectProperty(
+            if (!jsonNavigator.TryGetObjectProperty(
                 jsonNavigator.GetRootNode(),
-                "stringDictionary",
-                out ObjectProperty stringDictionaryProperty))
+                resourceName,
+                out ObjectProperty objectProperty))
             {
-                // Payload is string dictionary encode so we have to decode using the string dictionary.
-                IJsonNavigatorNode stringDictionaryNode = stringDictionaryProperty.ValueNode;
-                JsonStringDictionary jsonStringDictionary = JsonStringDictionary.CreateFromStringArray(
-                    jsonNavigator
-                        .GetArrayItems(stringDictionaryNode)
-                        .Select(item => jsonNavigator.GetStringValue(item))
-                        .ToList());
-
-                if (!jsonNavigator.TryGetObjectProperty(
-                    jsonNavigator.GetRootNode(),
-                    resourceName,
-                    out ObjectProperty resourceProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
-
-                IJsonNavigatorNode resources = resourceProperty.ValueNode;
-                if (!jsonNavigator.TryGetBufferedBinaryValue(resources, out ReadOnlyMemory<byte> resourceBinary))
-                {
-                    resourceBinary = jsonNavigator.GetBinaryValue(resources);
-                }
-
-                IJsonNavigator navigatorWithStringDictionary = JsonNavigator.Create(resourceBinary, jsonStringDictionary);
-
-                if (!(CosmosElement.Dispatch(
-                    navigatorWithStringDictionary,
-                    navigatorWithStringDictionary.GetRootNode()) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
-            }
-            else
-            {
-                // Payload is not string dictionary encoded so we can just do for the documents as is.
-                if (!jsonNavigator.TryGetObjectProperty(
-                    jsonNavigator.GetRootNode(),
-                    resourceName,
-                    out ObjectProperty objectProperty))
-                {
-                    throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
-                }
-
-                if (!(CosmosElement.Dispatch(
-                    jsonNavigator,
-                    objectProperty.ValueNode) is CosmosArray cosmosArray))
-                {
-                    throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
-                }
-
-                documents = cosmosArray;
+                throw new InvalidOperationException($"Response Body Contract was violated. QueryResponse did not have property: {resourceName}");
             }
 
-            return documents;
+            if (!(CosmosElement.Dispatch(
+                jsonNavigator,
+                objectProperty.ValueNode) is CosmosArray cosmosArray))
+            {
+                throw new InvalidOperationException($"QueryResponse did not have an array of : {resourceName}");
+            }
+
+            return cosmosArray;
         }
     }
 }

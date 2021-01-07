@@ -17,7 +17,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
 
     /// <summary>
     /// Implementation of <see cref="IMonadicDocumentContainer"/> that composes another <see cref="IMonadicDocumentContainer"/> and randomly adds in exceptions.
@@ -28,30 +30,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private readonly FailureConfigs failureConfigs;
         private readonly Random random;
 
-        private static readonly CosmosException RequestRateTooLargeException = new CosmosException(
-            message: "Request Rate Too Large",
-            statusCode: (System.Net.HttpStatusCode)429,
-            subStatusCode: default,
-            activityId: Guid.NewGuid().ToString(),
-            requestCharge: default);
+        private static class Throttle
+        {
+            private static readonly CosmosException RequestRateTooLargeException = new CosmosException(
+                message: "Request Rate Too Large",
+                statusCode: (System.Net.HttpStatusCode)429,
+                subStatusCode: default,
+                activityId: Guid.NewGuid().ToString(),
+                requestCharge: default);
 
-        private static readonly Task<TryCatch<Record>> ThrottleForCreateItem = Task.FromResult(
-            TryCatch<Record>.FromException(
-                RequestRateTooLargeException));
+            public static readonly Task<TryCatch<Record>> ForCreateItem = Task.FromResult(
+                TryCatch<Record>.FromException(
+                    RequestRateTooLargeException));
 
-        private static readonly Task<TryCatch<DocumentContainerPage>> ThrottleForFeedOperation = Task.FromResult(
-            TryCatch<DocumentContainerPage>.FromException(
-                RequestRateTooLargeException));
+            public static readonly Task<TryCatch<ReadFeedPage>> ForReadFeed = Task.FromResult(
+                TryCatch<ReadFeedPage>.FromException(
+                    RequestRateTooLargeException));
 
-        private static readonly Task<TryCatch<QueryPage>> ThrottleForQuery = Task.FromResult(
-            TryCatch<QueryPage>.FromException(
-                RequestRateTooLargeException));
+            public static readonly Task<TryCatch<QueryPage>> ForQuery = Task.FromResult(
+                TryCatch<QueryPage>.FromException(
+                    RequestRateTooLargeException));
 
-        private static readonly Task<TryCatch<ChangeFeedPage>> ThrottleForChangeFeed = Task.FromResult(
-            TryCatch<ChangeFeedPage>.FromException(
-                RequestRateTooLargeException));
+            public static readonly Task<TryCatch<ChangeFeedPage>> ForChangeFeed = Task.FromResult(
+                TryCatch<ChangeFeedPage>.FromException(
+                    RequestRateTooLargeException));
+        }
 
         private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
+
+        private static readonly ReadFeedState ReadFeedNotStartedState = ReadFeedState.Continuation(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
 
         private readonly IMonadicDocumentContainer documentContainer;
 
@@ -70,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             if (this.ShouldReturn429())
             {
-                return ThrottleForCreateItem;
+                return Throttle.ForCreateItem;
             }
 
             return this.documentContainer.MonadicCreateItemAsync(
@@ -85,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             if (this.ShouldReturn429())
             {
-                return ThrottleForCreateItem;
+                return Throttle.ForCreateItem;
             }
 
             return this.documentContainer.MonadicReadItemAsync(
@@ -94,30 +101,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 cancellationToken);
         }
 
-        public Task<TryCatch<DocumentContainerPage>> MonadicReadFeedAsync(
+        public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
+            ReadFeedState readFeedState,
             FeedRangeInternal feedRange,
-            ResourceId resourceIdentifer,
+            QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
+            if ((readFeedState != null) && readFeedState.Equals(ReadFeedNotStartedState))
+            {
+                readFeedState = null;
+            }
+
             if (this.ShouldReturn429())
             {
-                return ThrottleForFeedOperation;
+                return Throttle.ForReadFeed;
             }
 
             if (this.ShouldReturnEmptyPage())
             {
+                // We can't return a null continuation, since that signals the query has ended.
+                ReadFeedState nonNullState = readFeedState ?? ReadFeedNotStartedState;
                 return Task.FromResult(
-                    TryCatch<DocumentContainerPage>.FromResult(
-                        new DocumentContainerPage(
-                            new List<Record>(),
-                            new DocumentContainerState(resourceIdentifer))));
+                    TryCatch<ReadFeedPage>.FromResult(
+                        new ReadFeedPage(
+                            new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
+                            requestCharge: 42,
+                            activityId: Guid.NewGuid().ToString(),
+                            diagnostics: CosmosDiagnosticsContext.Create(default),
+                            nonNullState)));
             }
 
             return this.documentContainer.MonadicReadFeedAsync(
+                readFeedState,
                 feedRange,
-                resourceIdentifer,
+                queryRequestOptions,
                 pageSize,
+                trace,
                 cancellationToken);
         }
 
@@ -126,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (continuationToken == ContinuationForStartedButNoDocumentsReturned)
@@ -135,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (this.ShouldReturn429())
             {
-                return ThrottleForQuery;
+                return Throttle.ForQuery;
             }
 
             if (this.ShouldReturnEmptyPage())
@@ -168,6 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 continuationToken,
                 feedRange,
                 pageSize,
+                trace,
                 cancellationToken);
         }
 
@@ -175,11 +198,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             ChangeFeedState state, 
             FeedRangeInternal feedRange, 
             int pageSize, 
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (this.ShouldReturn429())
             {
-                return ThrottleForChangeFeed;
+                return Throttle.ForChangeFeed;
             }
 
             if (this.ShouldReturnEmptyPage())
@@ -197,6 +221,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 state,
                 feedRange,
                 pageSize,
+                trace,
                 cancellationToken);
         }
 
@@ -206,18 +231,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRange,
                 cancellationToken);
 
+        public Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicMergeAsync(
+                feedRange1,
+                feedRange2,
+                cancellationToken);
+
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetChildRangeAsync(
                 feedRange,
+                trace,
                 cancellationToken);
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
+            ITrace trace,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
+                trace,
                 cancellationToken);
 
+        public Task<TryCatch> MonadicRefreshProviderAsync(
+            ITrace trace,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicRefreshProviderAsync(trace, cancellationToken);
+
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
-    CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
+            ITrace trace,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
 
         private bool ShouldReturn429() => (this.failureConfigs != null)
             && this.failureConfigs.Inject429s

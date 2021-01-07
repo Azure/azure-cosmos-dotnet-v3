@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal class CosmosOffers
@@ -29,13 +30,14 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+            (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
 
             return await this.GetThroughputResponseAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
+                currentRequestCharge: requestCharge,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default)
         {
-            OfferV2 offerV2 = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+            (OfferV2 offerV2, double requestCharge) = await this.GetOfferV2Async<OfferV2>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
 
             if (offerV2 == null)
             {
@@ -61,6 +63,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Read,
                 linkUri: new Uri(offerV2.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
+                currentRequestCharge: requestCharge,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -71,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken)
         {
-            ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
+            (ThroughputProperties currentProperty, double requestCharge) = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: true, cancellationToken: cancellationToken);
             currentProperty.Content = throughputProperties.Content;
 
             return await this.GetThroughputResponseAsync(
@@ -79,6 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Replace,
                 linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
+                currentRequestCharge: requestCharge,
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
@@ -91,12 +95,13 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                ThroughputProperties currentProperty = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
+                (ThroughputProperties currentProperty, double requestCharge) = await this.GetOfferV2Async<ThroughputProperties>(targetRID, failIfNotConfigured: false, cancellationToken: cancellationToken);
 
                 if (currentProperty == null)
                 {
                     CosmosException notFound = CosmosExceptionFactory.CreateNotFoundException(
-                         $"Throughput is not configured for {targetRID}");
+                         $"Throughput is not configured for {targetRID}",
+                         requestCharge: requestCharge);
                     return new ThroughputResponse(
                         httpStatusCode: notFound.StatusCode,
                         headers: notFound.Headers,
@@ -111,6 +116,7 @@ namespace Microsoft.Azure.Cosmos
                     operationType: OperationType.Replace,
                     linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
                     resourceType: ResourceType.Offer,
+                    currentRequestCharge: requestCharge,
                     requestOptions: requestOptions,
                     cancellationToken: cancellationToken);
             }
@@ -160,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-        private async Task<T> GetOfferV2Async<T>(
+        private async Task<(T offer, double requestCharge)> GetOfferV2Async<T>(
             string targetRID,
             bool failIfNotConfigured,
             CancellationToken cancellationToken)
@@ -179,16 +185,17 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: null,
                 cancellationToken: cancellationToken);
 
-            T offerV2 = await this.SingleOrDefaultAsync<T>(databaseStreamIterator);
+            (T offer, double requestCharge) result = await this.SingleOrDefaultAsync<T>(databaseStreamIterator);
 
-            if (offerV2 == null &&
+            if (result.offer == null &&
                 failIfNotConfigured)
             {
                 throw CosmosExceptionFactory.CreateNotFoundException(
-                    $"Throughput is not configured for {targetRID}");
+                    $"Throughput is not configured for {targetRID}",
+                    requestCharge: result.requestCharge);
             }
 
-            return offerV2;
+            return result;
         }
 
         internal virtual FeedIterator<T> GetOfferQueryIterator<T>(
@@ -228,16 +235,18 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        private async Task<T> SingleOrDefaultAsync<T>(
+        private async Task<(T item, double requestCharge)> SingleOrDefaultAsync<T>(
             FeedIterator<T> offerQuery,
             CancellationToken cancellationToken = default)
         {
+            double totalRequestCharge = 0;
             while (offerQuery.HasMoreResults)
             {
                 FeedResponse<T> offerFeedResponse = await offerQuery.ReadNextAsync(cancellationToken);
+                totalRequestCharge += offerFeedResponse.Headers.RequestCharge;
                 if (offerFeedResponse.Any())
                 {
-                    return offerFeedResponse.Single();
+                    return (offerFeedResponse.Single(), totalRequestCharge);
                 }
             }
 
@@ -249,20 +258,26 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            Uri linkUri,
            ResourceType resourceType,
+           double currentRequestCharge,
            RequestOptions requestOptions = null,
            CancellationToken cancellationToken = default)
         {
-            ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
+            using ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
               resourceUri: linkUri.OriginalString,
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,
-              partitionKey: null,
+              feedRange: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
               diagnosticsContext: null,
+              trace: NoOpTrace.Singleton,
               cancellationToken: cancellationToken);
+
+            // This ensures that request charge reflects the total RU cost.
+            responseMessage.Headers.RequestCharge += currentRequestCharge;
+
             return this.ClientContext.ResponseFactory.CreateThroughputResponse(responseMessage);
         }
     }

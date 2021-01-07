@@ -58,6 +58,9 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
+        [JsonProperty(PropertyName = Constants.Properties.ChangeFeedPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        private ChangeFeedPolicy changeFeedPolicyInternal;
+
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private IndexingPolicy indexingPolicyInternal;
 
@@ -259,6 +262,27 @@ namespace Microsoft.Azure.Cosmos
 
                 this.indexingPolicyInternal = value;
             }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// The change feed policy associated with the container.
+        /// </value>
+        [JsonIgnore]
+        internal ChangeFeedPolicy ChangeFeedPolicy
+        {
+            get
+            {
+                if (this.changeFeedPolicyInternal == null)
+                {
+                    this.changeFeedPolicyInternal = new ChangeFeedPolicy();
+                }
+
+                return this.changeFeedPolicyInternal;
+            }
+            set => this.changeFeedPolicyInternal = value;
         }
 
         /// <summary>

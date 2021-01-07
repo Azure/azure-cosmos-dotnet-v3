@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Newtonsoft.Json;
 
+    [Serializable]
     [JsonConverter(typeof(FeedRangeInternalConverter))]
     internal abstract class FeedRangeInternal : FeedRange
     {
@@ -28,6 +30,8 @@ namespace Microsoft.Azure.Cosmos
         public abstract void Accept(IFeedRangeVisitor visitor);
 
         public abstract void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input);
+
+        public abstract TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input);
 
         public abstract TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer);
 

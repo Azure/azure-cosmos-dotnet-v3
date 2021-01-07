@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Json
             ReadOnlyMemory<byte> rootBuffer,
             ReadOnlyMemory<byte> rawJsonValue,
             bool isRootNode,
-            bool isFieldName,
-            IReadOnlyJsonStringDictionary jsonStringDictionary = null);
+            bool isFieldName);
     }
 }

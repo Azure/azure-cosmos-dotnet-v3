@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Query;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -438,6 +439,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task PartitionKeyDeleteUnitTest()
+        {
+            dynamic item = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+            await this.VerifyPartitionKeyDeleteOperation(new Cosmos.PartitionKey(item.pk), "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]");
+        }
+
+        [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
             ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
@@ -656,16 +668,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ResponseMessage>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+                It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, Task<ItemResponse<dynamic>>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString")));
+                It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>()))
+               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>(
+                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -678,8 +690,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<CosmosDiagnosticsContext>(),
-                It.IsAny<CancellationToken>())).Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, CancellationToken>(
-                (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, diagnostics, cancellationToken) =>
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>())).Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, ITrace, CancellationToken>(
+                (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, diagnostics, trace, cancellationToken) =>
                  context.ProcessResourceOperationStreamAsync(
                      uri,
                      resourceType,
@@ -691,6 +704,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                      stream,
                      requestEnricher,
                      diagnostics,
+                     trace,
                      cancellationToken));
 
             Mock<BatchAsyncContainerExecutor> mockedExecutor = this.GetMockedBatchExcecutor();
@@ -755,8 +769,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                 testHandlerHitCount++;
-                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
-                response.Content = request.Content;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
                 return Task.FromResult(response);
             });
 
@@ -863,6 +879,42 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
+        }
+
+        private async Task VerifyPartitionKeyDeleteOperation(
+            Cosmos.PartitionKey partitionKey,
+            string partitionKeySerialized,
+            RequestOptions requestOptions = null)
+        {
+            ResponseMessage response = null;
+            HttpStatusCode httpStatusCode = HttpStatusCode.OK;
+            int testHandlerHitCount = 0;
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"dbs/testdb/colls/testcontainer"));
+                Assert.AreEqual(requestOptions, request.RequestOptions);
+                Assert.AreEqual(ResourceType.PartitionKey, request.ResourceType);
+                Assert.IsNotNull(request.Headers.PartitionKey);
+                Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
+                testHandlerHitCount++;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
+                response.Content = request.Content;
+                return Task.FromResult(response);
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                (builder) => builder.AddCustomHandlers(testHandler));
+
+            Container container = client.GetDatabase("testdb")
+                                        .GetContainer("testcontainer");
+
+            ContainerInternal containerInternal = (ContainerInternal)container;
+            ResponseMessage responseMessage = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey: partitionKey,
+                requestOptions: requestOptions);
+            Assert.IsNotNull(responseMessage);
+            Assert.AreEqual(httpStatusCode, responseMessage.StatusCode);
+            Assert.AreEqual(1, testHandlerHitCount, "The operation did not make it to the handler");
         }
 
         private Mock<BatchAsyncContainerExecutor> GetMockedBatchExcecutor()
