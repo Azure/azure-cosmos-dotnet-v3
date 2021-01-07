@@ -271,7 +271,12 @@ namespace Microsoft.Azure.Cosmos
         /// The change feed policy associated with the container.
         /// </value>
         [JsonIgnore]
-        internal ChangeFeedPolicy ChangeFeedPolicy
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedPolicy ChangeFeedPolicy
         {
             get
             {
