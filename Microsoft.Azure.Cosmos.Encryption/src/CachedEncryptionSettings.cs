@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Diagnostics;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography;
 
     internal sealed class CachedEncryptionSettings
     {

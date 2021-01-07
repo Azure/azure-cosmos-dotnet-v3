@@ -94,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         MdeEncryptionSettings mdeEncryptionSettings = new MdeEncryptionSettings
                         {
+                            // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
                             EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
                             ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
                             DataEncryptionKey = protectedDataEncryptionKey,

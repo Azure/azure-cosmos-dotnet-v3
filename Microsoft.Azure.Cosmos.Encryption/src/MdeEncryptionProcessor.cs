@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         internal EncryptionKeyStoreProvider EncryptionKeyStoreProvider => this.EncryptionCosmosClient.EncryptionKeyStoreProvider;
 
-        internal ClientEncryptionPolicy ClientEncryptionPolicy { get; set; }
+        internal ClientEncryptionPolicy ClientEncryptionPolicy { get; private set; }
 
         internal EncryptionCosmosClient EncryptionCosmosClient { get; }
 
@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         settingsByDekId[clientEncryptionKeyId] = new MdeEncryptionSettings
                         {
+                            // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
                             EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
                             ClientEncryptionKeyId = clientEncryptionKeyId,
                             DataEncryptionKey = protectedDataEncryptionKey,
@@ -157,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="cancellationToken">(Optional) Token to cancel the operation.</param>
         /// <returns>Task to await.</returns>
-        public async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default)
+        internal async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default)
         {
             if (await EncryptionSettingSema.WaitAsync(-1))
             {

@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this Container container,
             IQueryable<T> query)
         {
-            if (!(container is MdeContainer mdeContainer))
+            if (container is not MdeContainer mdeContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToMdeEncryptionFeedIterator)} is only supported with {nameof(MdeContainer)}.");
             }
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this Container container,
             IQueryable<T> query)
         {
-            if (!(container is MdeContainer mdeContainer))
+            if (container is not MdeContainer mdeContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToMdeEncryptionStreamIterator)} is only supported with {nameof(MdeContainer)}.");
             }
