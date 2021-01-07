@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             : base(range, cancellationToken, state)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
+            this.changeFeedMode = changeFeedMode ?? throw new ArgumentNullException(nameof(changeFeedMode));
             this.pageSize = pageSize;
-            this.changeFeedMode = changeFeedMode;
         }
 
         public override ValueTask DisposeAsync() => default;

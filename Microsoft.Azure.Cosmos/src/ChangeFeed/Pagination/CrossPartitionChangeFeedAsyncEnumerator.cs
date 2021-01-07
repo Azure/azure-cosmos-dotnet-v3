@@ -169,15 +169,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             IChangeFeedDataSource changeFeedDataSource,
             int pageSize,
             ChangeFeedMode changeFeedMode,
-            CancellationToken cancellationToken)
-        {
-            return (FeedRangeInternal range, ChangeFeedState state) => new ChangeFeedPartitionRangePageAsyncEnumerator(
+            CancellationToken cancellationToken) => (FeedRangeInternal range, ChangeFeedState state) => new ChangeFeedPartitionRangePageAsyncEnumerator(
                 changeFeedDataSource,
                 range,
                 pageSize,
                 changeFeedMode,
                 state,
                 cancellationToken);
-        }
     }
 }
