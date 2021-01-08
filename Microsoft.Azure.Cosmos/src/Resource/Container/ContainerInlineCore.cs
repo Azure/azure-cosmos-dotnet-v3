@@ -454,5 +454,16 @@ namespace Microsoft.Azure.Cosmos
         {
             return base.GetReadFeedAsyncEnumerable(state, requestOptions);
         }
+
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+          Cosmos.PartitionKey partitionKey,
+          RequestOptions requestOptions = null,
+          CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(DeleteAllItemsByPartitionKeyStreamAsync),
+                requestOptions,
+                (diagnostics, trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, diagnostics, trace, requestOptions, cancellationToken));
+        }
     }
 }
