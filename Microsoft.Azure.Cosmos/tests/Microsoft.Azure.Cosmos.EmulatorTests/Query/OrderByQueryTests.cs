@@ -941,7 +941,7 @@
                 {
                     List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
                         container,
-                        $"SELECT * FROM c ORDER BY c.{possiblyUndefinedFieldName} {(ascending ? "ASC" : "DESC")}",
+                        $"SELECT c.{alwaysDefinedFieldName}, c.{possiblyUndefinedFieldName} FROM c ORDER BY c.{possiblyUndefinedFieldName} {(ascending ? "ASC" : "DESC")}",
                         new QueryRequestOptions()
                         {
                             MaxItemCount = 1,

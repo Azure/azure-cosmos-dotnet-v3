@@ -66,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public const string EqualTo = "=";
             public const string GreaterThan = ">";
             public const string GreaterThanOrEqualTo = ">=";
+            public const string True = "true";
+            public const string False = "false";
         }
 
         private OrderByCrossPartitionQueryPipelineStage(
@@ -816,39 +818,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 (OrderByColumn orderByColumn, CosmosElement orderByItem) = columnAndItems.Span[0];
                 (string expression, SortOrder sortOrder) = (orderByColumn.Expression, orderByColumn.SortOrder);
 
-                if (orderByItem == default)
-                {
-                    // User is ordering by undefined, so we need to avoid a null reference exception.
+                AppendToBuilders(builders, "( ");
 
-                    // To solve this consider the following items and partition tuples in ASC order:
-                    // (undefined, 1)
-                    // (undefined, 2)
-                    // (undefined, 3)
-                    // (A, 1)
-                    // (A, 2)
-                    // (A, 3)
-
-                    // Suppose we are resuming from (undefined, 2)
-                    // then we are done reading undefined from all the left partitions.
-
-                    // For target and right partitions we still need to read undefined, 
-                    // so just don't do any filtering
-
-                    // You can repeat the process for DESC order:
-                    // (A, 1)
-                    // (A, 2)
-                    // (A, 3)
-                    // (undefined, 1)
-                    // (undefined, 2)
-                    // (undefined, 3)
-
-                    // And come to the set set of filters needed.
-
-                    left.Append($"IS_DEFINED({expression})");
-                    target.Append("true");
-                    right.Append("true");
-                }
-                else
+                // We need to add the filter for within the same type.
+                if (orderByItem != default)
                 {
                     StringBuilder sb = new StringBuilder();
                     CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
@@ -860,6 +833,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     target.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
                     right.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
                 }
+                else
+                {
+                    // User is ordering by undefined, so we need to avoid a null reference exception.
+
+                    // What we really want is to support expression > undefined, 
+                    // but the engine evaluates to undefined instead of true or false,
+                    // so we work around this by using the IS_DEFINED() system function.
+
+                    left.Append($"{(sortOrder == SortOrder.Descending ? /*expression < undefined*/ Expressions.False : /*expression > undefined*/ $"IS_DEFINED({expression})")}");
+                    target.Append($"{(sortOrder == SortOrder.Descending ? /*expression <= undefined*/ $"not IS_DEFINED({expression})" : /*expression >= undefined*/ Expressions.True)}");
+                    right.Append($"{(sortOrder == SortOrder.Descending ? /*expression <= undefined*/ $"not IS_DEFINED({expression})" : /*expression >= undefined*/ Expressions.True)}");
+                }
+
+                // Now we need to include all the types that match the sort order.
+                ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
+                    ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
+                    : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                foreach (string isDefinedFunction in isDefinedFunctions.Span)
+                {
+                    AppendToBuilders(builders, " OR ");
+                    AppendToBuilders(builders, $"{isDefinedFunction}({expression})");
+                }
+
+                AppendToBuilders(builders, " )");
             }
             else
             {
@@ -1099,6 +1096,98 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             foreach ((OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken) enumeratorAndToken in this.uninitializedEnumeratorsAndTokens)
             {
                 enumeratorAndToken.Item1.SetCancellationToken(cancellationToken);
+            }
+        }
+
+        private sealed class CosmosElementToIsSystemFunctionsVisitor : ICosmosElementVisitor<bool, ReadOnlyMemory<string>>
+        {
+            public static readonly CosmosElementToIsSystemFunctionsVisitor Singleton = new CosmosElementToIsSystemFunctionsVisitor();
+
+            private static class IsSystemFunctions
+            {
+                public const string Undefined = "not IS_DEFINED";
+                public const string Null = "IS_NULL";
+                public const string Boolean = "IS_BOOLEAN";
+                public const string Number = "IS_NUMBER";
+                public const string String = "IS_STRING";
+                public const string Array = "IS_ARRAY";
+                public const string Object = "IS_OBJECT";
+            }
+
+            private static readonly ReadOnlyMemory<string> SystemFunctionSortOrder = new string[]
+            {
+                IsSystemFunctions.Undefined,
+                IsSystemFunctions.Null,
+                IsSystemFunctions.Boolean,
+                IsSystemFunctions.Number,
+                IsSystemFunctions.String,
+                IsSystemFunctions.Array,
+                IsSystemFunctions.Object,
+            };
+
+            private static class Indexes
+            {
+                public const int Undefined = 0;
+                public const int Null = 1;
+                public const int Boolean = 2;
+                public const int Number = 3;
+                public const int String = 4;
+                public const int Array = 5;
+                public const int Object = 6;
+            }
+
+            private CosmosElementToIsSystemFunctionsVisitor()
+            {
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosArray cosmosArray, bool isAscending)
+            {
+                return GetIsDefinedFunctions(Indexes.Array, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosBinary cosmosBinary, bool isAscending)
+            {
+                throw new NotImplementedException();
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosBoolean cosmosBoolean, bool isAscending)
+            {
+                return GetIsDefinedFunctions(Indexes.Boolean, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosGuid cosmosGuid, bool isAscending)
+            {
+                throw new NotImplementedException();
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosNull cosmosNull, bool isAscending)
+            {
+                return GetIsDefinedFunctions(Indexes.Null, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosNumber cosmosNumber, bool isAscending)
+            {
+                return GetIsDefinedFunctions(Indexes.Number, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosObject cosmosObject, bool isAscending)
+            {
+                return GetIsDefinedFunctions(Indexes.Object, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosString cosmosString, bool isAscending)
+            {
+                return GetIsDefinedFunctions(Indexes.String, isAscending);
+            }
+
+            public static ReadOnlyMemory<string> VisitUndefined(bool isAscending)
+            {
+                return isAscending ? SystemFunctionSortOrder.Slice(start: 1) : ReadOnlyMemory<string>.Empty;
+            }
+
+            private static ReadOnlyMemory<string> GetIsDefinedFunctions(int index, bool isAscending)
+            {
+                return isAscending ? SystemFunctionSortOrder.Slice(index + 1) : SystemFunctionSortOrder.Slice(start: 0, index);
             }
         }
     }
