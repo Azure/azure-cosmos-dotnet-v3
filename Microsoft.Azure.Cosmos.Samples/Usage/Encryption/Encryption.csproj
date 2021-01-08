@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <Reference Include="Microsoft.Data.Encryption.Cryptography">
-	  <HintPath>..\..\..\Microsoft.Azure.Cosmos.Encryption\src\MdeServices\MdeCryptographyLib\Microsoft.Data.Encryption.Cryptography.dll</HintPath>
+	  <HintPath>..\..\..\Microsoft.Azure.Cosmos.Encryption\src\Custom\MdeServices\MdeCryptographyLib\Microsoft.Data.Encryption.Cryptography.dll</HintPath>
     </Reference>
   </ItemGroup>
 

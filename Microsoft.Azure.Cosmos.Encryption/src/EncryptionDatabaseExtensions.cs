@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);
-
             EncryptionCosmosClient encryptionCosmosClient;
 
             if (database is EncryptionDatabase encryptionDatabase)
@@ -65,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 encryptionKeyWrapMetadata);
 
             ClientEncryptionKeyResponse clientEncryptionKeyResponse = await database.CreateClientEncryptionKeyAsync(
-                clientEncryptionKey,
                 clientEncryptionKeyProperties,
                 cancellationToken: cancellationToken);
 
@@ -122,8 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 reWrappedKey,
                 encryptionKeyWrapMetadata);
 
-            ClientEncryptionKeyResponse clientEncryptionKeyResponse = await database.ReplaceClientEncryptionKeyAsync(
-                clientEncryptionKey,
+            ClientEncryptionKeyResponse clientEncryptionKeyResponse = await clientEncryptionKey.ReplaceAsync(
                 clientEncryptionKeyProperties,
                 cancellationToken: cancellationToken);
 

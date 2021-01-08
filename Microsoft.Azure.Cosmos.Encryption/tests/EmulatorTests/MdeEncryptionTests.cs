@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -48,69 +49,68 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 "key2",
                 metadata2);
 
-            ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
             {
-                Path = "/Sensitive_StringFormat",
-                ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-                ClientEncryptionDataType = ClientEncryptionDataType.String
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_StringFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = MdeEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ArrayFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = MdeEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = MdeEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntArray",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = MdeEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = MdeEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DecimalFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = MdeEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DateFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = MdeEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                },
             };
 
-            ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/Sensitive_ArrayFormat",
-                ClientEncryptionKeyId = "key2",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-            };
 
-            ClientEncryptionIncludedPath path3 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/Sensitive_NestedObjectFormatL1",
-                ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-            };
-
-            ClientEncryptionIncludedPath path4 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/Sensitive_IntArray",
-                ClientEncryptionKeyId = "key2",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-            };
-
-            ClientEncryptionIncludedPath path5 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/Sensitive_IntFormat",
-                ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-                ClientEncryptionDataType = ClientEncryptionDataType.Long
-            };
-
-            ClientEncryptionIncludedPath path6 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/Sensitive_DecimalFormat",
-                ClientEncryptionKeyId = "key2",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-                ClientEncryptionDataType = ClientEncryptionDataType.Double
-            };
-
-            ClientEncryptionIncludedPath path7 = new ClientEncryptionIncludedPath()
-            {
-                Path = "/Sensitive_DateFormat",
-                ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
-            };
-
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy()
-            {
-                IncludedPaths = { path1, path2, path3, path4, path5, path6, path7 }
-            };
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+           
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
@@ -245,6 +245,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(
                 new EncryptionKeyWrapMetadata(name: cekId, value: updatedMetaData.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
+
         }
 
         [TestMethod]
@@ -342,10 +343,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy()
-            {
-                IncludedPaths = { unknownKeyConfigured }
-            };
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>  { unknownKeyConfigured };
+            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);            
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
 
@@ -687,10 +686,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy()
-            {
-                IncludedPaths = { restrictedPathId }
-            };
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { restrictedPathId };
+            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);           
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
 
@@ -715,10 +712,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicyPk = new ClientEncryptionPolicy()
-            {
-                IncludedPaths = { restrictedPathPk }
-            };
+
+            Collection<ClientEncryptionIncludedPath> pathsRestrictedPathPk = new Collection<ClientEncryptionIncludedPath> { restrictedPathPk };
+            ClientEncryptionPolicy clientEncryptionPolicyPk = new ClientEncryptionPolicy(pathsRestrictedPathPk);
 
             containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyPk };
 
@@ -750,49 +746,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicyWithDupPaths = new ClientEncryptionPolicy()
-            {
-                IncludedPaths = { pathdup1, pathdup2 }
-            };
 
-            containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithDupPaths };
-
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
+            Collection<ClientEncryptionIncludedPath> pathsWithDups = new Collection<ClientEncryptionIncludedPath> { pathdup1 , pathdup2 };
 
             try
             {
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                Assert.Fail("Expected item creation with PK specified to be encrypted to fail.");
+                ClientEncryptionPolicy clientEncryptionPolicyWithDupPaths = new ClientEncryptionPolicy(pathsWithDups);
+                containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithDupPaths };
+                encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
             }
-            catch(Exception)
-            {                
-            }
-        }
-
-        [TestMethod]
-        public async Task EncryptionCreateItemWithoutIncludedPaths()
-        {
-            // a database can have both Containers with Policies Configured and with no Encryption Policy
-            await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
-
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy()
+            catch (ArgumentException)
             {
-            };
-
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy }; ;
-
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
-
-            TestDoc testDoc = TestDoc.Create();
-            ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
-                testDoc,
-                new PartitionKey(testDoc.PK));
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
-
-            await encryptionContainer.DeleteContainerAsync();
+            }
         }
 
         [TestMethod]
@@ -930,7 +895,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
-            Assert.AreEqual(4, unwrapcount);
+            Assert.AreEqual(3, unwrapcount);
         }
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             Container container,

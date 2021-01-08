@@ -34,13 +34,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public override Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
-            ClientEncryptionKey clientEncryptionKey,
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             return this.database.CreateClientEncryptionKeyAsync(
-                clientEncryptionKey,
                 clientEncryptionKeyProperties,
                 requestOptions,
                 cancellationToken);
@@ -258,12 +256,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.database.GetClientEncryptionKey(id);
         }
 
-        public override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyIterator(
+        public override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return this.database.GetClientEncryptionKeyIterator(
+            return this.database.GetClientEncryptionKeyQueryIterator(
                 queryDefinition,
                 continuationToken,
                 requestOptions);
@@ -369,19 +367,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default)
         {
             return this.database.ReadThroughputAsync(
-                requestOptions,
-                cancellationToken);
-        }
-
-        public override Task<ClientEncryptionKeyResponse> ReplaceClientEncryptionKeyAsync(
-            ClientEncryptionKey clientEncryptionKey,
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default)
-        {
-            return this.database.ReplaceClientEncryptionKeyAsync(
-                clientEncryptionKey,
-                clientEncryptionKeyProperties,
                 requestOptions,
                 cancellationToken);
         }
