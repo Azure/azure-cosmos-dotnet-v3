@@ -284,8 +284,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>True or false if the header name existed in the header collection.</returns>
         public virtual bool TryGetValue(string headerName, out string value)
         {
-            value = this.CosmosMessageHeaders.Get(headerName);
-            return value != null;
+            return this.CosmosMessageHeaders.TryGetValue(headerName, out value);
         }
 
         /// <summary>
