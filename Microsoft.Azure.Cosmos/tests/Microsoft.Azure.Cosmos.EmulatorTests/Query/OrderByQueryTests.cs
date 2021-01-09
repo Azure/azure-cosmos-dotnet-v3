@@ -982,7 +982,10 @@
                         expected = expected.OrderByDescending(x => x, MockOrderByComparer.Value);
                     }
 
-                    Assert.IsTrue(expected.SequenceEqual(actual));
+                    Assert.IsTrue(
+                        expected.SequenceEqual(actual),
+                        $"Expected: {JsonConvert.SerializeObject(expected)}" +
+                        $"Actual: {JsonConvert.SerializeObject(actual)}");
                 }
 
                 // Handle all the multi order by cases
@@ -993,10 +996,10 @@
                         foreach (bool secondColumnAscending in new bool[] { true, false })
                         {
                             string query = $"" +
-                                $"SELECT * " +
+                                $"SELECT c.{(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName)}, c.{(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName)} " +
                                 $"FROM c " +
                                 $"ORDER BY " +
-                                $"  c.{(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName)} {(firstColumnAscending ? "ASC" : "DESC")}" +
+                                $"  c.{(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName)} {(firstColumnAscending ? "ASC" : "DESC")}, " +
                                 $"  c.{(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName)} {(secondColumnAscending ? "ASC" : "DESC")}";
 
                             List<CosmosElement> queryResults = await QueryTestsBase.RunQueryAsync(
@@ -1011,123 +1014,74 @@
                                 documents.Count(),
                                 queryResults.Count);
 
-                            IEnumerable<CosmosElement> actual = queryResults
-                                .Select(x =>
-                                {
-                                    if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
-                                    {
-                                        cosmosElement = null;
-                                    }
-
-                                    return cosmosElement;
-                                });
+                            IEnumerable<CosmosElement> actual = queryResults;
 
                             IOrderedEnumerable<CosmosElement> expected;
-                            if (switchColumns)
-                            {
-                                expected = firstColumnAscending
-                                    ? queryResults.OrderBy(
-                                        x =>
+                            expected = firstColumnAscending
+                                ? documents.OrderBy(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
+                                            cosmosElement = null;
+                                        }
 
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value)
-                                    : queryResults.OrderByDescending(
-                                        x =>
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value)
+                                : documents.OrderByDescending(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? possiblyUndefinedFieldName : alwaysDefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
+                                            cosmosElement = null;
+                                        }
 
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value);
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value);
 
-                                expected = secondColumnAscending
-                                    ? queryResults.OrderBy(
-                                        x =>
+                            expected = secondColumnAscending
+                                ? expected.ThenBy(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
+                                            cosmosElement = null;
+                                        }
 
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value)
-                                    : queryResults.OrderByDescending(
-                                        x =>
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value)
+                                : expected.ThenByDescending(
+                                    x =>
+                                    {
+                                        if (!((CosmosObject)x).TryGetValue(switchColumns ? alwaysDefinedFieldName : possiblyUndefinedFieldName, out CosmosElement cosmosElement))
                                         {
-                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
+                                            cosmosElement = null;
+                                        }
 
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value);
-                            }
-                            else
-                            {
-                                expected = firstColumnAscending
-                                    ? queryResults.OrderBy(
-                                        x =>
-                                        {
-                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
+                                        return cosmosElement;
+                                    }, MockOrderByComparer.Value);
 
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value)
-                                    : queryResults.OrderByDescending(
-                                        x =>
-                                        {
-                                            if (!((CosmosObject)x).TryGetValue(alwaysDefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
-
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value);
-
-                                expected = secondColumnAscending
-                                    ? queryResults.OrderBy(
-                                        x =>
-                                        {
-                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
-
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value)
-                                    : queryResults.OrderByDescending(
-                                        x =>
-                                        {
-                                            if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
-                                            {
-                                                cosmosElement = null;
-                                            }
-
-                                            return cosmosElement;
-                                        }, MockOrderByComparer.Value);
-                            }
-
-                            IEnumerable<CosmosElement> expectedFinal = expected
-                                .Select(x =>
+                            IEnumerable<CosmosElement> expectedFinal = expected.Select(
+                                x =>
                                 {
-                                     if (!((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
-                                     {
-                                         cosmosElement = null;
-                                     }
+                                    Dictionary<string, CosmosElement> keyValuePairs = new Dictionary<string, CosmosElement>
+                                    {
+                                        [alwaysDefinedFieldName] = ((CosmosObject)x)[alwaysDefinedFieldName]
+                                    };
 
-                                     return cosmosElement;
+                                    if (((CosmosObject)x).TryGetValue(possiblyUndefinedFieldName, out CosmosElement cosmosElement))
+                                    {
+                                        keyValuePairs[possiblyUndefinedFieldName] = cosmosElement;
+                                    }
+
+                                    return (CosmosElement)CosmosObject.Create(keyValuePairs);
                                 });
 
-                            Assert.IsTrue(expectedFinal.SequenceEqual(actual));
+                            Assert.IsTrue(
+                                expectedFinal.SequenceEqual(actual),
+                                $"Query: {query}" +
+                                $"Expected: {JsonConvert.SerializeObject(expectedFinal)}" +
+                                $"Actual: {JsonConvert.SerializeObject(actual)}");
                         }
                     }
                 }

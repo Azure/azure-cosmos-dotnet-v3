@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Linq.Expressions;
     using System.Net;
     using System.Runtime.CompilerServices;
     using System.Text;
@@ -841,9 +842,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     // but the engine evaluates to undefined instead of true or false,
                     // so we work around this by using the IS_DEFINED() system function.
 
-                    left.Append($"{(sortOrder == SortOrder.Descending ? /*expression < undefined*/ Expressions.False : /*expression > undefined*/ $"IS_DEFINED({expression})")}");
-                    target.Append($"{(sortOrder == SortOrder.Descending ? /*expression <= undefined*/ $"not IS_DEFINED({expression})" : /*expression >= undefined*/ Expressions.True)}");
-                    right.Append($"{(sortOrder == SortOrder.Descending ? /*expression <= undefined*/ $"not IS_DEFINED({expression})" : /*expression >= undefined*/ Expressions.True)}");
+                    ComparisionWithUndefinedFilters filters = ComparisionWithUndefinedFilters.Create(expression);
+                    left.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThan : filters.GreaterThan)}");
+                    target.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThanOrEqualTo : filters.GreaterThanOrEqualTo)}");
+                    right.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThanOrEqualTo : filters.GreaterThanOrEqualTo)}");
                 }
 
                 // Now we need to include all the types that match the sort order.
@@ -904,10 +906,52 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         CosmosElement orderByItem = columnAndItemPrefix[index].orderByItem;
                         bool lastItem = index == prefixLength - 1;
 
+                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, "(");
+
+                        bool wasInequality;
+                        // We need to add the filter for within the same type.
                         if (orderByItem == default)
                         {
+                            ComparisionWithUndefinedFilters filters = ComparisionWithUndefinedFilters.Create(expression);
+
                             // Refer to the logic from single order by for how we are handling order by undefined
-                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, $"IS_DEFINED({expression})", "true", "true");
+                            if (lastItem)
+                            {
+                                if (lastPrefix)
+                                {
+                                    if (sortOrder == SortOrder.Descending)
+                                    {
+                                        // <, <=, <=
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.LessThan, filters.LessThanOrEqualTo, filters.LessThanOrEqualTo);
+                                    }
+                                    else
+                                    {
+                                        // >, >=, >=
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.GreaterThan, filters.GreaterThanOrEqualTo, filters.GreaterThanOrEqualTo);
+                                    }
+                                }
+                                else
+                                {
+                                    if (sortOrder == SortOrder.Descending)
+                                    {
+                                        // <, <, <
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.LessThan, filters.LessThan, filters.LessThan);
+                                    }
+                                    else
+                                    {
+                                        // >, >, >
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.GreaterThan, filters.GreaterThan, filters.GreaterThan);
+                                    }
+                                }
+
+                                wasInequality = true;
+                            }
+                            else
+                            {
+                                // =, =, =
+                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.EqualTo);
+                                wasInequality = false;
+                            }
                         }
                         else
                         {
@@ -915,7 +959,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, expression);
                             OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
 
-                            // Append binary operator
+                            // Append Binary Operator
                             if (lastItem)
                             {
                                 string inequality = sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan;
@@ -924,13 +968,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 {
                                     OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, string.Empty, Expressions.EqualTo, Expressions.EqualTo);
                                 }
+
+                                wasInequality = true;
                             }
                             else
                             {
                                 OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, Expressions.EqualTo);
+                                wasInequality = false;
                             }
 
-                            // Append SortOrder
+                            // Append OrderBy Item
                             StringBuilder sb = new StringBuilder();
                             CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
                             orderByItem.Accept(cosmosElementToQueryLiteral);
@@ -940,9 +987,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
                         }
 
+                        if (wasInequality)
+                        {
+                            // Now we need to include all the types that match the sort order.
+                            ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
+                                ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
+                                : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                            foreach (string isDefinedFunction in isDefinedFunctions.Span)
+                            {
+                                AppendToBuilders(builders, " OR ");
+                                AppendToBuilders(builders, $"{isDefinedFunction}({expression}) ");
+                            }
+                        }
+
+                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, ")");
+
                         if (!lastItem)
                         {
-                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, "AND ");
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " AND ");
                         }
                     }
 
@@ -1188,6 +1250,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             private static ReadOnlyMemory<string> GetIsDefinedFunctions(int index, bool isAscending)
             {
                 return isAscending ? SystemFunctionSortOrder.Slice(index + 1) : SystemFunctionSortOrder.Slice(start: 0, index);
+            }
+        }
+
+        private readonly struct ComparisionWithUndefinedFilters
+        {
+            private ComparisionWithUndefinedFilters(
+                string lessThan,
+                string lessThanOrEqualTo,
+                string equalTo,
+                string greaterThan,
+                string greaterThanOrEqualTo)
+            {
+                this.LessThan = lessThan ?? throw new ArgumentNullException(nameof(lessThan));
+                this.LessThanOrEqualTo = lessThanOrEqualTo ?? throw new ArgumentNullException(nameof(lessThanOrEqualTo));
+                this.EqualTo = equalTo ?? throw new ArgumentNullException(nameof(lessThanOrEqualTo));
+                this.GreaterThan = greaterThan ?? throw new ArgumentNullException(nameof(greaterThan));
+                this.GreaterThanOrEqualTo = greaterThanOrEqualTo ?? throw new ArgumentNullException(nameof(greaterThanOrEqualTo));
+            }
+
+            public string LessThan { get; }
+            public string LessThanOrEqualTo { get; }
+            public string EqualTo { get; }
+            public string GreaterThan { get; }
+            public string GreaterThanOrEqualTo { get; }
+
+            public static ComparisionWithUndefinedFilters Create(string expression)
+            {
+                return new ComparisionWithUndefinedFilters(
+                    lessThan: "false",
+                    lessThanOrEqualTo: $"not IS_DEFINED({expression})",
+                    equalTo: $"not IS_DEFINED({expression})",
+                    greaterThan: $"IS_DEFINED({expression})",
+                    greaterThanOrEqualTo: "true");
             }
         }
     }
