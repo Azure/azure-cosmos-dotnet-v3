@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// ClientEncryptionKeyProperties clientEncryptionKeyProperties = keyReadResponse;
         /// clientEncryptionKeyProperties.Id = "newkey";
-        /// ClientEncryptionKeyResponse response = await user.ReplaceClientEncryptionKeyAsync(clientEncryptionKeyProperties);
+        /// ClientEncryptionKeyResponse response = await key.ReplaceAsync(clientEncryptionKeyProperties);
         /// ClientEncryptionKeyProperties replacedProperties = response;
         /// ]]>
         /// </code>

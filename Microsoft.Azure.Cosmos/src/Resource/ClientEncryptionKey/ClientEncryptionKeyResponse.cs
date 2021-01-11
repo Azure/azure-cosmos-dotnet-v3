@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
 
     /// <summary>
-    /// Response from the Cosmos DB service for a <see cref="ClientEncryptionKey"/> related request.
+    /// Response from the Cosmos DB service for a <see cref="Cosmos.ClientEncryptionKey"/> related request.
     /// </summary>
 #if PREVIEW
     public
@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = keyProperties;
-            this.DataEncryptionKey = key;
+            this.ClientEncryptionKey = key;
             this.Diagnostics = diagnostics;
         }
 
         /// <summary>
         /// The reference to the data encryption key that allows additional operations on it.
         /// </summary>
-        public virtual ClientEncryptionKey DataEncryptionKey { get; }
+        public virtual ClientEncryptionKey ClientEncryptionKey { get; }
 
         /// <inheritdoc/>
         public override Headers Headers { get; }
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="response">Response from which to get the data encryption key.</param>
         public static implicit operator ClientEncryptionKey(ClientEncryptionKeyResponse response)
         {
-            return response.DataEncryptionKey;
+            return response.ClientEncryptionKey;
         }
     }
 }

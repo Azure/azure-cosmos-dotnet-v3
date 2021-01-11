@@ -772,7 +772,7 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
-        internal FeedIterator GetClientEncryptionKeyQueryStreamIterator(
+        private FeedIterator GetClientEncryptionKeyQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
@@ -802,13 +802,13 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 cancellationToken);
 
-            ClientEncryptionKeyResponse dekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(
+            ClientEncryptionKeyResponse cekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(
                 this.GetClientEncryptionKey(clientEncryptionKeyProperties.Id),
                 responseMessage);
 
-            Debug.Assert(dekResponse.Resource != null);
+            Debug.Assert(cekResponse.Resource != null);
 
-            return dekResponse;
+            return cekResponse;
         }
 
         private void ValidateContainerProperties(ContainerProperties containerProperties)
@@ -931,17 +931,6 @@ namespace Microsoft.Azure.Cosmos
                 diagnosticsContext: null,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken);
-        }
-
-        private string GetResourceUriForReplaceClientEncryptionKey(string id)
-        {
-            StringBuilder stringBuilder = new StringBuilder(this.LinkUri.Length + Paths.ClientEncryptionKeysPathSegment.Length + 2 + id.Length);
-            stringBuilder.Append(this.LinkUri);
-            stringBuilder.Append("/");
-            stringBuilder.Append(Paths.ClientEncryptionKeysPathSegment);
-            stringBuilder.Append("/");
-            stringBuilder.Append(id);
-            return stringBuilder.ToString();
         }
 
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(

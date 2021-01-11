@@ -139,11 +139,11 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
             {
-                ClientEncryptionKeyProperties dekProperties = this.ToObjectpublic<ClientEncryptionKeyProperties>(cosmosResponseMessage);
+                ClientEncryptionKeyProperties cekProperties = this.ToObjectpublic<ClientEncryptionKeyProperties>(cosmosResponseMessage);
                 return new ClientEncryptionKeyResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
-                    dekProperties,
+                    cekProperties,
                     clientEncryptionKey,
                     cosmosResponseMessage.Diagnostics);
             });
