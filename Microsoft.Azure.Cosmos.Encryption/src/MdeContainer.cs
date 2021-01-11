@@ -88,7 +88,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         itemStream,
                         partitionKey.Value,
                         requestOptions,
-                        decryptResponse: true,
                         diagnosticsContext,
                         cancellationToken);
                 }
@@ -115,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload,
                     partitionKey,
                     requestOptions,
-                    decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -125,7 +123,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream streamPayload,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            bool decryptResponse,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -149,13 +146,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            if (decryptResponse)
-            {
-                responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
-            }
 
             return responseMessage;
         }
@@ -201,7 +195,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     id,
                     partitionKey,
                     requestOptions,
-                    decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
 
@@ -222,7 +215,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     id,
                     partitionKey,
                     requestOptions,
-                    decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -232,7 +224,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            bool decryptResponse,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -242,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            if (decryptResponse && this.MdeEncryptionProcessor != null)
+            if (this.MdeEncryptionProcessor != null)
             {
                 responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
@@ -297,7 +288,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         id,
                         partitionKey.Value,
                         requestOptions,
-                        decryptResponse: true,
                         diagnosticsContext,
                         cancellationToken);
                 }
@@ -331,7 +321,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     id,
                     partitionKey,
                     requestOptions,
-                    decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -342,7 +331,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            bool decryptResponse,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -373,13 +361,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            if (decryptResponse)
-            {
-                responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
-            }
 
             return responseMessage;
         }
@@ -420,7 +405,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         itemStream,
                         partitionKey.Value,
                         requestOptions,
-                        decryptResponse: true,
                         diagnosticsContext,
                         cancellationToken);
                 }
@@ -447,7 +431,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     streamPayload,
                     partitionKey,
                     requestOptions,
-                    decryptResponse: true,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -457,7 +440,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream streamPayload,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions,
-            bool decryptResponse,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -486,13 +468,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            if (decryptResponse)
-            {
-                responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
-            }
 
             return responseMessage;
         }

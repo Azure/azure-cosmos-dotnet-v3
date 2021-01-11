@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Data.Encryption.Cryptography;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -72,6 +73,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // property not encrypted.
                     withEncryptedValues.WithParameter(name, value);
                     return withEncryptedValues;
+                }
+
+                if (settings.EncryptionType == EncryptionType.Randomized)
+                {
+                    throw new ArgumentException($"Unsupported argument with Path: {path} for query.For executing queries on encrypted paths please make sure Client Encryption Policy is configured with Deterministic Encryption Type.");
                 }
 
                 (MdeEncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = MdeEncryptionProcessor.Serialize(propertyValueToEncrypt);

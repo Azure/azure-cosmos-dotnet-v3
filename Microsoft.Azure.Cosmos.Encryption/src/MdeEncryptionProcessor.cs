@@ -279,6 +279,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
             await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
             if (this.ClientEncryptionPolicy == null)
@@ -321,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (settings == null)
                 {
-                    throw new ArgumentException("Invalid Encryption Setting for the Property:{0}", propertyName);
+                    throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}");
                 }
 
                 await this.EncryptAndSerializePropertyAsync(
@@ -485,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     if (settings == null)
                     {
-                        throw new ArgumentException("Invalid Encryption Setting for the Property");
+                        throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}");
                     }
 
                     await this.DecryptAndDeserializePropertyAsync(
@@ -513,13 +518,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
-            if (input == null || this.ClientEncryptionPolicy == null)
+            if (input == null)
             {
                 return input;
             }
 
             Debug.Assert(input.CanSeek);
             Debug.Assert(diagnosticsContext != null);
+
+            if (this.ClientEncryptionPolicy == null)
+            {
+                input.Position = 0;
+                return input;
+            }
 
             JObject itemJObj = this.RetrieveItem(input);
 
@@ -537,14 +548,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            Debug.Assert(document != null);
+
             await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
             if (this.ClientEncryptionPolicy == null)
             {
                 return document;
             }
-
-            Debug.Assert(document != null);
 
             await this.DecryptObjectAsync(
                          document,
