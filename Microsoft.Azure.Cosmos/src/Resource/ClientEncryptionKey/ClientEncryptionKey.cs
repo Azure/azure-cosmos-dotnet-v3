@@ -8,8 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Provides operations for reading a specific client data encryption key (aka ClientEncryptionKey on the backend) by Id.
-    /// See <see cref="Database"/> for operations to create, replace and enumerate data encryption keys.
+    /// Provides operations for reading a specific client data encryption key (aka ClientEncryptionKey) by Id.
+    /// See <see cref="Database"/> for operations to create and enumerate data encryption keys.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
 #if PREVIEW
@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Reads the properties of a client encryption key from the Azure Cosmos service as an asynchronous operation.
+        /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
@@ -68,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Replace a <see cref="ClientEncryptionKeyProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
         /// </summary>
         /// <param name="clientEncryptionKeyProperties">The <see cref="ClientEncryptionKeyProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>

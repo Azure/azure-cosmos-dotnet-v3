@@ -991,6 +991,7 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
         /// <summary>
         /// Returns a reference to a client encryption key object.
+        /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
         /// </summary>
         /// <param name="id">Unique identifier for the client encryption key.</param>
         /// <returns>Client encryption key reference.</returns>
@@ -1011,6 +1012,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of client encryption keys.
+        /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
         /// </summary>
         /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -1026,7 +1028,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Saves the client encryption key as an asynchronous operation in the Azure Cosmos service.
-        /// This should be invoked from the Encryption package.
+        /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
         /// </summary>
         /// <param name="clientEncryptionKeyProperties">Client encryption key properties.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
