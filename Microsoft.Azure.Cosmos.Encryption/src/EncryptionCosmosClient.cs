@@ -31,83 +31,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.clientEncryptionPolicyCache = new AsyncCache<string, ClientEncryptionPolicy>();
             this.clientEncryptionKeyPropertiesCache = new AsyncCache<string, CachedClientEncryptionProperties>();
             this.clientEncryptionKeyPropertiesCacheTimeToLive = TimeSpan.FromMinutes(Constants.CekPropertiesDefaultTTLInMinutes);
-            this.cachedClientEncryptionKeyList = new Dictionary<string, HashSet<string>>();
         }
 
         private static readonly SemaphoreSlim CekPropertiesCacheSema = new SemaphoreSlim(1, 1);
-        private static readonly SemaphoreSlim KeyListSema = new SemaphoreSlim(1, 1);
 
         internal EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
-
-        private readonly Dictionary<string, HashSet<string>> cachedClientEncryptionKeyList;
-
-        public void UpdateCachedClientEncryptionKeyList(string key, string value)
-        {
-            if (KeyListSema.Wait(-1))
-            {
-                try
-                {
-                    if (this.cachedClientEncryptionKeyList.ContainsKey(key))
-                    {
-                        HashSet<string> list = this.cachedClientEncryptionKeyList[key];
-                        if (list.Contains(value) == false)
-                        {
-                            list.Add(value);
-                        }
-                    }
-                    else
-                    {
-                        HashSet<string> list = new HashSet<string>
-                        {
-                            value,
-                        };
-
-                        this.cachedClientEncryptionKeyList.Add(key, list);
-                    }
-                }
-                finally
-                {
-                    KeyListSema.Release(1);
-                }
-            }
-        }
-
-        public Dictionary<string, HashSet<string>> GetClientEncryptionKeyList()
-        {
-            if (KeyListSema.Wait(-1))
-            {
-                try
-                {
-                    return this.cachedClientEncryptionKeyList;
-                }
-                finally
-                {
-                    KeyListSema.Release(1);
-                }
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public void RemoveCachedClientEncryptionKeyEntry(string key)
-        {
-            if (KeyListSema.Wait(-1))
-            {
-                try
-                {
-                    if (this.cachedClientEncryptionKeyList.ContainsKey(key))
-                    {
-                        this.cachedClientEncryptionKeyList.Remove(key);
-                    }
-                }
-                finally
-                {
-                    KeyListSema.Release(1);
-                }
-            }
-        }
 
         /// <summary>
         /// Gets or Adds ClientEncryptionPolicy. The Cache gets seeded initially either via InitializeEncryptionAsync call on the container,
@@ -136,12 +64,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                  },
                  cancellationToken,
                  forceRefresh: shouldforceRefresh);
-        }
-
-        internal void RemoveClientEncryptionPolicy(Container container)
-        {
-            string cacheKey = container.Database.Id + container.Id;
-            this.clientEncryptionPolicyCache.Remove(cacheKey);
         }
 
         internal async Task<CachedClientEncryptionProperties> GetOrAddClientEncryptionKeyPropertiesAsync(
@@ -178,21 +100,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        internal void RemoveClientEncryptionPropertyCache(string id)
-        {
-            if (CekPropertiesCacheSema.Wait(-1))
-            {
-                try
-                {
-                    this.clientEncryptionKeyPropertiesCache.Remove(id);
-                }
-                finally
-                {
-                    CekPropertiesCacheSema.Release(1);
-                }
-            }
-        }
-
         internal async Task<CachedClientEncryptionProperties> GetClientEncryptionKeyPropertiesAsync(
             Container container,
             string clientEncryptionKeyId,
@@ -219,8 +126,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clientEncryptionKeyProperties,
                 DateTime.UtcNow + this.clientEncryptionKeyPropertiesCacheTimeToLive);
 
-            // manage a list of keys associated with a database, required for cleanup.
-            this.UpdateCachedClientEncryptionKeyList(container.Database.Id, clientEncryptionKeyId);
             return cachedClientEncryptionProperties;
         }
 

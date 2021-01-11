@@ -206,9 +206,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            // clean up the container and database cache entries.
-            await this.DatabaseCacheCleanupAsync();
-
             EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
                 await this.database.DeleteAsync(requestOptions, cancellationToken),
                 this.EncryptionCosmosClient);
@@ -220,35 +217,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            // clean up the container and database cache entries.
-            await this.DatabaseCacheCleanupAsync();
             return await this.database.DeleteStreamAsync(requestOptions, cancellationToken);
-        }
-
-        internal async Task DatabaseCacheCleanupAsync()
-        {
-            // clean up all the container specific Client Encryption Policy cache entries.
-            FeedIterator<ContainerProperties> feedIterator = this.database.GetContainerQueryIterator<ContainerProperties>();
-            while (feedIterator.HasMoreResults)
-            {
-                foreach (ContainerProperties containerProperties in await feedIterator.ReadNextAsync())
-                {
-                    // clear the cached policies for this container.
-                    this.EncryptionCosmosClient.RemoveClientEncryptionPolicy(this.database.GetContainer(containerProperties.Id));
-                }
-            }
-
-            // Remove all the Keys cached.
-            if (this.EncryptionCosmosClient.GetClientEncryptionKeyList().TryGetValue(this.Id, out HashSet<string> keyList))
-            {
-                foreach (string keyId in keyList)
-                {
-                    string cacheKey = this.Id + keyId;
-                    this.EncryptionCosmosClient.RemoveClientEncryptionPropertyCache(cacheKey);
-                }
-
-                this.EncryptionCosmosClient.RemoveCachedClientEncryptionKeyEntry(this.Id);
-            }
         }
 
         public override ClientEncryptionKey GetClientEncryptionKey(string id)

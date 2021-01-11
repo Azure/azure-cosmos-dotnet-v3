@@ -489,9 +489,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            // clear the cached policies for this container.
-            this.EncryptionCosmosClient.RemoveClientEncryptionPolicy(this.Container);
-
             return this.Container.DeleteContainerAsync(
                 requestOptions,
                 cancellationToken);
@@ -501,9 +498,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            // clear the cached policies for this container.
-            this.EncryptionCosmosClient.RemoveClientEncryptionPolicy(this.Container);
-
             return this.Container.DeleteContainerStreamAsync(
                 requestOptions,
                 cancellationToken);
