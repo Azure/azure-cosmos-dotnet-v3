@@ -285,12 +285,18 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override string GetStringValue()
+            public override UtfAnyString GetStringValue()
             {
-                ReadOnlySpan<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                if (this.TryGetBufferedStringValue(out Utf8Memory memory))
+                {
+                    return Utf8String.UnsafeFromUtf8BytesNoValidation(memory.Memory);
+                }
+
+                ReadOnlyMemory<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
                     this.token.Start,
-                    this.token.End).Span;
-                return JsonTextParser.GetStringValue(stringToken);
+                    this.token.End);
+
+                return JsonTextParser.GetStringValue(Utf8Memory.UnsafeCreateNoValidation(stringToken));
             }
 
             /// <inheritdoc />

@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private readonly Uri containerUri;
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
+        private ChangeFeedPolicy changeFeedPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -58,6 +59,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return new ConflictResolutionDefinition(
                 this,
                 (conflictPolicy) => this.AddConflictResolution(conflictPolicy));
+        }
+
+        /// <summary>
+        /// Defined the change feed policy for this Azure Cosmos container
+        /// </summary>
+        /// <param name="retention"> Indicates for how long operation logs have to be retained. <see cref="ChangeFeedPolicy.FullFidelityRetention"/>.</param>
+        /// <returns>An instance of <see cref="ChangeFeedPolicyDefinition"/>.</returns>
+        internal ChangeFeedPolicyDefinition WithChangeFeedPolicy(TimeSpan retention)
+        {
+            return new ChangeFeedPolicyDefinition(
+                this,
+                retention,
+                (changeFeedPolicy) => this.AddChangeFeedPolicy(changeFeedPolicy));
         }
 
         /// <summary>
@@ -156,6 +170,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.ConflictResolutionPolicy = this.conflictResolutionPolicy;
             }
 
+            if (this.changeFeedPolicy != null)
+            {
+                containerProperties.ChangeFeedPolicy = this.changeFeedPolicy;
+            }
+
             return containerProperties;
         }
 
@@ -179,6 +198,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             }
 
             this.conflictResolutionPolicy = conflictResolutionPolicy;
+        }
+
+        private void AddChangeFeedPolicy(ChangeFeedPolicy changeFeedPolicy)
+        {
+            this.changeFeedPolicy = changeFeedPolicy;
         }
     }
 }
