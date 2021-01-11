@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Detailed view of all the operations.
         /// </summary>
-        private List<CosmosDiagnosticsInternal> ContextList { get; }
+        private ConcurrentStack<CosmosDiagnosticsInternal> ContextList { get; }
 
         private int totalResponseCount = 0;
         private int failedResponseCount = 0;
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.UserAgent = userAgentString ?? throw new ArgumentNullException(nameof(userAgentString));
             this.OperationName = operationName ?? throw new ArgumentNullException(nameof(operationName));
             this.StartUtc = DateTime.UtcNow;
-            this.ContextList = new List<CosmosDiagnosticsInternal>();
+            this.ContextList = new ConcurrentStack<CosmosDiagnosticsInternal>();
             this.Diagnostics = new CosmosDiagnosticsCore(this);
             this.overallScope = new CosmosDiagnosticScope("Overall");
         }
@@ -197,21 +198,12 @@ namespace Microsoft.Azure.Cosmos
             // Using a for loop with a yield prevents Issue #1467 which causes
             // ThrowInvalidOperationException if a new diagnostics is getting added
             // while the enumerator is being used.
-            lock (this.ContextList)
-            {
-                for (int i = 0; i < this.ContextList.Count; i++)
-                {
-                    yield return this.ContextList[i];
-                }
-            }
+            return this.ContextList.GetEnumerator();
         }
 
         private void AddToContextList(CosmosDiagnosticsInternal cosmosDiagnosticsInternal)
         {
-            lock (this.ContextList)
-            {
-                this.ContextList.Add(cosmosDiagnosticsInternal);
-            }
+            this.ContextList.Push(cosmosDiagnosticsInternal);
         }
 
         private void AddResponseCount(int statusCode)
