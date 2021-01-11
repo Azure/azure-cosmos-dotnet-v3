@@ -14,14 +14,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure.Core;
     using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Encryption;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Encryption.EmulatorTests.LegacyEncryptionTests;
-    using DataEncryptionKey = Microsoft.Azure.Cosmos.Encryption.DataEncryptionKey;
+    using DataEncryptionKey = Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey;
 
     [TestClass]
     public class MdeEncryptionTests
