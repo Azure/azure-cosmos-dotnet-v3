@@ -1155,26 +1155,26 @@
             OrderByTypes nonPrimitives = OrderByTypes.Array | OrderByTypes.Object;
             OrderByTypes all = primitives | nonPrimitives | OrderByTypes.Undefined;
 
-            await this.CreateIngestQueryDeleteAsync<OrderByTypes[]>(
-                    ConnectionModes.Direct,
-                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
-                    documents,
-                    this.TestMixedTypeOrderByHelper,
-                    new OrderByTypes[]
-                    {
-                        OrderByTypes.Array,
-                        OrderByTypes.Bool,
-                        OrderByTypes.Null,
-                        OrderByTypes.Number,
-                        OrderByTypes.Object,
-                        OrderByTypes.String,
-                        OrderByTypes.Undefined,
-                        primitives,
-                        nonPrimitives,
-                        all,
-                    },
-                    "/id",
-                    indexV2Policy);
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                documents,
+                this.TestMixedTypeOrderByHelper,
+                new OrderByTypes[]
+                {
+                    OrderByTypes.Array,
+                    OrderByTypes.Bool,
+                    OrderByTypes.Null,
+                    OrderByTypes.Number,
+                    OrderByTypes.Object,
+                    OrderByTypes.String,
+                    OrderByTypes.Undefined,
+                    primitives,
+                    nonPrimitives,
+                    all,
+                },
+                "/id",
+                indexV2Policy);
         }
 
         private sealed class MixedTypedDocument
@@ -1297,11 +1297,6 @@
                         MaxConcurrency = 10,
                     };
 
-                    List<CosmosObject> actualFromQueryWithoutContinutionTokens;
-                    actualFromQueryWithoutContinutionTokens = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosObject>(
-                        container,
-                        query,
-                        queryRequestOptions: feedOptions);
 #if false
                         For now we can not serve the query through continuation tokens correctly.
                         This is because we allow order by on mixed types but not comparisions across types
@@ -1309,19 +1304,19 @@
                             SELECT c.MixedTypeField FROM c ORDER BY c.MixedTypeField
                         returns:
                         [
-                            {"MixedTypeField":null},
-                            {"MixedTypeField":false},
-                            {"MixedTypeField":true},
-                            {"MixedTypeField":303093052},
-                            {"MixedTypeField":438985130},
-                            {"MixedTypeField":"aaaaaaaaaaa"}
+                            {"MixedTypeField":[]},
+                            {"MixedTypeField":[1, 2, 3]},
+                            {"MixedTypeField":{}},
                         ]
-                        and we left off on 303093052 then at some point the cross partition code resumes the query by running the following:
-                            SELECT c.MixedTypeField FROM c WHERE c.MixedTypeField > 303093052 ORDER BY c.MixedTypeField
-                        which will only return the following:
-                            { "MixedTypeField":438985130}
-                        and that is because comparision across types is undefined so "aaaaaaaaaaa" > 303093052 never got emitted
+                        and we left off on [1, 2, 3] then at some point the cross partition code resumes the query by running the following:
+                            SELECT c.MixedTypeField FROM c WHERE c.MixedTypeField > [1, 2, 3] ORDER BY c.MixedTypeField
+                        And comparison on arrays and objects is undefined.
 #endif
+
+                    List<CosmosElement> actual = await QueryTestsBase.QueryWithoutContinuationTokensAsync<CosmosElement>(
+                        container,
+                        query,
+                        queryRequestOptions: feedOptions);
 
                     IEnumerable<CosmosObject> insertedDocs = documents
                         .Select(document => CosmosElement.CreateFromBuffer<CosmosObject>(Encoding.UTF8.GetBytes(document.ToString())))
@@ -1403,17 +1398,10 @@
                     }
 
                     Assert.IsTrue(
-                        expected.SequenceEqual(actualFromQueryWithoutContinutionTokens),
+                        expected.SequenceEqual(actual),
                         $@" queryWithoutContinuations: {query},
                             expected:{JsonConvert.SerializeObject(expected)},
-                            actual: {JsonConvert.SerializeObject(actualFromQueryWithoutContinutionTokens)}");
-
-                    // Can't assert for reasons mentioned above
-                    //Assert.IsTrue(
-                    //    expected.SequenceEqual(actualFromQueryWithContinutionTokens, DistinctMapTests.JsonTokenEqualityComparer.Value),
-                    //    $@" queryWithContinuations: {query},
-                    //    expected:{JsonConvert.SerializeObject(expected)},
-                    //    actual: {JsonConvert.SerializeObject(actualFromQueryWithContinutionTokens)}");
+                            actual: {JsonConvert.SerializeObject(actual)}");
                 }
             }
         }
