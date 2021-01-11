@@ -230,8 +230,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>>()
             {
                 // Skip all the partitions left of the target range, since they have already been drained fully.
-                partitionMapping.TargetPartition,
-                partitionMapping.PartitionsRightOfTarget,
+                partitionMapping.TargetMapping,
+                partitionMapping.MappingRightOfTarget,
             };
 
             foreach (IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken> rangeToInitalize in rangesToInitialize)

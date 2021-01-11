@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Castle.DynamicProxy.Generators;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
@@ -20,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Threading;
 
     [TestClass]
     public abstract class DocumentContainerTests
@@ -154,6 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         internal abstract IDocumentContainer CreateDocumentContainer(
             PartitionKeyDefinition partitionKeyDefinition,
+            int numItemToInsert = 0,
             FlakyDocumentContainer.FailureConfigs failureConfigs = default);
 
         [TestMethod]
@@ -325,21 +326,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             where TState : State
         {
             // Container setup
-            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            int numItemsToInsert = 10;
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition, numItemsToInsert);
 
             IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
                 trace: NoOpTrace.Singleton, 
                 cancellationToken: default);
 
             Assert.AreEqual(1, ranges.Count);
-
-            int numItemsToInsert = 10;
-            for (int i = 0; i < numItemsToInsert; i++)
-            {
-                // Insert an item
-                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                await documentContainer.CreateItemAsync(item, cancellationToken: default);
-            }
 
             (int firstPageCount, TState resumeState) = await drainFunctions.DrainOnePageAsync(documentContainer, ranges[0]);
 
@@ -357,27 +351,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestMethod]
-        public async Task TestMultiSplitAsync()
+        public async Task TestSplitAfterSplit_ReadFeedAsync()
         {
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
-            {
-                Paths = new System.Collections.ObjectModel.Collection<string>()
-                {
-                    "/pk"
-                },
-                Kind = PartitionKind.Hash,
-                Version = PartitionKeyDefinitionVersion.V2,
-            };
+            await this.TestSplitAfterSplitImplementationAsync(FeedDrainFunctions.ReadFeed);
+        }
 
-            IDocumentContainer documentContainer = this.CreateDocumentContainer(partitionKeyDefinition);
+        [TestMethod]
+        public async Task TestSplitAfterSplit_ChangeFeedAsync()
+        {
+            await this.TestSplitAfterSplitImplementationAsync(FeedDrainFunctions.ChangeFeed);
+        }
 
+        [TestMethod]
+        public async Task TestSplitAfterSplit_QueryAsync()
+        {
+            await this.TestSplitAfterSplitImplementationAsync(FeedDrainFunctions.Query);
+        }
+
+        private async Task TestSplitAfterSplitImplementationAsync<TState>(DrainFunctions<TState> drainFunctions)
+            where TState : State
+        {
             int numItemsToInsert = 10;
-            for (int i = 0; i < numItemsToInsert; i++)
-            {
-                // Insert an item
-                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
-                await documentContainer.CreateItemAsync(item, cancellationToken: default);
-            }
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition, numItemsToInsert);
 
             IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
                 trace: NoOpTrace.Singleton, 
@@ -410,34 +405,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 Assert.AreEqual(2, grandChildrenRanges.Count);
                 foreach (FeedRangeInternal grandChildrenRange in grandChildrenRanges)
                 {
-                    count += await AssertChildPartitionAsync(grandChildrenRange);
+                    count += await drainFunctions.DrainAllFromStartAsync(documentContainer, grandChildrenRange);
                 }
-            }
-
-            async Task<int> AssertChildPartitionAsync(FeedRangeInternal feedRange)
-            {
-                List<long> values = new List<long>();
-                ReadFeedState readFeedState = ReadFeedState.Beginning();
-                while (readFeedState != null)
-                {
-                    ReadFeedPage page = await documentContainer.ReadFeedAsync(
-                        feedRange: feedRange,
-                        readFeedState: readFeedState,
-                        pageSize: 1,
-                        queryRequestOptions: default,
-                        trace: NoOpTrace.Singleton,
-                        cancellationToken: default);
-                    readFeedState = page.State;
-                    foreach (Record record in page.GetRecords())
-                    {
-                        values.Add(Number64.ToLong((record.Payload["pk"] as CosmosNumber).Value));
-                    }
-                }
-
-                List<long> sortedValues = values.OrderBy(x => x).ToList();
-                Assert.IsTrue(values.SequenceEqual(sortedValues));
-
-                return values.Count;
             }
 
             Assert.AreEqual(numItemsToInsert, count);
@@ -497,10 +466,128 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Assert.AreEqual(countBeforeMerge, countAfterMerge);
 
             // Check that the merged sums up to the splits 
-            int mergedCount = await drainFunctions.DrainAllFromStart(documentContainer, mergedRanges[0]);
-            int childCount1 = await drainFunctions.DrainAllFromStart(documentContainer, childRanges[0]);
-            int childCount2 = await drainFunctions.DrainAllFromStart(documentContainer, childRanges[1]);
+            int mergedCount = await drainFunctions.DrainAllFromStartAsync(documentContainer, mergedRanges[0]);
+            int childCount1 = await drainFunctions.DrainAllFromStartAsync(documentContainer, childRanges[0]);
+            int childCount2 = await drainFunctions.DrainAllFromStartAsync(documentContainer, childRanges[1]);
             Assert.AreEqual(mergedCount, childCount1 + childCount2);
+        }
+
+        [TestMethod]
+        public async Task TestMergeAfterMerge_ReadFeedAsync()
+        {
+            await this.TestMergeAfterMergeImplementationAsync(FeedDrainFunctions.ReadFeed);
+        }
+
+        [TestMethod]
+        public async Task TestMergeAfterMerge_ChangeFeedAsync()
+        {
+            await this.TestMergeAfterMergeImplementationAsync(FeedDrainFunctions.ChangeFeed);
+        }
+
+        [TestMethod]
+        public async Task TestMergeAfterMerge_QueryAsync()
+        {
+            await this.TestMergeAfterMergeImplementationAsync(FeedDrainFunctions.Query);
+        }
+
+        private async Task TestMergeAfterMergeImplementationAsync<TState>(
+            DrainFunctions<TState> drainFunctions)
+            where TState : State
+        {
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(1, ranges.Count);
+            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(2, childRanges.Count);
+            await documentContainer.SplitAsync(childRanges[0], cancellationToken: default);
+            await documentContainer.SplitAsync(childRanges[1], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> grandChildRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(4, grandChildRanges.Count);
+
+            int numItemsToInsert = 10;
+            for (int i = 0; i < numItemsToInsert; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                await documentContainer.CreateItemAsync(item, cancellationToken: default);
+            }
+
+            await documentContainer.MergeAsync(grandChildRanges[0], grandChildRanges[1], cancellationToken: default);
+            await documentContainer.MergeAsync(grandChildRanges[2], grandChildRanges[3], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> mergedGrandChildrenRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(2, mergedGrandChildrenRanges.Count);
+            await documentContainer.MergeAsync(mergedGrandChildrenRanges[0], mergedGrandChildrenRanges[1], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> mergedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(1, mergedRanges.Count);
+
+            // Check that the merged sums up to the splits 
+            int mergedCount = await drainFunctions.DrainAllFromStartAsync(documentContainer, mergedRanges[0]);
+            int grandChildCount1 = await drainFunctions.DrainAllFromStartAsync(documentContainer, grandChildRanges[0]);
+            int grandChildCount2 = await drainFunctions.DrainAllFromStartAsync(documentContainer, grandChildRanges[1]);
+            int grandChildCount3 = await drainFunctions.DrainAllFromStartAsync(documentContainer, grandChildRanges[2]);
+            int grandChildCount4 = await drainFunctions.DrainAllFromStartAsync(documentContainer, grandChildRanges[3]);
+            Assert.AreEqual(mergedCount, grandChildCount1 + grandChildCount2 + grandChildCount3 + grandChildCount4);
+        }
+
+        [TestMethod]
+        public async Task TestSplitAfterMerge_ReadFeedAsync()
+        {
+            await this.TestSplitAfterMergeImplementationAsync(FeedDrainFunctions.ReadFeed);
+        }
+
+        [TestMethod]
+        public async Task TestSplitAfterMerge_ChangeFeedAsync()
+        {
+            await this.TestSplitAfterMergeImplementationAsync(FeedDrainFunctions.ChangeFeed);
+        }
+
+        [TestMethod]
+        public async Task TestSplitAfterMerge_QueryAsync()
+        {
+            await this.TestSplitAfterMergeImplementationAsync(FeedDrainFunctions.Query);
+        }
+
+        private async Task TestSplitAfterMergeImplementationAsync<TState>(
+            DrainFunctions<TState> drainFunctions)
+            where TState : State
+        {
+            IDocumentContainer documentContainer = this.CreateDocumentContainer(PartitionKeyDefinition);
+            IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(1, ranges.Count);
+            await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> childRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(2, childRanges.Count);
+
+            int numItemsToInsert = 10;
+            for (int i = 0; i < numItemsToInsert; i++)
+            {
+                // Insert an item
+                CosmosObject item = CosmosObject.Parse($"{{\"pk\" : {i} }}");
+                await documentContainer.CreateItemAsync(item, cancellationToken: default);
+            }
+
+            await documentContainer.MergeAsync(childRanges[0], childRanges[1], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            IReadOnlyList<FeedRangeInternal> mergedRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(1, mergedRanges.Count);
+
+            (int firstPageCount, TState resumeState) = await drainFunctions.DrainOnePageAsync(documentContainer, mergedRanges[0]);
+
+            await documentContainer.SplitAsync(mergedRanges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+            childRanges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            Assert.AreEqual(2, childRanges.Count);
+
+            int childCount1 = await drainFunctions.DrainAllPagesAsync(documentContainer, resumeState, childRanges[0]);
+            int childCount2 = await drainFunctions.DrainAllPagesAsync(documentContainer, resumeState, childRanges[1]);
+
+            Assert.AreEqual(numItemsToInsert, firstPageCount + childCount1 + childCount2);
         }
 
         [TestMethod]
@@ -660,7 +747,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public Func<IDocumentContainer, FeedRangeInternal, Task<(int, TState)>> DrainOnePageAsync { get; }
             public Func<IDocumentContainer, TState, FeedRangeInternal, Task<int>> DrainAllPagesAsync { get; }
 
-            public async Task<int> DrainAllFromStart(IDocumentContainer documentContainer, FeedRangeInternal feedRange)
+            public async Task<int> DrainAllFromStartAsync(IDocumentContainer documentContainer, FeedRangeInternal feedRange)
             {
                 (int firstPageCount, TState resumeState) = await this.DrainOnePageAsync(documentContainer, feedRange);
                 int remainingPageCount = await this.DrainAllPagesAsync(documentContainer, resumeState, feedRange);
