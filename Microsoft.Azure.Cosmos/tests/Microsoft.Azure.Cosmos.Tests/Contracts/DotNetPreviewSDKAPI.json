@@ -389,17 +389,17 @@
           "Attributes": [],
           "MethodInfo": "Double RequestCharge;CanRead:True;CanWrite:False;Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ClientEncryptionKey DataEncryptionKey": {
+        "Microsoft.Azure.Cosmos.ClientEncryptionKey ClientEncryptionKey": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionKey DataEncryptionKey;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ClientEncryptionKey get_DataEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionKey ClientEncryptionKey;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.ClientEncryptionKey get_ClientEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ClientEncryptionKey get_DataEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.ClientEncryptionKey get_ClientEncryptionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionKey get_DataEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionKey get_ClientEncryptionKey();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ClientEncryptionKey op_Implicit(Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse)": {
           "Type": "Method",
