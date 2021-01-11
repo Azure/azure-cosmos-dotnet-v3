@@ -54,7 +54,7 @@
                     List<string> expected = documents
                         .Skip(i * 3)
                         .Take(3)
-                        .Select(doc => ((CosmosString)doc["id"]).Value)
+                        .Select(doc => ((CosmosString)doc["id"]).Value.ToString())
                         .ToList();
                     string expectedResult = string.Join(",", expected);
 

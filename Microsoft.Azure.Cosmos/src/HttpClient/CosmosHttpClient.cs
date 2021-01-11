@@ -12,18 +12,22 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class CosmosHttpClient : IDisposable
     {
+        public static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
+
         public abstract HttpMessageHandler HttpMessageHandler { get; }
 
         public abstract Task<HttpResponseMessage> GetAsync(
             Uri uri,
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
+            HttpTimeoutPolicy timeoutPolicy,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 
         public abstract Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
+            HttpTimeoutPolicy timeoutPolicy,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken);
 

@@ -54,8 +54,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return jsonSerializationFormat switch
             {
                 JsonSerializationFormat.Text => new JsonTextWriter(initalCapacity),
-                JsonSerializationFormat.Binary => new JsonBinaryWriter(
-                    serializeCount: false),
+                JsonSerializationFormat.Binary => new JsonBinaryWriter(initalCapacity, serializeCount: false),
                 _ => throw new ArgumentException(
                         string.Format(
                             CultureInfo.CurrentCulture,

@@ -129,6 +129,11 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
+
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
 #endif
 
 #if !PREVIEW
