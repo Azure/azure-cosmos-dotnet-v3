@@ -910,6 +910,40 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+          Cosmos.PartitionKey partitionKey,
+          CosmosDiagnosticsContext diagnosticsContext,
+          ITrace trace,
+          RequestOptions requestOptions = null,
+          CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Cosmos.PartitionKey? resultingPartitionKey;
+            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                resultingPartitionKey = null;
+            }
+            else
+            {
+                resultingPartitionKey = partitionKey;
+            }
+
+            ContainerCore.ValidatePartitionKey(resultingPartitionKey, requestOptions);
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.PartitionKey,
+                operationType: OperationType.Delete,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: resultingPartitionKey,
+                itemId: null,
+                streamPayload: null,
+                requestEnricher: null,
+                trace: trace,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
+        }
+
         private static bool TryParseTokenListForElement(CosmosObject pathTraversal, IReadOnlyList<string> tokens, out CosmosElement result)
         {
             result = null;
