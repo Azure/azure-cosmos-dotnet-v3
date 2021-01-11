@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
@@ -157,6 +158,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 monadicCreatePipelineStage = (continuationToken, cancellationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
                     executionEnvironment,
                     queryInfo.Top.Value,
+                    continuationToken,
+                    cancellationToken,
+                    monadicCreateSourceStage);
+            }
+
+            if (queryInfo.HasDCount)
+            {
+                MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
+                monadicCreatePipelineStage = (continuationToken, cancellationToken) => DCountQueryPipelineStage.MonadicCreate(
+                    executionEnvironment,
+                    queryInfo.DCountInfo,
                     continuationToken,
                     cancellationToken,
                     monadicCreateSourceStage);
