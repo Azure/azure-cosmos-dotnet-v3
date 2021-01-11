@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override int GetHashCode()
         {
-            return this.Range.Min.GetHashCode() 
+            return this.Range.Min.GetHashCode()
                 ^ this.Range.Max.GetHashCode()
                 ^ this.Range.IsMinInclusive.GetHashCode()
                 ^ this.Range.IsMaxInclusive.GetHashCode();

@@ -38,11 +38,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 throw new ArgumentException(nameof(feedRanges));
             }
 
-            if (tokens.Count > feedRanges.Count)
-            {
-                throw new ArgumentException($"{nameof(tokens)} can not have more elements than {nameof(feedRanges)}.");
-            }
-
             List<FeedRangeEpk> mergedFeedRanges = MergeRangesWherePossible(feedRanges);
             List<(FeedRangeEpk, PartitionedToken)> splitRangesAndTokens = SplitRangesBasedOffContinuationToken(mergedFeedRanges, tokens);
             FeedRangeEpk targetFeedRange = GetTargetFeedRange(tokens);
@@ -121,14 +116,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 List<FeedRangeEpk> rangesThatOverlapToken = remainingRanges
                     .Where(feedRange =>
                     {
-                        bool rightOfStart = (feedRange.Range.Min == string.Empty)
+                        bool tokenRightOfStart = (feedRange.Range.Min == string.Empty)
                             || ((partitionedToken.Range.Min != string.Empty) && (partitionedToken.Range.Min.CompareTo(feedRange.Range.Min) >= 0));
-                        bool leftOfEnd = (feedRange.Range.Max == string.Empty)
+                        bool tokenLeftOfEnd = (feedRange.Range.Max == string.Empty)
                             || ((partitionedToken.Range.Max != string.Empty) && (partitionedToken.Range.Max.CompareTo(feedRange.Range.Max) <= 0));
+                        
+                        bool rangeCompletelyOverlapsToken = tokenRightOfStart && tokenLeftOfEnd;
 
-                        bool rangeOverlapsToken = rightOfStart && leftOfEnd;
-
-                        return rangeOverlapsToken;
+                        return rangeCompletelyOverlapsToken;
                     })
                     .ToList();
 
@@ -138,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
                 }
                 else if (rangesThatOverlapToken.Count == 1)
                 {
-                    FeedRangeEpk feedRange = remainingRanges.First();
+                    FeedRangeEpk feedRange = rangesThatOverlapToken.First();
                     // Remove the range and split it into 3 sections:
                     remainingRanges.Remove(feedRange);
 

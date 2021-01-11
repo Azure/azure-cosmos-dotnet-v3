@@ -157,6 +157,21 @@
         }
 
         [TestMethod]
+        public void ResumeOnMultipleTokens()
+        {
+            FeedRangeEpk range = Range(min: "A", max: "F");
+            ParallelContinuationToken token1 = Token(min: "A", max: "C");
+            ParallelContinuationToken token2 = Token(min: "C", max: "E");
+
+            RunTryGetInitializationInfo(
+                Mapping(),
+                Mapping((Range(min: "A", max: "C"), token1)),
+                Mapping((Range(min: "C", max: "E"), token2), (Range(min: "E", max: "F"), null)),
+                new FeedRangeEpk[] { range, },
+                new IPartitionedToken[] { token1, token2 });
+        }
+
+        [TestMethod]
         public void ResumeOnSplit_LogicalParition()
         {
             // Suppose the partition spans epk range A to E
