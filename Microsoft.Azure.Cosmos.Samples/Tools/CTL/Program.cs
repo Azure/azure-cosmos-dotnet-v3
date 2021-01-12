@@ -5,7 +5,9 @@
 namespace CosmosCTL
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Threading;
     using System.Threading.Tasks;
     using App.Metrics;
     using App.Metrics.Filtering;
@@ -30,16 +32,34 @@ namespace CosmosCTL
 
                 using (logger.BeginScope(config.WorkloadType))
                 {
-                    IMetrics metrics = ConfigureReporting(config);
+                    IMetricsRoot metrics = ConfigureReporting(config);
 
                     ICTLScenario scenario = CreateScenario(config.WorkloadType);
 
-                    await scenario.RunAsync(
+                    using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+                    List<Task> tasks = new List<Task>
+                    {
+                        scenario.RunAsync(
                         config: config,
                         cosmosClient: client,
                         logger: logger,
                         metrics: metrics,
-                        cancellationToken: default);
+                        cancellationToken: cancellationTokenSource.Token),
+
+                        Task.Run(async () =>
+                        {
+                            while (!cancellationTokenSource.Token.IsCancellationRequested)
+                            {
+                                //await Task.Delay(TimeSpan.FromSeconds(config.ReportingIntervalInSeconds));
+                                await Task.WhenAll(metrics.ReportRunner.RunAllAsync());
+                            }
+
+                        })
+                    };
+
+                    await Task.WhenAny();
+                    cancellationTokenSource.Cancel();
 
                     logger.LogInformation($"{nameof(CosmosCTL)} completed successfully.");
                 }
@@ -50,7 +70,7 @@ namespace CosmosCTL
             }
         }
 
-        private static IMetrics ConfigureReporting(CTLConfig config)
+        private static IMetricsRoot ConfigureReporting(CTLConfig config)
         {
             IFilterMetrics filter = new MetricsFilter()
                 .WhereType(MetricType.Counter, MetricType.Histogram, MetricType.Timer);

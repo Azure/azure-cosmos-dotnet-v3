@@ -8,6 +8,7 @@ namespace CosmosCTL
     using System.Collections.Generic;
     using System.Linq;
     using CommandLine;
+    using CommandLine.Text;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
@@ -87,9 +88,10 @@ namespace CosmosCTL
         {
             CTLConfig options = null;
             Parser parser = new Parser((settings) => settings.CaseSensitive = false);
-            parser.ParseArguments<CTLConfig>(args)
-                .WithParsed<CTLConfig>(e => options = e)
-                .WithNotParsed<CTLConfig>(e => CTLConfig.HandleParseError(e));
+            ParserResult<CTLConfig> parserResult = parser.ParseArguments<CTLConfig>(args);
+
+            parserResult.WithParsed<CTLConfig>(e => options = e)
+                .WithNotParsed<CTLConfig>(e => CTLConfig.HandleParseError(e, parserResult));
 
             return options;
         }
@@ -120,11 +122,21 @@ namespace CosmosCTL
                         clientOptions);
         }
 
-        private static void HandleParseError(IEnumerable<Error> errors)
+        private static void HandleParseError(
+            IEnumerable<Error> errors,
+            ParserResult<CTLConfig> parserResult)
         {
+            SentenceBuilder sentenceBuilder = SentenceBuilder.Create();
             foreach (Error e in errors)
             {
-                Console.WriteLine(e.ToString());
+                if (e is HelpRequestedError _)
+                {
+                    HelpText.AutoBuild(parserResult);
+                }
+                else
+                {
+                    Console.WriteLine(sentenceBuilder.FormatError(e));
+                }
             }
 
             Environment.Exit(errors.Count());
