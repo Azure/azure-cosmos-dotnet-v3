@@ -465,9 +465,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 hashCode = CombineHashes(hashCode, sqlQuery.GroupByClause.Accept(this));
             }
 
-            if (sqlQuery.OrderbyClause != null)
+            if (sqlQuery.OrderByClause != null)
             {
-                hashCode = CombineHashes(hashCode, sqlQuery.OrderbyClause.Accept(this));
+                hashCode = CombineHashes(hashCode, sqlQuery.OrderByClause.Accept(this));
             }
 
             if (sqlQuery.OffsetLimitClause != null)
@@ -601,64 +601,40 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         private static int SqlUnaryScalarOperatorKindGetHashCode(SqlUnaryScalarOperatorKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case SqlUnaryScalarOperatorKind.BitwiseNot:
-                    return SqlUnaryScalarOperatorKindHashCodes.BitwiseNot;
-                case SqlUnaryScalarOperatorKind.Not:
-                    return SqlUnaryScalarOperatorKindHashCodes.Not;
-                case SqlUnaryScalarOperatorKind.Minus:
-                    return SqlUnaryScalarOperatorKindHashCodes.Minus;
-                case SqlUnaryScalarOperatorKind.Plus:
-                    return SqlUnaryScalarOperatorKindHashCodes.Plus;
-                default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind));
-            }
+                SqlUnaryScalarOperatorKind.BitwiseNot => SqlUnaryScalarOperatorKindHashCodes.BitwiseNot,
+                SqlUnaryScalarOperatorKind.Not => SqlUnaryScalarOperatorKindHashCodes.Not,
+                SqlUnaryScalarOperatorKind.Minus => SqlUnaryScalarOperatorKindHashCodes.Minus,
+                SqlUnaryScalarOperatorKind.Plus => SqlUnaryScalarOperatorKindHashCodes.Plus,
+                _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
+            };
         }
 
         private static int SqlBinaryScalarOperatorKindGetHashCode(SqlBinaryScalarOperatorKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case SqlBinaryScalarOperatorKind.Add:
-                    return SqlBinaryScalarOperatorKindHashCodes.Add;
-                case SqlBinaryScalarOperatorKind.And:
-                    return SqlBinaryScalarOperatorKindHashCodes.And;
-                case SqlBinaryScalarOperatorKind.BitwiseAnd:
-                    return SqlBinaryScalarOperatorKindHashCodes.BitwiseAnd;
-                case SqlBinaryScalarOperatorKind.BitwiseOr:
-                    return SqlBinaryScalarOperatorKindHashCodes.BitwiseOr;
-                case SqlBinaryScalarOperatorKind.BitwiseXor:
-                    return SqlBinaryScalarOperatorKindHashCodes.BitwiseXor;
-                case SqlBinaryScalarOperatorKind.Coalesce:
-                    return SqlBinaryScalarOperatorKindHashCodes.Coalesce;
-                case SqlBinaryScalarOperatorKind.Divide:
-                    return SqlBinaryScalarOperatorKindHashCodes.Divide;
-                case SqlBinaryScalarOperatorKind.Equal:
-                    return SqlBinaryScalarOperatorKindHashCodes.Equal;
-                case SqlBinaryScalarOperatorKind.GreaterThan:
-                    return SqlBinaryScalarOperatorKindHashCodes.GreaterThan;
-                case SqlBinaryScalarOperatorKind.GreaterThanOrEqual:
-                    return SqlBinaryScalarOperatorKindHashCodes.GreaterThanOrEqual;
-                case SqlBinaryScalarOperatorKind.LessThan:
-                    return SqlBinaryScalarOperatorKindHashCodes.LessThan;
-                case SqlBinaryScalarOperatorKind.LessThanOrEqual:
-                    return SqlBinaryScalarOperatorKindHashCodes.LessThanOrEqual;
-                case SqlBinaryScalarOperatorKind.Modulo:
-                    return SqlBinaryScalarOperatorKindHashCodes.Modulo;
-                case SqlBinaryScalarOperatorKind.Multiply:
-                    return SqlBinaryScalarOperatorKindHashCodes.Multiply;
-                case SqlBinaryScalarOperatorKind.NotEqual:
-                    return SqlBinaryScalarOperatorKindHashCodes.NotEqual;
-                case SqlBinaryScalarOperatorKind.Or:
-                    return SqlBinaryScalarOperatorKindHashCodes.Or;
-                case SqlBinaryScalarOperatorKind.StringConcat:
-                    return SqlBinaryScalarOperatorKindHashCodes.StringConcat;
-                case SqlBinaryScalarOperatorKind.Subtract:
-                    return SqlBinaryScalarOperatorKindHashCodes.Subtract;
-                default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind));
-            }
+                SqlBinaryScalarOperatorKind.Add => SqlBinaryScalarOperatorKindHashCodes.Add,
+                SqlBinaryScalarOperatorKind.And => SqlBinaryScalarOperatorKindHashCodes.And,
+                SqlBinaryScalarOperatorKind.BitwiseAnd => SqlBinaryScalarOperatorKindHashCodes.BitwiseAnd,
+                SqlBinaryScalarOperatorKind.BitwiseOr => SqlBinaryScalarOperatorKindHashCodes.BitwiseOr,
+                SqlBinaryScalarOperatorKind.BitwiseXor => SqlBinaryScalarOperatorKindHashCodes.BitwiseXor,
+                SqlBinaryScalarOperatorKind.Coalesce => SqlBinaryScalarOperatorKindHashCodes.Coalesce,
+                SqlBinaryScalarOperatorKind.Divide => SqlBinaryScalarOperatorKindHashCodes.Divide,
+                SqlBinaryScalarOperatorKind.Equal => SqlBinaryScalarOperatorKindHashCodes.Equal,
+                SqlBinaryScalarOperatorKind.GreaterThan => SqlBinaryScalarOperatorKindHashCodes.GreaterThan,
+                SqlBinaryScalarOperatorKind.GreaterThanOrEqual => SqlBinaryScalarOperatorKindHashCodes.GreaterThanOrEqual,
+                SqlBinaryScalarOperatorKind.LessThan => SqlBinaryScalarOperatorKindHashCodes.LessThan,
+                SqlBinaryScalarOperatorKind.LessThanOrEqual => SqlBinaryScalarOperatorKindHashCodes.LessThanOrEqual,
+                SqlBinaryScalarOperatorKind.Modulo => SqlBinaryScalarOperatorKindHashCodes.Modulo,
+                SqlBinaryScalarOperatorKind.Multiply => SqlBinaryScalarOperatorKindHashCodes.Multiply,
+                SqlBinaryScalarOperatorKind.NotEqual => SqlBinaryScalarOperatorKindHashCodes.NotEqual,
+                SqlBinaryScalarOperatorKind.Or => SqlBinaryScalarOperatorKindHashCodes.Or,
+                SqlBinaryScalarOperatorKind.StringConcat => SqlBinaryScalarOperatorKindHashCodes.StringConcat,
+                SqlBinaryScalarOperatorKind.Subtract => SqlBinaryScalarOperatorKindHashCodes.Subtract,
+                _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
+            };
         }
 
         /// <summary>

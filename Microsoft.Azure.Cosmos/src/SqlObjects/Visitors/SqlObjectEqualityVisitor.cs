@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.OrderbyClause, second.OrderbyClause))
+            if (!Equals(first.OrderByClause, second.OrderByClause))
             {
                 return false;
             }

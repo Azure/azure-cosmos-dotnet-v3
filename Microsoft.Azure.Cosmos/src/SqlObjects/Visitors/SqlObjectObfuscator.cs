@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlQuery.FromClause?.Accept(this) as SqlFromClause,
                 sqlQuery.WhereClause?.Accept(this) as SqlWhereClause,
                 sqlQuery.GroupByClause?.Accept(this) as SqlGroupByClause,
-                sqlQuery.OrderbyClause?.Accept(this) as SqlOrderByClause,
+                sqlQuery.OrderByClause?.Accept(this) as SqlOrderByClause,
                 sqlQuery.OffsetLimitClause?.Accept(this) as SqlOffsetLimitClause);
         }
 

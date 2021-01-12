@@ -73,11 +73,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             // We sort before the projection,
             // since the projection might remove the order by items.
-            if (sqlQuery.OrderbyClause != null)
+            if (sqlQuery.OrderByClause != null)
             {
                 dataSource = ExecuteOrderByClause(
                     dataSource,
-                    sqlQuery.OrderbyClause,
+                    sqlQuery.OrderByClause,
                     ridToPartitionKeyRange);
             }
             else
