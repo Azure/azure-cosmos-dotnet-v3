@@ -13,7 +13,6 @@ namespace CosmosCTL
     using System.Threading.Tasks;
     using App.Metrics;
     using App.Metrics.Counter;
-    using App.Metrics.Histogram;
     using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
@@ -24,10 +23,39 @@ namespace CosmosCTL
         private static readonly string DefaultPartitionKeyPath = $"/{DefaultPartitionKey}";
         private static readonly int DefaultDocumentFieldCount = 5;
         private static readonly int DefaultDataFieldSize = 20;
-
         private static readonly string DataFieldValue = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, DefaultDataFieldSize);
 
         private readonly Random random = new Random();
+
+        private ReadWriteQueryPercentage readWriteQueryPercentage;
+        private IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocuments;
+        private InitializationResult initializationResult;
+
+        public async Task InitializeAsync(
+            CTLConfig config,
+            CosmosClient cosmosClient,
+            ILogger logger)
+        {
+            if (!TryParseReadWriteQueryPercentages(config.ReadWriteQueryPercentage, out this.readWriteQueryPercentage))
+            {
+                logger.LogError("Cannot correctly parse {0} = {1}", nameof(config.ReadWriteQueryPercentage), config.ReadWriteQueryPercentage);
+                return;
+            }
+
+            this.initializationResult = await CreateDatabaseAndContainersAsync(config, cosmosClient);
+            if (this.initializationResult.CreatedDatabase)
+            {
+                logger.LogInformation("Created database for execution");
+            }
+
+            if (this.initializationResult.CreatedContainers.Count > 0)
+            {
+                logger.LogInformation("Created {0} collections for execution", this.initializationResult.CreatedContainers.Count);
+            }
+
+            logger.LogInformation("Pre-populating {0} documents", config.Operations);
+            this.createdDocuments = await PopulateDocumentsAsync(config, logger, this.initializationResult.Containers);
+        }
 
         public async Task RunAsync(
             CTLConfig config, 
@@ -36,26 +64,9 @@ namespace CosmosCTL
             IMetrics metrics,
             CancellationToken cancellationToken)
         {
-            if (!TryParseReadWriteQueryPercentages(config.ReadWriteQueryPercentage, out ReadWriteQueryPercentage readWriteQueryPercentage))
-            {
-                logger.LogError("Cannot correctly parse {0} = {1}", nameof(config.ReadWriteQueryPercentage), config.ReadWriteQueryPercentage);
-                return;
-            }
-
-            InitializationResult initializationResult = await CreateDatabaseAndContainersAsync(config, cosmosClient);
-            if (initializationResult.CreatedDatabase)
-            {
-                logger.LogInformation("Created database for execution");
-            }
-
-            if (initializationResult.CreatedContainers.Count > 0)
-            {
-                logger.LogInformation("Created {0} collections for execution", initializationResult.CreatedContainers.Count);
-            }
-
             try
             {
-                await this.ExecuteOperationsAsync(config, logger, metrics, initializationResult, readWriteQueryPercentage, cancellationToken);
+                await this.ExecuteOperationsAsync(config, logger, metrics, this.initializationResult, this.readWriteQueryPercentage, cancellationToken);
             }
             catch (Exception unhandledException)
             {
@@ -63,13 +74,13 @@ namespace CosmosCTL
             }
             finally
             {
-                if (initializationResult.CreatedDatabase)
+                if (this.initializationResult.CreatedDatabase)
                 {
                     await cosmosClient.GetDatabase(config.Database).DeleteAsync();
                 }
                 else
                 {
-                    foreach (string createdCollection in initializationResult.CreatedContainers)
+                    foreach (string createdCollection in this.initializationResult.CreatedContainers)
                     {
                         await cosmosClient.GetContainer(config.Database, createdCollection).DeleteContainerAsync();
                     }
@@ -85,9 +96,6 @@ namespace CosmosCTL
             ReadWriteQueryPercentage readWriteQueryPercentage,
             CancellationToken cancellationToken)
         {
-            logger.LogInformation("Pre-populating {0} documents", config.Operations);
-            IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocuments = await PopulateDocumentsAsync(config, logger, initializationResult.Containers);
-
             logger.LogInformation("Initializing counters and metrics.");
             CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations" };
             CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations" };
@@ -140,7 +148,7 @@ namespace CosmosCTL
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateReadOperation(
                             operation: i,
                             containers: initializationResult.Containers,
-                            createdDocumentsPerContainer: createdDocuments)),
+                            createdDocumentsPerContainer: this.createdDocuments)),
                         onSuccess: () => metrics.Measure.Counter.Increment(readSuccessMeter),
                         onFailure: (Exception ex) =>
                         {

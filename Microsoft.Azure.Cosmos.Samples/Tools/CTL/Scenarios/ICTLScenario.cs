@@ -13,6 +13,11 @@ namespace CosmosCTL
 
     internal interface ICTLScenario
     {
+        public Task InitializeAsync(
+            CTLConfig config,
+            CosmosClient cosmosClient,
+            ILogger logger);
+
         public Task RunAsync(
             CTLConfig config,
             CosmosClient cosmosClient,

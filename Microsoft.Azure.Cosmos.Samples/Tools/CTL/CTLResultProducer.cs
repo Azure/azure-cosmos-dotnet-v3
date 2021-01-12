@@ -36,6 +36,7 @@ namespace CosmosCTL
                 if (this.hasMoreResults)
                 {
                     this.hasMoreResults = false;
+                    return true;
                 }
 
                 return this.hasMoreResults;

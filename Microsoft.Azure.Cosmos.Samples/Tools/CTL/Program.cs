@@ -10,8 +10,6 @@ namespace CosmosCTL
     using System.Threading;
     using System.Threading.Tasks;
     using App.Metrics;
-    using App.Metrics.Filtering;
-    using App.Metrics.Filters;
     using App.Metrics.Formatters.Json;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
@@ -37,6 +35,11 @@ namespace CosmosCTL
                     ICTLScenario scenario = CreateScenario(config.WorkloadType);
 
                     using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+                    await scenario.InitializeAsync(
+                        config: config,
+                        cosmosClient: client,
+                        logger: logger);
 
                     List<Task> tasks = new List<Task>
                     {
@@ -74,8 +77,6 @@ namespace CosmosCTL
 
         private static IMetricsRoot ConfigureReporting(CTLConfig config)
         {
-            IFilterMetrics filter = new MetricsFilter()
-                .WhereType(MetricType.Counter, MetricType.Histogram, MetricType.Timer);
             if (!string.IsNullOrEmpty(config.GraphiteEndpoint))
             {
                 return new MetricsBuilder()
@@ -85,7 +86,6 @@ namespace CosmosCTL
                             options.ClientPolicy.BackoffPeriod = TimeSpan.FromSeconds(30);
                             options.ClientPolicy.FailuresBeforeBackoff = 5;
                             options.ClientPolicy.Timeout = TimeSpan.FromSeconds(10);
-                            options.Filter = filter;
                             options.FlushInterval = TimeSpan.FromSeconds(config.ReportingIntervalInSeconds);
                         })
                     .Build();
@@ -95,7 +95,6 @@ namespace CosmosCTL
                 .Report.ToConsole(
                     options => {
                         options.FlushInterval = TimeSpan.FromSeconds(config.ReportingIntervalInSeconds);
-                        //options.Filter = filter;
                         options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
                     })
                 .Build();
