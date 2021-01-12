@@ -11,9 +11,9 @@ namespace CosmosCTL
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
-    internal abstract class CTLScenario
+    internal interface ICTLScenario
     {
-        public abstract Task RunAsync(
+        public Task RunAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger,

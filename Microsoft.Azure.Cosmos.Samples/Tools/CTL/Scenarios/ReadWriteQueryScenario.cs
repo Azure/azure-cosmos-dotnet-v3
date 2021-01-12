@@ -17,7 +17,7 @@ namespace CosmosCTL
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
-    internal class ReadWriteQueryScenario : CTLScenario
+    internal class ReadWriteQueryScenario : ICTLScenario
     {
         private static readonly string DefaultPartitionKey = "pk";
         private static readonly string DefaultPartitionKeyPath = $"/{DefaultPartitionKey}";
@@ -28,7 +28,7 @@ namespace CosmosCTL
 
         private readonly Random random = new Random();
 
-        public override async Task RunAsync(
+        public async Task RunAsync(
             CTLConfig config, 
             CosmosClient cosmosClient,
             ILogger logger, 
@@ -152,7 +152,8 @@ namespace CosmosCTL
                         stopwatch: stopwatch,
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateWriteOperation(
                             operation: i,
-                            containers: initializationResult.Containers)),
+                            containers: initializationResult.Containers,
+                            isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled)),
                         onSuccess: () => metrics.Measure.Counter.Increment(writeSuccessMeter),
                         onFailure: (Exception ex) =>
                         {
@@ -204,11 +205,17 @@ namespace CosmosCTL
 
         private Task<ItemResponse<Dictionary<string, string>>> CreateWriteOperation(
             long operation,
-            IReadOnlyList<Container> containers)
+            IReadOnlyList<Container> containers,
+            bool isContentResponseOnWriteEnabled)
         {
             Container container = containers[(int)operation % containers.Count];
             Dictionary<string, string> document = GenerateDocument();
-            return container.CreateItemAsync<Dictionary<string, string>>(document);
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions
+            {
+                EnableContentResponseOnWrite = isContentResponseOnWriteEnabled
+            };
+
+            return container.CreateItemAsync<Dictionary<string, string>>(document, requestOptions: itemRequestOptions);
         }
 
         private FeedIterator<Dictionary<string, string>> CreateQueryOperation(

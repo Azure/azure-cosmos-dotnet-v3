@@ -29,7 +29,7 @@ namespace CosmosCTL
         public string Collection { get; set; } = "CTLCollection";
 
         [Option("ctl_operation", Required = false, HelpText = "Workload type")]
-        public string WorkloadType { get; set; } = "ReadWriteQuery";
+        public WorkloadType WorkloadType { get; set; } = WorkloadType.ReadWriteQuery;
 
         [Option("ctl_consistency_level", Required = false, HelpText = "Client consistency level to override")]
         public string ConsistencyLevel { get; set; }
@@ -70,6 +70,15 @@ namespace CosmosCTL
 
         [Option("ctl_output_event_traces", Required = false, HelpText = "Should return content response on writes")]
         public bool OutputEventTraces { get; set; } = true;
+
+        [Option("ctl_reporting_interval", Required = false, HelpText = "Reporting interval")]
+        public int ReportingIntervalInSeconds { get; set; } = 10;
+
+        [Option("ctl_graphite_endpoint", Required = false, HelpText = "Graphite endpoint to report metrics")]
+        public string GraphiteEndpoint { get; set; }
+
+        [Option("ctl_graphite_port", Required = false, HelpText = "Graphite port to report metrics")]
+        public string GraphitePort { get; set; }
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);

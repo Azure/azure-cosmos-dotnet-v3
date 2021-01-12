@@ -5,19 +5,14 @@
 namespace CosmosCTL
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
-    using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
-    using System.Threading;
     using System.Threading.Tasks;
+    using App.Metrics;
+    using App.Metrics.Filtering;
+    using App.Metrics.Filters;
+    using App.Metrics.Formatters.Json;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Logging;
-    using Newtonsoft.Json.Linq;
 
     public sealed class Program
     {
@@ -35,7 +30,16 @@ namespace CosmosCTL
 
                 using (logger.BeginScope(config.WorkloadType))
                 {
+                    IMetrics metrics = ConfigureReporting(config);
 
+                    ICTLScenario scenario = CreateScenario(config.WorkloadType);
+
+                    await scenario.RunAsync(
+                        config: config,
+                        cosmosClient: client,
+                        logger: logger,
+                        metrics: metrics,
+                        cancellationToken: default);
 
                     logger.LogInformation($"{nameof(CosmosCTL)} completed successfully.");
                 }
@@ -46,8 +50,42 @@ namespace CosmosCTL
             }
         }
 
+        private static IMetrics ConfigureReporting(CTLConfig config)
+        {
+            IFilterMetrics filter = new MetricsFilter().WhereType(MetricType.Timer);
+            if (!string.IsNullOrEmpty(config.GraphiteEndpoint))
+            {
+                return new MetricsBuilder()
+                    .Report.ToGraphite(
+                        options => {
+                            options.Graphite.BaseUri = new Uri($"{config.GraphiteEndpoint}:{config.GraphitePort}");
+                            options.ClientPolicy.BackoffPeriod = TimeSpan.FromSeconds(30);
+                            options.ClientPolicy.FailuresBeforeBackoff = 5;
+                            options.ClientPolicy.Timeout = TimeSpan.FromSeconds(10);
+                            options.Filter = filter;
+                            options.FlushInterval = TimeSpan.FromSeconds(config.ReportingIntervalInSeconds);
+                        })
+                    .Build();
+            }
 
+            return new MetricsBuilder()
+                .Report.ToConsole(
+                    options => {
+                        options.FlushInterval = TimeSpan.FromSeconds(config.ReportingIntervalInSeconds);
+                        options.Filter = filter;
+                        options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
+                    })
+                .Build();
+        }
 
+        private static ICTLScenario CreateScenario(WorkloadType workloadType)
+        {
+            return workloadType switch
+            {
+                WorkloadType.ReadWriteQuery => new ReadWriteQueryScenario(),
+                _ => throw new NotImplementedException($"No mapping for {workloadType}"),
+            };
+        }
 
         private static void ClearCoreSdkListeners()
         {
