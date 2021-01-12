@@ -618,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 PartitionMapper.PartitionMapping<OrderByContinuationToken> partitionMapping = monadicGetOrderByContinuationTokenMapping.Result;
                 IReadOnlyList<CosmosElement> orderByItems = partitionMapping
-                    .TargetPartition
+                    .TargetMapping
                     .Values
                     .First()
                     .OrderByItems
@@ -642,9 +642,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 (string leftFilter, string targetFilter, string rightFilter) = OrderByCrossPartitionQueryPipelineStage.GetFormattedFilters(columnAndItems);
                 List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)> tokenMappingAndFilters = new List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)>()
                 {
-                    { (partitionMapping.PartitionsLeftOfTarget, leftFilter) },
-                    { (partitionMapping.TargetPartition, targetFilter) },
-                    { (partitionMapping.PartitionsRightOfTarget, rightFilter) },
+                    { (partitionMapping.MappingLeftOfTarget, leftFilter) },
+                    { (partitionMapping.TargetMapping, targetFilter) },
+                    { (partitionMapping.MappingRightOfTarget, rightFilter) },
                 };
 
                 enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
