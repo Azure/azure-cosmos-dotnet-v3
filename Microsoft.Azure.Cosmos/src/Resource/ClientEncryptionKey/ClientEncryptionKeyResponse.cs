@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         class ClientEncryptionKeyResponse : Response<ClientEncryptionKeyProperties>
     {
         /// <summary>
-        /// Creates a data encryption key response as a no-op for mock testing.
+        /// Creates a client encryption key response as a no-op for mock testing.
         /// </summary>
         protected ClientEncryptionKeyResponse()
             : base()
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// The reference to the data encryption key that allows additional operations on it.
+        /// The reference to the client encryption key that allows additional operations on it.
         /// </summary>
         public virtual ClientEncryptionKey ClientEncryptionKey { get; }
 
@@ -67,9 +67,9 @@ namespace Microsoft.Azure.Cosmos
         public override string ETag => this.Headers?.ETag;
 
         /// <summary>
-        /// Get the data encryption key implicitly from an encryption key response.
+        /// Get the client encryption key implicitly from an encryption key response.
         /// </summary>
-        /// <param name="response">Response from which to get the data encryption key.</param>
+        /// <param name="response">Response from which to get the client encryption key.</param>
         public static implicit operator ClientEncryptionKey(ClientEncryptionKeyResponse response)
         {
             return response.ClientEncryptionKey;

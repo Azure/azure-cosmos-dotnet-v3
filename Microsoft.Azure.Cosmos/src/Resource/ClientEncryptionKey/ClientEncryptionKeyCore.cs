@@ -12,8 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Provides operations for reading a specific data encryption key by Id.
-    /// See <see cref="Cosmos.Database"/> for operations to create a data encryption key.
+    /// Provides operations for reading a specific client encryption key by Id.
+    /// See <see cref="Cosmos.Database"/> for operations to create a client encryption key.
     /// </summary>
     internal class ClientEncryptionKeyCore : ClientEncryptionKey
     {

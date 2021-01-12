@@ -1010,7 +1010,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions">(Optional) The options for the request. Set <see cref="QueryRequestOptions.MaxItemCount"/> to restrict the number of results returned.</param>
         /// <returns>An iterator over client encryption keys.</returns>
         /// <remarks>
-        /// <see cref="ClientEncryptionKey.ReadAsync" /> is recommended for single data encryption key look-up.
+        /// <see cref="ClientEncryptionKey.ReadAsync" /> is recommended for single client encryption key look-up.
         /// </remarks>
         public abstract FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
             QueryDefinition queryDefinition,

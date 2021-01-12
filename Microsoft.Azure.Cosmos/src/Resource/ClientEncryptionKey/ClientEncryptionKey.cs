@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// Provides operations for reading a specific client data encryption key (aka ClientEncryptionKey) by Id.
-    /// See <see cref="Database"/> for operations to create and enumerate data encryption keys.
+    /// See <see cref="Database"/> for operations to create and enumerate client encryption keys.
     /// See https://aka.ms/CosmosClientEncryption for more information on client-side encryption support in Azure Cosmos DB.
     /// </summary>
 #if PREVIEW
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         abstract class ClientEncryptionKey
     {
         /// <summary>
-        /// The unique identifier of the data encryption key.
+        /// The unique identifier of the client encryption key.
         /// </summary>
         public abstract string Id { get; }
 
@@ -30,11 +30,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
-        /// <returns>An awaitable response which wraps a <see cref="ClientEncryptionKeyProperties"/> containing details of the data encryption key that was read.</returns>
+        /// <returns>An awaitable response which wraps a <see cref="ClientEncryptionKeyProperties"/> containing details of the client encryption key that was read.</returns>
         /// <exception cref="CosmosException">
         /// This exception can encapsulate many different types of errors.
         /// To determine the specific error always look at the StatusCode property.
-        /// Some common codes you may get when reading a data encryption key are:
+        /// Some common codes you may get when reading a client encryption key are:
         /// <list type="table">
         ///     <listheader>
         ///         <term>StatusCode</term>

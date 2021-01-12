@@ -23,9 +23,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of <see cref="ClientEncryptionKeyProperties"/>.
         /// </summary>
-        /// <param name="id">Unique identifier for the data encryption key.</param>
-        /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
-        /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the data encryption key.</param>
+        /// <param name="id">Unique identifier for the client encryption key.</param>
+        /// <param name="encryptionAlgorithm">Encryption algorithm that will be used along with this client encryption key to encrypt/decrypt data.</param>
+        /// <param name="wrappedDataEncryptionKey">Wrapped (encrypted) form of the client encryption key.</param>
         /// <param name="encryptionKeyWrapMetadata">Metadata used by the configured key wrapping provider in order to unwrap the key.</param>
         public ClientEncryptionKeyProperties(
             string id,
@@ -79,19 +79,19 @@ namespace Microsoft.Azure.Cosmos
         public string Id { get; internal set; }
 
         /// <summary>
-        /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
+        /// Encryption algorithm that will be used along with this client encryption key to encrypt/decrypt data.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithmId, NullValueHandling = NullValueHandling.Ignore)]
         public string EncryptionAlgorithm { get; internal set; }
 
         /// <summary>
-        /// Wrapped form of the data encryption key.
+        /// Wrapped form of the client encryption key.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.WrappedDataEncryptionKey, NullValueHandling = NullValueHandling.Ignore)]
         public byte[] WrappedDataEncryptionKey { get; internal set; }
 
         /// <summary>
-        /// Metadata for the wrapping provider that can be used to unwrap the wrapped data encryption key.
+        /// Metadata for the wrapping provider that can be used to unwrap the wrapped client encryption key.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.KeyWrapMetadata, NullValueHandling = NullValueHandling.Ignore)]
         public EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { get; internal set; }
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; set; }
 
         /// <summary>
-        /// Compares this instance of data encryption key properties to another object.
+        /// Compares this instance of client encryption key properties to another object.
         /// </summary>
         /// <param name="obj">Object to compare with.</param>
         /// <returns>True if the other object is an instance of <see cref="ClientEncryptionKeyProperties"/> and the properties match, else false.</returns>
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Compares this instance of data encryption key properties to another.
+        /// Compares this instance of client encryption key properties to another.
         /// </summary>
         /// <param name="other">Instance to compare with.</param>
         /// <returns>True if properties match, else false.</returns>
