@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -150,176 +151,85 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
-        public async Task TestDrainFully_StartFromBeginingAsync()
+        [DataRow(false, false, false, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: false")]
+        [DataRow(false, false, true, DisplayName = "Use State: false, Allow Splits: false, Allow Merges: true")]
+        [DataRow(false, true, false, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: false")]
+        [DataRow(false, true, true, DisplayName = "Use State: false, Allow Splits: true, Allow Merges: true")]
+        [DataRow(true, false, false, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: false")]
+        [DataRow(true, false, true, DisplayName = "Use State: true, Allow Splits: false, Allow Merges: true")]
+        [DataRow(true, true, false, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: false")]
+        [DataRow(true, true, true, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: true")]
+        public async Task TestDrainWithStateSplitsAndMergeAsync(bool useState, bool allowSplits, bool allowMerges)
         {
-            int numItems = 1000;
-            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-
-            TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                documentContainer: documentContainer,
-                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: await documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
-                    cancellationToken: default),
-                pageSize: 10,
-                partitionKey: null,
-                maxConcurrency: 10,
-                cancellationToken: default,
-                continuationToken: default);
-            Assert.IsTrue(monadicCreate.Succeeded);
-            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
-
-            List<CosmosElement> documents = new List<CosmosElement>();
-            while (await queryPipelineStage.MoveNextAsync())
+            static async Task<IQueryPipelineStage> CreatePipelineStateAsync(IDocumentContainer documentContainer, CosmosElement continuationToken)
             {
-                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
-                Assert.IsTrue(tryGetQueryPage.Succeeded);
+                TryCatch<IQueryPipelineStage> monadicQueryPipelineStage = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
+                    targetRanges: await documentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default),
+                    pageSize: 10,
+                    partitionKey: null,
+                    maxConcurrency: 10,
+                    cancellationToken: default,
+                    continuationToken: continuationToken);
+                Assert.IsTrue(monadicQueryPipelineStage.Succeeded);
+                IQueryPipelineStage queryPipelineStage = monadicQueryPipelineStage.Result;
 
-                QueryPage queryPage = tryGetQueryPage.Result;
-                documents.AddRange(queryPage.Documents);
+                return queryPipelineStage;
             }
 
-            Assert.AreEqual(numItems, documents.Count);
-        }
-
-        [TestMethod]
-        public async Task TestDrainFully_WithStateResume()
-        {
             int numItems = 1000;
-            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-
+            IDocumentContainer inMemoryCollection = await CreateDocumentContainerAsync(numItems);
+            IQueryPipelineStage queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: null);
             List<CosmosElement> documents = new List<CosmosElement>();
-
-            QueryState queryState = null;
-            do
-            {
-                TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                    documentContainer: documentContainer,
-                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                    targetRanges: await documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton, 
-                        cancellationToken: default),
-                    pageSize: 10,
-                    partitionKey: null,
-                    maxConcurrency: 10,
-                    cancellationToken: default,
-                    continuationToken: queryState?.Value);
-                if (monadicCreate.Failed)
-                {
-                    Assert.Fail();
-                }
-                Assert.IsTrue(monadicCreate.Succeeded);
-                IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
-
-                Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
-                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
-                Assert.IsTrue(tryGetQueryPage.Succeeded);
-
-                QueryPage queryPage = tryGetQueryPage.Result;
-                documents.AddRange(queryPage.Documents);
-
-                queryState = queryPage.State;
-            } while (queryState != null);
-
-            Assert.AreEqual(numItems, documents.Count);
-        }
-
-        [TestMethod]
-        public async Task TestDrainFully_WithStateResume_WithSplitAsync()
-        {
-            int numItems = 1000;
-            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-
             Random random = new Random();
-            List<CosmosElement> documents = new List<CosmosElement>();
-
-            QueryState queryState = null;
-            do
-            {
-                TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                    documentContainer: documentContainer,
-                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                    targetRanges: await documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton, 
-                        cancellationToken: default),
-                    pageSize: 10,
-                    partitionKey: null,
-                    maxConcurrency: 10,
-                    cancellationToken: default,
-                    continuationToken: queryState?.Value);
-                if (monadicCreate.Failed)
-                {
-                    Assert.Fail();
-                }
-                Assert.IsTrue(monadicCreate.Succeeded);
-                IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
-
-                Assert.IsTrue(await queryPipelineStage.MoveNextAsync());
-                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
-                Assert.IsTrue(tryGetQueryPage.Succeeded);
-
-                QueryPage queryPage = tryGetQueryPage.Result;
-                documents.AddRange(queryPage.Documents);
-
-                queryState = queryPage.State;
-
-                if (random.Next() % 4 == 0)
-                {
-                    // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
-                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                    List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton, 
-                        cancellationToken: default).Result;
-                    FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
-                    await documentContainer.SplitAsync(randomRange, cancellationToken: default);
-                }
-            } while (queryState != null);
-
-            Assert.AreEqual(numItems, documents.Count);
-        }
-
-        [TestMethod]
-        public async Task TestDrainFully_StartFromBegining_WithSplits_Async()
-        {
-            int numItems = 1000;
-            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
-
-            TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
-                documentContainer: documentContainer,
-                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: await documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
-                    cancellationToken: default),
-                pageSize: 10,
-                partitionKey: null,
-                maxConcurrency: 10,
-                cancellationToken: default,
-                continuationToken: default);
-            Assert.IsTrue(monadicCreate.Succeeded);
-            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
-
-            Random random = new Random();
-            List<CosmosElement> documents = new List<CosmosElement>();
             while (await queryPipelineStage.MoveNextAsync())
             {
-                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
-                if(tryGetQueryPage.Failed)
+                TryCatch<QueryPage> tryGetPage = queryPipelineStage.Current;
+                tryGetPage.ThrowIfFailed();
+
+                documents.AddRange(tryGetPage.Result.Documents);
+
+                if (useState)
                 {
-                    Assert.Fail(tryGetQueryPage.Exception.ToString());
+                    if (tryGetPage.Result.State == null)
+                    {
+                        break;
+                    }
+
+                    queryPipelineStage = await CreatePipelineStateAsync(inMemoryCollection, continuationToken: tryGetPage.Result.State.Value);
                 }
 
-                QueryPage queryPage = tryGetQueryPage.Result;
-                documents.AddRange(queryPage.Documents);
-
-                if (random.Next() % 4 == 0)
+                if (random.Next() % 2 == 0)
                 {
-                    // Can not always split otherwise the split handling code will livelock trying to split proof every partition in a cycle.
-                    await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                    List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton, 
-                        cancellationToken: default).Result;
-                    FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
-                    await documentContainer.SplitAsync(randomRange, cancellationToken: default);
+                    if (allowSplits && (random.Next() % 2 == 0))
+                    {
+                        // Split
+                        await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                            trace: NoOpTrace.Singleton,
+                            cancellationToken: default);
+                        FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
+                        await inMemoryCollection.SplitAsync(randomRangeToSplit, cancellationToken: default);
+                    }
+
+                    if (allowMerges && (random.Next() % 2 == 0))
+                    {
+                        // Merge
+                        await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                            trace: NoOpTrace.Singleton,
+                            cancellationToken: default);
+                        if (ranges.Count > 1)
+                        {
+                            ranges = ranges.OrderBy(range => range.Range.Min).ToList();
+                            int indexToMerge = random.Next(0, ranges.Count);
+                            int adjacentIndex = indexToMerge == (ranges.Count - 1) ? indexToMerge - 1 : indexToMerge + 1;
+                            await inMemoryCollection.MergeAsync(ranges[indexToMerge], ranges[adjacentIndex], cancellationToken: default);
+                        }
+                    }
                 }
             }
 
