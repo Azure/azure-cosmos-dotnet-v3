@@ -293,12 +293,12 @@ namespace CosmosCTL
 
                 if (successes > 0)
                 {
-                    logger.LogInformation("Completed pre-populating {0} documents in container {1].", successes, container.Id);
+                    logger.LogInformation("Completed pre-populating {0} documents in container {1}.", successes, container.Id);
                 }
 
                 if (failures > 0)
                 {
-                    logger.LogWarning("Failed pre-populating {0} documents in container {1].", failures, container.Id);
+                    logger.LogWarning("Failed pre-populating {0} documents in container {1}.", failures, container.Id);
                 }
 
                 createdDocuments.Add(container.Id, createdDocumentsInContainer.ToList());

@@ -51,15 +51,17 @@ namespace CosmosCTL
                         {
                             while (!cancellationTokenSource.Token.IsCancellationRequested)
                             {
-                                //await Task.Delay(TimeSpan.FromSeconds(config.ReportingIntervalInSeconds));
+                                await Task.Delay(TimeSpan.FromSeconds(config.ReportingIntervalInSeconds));
                                 await Task.WhenAll(metrics.ReportRunner.RunAllAsync());
                             }
 
                         })
                     };
 
-                    await Task.WhenAny();
+                    await Task.WhenAny(tasks);
                     cancellationTokenSource.Cancel();
+                    // Final report
+                    await Task.WhenAll(metrics.ReportRunner.RunAllAsync());
 
                     logger.LogInformation($"{nameof(CosmosCTL)} completed successfully.");
                 }
@@ -93,7 +95,7 @@ namespace CosmosCTL
                 .Report.ToConsole(
                     options => {
                         options.FlushInterval = TimeSpan.FromSeconds(config.ReportingIntervalInSeconds);
-                        options.Filter = filter;
+                        //options.Filter = filter;
                         options.MetricsOutputFormatter = new MetricsJsonOutputFormatter();
                     })
                 .Build();
