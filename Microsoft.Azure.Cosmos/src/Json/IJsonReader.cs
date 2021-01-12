@@ -44,10 +44,10 @@ namespace Microsoft.Azure.Cosmos.Json
         Number64 GetNumberValue();
 
         /// <summary>
-        /// Gets the next JSON token from the JsonReader as a string.
+        /// Gets the next JSON token from the JsonReader as a UTF-16 string.
         /// </summary>
-        /// <returns>The next JSON token from the JsonReader as a UTF-16 string.</returns>
-        string GetStringValue();
+        /// <returns>The next JSON token from the JsonReader as a string.</returns>
+        UtfAnyString GetStringValue();
 
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a UTF-8 string.

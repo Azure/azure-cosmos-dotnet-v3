@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
                 case JsonTokenType.String:
                     newtonsoftToken = JsonToken.String;
-                    value = this.jsonReader.GetStringValue();
+                    value = this.jsonReader.GetStringValue().ToString();
                     break;
 
                 case JsonTokenType.Number:
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 
                 case JsonTokenType.FieldName:
                     newtonsoftToken = JsonToken.PropertyName;
-                    value = this.jsonReader.GetStringValue();
+                    value = this.jsonReader.GetStringValue().ToString();
                     break;
 
                 case JsonTokenType.Int8:

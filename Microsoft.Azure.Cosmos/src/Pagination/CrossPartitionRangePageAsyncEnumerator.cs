@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -16,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Coordinates draining pages from multiple <see cref="PartitionRangePageAsyncEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
@@ -158,11 +156,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         return await this.MoveNextAsync();
                     }
 
-                    if (IsMergeException(exception))
-                    {
-                        throw new NotImplementedException();
-                    }
-
                     // Just enqueue the paginator and the user can decide if they want to retry.
                     enumerators.Enqueue(currentPaginator);
 
@@ -217,12 +210,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return exeception is CosmosException cosmosException
                 && (cosmosException.StatusCode == HttpStatusCode.Gone)
                 && (cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone);
-        }
-
-        private static bool IsMergeException(Exception exception)
-        {
-            // TODO: code this out
-            return false;
         }
 
         private sealed class PriorityQueueWrapper<T> : IQueue<T>
