@@ -87,7 +87,11 @@ namespace CosmosCTL
         internal static CTLConfig From(string[] args)
         {
             CTLConfig options = null;
-            Parser parser = new Parser((settings) => settings.CaseSensitive = false);
+            Parser parser = new Parser((settings) =>
+            {
+                settings.CaseSensitive = false;
+                settings.AutoHelp = true;
+            });
             ParserResult<CTLConfig> parserResult = parser.ParseArguments<CTLConfig>(args);
 
             parserResult.WithParsed<CTLConfig>(e => options = e)
@@ -131,7 +135,7 @@ namespace CosmosCTL
             {
                 if (e is HelpRequestedError _)
                 {
-                    HelpText.AutoBuild(parserResult);
+                    Console.WriteLine(HelpText.AutoBuild(parserResult));
                 }
                 else
                 {
