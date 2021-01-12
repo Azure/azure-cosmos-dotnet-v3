@@ -423,7 +423,7 @@ inputPathCollection["somePath"] AS some alias
       "FromClause": null,
       "WhereClause": null,
       "GroupByClause": null,
-      "OrderbyClause": null,
+      "OrderByClause": null,
       "OffsetLimitClause": null
     }
   },
@@ -460,7 +460,7 @@ inputPathCollection["somePath"] AS some alias
       "FromClause": null,
       "WhereClause": null,
       "GroupByClause": null,
-      "OrderbyClause": null,
+      "OrderByClause": null,
       "OffsetLimitClause": null
     }
   }
@@ -492,7 +492,7 @@ some alias IN (
         "FromClause": null,
         "WhereClause": null,
         "GroupByClause": null,
-        "OrderbyClause": null,
+        "OrderByClause": null,
         "OffsetLimitClause": null
       }
     },
@@ -514,7 +514,7 @@ some alias IN (
         "FromClause": null,
         "WhereClause": null,
         "GroupByClause": null,
-        "OrderbyClause": null,
+        "OrderByClause": null,
         "OffsetLimitClause": null
       }
     }
@@ -937,7 +937,7 @@ OFFSET 0 LIMIT 0
       }
     ]
   },
-  "OrderbyClause": {
+  "OrderByClause": {
     "OrderByItems": [
       {
         "Expression": {
@@ -1074,7 +1074,7 @@ OFFSET 0 LIMIT 0
         }
       ]
     },
-    "OrderbyClause": {
+    "OrderByClause": {
       "OrderByItems": [
         {
           "Expression": {
@@ -1214,7 +1214,7 @@ OFFSET 0 LIMIT 0
         }
       ]
     },
-    "OrderbyClause": {
+    "OrderByClause": {
       "OrderByItems": [
         {
           "Expression": {
@@ -1354,7 +1354,7 @@ ARRAY(
         }
       ]
     },
-    "OrderbyClause": {
+    "OrderByClause": {
       "OrderByItems": [
         {
           "Expression": {
