@@ -55,14 +55,6 @@ namespace Microsoft.Azure.Cosmos
         ///     </item>
         /// </list>
         /// </exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// ClientEncryptionKey key = this.database.GetClientEncryptionKey("keyId");
-        /// ClientEncryptionKeyProperties keyProperties = await key.ReadAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
         public abstract Task<ClientEncryptionKeyResponse> ReadAsync(
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -78,16 +70,6 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="ClientEncryptionKeyResponse"/> which wraps a <see cref="ClientEncryptionKeyProperties"/> containing the replace resource record.
         /// </returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// ClientEncryptionKeyProperties clientEncryptionKeyProperties = keyReadResponse;
-        /// clientEncryptionKeyProperties.Id = "newkey";
-        /// ClientEncryptionKeyResponse response = await key.ReplaceAsync(clientEncryptionKeyProperties);
-        /// ClientEncryptionKeyProperties replacedProperties = response;
-        /// ]]>
-        /// </code>
-        /// </example>
         public abstract Task<ClientEncryptionKeyResponse> ReplaceAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,

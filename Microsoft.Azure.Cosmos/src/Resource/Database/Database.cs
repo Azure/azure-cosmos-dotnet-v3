@@ -999,15 +999,6 @@ namespace Microsoft.Azure.Cosmos
         /// The reference returned doesn't guarantee existence of the client encryption key.
         /// Please ensure it already exists or is created through <see cref="CreateClientEncryptionKeyAsync"/>.
         /// </remarks>
-        /// <example>
-        /// <code language="c#">
-        /// <![CDATA[
-        /// Database db = this.cosmosClient.GetDatabase("myDatabaseId");
-        /// ClientEncryptionKey key = await db.GetClientEncryptionKey("keyId");
-        /// ClientEncryptionKeyProperties keyProperties = await key.ReadAsync();
-        /// ]]>
-        /// </code>
-        /// </example>
         public abstract ClientEncryptionKey GetClientEncryptionKey(string id);
 
         /// <summary>
