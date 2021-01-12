@@ -14,6 +14,7 @@ namespace CosmosCTL
     using App.Metrics;
     using App.Metrics.Counter;
     using App.Metrics.Histogram;
+    using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
@@ -95,24 +96,30 @@ namespace CosmosCTL
             CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations" };
             CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations" };
 
-            HistogramOptions readLatencyHistogram = new HistogramOptions
+            TimerOptions readLatencyTimer = new TimerOptions
             {
                 Name = "Read latency",
-                MeasurementUnit = Unit.Custom("Milliseconds"),
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
-            HistogramOptions writeLatencyHistogram = new HistogramOptions
+            TimerOptions writeLatencyTimer = new TimerOptions
             {
                 Name = "Write latency",
-                MeasurementUnit = Unit.Custom("Milliseconds"),
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
-            HistogramOptions queryLatencyHistogram = new HistogramOptions
+            TimerOptions queryLatencyTimer = new TimerOptions
             {
                 Name = "Query latency",
-                MeasurementUnit = Unit.Custom("Milliseconds"),
+                MeasurementUnit = Unit.Requests,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds,
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
@@ -129,7 +136,7 @@ namespace CosmosCTL
                     operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
                         semaphoreSlim: concurrencyControlSemaphore,
                         diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
-                        stopwatch: stopwatch,
+                        createTimerContext: () => metrics.Measure.Timer.Time(readLatencyTimer),
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateReadOperation(
                             operation: i,
                             containers: initializationResult.Containers,
@@ -140,7 +147,6 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(readFailureMeter);
                             logger.LogError(ex, "Failure during read operation");
                         },
-                        trackLatency: (long latency) => metrics.Measure.Histogram.Update(readLatencyHistogram, latency),
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Read request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
                         cancellationToken: cancellationToken));
                 }
@@ -149,7 +155,7 @@ namespace CosmosCTL
                     operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
                         semaphoreSlim: concurrencyControlSemaphore,
                         diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
-                        stopwatch: stopwatch,
+                        createTimerContext: () => metrics.Measure.Timer.Time(writeLatencyTimer),
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateWriteOperation(
                             operation: i,
                             containers: initializationResult.Containers,
@@ -160,7 +166,6 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(writeFailureMeter);
                             logger.LogError(ex, "Failure during write operation");
                         },
-                        trackLatency: (long latency) => metrics.Measure.Histogram.Update(writeLatencyHistogram, latency),
                         logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Write request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
                         cancellationToken: cancellationToken));
 
@@ -170,7 +175,7 @@ namespace CosmosCTL
                     operations.Add(CTLOperationHandler<FeedResponse<Dictionary<string, string>>>.PerformOperationAsync(
                         semaphoreSlim: concurrencyControlSemaphore,
                         diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
-                        stopwatch: stopwatch,
+                        createTimerContext: () => metrics.Measure.Timer.Time(queryLatencyTimer),
                         resultProducer: new IteratorResultProducer<Dictionary<string, string>>(this.CreateQueryOperation(
                             operation: i,
                             containers: initializationResult.Containers)),
@@ -180,7 +185,6 @@ namespace CosmosCTL
                             metrics.Measure.Counter.Increment(queryFailureMeter);
                             logger.LogError(ex, "Failure during query operation");
                         },
-                        trackLatency: (long latency) => metrics.Measure.Histogram.Update(queryLatencyHistogram, latency),
                         logDiagnostics: (FeedResponse<Dictionary<string, string>> response) => logger.LogInformation("Query request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
                         cancellationToken: cancellationToken));
                 }

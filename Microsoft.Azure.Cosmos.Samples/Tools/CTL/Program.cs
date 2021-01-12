@@ -52,7 +52,8 @@ namespace CosmosCTL
 
         private static IMetrics ConfigureReporting(CTLConfig config)
         {
-            IFilterMetrics filter = new MetricsFilter().WhereType(MetricType.Timer);
+            IFilterMetrics filter = new MetricsFilter()
+                .WhereType(MetricType.Counter, MetricType.Histogram, MetricType.Timer);
             if (!string.IsNullOrEmpty(config.GraphiteEndpoint))
             {
                 return new MetricsBuilder()
