@@ -20,7 +20,7 @@ namespace CosmosCTL
         /// </summary>
         /// <param name="semaphoreSlim">Synchronization semaphore that defines maximum degree of parallelism.</param>
         /// <param name="diagnosticsLoggingThreshold">Latency threshold above which <paramref name="logDiagnostics"/> will be called.</param>
-        /// <param name="getTimerContext">Produces a <see cref="TimerContext"/> to measure operation latency.</param>
+        /// <param name="createTimerContext">Creates a <see cref="TimerContext"/> to measure operation latency.</param>
         /// <param name="resultProducer">Producer to generate operation calls as a producer-consumer.</param>
         /// <param name="onSuccess">Event handler for operation success.</param>
         /// <param name="onFailure"></param>
