@@ -7,6 +7,7 @@ namespace CosmosCTL
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -18,7 +19,12 @@ namespace CosmosCTL
 
     internal class ReadWriteQueryScenario : CTLScenario
     {
-        private static readonly string DefaultPartitionKeyPath = "/pk";
+        private static readonly string DefaultPartitionKey = "pk";
+        private static readonly string DefaultPartitionKeyPath = $"/{DefaultPartitionKey}";
+        private static readonly int DefaultDocumentFieldCount = 5;
+        private static readonly int DefaultDataFieldSize = 20;
+
+        private static readonly string DataFieldValue = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, DefaultDataFieldSize);
 
         private readonly Random random = new Random();
 
@@ -26,7 +32,8 @@ namespace CosmosCTL
             CTLConfig config, 
             CosmosClient cosmosClient,
             ILogger logger, 
-            IMetrics metrics)
+            IMetrics metrics,
+            CancellationToken cancellationToken)
         {
             if (!TryParseReadWriteQueryPercentages(config.ReadWriteQueryPercentage, out ReadWriteQueryPercentage readWriteQueryPercentage))
             {
@@ -47,7 +54,7 @@ namespace CosmosCTL
 
             try
             {
-                await ExecuteOperationsAsync(config, logger, metrics, initializationResult);
+                await this.ExecuteOperationsAsync(config, logger, metrics, initializationResult, readWriteQueryPercentage, cancellationToken);
             }
             catch (Exception unhandledException)
             {
@@ -69,15 +76,18 @@ namespace CosmosCTL
             }
         }
 
-        private static async Task ExecuteOperationsAsync(
+        private async Task ExecuteOperationsAsync(
             CTLConfig config,
             ILogger logger,
             IMetrics metrics,
-            InitializationResult initializationResult)
+            InitializationResult initializationResult,
+            ReadWriteQueryPercentage readWriteQueryPercentage,
+            CancellationToken cancellationToken)
         {
             logger.LogInformation("Pre-populating {0} documents", config.Operations);
-            IReadOnlyCollection<Dictionary<string, string>> createdDocuments = await PopulateDocumentsAsync(config, logger, initializationResult.Containers);
+            IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocuments = await PopulateDocumentsAsync(config, logger, initializationResult.Containers);
 
+            logger.LogInformation("Initializing counters and metrics.");
             CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations" };
             CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations" };
             CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations" };
@@ -105,26 +115,157 @@ namespace CosmosCTL
                 MeasurementUnit = Unit.Custom("Milliseconds"),
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
+
+            SemaphoreSlim concurrencyControlSemaphore = new SemaphoreSlim(config.Concurrency);
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            int writeRange = readWriteQueryPercentage.ReadPercentage + readWriteQueryPercentage.WritePercentage;
+            long diagnosticsThresholdDuration = (long)config.DiagnosticsThresholdDurationAsTimespan.TotalMilliseconds;
+            List<Task> operations = new List<Task>((int)config.Operations);
+            for (long i = 0; ShouldContinue(stopwatch, i, config); i++)
+            {
+                long index = (long)i % 100;
+                if (index < readWriteQueryPercentage.ReadPercentage)
+                {
+                    operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
+                        semaphoreSlim: concurrencyControlSemaphore,
+                        diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
+                        stopwatch: stopwatch,
+                        resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateReadOperation(
+                            operation: i,
+                            containers: initializationResult.Containers,
+                            createdDocumentsPerContainer: createdDocuments)),
+                        onSuccess: () => metrics.Measure.Counter.Increment(readSuccessMeter),
+                        onFailure: (Exception ex) =>
+                        {
+                            metrics.Measure.Counter.Increment(readFailureMeter);
+                            logger.LogError(ex, "Failure during read operation");
+                        },
+                        trackLatency: (long latency) => metrics.Measure.Histogram.Update(readLatencyHistogram, latency),
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Read request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
+                        cancellationToken: cancellationToken));
+                }
+                else if (index < writeRange)
+                {
+                    operations.Add(CTLOperationHandler<ItemResponse<Dictionary<string, string>>>.PerformOperationAsync(
+                        semaphoreSlim: concurrencyControlSemaphore,
+                        diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
+                        stopwatch: stopwatch,
+                        resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateWriteOperation(
+                            operation: i,
+                            containers: initializationResult.Containers)),
+                        onSuccess: () => metrics.Measure.Counter.Increment(writeSuccessMeter),
+                        onFailure: (Exception ex) =>
+                        {
+                            metrics.Measure.Counter.Increment(writeFailureMeter);
+                            logger.LogError(ex, "Failure during write operation");
+                        },
+                        trackLatency: (long latency) => metrics.Measure.Histogram.Update(writeLatencyHistogram, latency),
+                        logDiagnostics: (ItemResponse<Dictionary<string, string>> response) => logger.LogInformation("Write request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
+                        cancellationToken: cancellationToken));
+
+                }
+                else
+                {
+                    operations.Add(CTLOperationHandler<FeedResponse<Dictionary<string, string>>>.PerformOperationAsync(
+                        semaphoreSlim: concurrencyControlSemaphore,
+                        diagnosticsLoggingThreshold: diagnosticsThresholdDuration,
+                        stopwatch: stopwatch,
+                        resultProducer: new IteratorResultProducer<Dictionary<string, string>>(this.CreateQueryOperation(
+                            operation: i,
+                            containers: initializationResult.Containers)),
+                        onSuccess: () => metrics.Measure.Counter.Increment(querySuccessMeter),
+                        onFailure: (Exception ex) =>
+                        {
+                            metrics.Measure.Counter.Increment(queryFailureMeter);
+                            logger.LogError(ex, "Failure during query operation");
+                        },
+                        trackLatency: (long latency) => metrics.Measure.Histogram.Update(queryLatencyHistogram, latency),
+                        logDiagnostics: (FeedResponse<Dictionary<string, string>> response) => logger.LogInformation("Query request took more than latency threshold {0}, diagnostics: {1}", config.DiagnosticsThresholdDuration, response.Diagnostics.ToString()),
+                        cancellationToken: cancellationToken));
+                }
+            }
+
+            await Task.WhenAll(operations);
+            stopwatch.Stop();
+            logger.LogInformation("[{0}] operations performed in [{1}] seconds.",
+                config.Operations, stopwatch.Elapsed.TotalSeconds);
         }
 
-        private static async Task<IReadOnlyCollection<Dictionary<string, string>>> PopulateDocumentsAsync(
+        private Task<ItemResponse<Dictionary<string, string>>> CreateReadOperation(
+            long operation,
+            IReadOnlyList<Container> containers,
+            IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocumentsPerContainer)
+        {
+            Container container = containers[(int)operation % containers.Count];
+            IReadOnlyList<Dictionary<string, string>> documents = createdDocumentsPerContainer[container.Id];
+            Dictionary<string, string> document = documents[this.random.Next(documents.Count)];
+            return container.ReadItemAsync<Dictionary<string, string>>(document["id"], new PartitionKey(document[DefaultPartitionKey]));
+        }
+
+        private Task<ItemResponse<Dictionary<string, string>>> CreateWriteOperation(
+            long operation,
+            IReadOnlyList<Container> containers)
+        {
+            Container container = containers[(int)operation % containers.Count];
+            Dictionary<string, string> document = GenerateDocument();
+            return container.CreateItemAsync<Dictionary<string, string>>(document);
+        }
+
+        private FeedIterator<Dictionary<string, string>> CreateQueryOperation(
+                long operation,
+                IReadOnlyList<Container> containers)
+        {
+            Container container = containers[(int)operation % containers.Count];
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { MaxItemCount = 10 };
+            return container.GetItemQueryIterator<Dictionary<string, string>>(
+                queryText: "Select top 100 * from c order by c._ts", 
+                requestOptions: queryRequestOptions);
+        }
+
+        private static bool ShouldContinue(
+            Stopwatch stopwatch,
+            long iterationCount,
+            CTLConfig config)
+        {
+            TimeSpan maxDurationTime = config.RunningTimeDurationAsTimespan;
+            long maxNumberOfOperations = config.Operations;
+
+            if (maxDurationTime == null)
+            {
+                return iterationCount < maxNumberOfOperations;
+            }
+
+            if (maxDurationTime.TotalMilliseconds < stopwatch.ElapsedMilliseconds)
+            {
+                return false;
+            }
+
+            if (maxNumberOfOperations < 0)
+            {
+                return true;
+            }
+
+            return iterationCount < maxNumberOfOperations;
+        }
+
+        private static async Task<IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>>> PopulateDocumentsAsync(
             CTLConfig config,
             ILogger logger,
             IEnumerable<Container> containers)
         {
-            ConcurrentBag<Dictionary<string, string>> createdDocuments = new ConcurrentBag<Dictionary<string, string>>();
+            Dictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocuments = new Dictionary<string, IReadOnlyList<Dictionary<string, string>>>();
             foreach (Container container in containers)
             {
                 long successes = 0;
                 long failures = 0;
-
-                List<Dictionary<string, string>> documentsToCreate = new List<Dictionary<string, string>>(config.Operations);
+                ConcurrentBag<Dictionary<string, string>> createdDocumentsInContainer = new ConcurrentBag<Dictionary<string, string>>();
+                IEnumerable<Dictionary<string, string>> documentsToCreate = GenerateDocuments(config.Operations);
                 await Utils.ForEachAsync(documentsToCreate, (Dictionary<string, string> doc) 
                     => container.CreateItemAsync(doc).ContinueWith(task =>
                     {
                         if (task.IsCompletedSuccessfully)
                         {
-                            createdDocuments.Add(doc);
+                            createdDocumentsInContainer.Add(doc);
                             Interlocked.Increment(ref successes);
                         }
                         else
@@ -148,9 +289,36 @@ namespace CosmosCTL
                 {
                     logger.LogWarning("Failed pre-populating {0} documents in container {1].", failures, container.Id);
                 }
+
+                createdDocuments.Add(container.Id, createdDocumentsInContainer.ToList());
             }
 
             return createdDocuments;
+        }
+
+        private static IEnumerable<Dictionary<string, string>> GenerateDocuments(long documentsToCreate)
+        {
+            List<Dictionary<string, string>> createdDocuments = new List<Dictionary<string, string>>((int)documentsToCreate);
+            for (long i = 0; i < documentsToCreate; i++)
+            {
+                createdDocuments.Add(GenerateDocument());
+            }
+
+            return createdDocuments;
+        }
+
+        private static Dictionary<string, string> GenerateDocument()
+        {
+            Dictionary<string, string> document = new Dictionary<string, string>();
+            string newGuid = Guid.NewGuid().ToString();
+            document["id"] = newGuid;
+            document[DefaultPartitionKey] = newGuid;
+            for (int j = 0; j < DefaultDocumentFieldCount; j++)
+            {
+                document["dataField" + j] = DataFieldValue;
+            }
+
+            return document;
         }
 
         /// <summary>

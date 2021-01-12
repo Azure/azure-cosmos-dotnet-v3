@@ -44,22 +44,35 @@ namespace CosmosCTL
         public string ReadWriteQueryPercentage { get; set; } = "90,9,1";
 
         [Option("ctl_number_of_operations", Required = false, HelpText = "Number of documents to insert")]
-        public int Operations { get; set; } = -1;
+        public long Operations { get; set; } = -1;
 
         [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time.")]
-        public string RunningTime { get; set; } = "PT10H";
+        public string RunningTimeDuration
+        {
+            get => this.RunningTimeDurationAsTimespan.ToString();
+            set => this.RunningTimeDurationAsTimespan = System.Xml.XmlConvert.ToTimeSpan(value);
+
+        }
 
         [Option("ctl_number_Of_collection", Required = false, HelpText = "Number of collections to use")]
         public int CollectionCount { get; set; } = 4;
 
         [Option("ctl_diagnostics_threshold_duration", Required = false, HelpText = "Threshold to log diagnostics")]
-        public string DiagnosticsThreshold { get; set; } = "PT60S";
+        public string DiagnosticsThresholdDuration
+        {
+            get => this.DiagnosticsThresholdDurationAsTimespan.ToString();
+            set => this.DiagnosticsThresholdDurationAsTimespan = System.Xml.XmlConvert.ToTimeSpan(value);
+
+        }
 
         [Option("ctl_content_response_on_write", Required = false, HelpText = "Should return content response on writes")]
         public bool IsContentResponseOnWriteEnabled { get; set; } = true;
 
         [Option("ctl_output_event_traces", Required = false, HelpText = "Should return content response on writes")]
         public bool OutputEventTraces { get; set; } = true;
+
+        internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
+        internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
 
         internal static CTLConfig From(string[] args)
         {
@@ -72,7 +85,7 @@ namespace CosmosCTL
             return options;
         }
 
-        internal CosmosClient CreateCosmosClient(string accountKey)
+        internal CosmosClient CreateCosmosClient()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -82,12 +95,19 @@ namespace CosmosCTL
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
-                clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
+                if (Enum.TryParse(this.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
+                {
+                    clientOptions.ConsistencyLevel = consistencyLevel;
+                }
+                else
+                {
+                    throw new ArgumentException($"Cannot parse consistency {this.ConsistencyLevel}", nameof(this.ConsistencyLevel));
+                }
             }
 
             return new CosmosClient(
                         this.EndPoint,
-                        accountKey,
+                        this.Key,
                         clientOptions);
         }
 

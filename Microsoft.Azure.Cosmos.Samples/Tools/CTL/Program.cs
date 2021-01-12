@@ -31,21 +31,7 @@ namespace CosmosCTL
             try
             {
                 CTLConfig config = CTLConfig.From(args);
-                CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(config.EndPoint, config.Key);
-
-                if (!string.IsNullOrWhiteSpace(config.ConsistencyLevel))
-                {
-                    if (Enum.TryParse<ConsistencyLevel>(config.ConsistencyLevel, out ConsistencyLevel consistencyLevel))
-                    {
-                        cosmosClientBuilder.WithConsistencyLevel(consistencyLevel);
-                    }
-                    else
-                    {
-                        logger.LogWarning($"Cannot parse consistency {config.ConsistencyLevel}");
-                    }
-                }
-
-                using CosmosClient client = cosmosClientBuilder.Build();
+                using CosmosClient client = config.CreateCosmosClient();
 
                 using (logger.BeginScope(config.WorkloadType))
                 {
