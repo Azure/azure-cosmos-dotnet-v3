@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(cekResponse.Resource.EncryptionKeyWrapMetadata, retrievedCekProperties.EncryptionKeyWrapMetadata);
             Assert.AreEqual(cekResponse.ETag, retrievedCekProperties.ETag);
             Assert.AreEqual(cekId, retrievedCekProperties.Id);
-            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", retrievedCekProperties.EncryptionAlgorithmId);
+            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", retrievedCekProperties.EncryptionAlgorithm);
             return retrievedCekProperties;
         }
 
@@ -496,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(rawCek.SequenceEqual(retrievedCekProperties.WrappedDataEncryptionKey));
             Assert.AreEqual(cekResponse.ETag, retrievedCekProperties.ETag);
             Assert.AreEqual(cekId, retrievedCekProperties.Id);
-            Assert.AreEqual(cekProperties.EncryptionAlgorithmId, retrievedCekProperties.EncryptionAlgorithmId);
+            Assert.AreEqual(cekProperties.EncryptionAlgorithm, retrievedCekProperties.EncryptionAlgorithm);
             return retrievedCekProperties;
         }
 
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (ClientEncryptionKeyProperties clientEncryptionKeyProperties in feedResponse.Resource)
             {
                 readDekIds.Add(clientEncryptionKeyProperties.Id);
-                Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", clientEncryptionKeyProperties.EncryptionAlgorithmId);
+                Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", clientEncryptionKeyProperties.EncryptionAlgorithm);
                 Assert.AreEqual(cekProperties.EncryptionKeyWrapMetadata.Name, clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name);
                 Assert.AreEqual(cekProperties.EncryptionKeyWrapMetadata.Value, clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value);
             }

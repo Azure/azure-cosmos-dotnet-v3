@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
         {
             this.Id = !string.IsNullOrEmpty(id) ? id : throw new ArgumentNullException(nameof(id));
-            this.EncryptionAlgorithmId = encryptionAlgorithm;
+            this.EncryptionAlgorithm = !string.IsNullOrEmpty(encryptionAlgorithm) ? encryptionAlgorithm : throw new ArgumentNullException(nameof(encryptionAlgorithm));
             this.WrappedDataEncryptionKey = wrappedDataEncryptionKey ?? throw new ArgumentNullException(nameof(wrappedDataEncryptionKey));
             this.EncryptionKeyWrapMetadata = encryptionKeyWrapMetadata ?? throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
         }
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             this.CreatedTime = source.CreatedTime;
             this.ETag = source.ETag;
             this.Id = source.Id;
-            this.EncryptionAlgorithmId = source.EncryptionAlgorithmId;
+            this.EncryptionAlgorithm = source.EncryptionAlgorithm;
             this.EncryptionKeyWrapMetadata = new EncryptionKeyWrapMetadata(source.EncryptionKeyWrapMetadata);
             this.LastModified = source.LastModified;
             this.ResourceId = source.ResourceId;
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
         /// Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.EncryptionAlgorithmId, NullValueHandling = NullValueHandling.Ignore)]
-        public string EncryptionAlgorithmId { get; internal set; }
+        public string EncryptionAlgorithm { get; internal set; }
 
         /// <summary>
         /// Wrapped form of the data encryption key.
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return other != null &&
                    this.Id == other.Id &&
-                   this.EncryptionAlgorithmId == other.EncryptionAlgorithmId &&
+                   this.EncryptionAlgorithm == other.EncryptionAlgorithm &&
                    ClientEncryptionKeyProperties.Equals(this.WrappedDataEncryptionKey, other.WrappedDataEncryptionKey) &&
                    EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(this.EncryptionKeyWrapMetadata, other.EncryptionKeyWrapMetadata) &&
                    this.CreatedTime == other.CreatedTime &&
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = -1673632966;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.EncryptionAlgorithmId);
+            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.EncryptionAlgorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<EncryptionKeyWrapMetadata>.Default.GetHashCode(this.EncryptionKeyWrapMetadata);
             hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime?>.Default.GetHashCode(this.CreatedTime);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.ETag);

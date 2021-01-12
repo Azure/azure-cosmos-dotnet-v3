@@ -312,12 +312,12 @@
           ],
           "MethodInfo": "System.Nullable`1[System.DateTime] LastModified;CanRead:True;CanWrite:True;System.Nullable`1[System.DateTime] get_LastModified();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String EncryptionAlgorithmId[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"encryptionAlgorithmId\")]": {
+        "System.String EncryptionAlgorithm[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"encryptionAlgorithmId\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
           ],
-          "MethodInfo": "System.String EncryptionAlgorithmId;CanRead:True;CanWrite:True;System.String get_EncryptionAlgorithmId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String EncryptionAlgorithm;CanRead:True;CanWrite:True;System.String get_EncryptionAlgorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String ETag[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"_etag\")]": {
           "Type": "Property",
@@ -326,12 +326,12 @@
           ],
           "MethodInfo": "System.String ETag;CanRead:True;CanWrite:True;System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_EncryptionAlgorithmId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_EncryptionAlgorithm()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.String get_EncryptionAlgorithmId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.String get_EncryptionAlgorithm();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_ETag()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
