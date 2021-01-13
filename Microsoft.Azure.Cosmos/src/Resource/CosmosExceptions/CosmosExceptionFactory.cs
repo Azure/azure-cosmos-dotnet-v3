@@ -15,22 +15,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
             DocumentClientException dce,
             CosmosDiagnosticsContext diagnosticsContext)
         {
-            Headers headers = new Headers();
-            if (dce.Headers != null)
-            {
-                foreach (string key in dce.Headers)
-                {
-                    string value = dce.Headers[key];
-                    if (value == null)
-                    {
-                        throw new ArgumentNullException(
-                            message: $"{nameof(key)}: {key};",
-                            innerException: dce);
-                    }
-
-                    headers.Add(key, value);
-                }
-            }
+            Headers headers = dce.Headers == null ? new Headers() : new Headers(dce.Headers);
 
             HttpStatusCode httpStatusCode;
             if (dce.StatusCode.HasValue)
@@ -48,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             return CosmosExceptionFactory.Create(
                 httpStatusCode,
-                (int)dce.GetSubStatus(),
+                Headers.GetIntValueOrDefault(headers.SubStatusCodeLiteral),
                 dce.Message,
                 dce.StackTrace,
                 dce.ActivityId,
@@ -108,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             return CosmosExceptionFactory.Create(
                 responseMessage.StatusCode,
-                (int)responseMessage.Headers.SubStatusCode,
+                Headers.GetIntValueOrDefault(responseMessage.Headers.SubStatusCodeLiteral),
                 errorMessage,
                 responseMessage?.CosmosException?.StackTrace,
                 responseMessage.Headers.ActivityId,
@@ -144,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             return CosmosExceptionFactory.Create(
                 statusCode: documentServiceResponse.StatusCode,
-                subStatusCode: (int)responseHeaders.SubStatusCode,
+                subStatusCode: Headers.GetIntValueOrDefault(responseHeaders.SubStatusCodeLiteral),
                 message: errorMessage,
                 stackTrace: null,
                 activityId: responseHeaders.ActivityId,
@@ -175,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
             return CosmosExceptionFactory.Create(
                 statusCode: storeResponse.StatusCode,
-                subStatusCode: (int)headers.SubStatusCode,
+                subStatusCode: Headers.GetIntValueOrDefault(headers.SubStatusCodeLiteral),
                 message: errorMessage,
                 stackTrace: null,
                 activityId: headers.ActivityId,
