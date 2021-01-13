@@ -143,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (IsSplitException(exception))
                     {
                         // Handle split
+
                         List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                             currentPaginator.Range,
                             childTrace,
@@ -179,11 +180,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                         // Recursively retry
                         return await this.MoveNextAsync(childTrace);
-                    }
-
-                    if (IsMergeException(exception))
-                    {
-                        throw new NotImplementedException();
                     }
 
                     // Just enqueue the paginator and the user can decide if they want to retry.
@@ -240,12 +236,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return exeception is CosmosException cosmosException
                 && (cosmosException.StatusCode == HttpStatusCode.Gone)
                 && (cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone);
-        }
-
-        private static bool IsMergeException(Exception exception)
-        {
-            // TODO: code this out
-            return false;
         }
 
         private interface IQueue<T> : IEnumerable<T>
