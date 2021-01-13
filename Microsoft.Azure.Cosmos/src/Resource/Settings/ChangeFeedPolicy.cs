@@ -24,12 +24,7 @@ namespace Microsoft.Azure.Cosmos
     /// </code>
     /// </example>
     /// <seealso cref="ContainerProperties"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class ChangeFeedPolicy
+    internal sealed class ChangeFeedPolicy
     {
         [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration)]
         private int retentionDurationInMinutes = 0;

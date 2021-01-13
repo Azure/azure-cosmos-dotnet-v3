@@ -135,6 +135,16 @@ namespace Microsoft.Azure.Cosmos
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
+
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
 #endif
 
 #if !PREVIEW
@@ -146,12 +156,10 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

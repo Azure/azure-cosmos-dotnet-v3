@@ -1189,18 +1189,8 @@ namespace Microsoft.Azure.Cosmos
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
-#endif
 
-#if PREVIEW
-        /// <summary>
-        /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A list of <see cref="FeedRange"/>.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
-
-        /// <summary>
+                /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
         /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
@@ -1288,6 +1278,100 @@ namespace Microsoft.Azure.Cosmos
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+#endif
+
+#if PREVIEW
+        /// <summary>
+        /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
+        /// </summary>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>A list of <see cref="FeedRange"/>.</returns>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a Change Feed.
+        /// </summary>
+        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
+        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
+        ///
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     PageSizeHint = 10,
+        /// }
+        /// 
+        /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
+        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     options);
+        ///
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         {
+        ///             using (StreamReader sr = new StreamReader(response.Content))
+        ///             using (JsonTextReader jtr = new JsonTextReader(sr))
+        ///             {
+        ///                 JObject result = JObject.Load(jtr);
+        ///             }
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        public abstract FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+
+        /// <summary>
+        ///  This method creates an iterator to consume a Change Feed.
+        /// </summary>
+        /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
+        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
+        ///
+        /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
+        /// {
+        ///     PageSizeHint = 10,
+        /// }
+        /// 
+        /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
+        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     options);
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     while (feedIterator.HasMoreResults)
+        ///     {
+        ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
+        ///         foreach (var item in response)
+        ///         {
+        ///             Console.WriteLine(item);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An iterator to go through the Change Feed.</returns>
+        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>

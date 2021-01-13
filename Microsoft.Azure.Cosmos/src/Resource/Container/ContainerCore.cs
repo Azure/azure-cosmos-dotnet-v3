@@ -347,6 +347,13 @@ namespace Microsoft.Azure.Cosmos
 
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.GetChangeFeedStreamIterator(changeFeedStartFrom, ChangeFeedMode.Incremental, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
@@ -371,6 +378,13 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
+            return this.GetChangeFeedIterator<T>(changeFeedStartFrom, ChangeFeedMode.Incremental, changeFeedRequestOptions);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
