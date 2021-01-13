@@ -14,15 +14,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerable : IAsyncEnumerable<TryCatch<ChangeFeedPage>>
     {
         private readonly IDocumentContainer documentContainer;
+        private readonly ChangeFeedMode changeFeedMode;
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly ChangeFeedCrossFeedRangeState state;
 
         public ChangeFeedCrossFeedRangeAsyncEnumerable(
             IDocumentContainer documentContainer,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedCrossFeedRangeState state)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
+            this.changeFeedMode = changeFeedMode ?? throw new ArgumentNullException(nameof(changeFeedMode));
             this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.state = state;
         }
@@ -32,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             CrossFeedRangeState<ChangeFeedState> innerState = new CrossFeedRangeState<ChangeFeedState>(this.state.FeedRangeStates);
             CrossPartitionChangeFeedAsyncEnumerator innerEnumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 this.documentContainer,
+                this.changeFeedMode,
                 this.changeFeedRequestOptions,
                 innerState,
                 cancellationToken);
