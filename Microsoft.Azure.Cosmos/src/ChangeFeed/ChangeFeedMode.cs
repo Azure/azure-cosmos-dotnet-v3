@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos
     /// Base class for the change feed mode <see cref="ChangeFeedRequestOptions"/>.
     /// </summary>
     /// <remarks>Use one of the static constructors to generate a ChangeFeedMode option.</remarks>
-    internal abstract class ChangeFeedMode
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class ChangeFeedMode
     {
         /// <summary>
         /// Initializes an instance of the <see cref="ChangeFeedMode"/> class.

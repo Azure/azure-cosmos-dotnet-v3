@@ -1204,6 +1204,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
         /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
@@ -1220,6 +1221,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
         ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
@@ -1242,12 +1244,14 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
         /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
@@ -1264,6 +1268,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
         ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedMode.Incremental,
         ///     options);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1282,6 +1287,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
