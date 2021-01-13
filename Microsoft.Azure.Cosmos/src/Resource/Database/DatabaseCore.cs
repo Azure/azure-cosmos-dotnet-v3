@@ -756,9 +756,9 @@ namespace Microsoft.Azure.Cosmos
                 QueryRequestOptions requestOptions = null)
         {
             if (!(this.GetClientEncryptionKeyQueryStreamIterator(
-                    queryDefinition,
-                    continuationToken,
-                    requestOptions) is FeedIteratorInternal cekStreamIterator))
+                    queryDefinition: queryDefinition,
+                    continuationToken: continuationToken,
+                    requestOptions: requestOptions) is FeedIteratorInternal cekStreamIterator))
             {
                 throw new InvalidOperationException($"Expected FeedIteratorInternal.");
             }
@@ -787,20 +787,22 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public override
+        public
 #else
         internal virtual
 #endif
             async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+                CosmosDiagnosticsContext diagnosticsContext,
                 ClientEncryptionKeyProperties clientEncryptionKeyProperties,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
             Stream streamPayload = this.ClientContext.SerializerCore.ToStream(clientEncryptionKeyProperties);
             ResponseMessage responseMessage = await this.CreateClientEncryptionKeyStreamAsync(
-                streamPayload,
-                requestOptions,
-                cancellationToken);
+                diagnosticsContext: diagnosticsContext,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
 
             ClientEncryptionKeyResponse cekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(
                 this.GetClientEncryptionKey(clientEncryptionKeyProperties.Id),
@@ -910,6 +912,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<ResponseMessage> CreateClientEncryptionKeyStreamAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -928,7 +931,7 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 requestEnricher: null,
-                diagnosticsContext: null,
+                diagnosticsContext: diagnosticsContext,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken);
         }

@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         }
 
-        private static async Task<ClientEncryptionKeyProperties> CreateCekAsync(DatabaseCore databaseCore, string cekId)
+        private static async Task<ClientEncryptionKeyProperties> CreateCekAsync(DatabaseInlineCore databaseCore, string cekId)
         {
             byte[] rawCek = new byte[32];
             // Generate random bytes cryptographically.
@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             DatabaseResponse response = await this.CreateDatabaseHelper();
 
-            DatabaseCore databaseCore = (DatabaseInlineCore)response.Database;
+            DatabaseInlineCore databaseCore = (DatabaseInlineCore)response.Database;
 
             string cekId = "Cek1";
 

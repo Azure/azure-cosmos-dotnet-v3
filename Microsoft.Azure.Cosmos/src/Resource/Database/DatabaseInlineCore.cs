@@ -323,11 +323,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if PREVIEW
-        public
+        public override
 #else
         internal
 #endif
-            override Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+            Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
                 ClientEncryptionKeyProperties clientEncryptionKeyProperties,
                 RequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateClientEncryptionKeyAsync),
                 requestOptions,
-                (diagnostics, trace) => base.CreateClientEncryptionKeyAsync(clientEncryptionKeyProperties, requestOptions, cancellationToken));
+                (diagnostics, trace) => base.CreateClientEncryptionKeyAsync(diagnostics, clientEncryptionKeyProperties, requestOptions, cancellationToken));
         }
     }
 }
