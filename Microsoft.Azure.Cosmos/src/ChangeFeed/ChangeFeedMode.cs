@@ -5,12 +5,20 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Pagination;
+    using ChangeFeedPage = Microsoft.Azure.Cosmos.ChangeFeed.Pagination.ChangeFeedPage;
+    using ChangeFeedState = Microsoft.Azure.Cosmos.ChangeFeed.Pagination.ChangeFeedState;
 
     /// <summary>
     /// Base class for the change feed mode <see cref="ChangeFeedRequestOptions"/>.
     /// </summary>
     /// <remarks>Use one of the static constructors to generate a ChangeFeedMode option.</remarks>
-    internal abstract class ChangeFeedMode
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class ChangeFeedMode
     {
         /// <summary>
         /// Initializes an instance of the <see cref="ChangeFeedMode"/> class.
@@ -21,6 +29,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal abstract void Accept(RequestMessage requestMessage);
+
+        internal abstract ISplitStrategy<ChangeFeedPage, ChangeFeedState> CreateSplitStrategy(
+            IFeedRangeProvider feedRangeProvider,
+            CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> partitionRangeEnumeratorCreator);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedMode"/> to receive incremental item changes.
