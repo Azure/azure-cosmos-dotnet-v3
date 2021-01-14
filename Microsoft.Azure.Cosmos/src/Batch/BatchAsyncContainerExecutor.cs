@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerInternal,
             RetryOptions retryOptions)
         {
-            return new BulkPartitionKeyRangeGoneRetryPolicy(
+            return new BulkExecutionRetryPolicy(
                containerInternal,
                new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,

@@ -501,11 +501,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOnSplit()
         {
-            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
-            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
@@ -530,11 +530,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOnCompletingSplit()
         {
-            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
-            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
@@ -559,11 +559,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOnCompletingPartitionMigration()
         {
-            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
-            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
@@ -608,11 +608,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOn413()
         {
-            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 
-            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
                 new ResourceThrottleRetryPolicy(1));
 

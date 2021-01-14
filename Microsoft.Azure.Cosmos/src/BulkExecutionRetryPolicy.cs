@@ -16,12 +16,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <see cref="BatchAsyncBatcher"/>
     /// <see cref="ItemBatchOperationContext"/>
-    internal sealed class BulkPartitionKeyRangeGoneRetryPolicy : IDocumentClientRetryPolicy
+    internal sealed class BulkExecutionRetryPolicy : IDocumentClientRetryPolicy
     {
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
         private readonly ContainerInternal container;
 
-        public BulkPartitionKeyRangeGoneRetryPolicy(
+        public BulkExecutionRetryPolicy(
             ContainerInternal container,
             IDocumentClientRetryPolicy nextRetryPolicy)
         {
