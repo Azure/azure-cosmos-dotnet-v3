@@ -103,6 +103,8 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Batch API can return 413 which means the response is bigger than 4Mb.
+            // Operations that exceed the 4Mb limit are returned as 413, while the operations within the 4Mb limit will be 200
             if (statusCode == HttpStatusCode.RequestEntityTooLarge)
             {
                 return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
