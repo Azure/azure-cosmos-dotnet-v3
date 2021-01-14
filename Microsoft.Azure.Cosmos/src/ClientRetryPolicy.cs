@@ -291,8 +291,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.retryContext = new RetryContext()
                         {
-                            RetryLocationIndex = this.sessionTokenRetryCount - 1,
-                            RetryRequestOnPreferredLocations = this.sessionTokenRetryCount > 1
+                            RetryLocationIndex = this.sessionTokenRetryCount,
+                            RetryRequestOnPreferredLocations = true
                         };
 
                         return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.retryContext = new RetryContext
                         {
-                            RetryLocationIndex = this.sessionTokenRetryCount - 1,
+                            RetryLocationIndex = 0,
                             RetryRequestOnPreferredLocations = false
                         };
 
