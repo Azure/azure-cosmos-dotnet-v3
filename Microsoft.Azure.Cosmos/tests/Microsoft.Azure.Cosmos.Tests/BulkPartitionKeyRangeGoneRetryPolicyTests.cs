@@ -42,6 +42,18 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task RetriesOn413()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
+                Mock.Of<ContainerInternal>(),
+                new ResourceThrottleRetryPolicy(1));
+
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge);
+            ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
+        }
+
+        [TestMethod]
         public async Task RetriesOnSplits()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkPartitionKeyRangeGoneRetryPolicy(
