@@ -103,6 +103,11 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            if (statusCode == HttpStatusCode.RequestEntityTooLarge)
+            {
+                return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+            }
+
             return null;
         }
     }
