@@ -277,6 +277,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -293,9 +294,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     state.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
 
                     request.Headers.PageSize = pageSize.ToString();
-                    request.Headers.Add(
-                        HttpConstants.HttpHeaders.A_IM,
-                        HttpConstants.A_IMHeaderValues.IncrementalFeed);
+                    changeFeedMode.Accept(request);
                 },
                 feedRange: feedRange,
                 streamPayload: default,
