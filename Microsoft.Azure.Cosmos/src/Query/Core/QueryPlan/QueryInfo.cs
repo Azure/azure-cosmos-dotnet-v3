@@ -100,6 +100,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
+        [JsonProperty("dCountInfo")]
+        public DCountInfo DCountInfo
+        {
+            get;
+            set;
+        }
+
+        public bool HasDCount => this.DCountInfo != null;
+
         public bool HasDistinct => this.DistinctType != DistinctQueryType.None;
         public bool HasTop => this.Top.HasValue;
 

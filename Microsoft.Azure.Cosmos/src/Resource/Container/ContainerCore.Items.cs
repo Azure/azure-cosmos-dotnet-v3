@@ -592,6 +592,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = default)
         {
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -602,6 +603,7 @@ namespace Microsoft.Azure.Cosmos
 
             return new ChangeFeedCrossFeedRangeAsyncEnumerable(
                 documentContainer,
+                changeFeedMode,
                 changeFeedRequestOptions,
                 state);
         }
@@ -908,6 +910,40 @@ namespace Microsoft.Azure.Cosmos
                 // MemoryStream casting leverage might change position 
                 stream.Position = 0;
             }
+        }
+
+        public Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+          Cosmos.PartitionKey partitionKey,
+          CosmosDiagnosticsContext diagnosticsContext,
+          ITrace trace,
+          RequestOptions requestOptions = null,
+          CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Cosmos.PartitionKey? resultingPartitionKey;
+            if (requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting)
+            {
+                resultingPartitionKey = null;
+            }
+            else
+            {
+                resultingPartitionKey = partitionKey;
+            }
+
+            ContainerCore.ValidatePartitionKey(resultingPartitionKey, requestOptions);
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.PartitionKey,
+                operationType: OperationType.Delete,
+                requestOptions: requestOptions,
+                cosmosContainerCore: this,
+                partitionKey: resultingPartitionKey,
+                itemId: null,
+                streamPayload: null,
+                requestEnricher: null,
+                trace: trace,
+                diagnosticsContext: diagnosticsContext,
+                cancellationToken: cancellationToken);
         }
 
         private static bool TryParseTokenListForElement(CosmosObject pathTraversal, IReadOnlyList<string> tokens, out CosmosElement result)

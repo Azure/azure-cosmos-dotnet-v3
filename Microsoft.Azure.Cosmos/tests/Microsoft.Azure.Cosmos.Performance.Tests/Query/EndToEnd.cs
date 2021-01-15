@@ -121,7 +121,8 @@
         {
             ChangeFeedIteratorCore feedIterator = ((ContainerCore)this.container)
                 .GetChangeFeedStreamIterator(
-                    ChangeFeedStartFrom.Beginning()) as ChangeFeedIteratorCore;
+                    ChangeFeedStartFrom.Beginning(),
+                    ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
 
             while (feedIterator.HasMoreResults)
             {

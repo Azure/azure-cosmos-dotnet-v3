@@ -5,9 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Runtime.InteropServices.ComTypes;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
@@ -236,13 +240,100 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Thread.Sleep(TimeSpan.FromMilliseconds(100));
                 }
 
+                bool insertIntoDiagnostics1 = true;
+                bool isInsertDiagnostics = false;
+                // Start a background thread and ensure that no exception occurs even if items are getting added to the context
+                // when 2 contexts are appended.
+                Task.Run(() =>
+                {
+                    isInsertDiagnostics = true;
+                    CosmosSystemInfo cosmosSystemInfo = new CosmosSystemInfo(
+                        cpuLoadHistory: new Documents.Rntbd.CpuLoadHistory(new List<Documents.Rntbd.CpuLoad>().AsReadOnly(), TimeSpan.FromSeconds(1)));
+                    while (insertIntoDiagnostics1)
+                    {
+                        cosmosDiagnostics.AddDiagnosticsInternal(cosmosSystemInfo);
+                    }
+                });
+
+                while (!isInsertDiagnostics)
+                {
+                    Task.Delay(TimeSpan.FromMilliseconds(10)).Wait();
+                }
+
                 cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
+
+                // Stop the background inserts
+                insertIntoDiagnostics1 = false;
             }
 
             string diagnostics = cosmosDiagnostics2.ToString();
             Assert.IsTrue(diagnostics.Contains("MyCustomUserAgentString"));
             Assert.IsTrue(diagnostics.Contains("ValidateScope"));
             Assert.IsTrue(diagnostics.Contains("CosmosDiagnostics2Scope"));
+        }
+
+        [TestMethod]
+        public void ValidateDiagnosticsAppendContextConcurrentCalls()
+        {
+            int threadCount = 10;
+            int itemCountPerThread = 100000;
+            ConcurrentStack<Exception> concurrentStack = new ConcurrentStack<Exception>();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+             nameof(ValidateDiagnosticsAppendContext),
+             "MyCustomUserAgentString");
+            using (cosmosDiagnostics.GetOverallScope())
+            {
+                // Test all the different operations on diagnostics context
+                using (cosmosDiagnostics.CreateScope("ValidateScope"))
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(2));
+                }
+
+                List<Thread> threads = new List<Thread>(threadCount);
+                for (int i = 0; i < threadCount; i++)
+                {
+                    Thread thread = new Thread(() =>
+                        this.AddDiagnosticsInBackgroundLoop(
+                            itemCountPerThread,
+                            cosmosDiagnostics,
+                            concurrentStack));
+                    thread.Start();
+                    threads.Add(thread);
+                }
+
+                foreach (Thread thread in threads)
+                {
+                    thread.Join();
+                }
+            }
+
+            Assert.AreEqual(0, concurrentStack.Count, $"Exceptions count: {concurrentStack.Count} Exceptions: {string.Join(';', concurrentStack)}");
+            int count = cosmosDiagnostics.Count();
+            Assert.AreEqual((threadCount * itemCountPerThread) + 1, count);
+        }
+
+        private void AddDiagnosticsInBackgroundLoop(
+            int count,
+            CosmosDiagnosticsContext cosmosDiagnostics,
+            ConcurrentStack<Exception> concurrentStack)
+        {
+            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
+                    nameof(ValidateDiagnosticsAppendContext),
+                    "MyCustomUserAgentString");
+            Random random = new Random();
+            cosmosDiagnostics2.GetOverallScope().Dispose();
+
+            for (int i = 0; i < count; i++)
+            {
+                try
+                {
+                    cosmosDiagnostics.AddDiagnosticsInternal(cosmosDiagnostics2);
+                }
+                catch (Exception e)
+                {
+                    concurrentStack.Append(e);
+                }
+            }
         }
 
         [TestMethod]

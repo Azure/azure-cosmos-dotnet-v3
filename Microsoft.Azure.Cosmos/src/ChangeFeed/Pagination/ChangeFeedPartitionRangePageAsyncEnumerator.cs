@@ -16,16 +16,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     {
         private readonly IChangeFeedDataSource changeFeedDataSource;
         private readonly int pageSize;
+        private readonly ChangeFeedMode changeFeedMode;
 
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
             FeedRangeInternal range,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedState state,
             CancellationToken cancellationToken)
             : base(range, cancellationToken, state)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
+            this.changeFeedMode = changeFeedMode ?? throw new ArgumentNullException(nameof(changeFeedMode));
             this.pageSize = pageSize;
         }
 
@@ -35,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             this.State,
             this.Range,
             this.pageSize,
+            this.changeFeedMode,
             trace,
             cancellationToken);
     }

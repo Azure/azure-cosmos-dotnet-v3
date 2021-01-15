@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         }
 
         [TestMethod]
+        [Ignore] // Continuation token for in memory container needs to be updated to suppport this query
         public async Task OrderByWithJoins()
         {
             List<CosmosObject> documents = new List<CosmosObject>()
@@ -154,6 +155,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documents: documents);
 
             Assert.AreEqual(expected: 1, actual: documentsQueried.Count);
+        }
+
+        [TestMethod]
+        [Ignore("[TODO]: ndeshpan enable after ServiceInterop.dll is refreshed")]
+        public async Task DCount()
+        {
+            List<CosmosObject> documents = new List<CosmosObject>();
+            for (int i = 0; i < 250; i++)
+            {
+                documents.Add(CosmosObject.Parse($"{{\"pk\" : {i}, \"val\": {i % 50} }}"));
+            }
+
+            List<CosmosElement> documentsQueried = await ExecuteQueryAsync(
+                query: "SELECT VALUE COUNT(1) FROM (SELECT DISTINCT VALUE c.val FROM c)",
+                documents: documents);
+
+            Assert.AreEqual(expected: 1, actual: documentsQueried.Count);
+            Assert.IsTrue(documentsQueried[0] is CosmosNumber);
+            CosmosNumber result = documentsQueried[0] as CosmosNumber;
+            Assert.AreEqual(expected: 50, actual: result);
         }
 
         [TestMethod]

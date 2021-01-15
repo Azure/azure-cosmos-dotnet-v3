@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Base abstract class for JSON navigators.
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory bufferedStringValue);
 
         /// <inheritdoc />
-        public abstract string GetStringValue(IJsonNavigatorNode stringNode);
+        public abstract UtfAnyString GetStringValue(IJsonNavigatorNode stringNode);
 
         /// <inheritdoc />
         public abstract sbyte GetInt8Value(IJsonNavigatorNode numberNode);

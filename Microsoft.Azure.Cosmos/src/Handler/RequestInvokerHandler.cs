@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             try
             {
-                HttpMethod method = RequestInvokerHandler.GetHttpMethod(operationType);
+                HttpMethod method = RequestInvokerHandler.GetHttpMethod(resourceType, operationType);
                 RequestMessage request = new RequestMessage(
                     method,
                     resourceUriString,
@@ -284,6 +284,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         internal static HttpMethod GetHttpMethod(
+            ResourceType resourceType,
             OperationType operationType)
         {
             if (operationType == OperationType.Create ||
@@ -293,7 +294,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 operationType == OperationType.QueryPlan ||
                 operationType == OperationType.Batch ||
                 operationType == OperationType.ExecuteJavaScript ||
-                operationType == OperationType.CompleteUserTransaction)
+                operationType == OperationType.CompleteUserTransaction ||
+                (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
             {
                 return HttpMethod.Post;
             }

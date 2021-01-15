@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
+                throughput: 20000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -468,6 +469,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ChangeFeedRequestOptions requestOptions = disableDiagnostics ? ChangeFeedRequestOptionDisableDiagnostic : null;
             FeedIterator changeFeedIterator = ((ContainerCore)(container as ContainerInlineCore)).GetChangeFeedStreamIterator(
                 ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental,
                 changeFeedRequestOptions: requestOptions);
             while (changeFeedIterator.HasMoreResults)
             {

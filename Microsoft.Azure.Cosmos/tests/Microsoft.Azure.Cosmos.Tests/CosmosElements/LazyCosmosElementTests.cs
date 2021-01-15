@@ -234,10 +234,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
             Assert.AreEqual(countFromCount, countFromEnumerator);
 
-            CosmosString personName = lazilyDeserializedPerson[nameof(Person.Name)] as CosmosString;
-            Assert.IsTrue(
-                object.ReferenceEquals(personName.Value, personName.Value),
-                "Did not return the string from the cache.");
+            // Can not test for strings, since UtfAnyString allocates a light weight wrapper.
 
             int i = 0;
             foreach (CosmosElement arrayItem in lazilyDeserializedPeople)

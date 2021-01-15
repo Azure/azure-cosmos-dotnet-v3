@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Partial class that wraps the private JsonTextNavigator
@@ -141,15 +142,14 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override string GetStringValue(IJsonNavigatorNode node)
+            public override UtfAnyString GetStringValue(IJsonNavigatorNode node)
             {
                 if (!(node is StringNodeBase stringNodeBase))
                 {
                     throw new ArgumentException($"{node} was not of type: {nameof(StringNodeBase)}.");
                 }
 
-                string value = JsonTextParser.GetStringValue(stringNodeBase.BufferedValue.Span.Span);
-                return value;
+                return JsonTextParser.GetStringValue(stringNodeBase.BufferedValue);
             }
 
             /// <inheritdoc />
