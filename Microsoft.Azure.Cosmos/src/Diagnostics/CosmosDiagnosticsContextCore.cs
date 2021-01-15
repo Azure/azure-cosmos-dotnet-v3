@@ -137,9 +137,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
         {
-            if (storeResponseStatistics.StoreResult != null)
+            if (storeResponseStatistics.StatusCode.HasValue)
             {
-                this.AddResponseCount((int)storeResponseStatistics.StoreResult.StatusCode);
+                this.AddResponseCount((int)storeResponseStatistics.StatusCode.Value);
             }
 
             this.AddToContextList(storeResponseStatistics);

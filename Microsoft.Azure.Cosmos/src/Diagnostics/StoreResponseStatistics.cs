@@ -10,11 +10,13 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     {
         public readonly DateTime? RequestStartTime;
         public readonly DateTime RequestResponseTime;
-        public readonly StoreResult StoreResult;
         public readonly ResourceType RequestResourceType;
         public readonly OperationType RequestOperationType;
         public readonly Uri LocationEndpoint;
         public readonly bool IsSupplementalResponse;
+        public readonly StatusCodes? StatusCode;
+        public readonly string ActivityId;
+        public readonly string StoreResult;
 
         public StoreResponseStatistics(
             DateTime? requestStartTime,
@@ -26,9 +28,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             this.RequestStartTime = requestStartTime;
             this.RequestResponseTime = requestResponseTime;
-            this.StoreResult = storeResult;
             this.RequestResourceType = resourceType;
             this.RequestOperationType = operationType;
+            this.StatusCode = storeResult?.StatusCode;
+            this.ActivityId = storeResult?.ActivityId;
+            this.StoreResult = storeResult?.ToString();
             this.LocationEndpoint = locationEndpoint;
             this.IsSupplementalResponse = operationType == OperationType.Head || operationType == OperationType.HeadFeed;
         }

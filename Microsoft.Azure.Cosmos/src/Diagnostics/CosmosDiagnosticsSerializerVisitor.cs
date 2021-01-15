@@ -244,13 +244,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("LocationEndpoint");
             this.jsonWriter.WriteValue(storeResponseStatistics.LocationEndpoint);
 
-            if (storeResponseStatistics.StoreResult != null)
+            if (storeResponseStatistics.ActivityId != null)
             {
                 this.jsonWriter.WritePropertyName("ActivityId");
-                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ActivityId);
+                this.jsonWriter.WriteValue(storeResponseStatistics.ActivityId);
+            }
 
+            if (storeResponseStatistics.StoreResult != null)
+            {
                 this.jsonWriter.WritePropertyName("StoreResult");
-                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ToString());
+                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult);
             }
 
             this.jsonWriter.WriteEndObject();
