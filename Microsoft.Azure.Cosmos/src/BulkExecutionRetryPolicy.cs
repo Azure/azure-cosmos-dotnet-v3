@@ -19,13 +19,16 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class BulkExecutionRetryPolicy : IDocumentClientRetryPolicy
     {
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
+        private readonly OperationType operationType;
         private readonly ContainerInternal container;
 
         public BulkExecutionRetryPolicy(
             ContainerInternal container,
+            OperationType operationType,
             IDocumentClientRetryPolicy nextRetryPolicy)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.operationType = operationType;
             this.nextRetryPolicy = nextRetryPolicy;
         }
 
@@ -80,6 +83,8 @@ namespace Microsoft.Azure.Cosmos
             this.nextRetryPolicy.OnBeforeSendRequest(request);
         }
 
+        private bool IsReadRequest => this.operationType == OperationType.Read;
+
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode,
@@ -105,7 +110,8 @@ namespace Microsoft.Azure.Cosmos
 
             // Batch API can return 413 which means the response is bigger than 4Mb.
             // Operations that exceed the 4Mb limit are returned as 413, while the operations within the 4Mb limit will be 200
-            if (statusCode == HttpStatusCode.RequestEntityTooLarge)
+            if (this.IsReadRequest
+                && statusCode == HttpStatusCode.RequestEntityTooLarge)
             {
                 return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
             }
