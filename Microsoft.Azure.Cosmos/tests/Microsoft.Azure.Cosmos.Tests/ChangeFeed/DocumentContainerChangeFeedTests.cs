@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 ChangeFeedState.Beginning(),
                 ranges[0],
                 pageSize: 10,
+                changeFeedMode: ChangeFeedMode.Incremental,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -52,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Beginning(),
                     ranges[0],
                     pageSize: int.MaxValue,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -66,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     resumeState,
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -87,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Time(now),
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -115,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Time(now),
                     ranges[0],
                     pageSize: int.MaxValue,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -135,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Now(),
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -168,6 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     resumeState,
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -198,6 +205,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 ChangeFeedState.Beginning(),
                 new FeedRangePartitionKey(new Cosmos.PartitionKey(0)),
                 pageSize: int.MaxValue,
+                changeFeedMode: ChangeFeedMode.Incremental,
                 NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -241,6 +249,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                             isMinInclusive: true,
                             isMaxInclusive: false)),
                     pageSize: int.MaxValue,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -294,6 +303,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Beginning(),
                     child,
                     pageSize: 1000,
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 

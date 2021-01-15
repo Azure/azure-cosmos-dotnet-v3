@@ -53,13 +53,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             (int totalCount, ChangeFeedCrossFeedRangeState state) countAndState;
             IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
-                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                ChangeFeedMode.Incremental);
             countAndState = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(batchSize, countAndState.totalCount);
 
             // Insert another batch of 25 and use the state from the first cycle
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(countAndState.state);
+            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(countAndState.state, ChangeFeedMode.Incremental);
             countAndState = await PartialDrainAsync(asyncEnumerable);
 
             Assert.AreEqual(batchSize, countAndState.totalCount);
@@ -72,13 +73,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             (int totalCount, ChangeFeedCrossFeedRangeState state) countAndState;
             IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
-                ChangeFeedCrossFeedRangeState.CreateFromNow());
+                ChangeFeedCrossFeedRangeState.CreateFromNow(),
+                ChangeFeedMode.Incremental);
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             countAndState = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(0, countAndState.totalCount);
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(countAndState.state);
+            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(countAndState.state, ChangeFeedMode.Incremental);
             countAndState = await PartialDrainAsync(asyncEnumerable);
 
             Assert.AreEqual(batchSize, countAndState.totalCount);
@@ -91,13 +93,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             (int totalCount, ChangeFeedCrossFeedRangeState state) countAndState;
             IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
-                ChangeFeedCrossFeedRangeState.CreateFromTime(DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(1))));
+                ChangeFeedCrossFeedRangeState.CreateFromTime(DateTime.UtcNow.Subtract(TimeSpan.FromSeconds(1))),
+                ChangeFeedMode.Incremental);
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             countAndState = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(batchSize, countAndState.totalCount);
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
-            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(countAndState.state);
+            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(countAndState.state, ChangeFeedMode.Incremental);
             countAndState = await PartialDrainAsync(asyncEnumerable);
 
             Assert.AreEqual(batchSize, countAndState.totalCount);
@@ -110,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             (int totalCount, ChangeFeedCrossFeedRangeState state) countAndState;
             IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
-                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                ChangeFeedMode.Incremental);
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
             countAndState = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(batchSize, countAndState.totalCount);
@@ -122,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             // Deserialize the state that the user came back with to resume from.
             ChangeFeedCrossFeedRangeState state = ChangeFeedCrossFeedRangeState.Parse(continuationToken);
-            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(state);
+            asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(state, ChangeFeedMode.Incremental);
             countAndState = await PartialDrainAsync(asyncEnumerable);
 
             Assert.AreEqual(batchSize, countAndState.totalCount);
@@ -146,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             List<IAsyncEnumerable<TryCatch<ChangeFeedPage>>> asyncEnumerables = new List<IAsyncEnumerable<TryCatch<ChangeFeedPage>>>();
             foreach (ChangeFeedCrossFeedRangeState state in startStates)
             {
-                IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(state);
+                IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(state, ChangeFeedMode.Incremental);
                 asyncEnumerables.Add(asyncEnumerable);
             }
 
@@ -205,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             // Use the list composition property of the constructor to merge them in to a single state.
             ChangeFeedCrossFeedRangeState multipleLogicalPartitionKeyState = new ChangeFeedCrossFeedRangeState(feedRangeStates.ToImmutableArray());
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(multipleLogicalPartitionKeyState);
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(multipleLogicalPartitionKeyState, ChangeFeedMode.Incremental);
             (int totalCount, ChangeFeedCrossFeedRangeState _) = await PartialDrainAsync(asyncEnumerable);
 
             Assert.AreEqual(2 * batchSize, totalCount);
@@ -220,7 +224,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             // Start draining as 1 iterator
             IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
-                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                ChangeFeedMode.Incremental);
             (int totalCount, ChangeFeedCrossFeedRangeState state) = await PartialDrainAsync(asyncEnumerable);
             Assert.AreEqual(batchSize, totalCount);
 
@@ -232,10 +237,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
 
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> leftEnumerable = this.Container.GetChangeFeedAsyncEnumerable(first);
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> leftEnumerable = this.Container.GetChangeFeedAsyncEnumerable(first, ChangeFeedMode.Incremental);
             (int leftTotalCount, ChangeFeedCrossFeedRangeState leftResumeState) = await PartialDrainAsync(leftEnumerable);
 
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> rightEnumerable = this.Container.GetChangeFeedAsyncEnumerable(second);
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> rightEnumerable = this.Container.GetChangeFeedAsyncEnumerable(second, ChangeFeedMode.Incremental);
             (int rightTotalCount, ChangeFeedCrossFeedRangeState rightResumeState) = await PartialDrainAsync(rightEnumerable);
 
             Assert.AreEqual(batchSize, leftTotalCount + rightTotalCount);
@@ -245,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             await this.CreateRandomItems(this.Container, batchSize, randomPartitionKey: true);
 
-            IAsyncEnumerable<TryCatch<ChangeFeedPage>> mergedEnumerable = this.Container.GetChangeFeedAsyncEnumerable(mergedState);
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> mergedEnumerable = this.Container.GetChangeFeedAsyncEnumerable(mergedState, ChangeFeedMode.Incremental);
             (int mergedTotalCount, ChangeFeedCrossFeedRangeState _) = await PartialDrainAsync(mergedEnumerable);
 
             Assert.AreEqual(batchSize, mergedTotalCount);
@@ -259,7 +264,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             cancellationTokenSource.Cancel();
 
             IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
-                ChangeFeedCrossFeedRangeState.CreateFromBeginning());
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                ChangeFeedMode.Incremental);
             await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable.WithCancellation(cancellationTokenSource.Token))
             {
                 monadicPage.ThrowIfFailed();
