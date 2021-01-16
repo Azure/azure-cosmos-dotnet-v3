@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -17,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         private readonly IChangeFeedDataSource changeFeedDataSource;
         private readonly int pageSize;
         private readonly ChangeFeedMode changeFeedMode;
-        private readonly ContentSerializationFormat? contentSerializationFormat;
+        private readonly JsonSerializationFormat? jsonSerializationFormat;
 
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
             FeedRangeInternal range,
             int pageSize,
             ChangeFeedMode changeFeedMode,
-            ContentSerializationFormat? contentSerializationFormat,
+            JsonSerializationFormat? jsonSerializationFormat,
             ChangeFeedState state,
             CancellationToken cancellationToken)
             : base(range, cancellationToken, state)
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
             this.changeFeedMode = changeFeedMode ?? throw new ArgumentNullException(nameof(changeFeedMode));
             this.pageSize = pageSize;
-            this.contentSerializationFormat = contentSerializationFormat;
+            this.jsonSerializationFormat = jsonSerializationFormat;
         }
 
         public override ValueTask DisposeAsync() => default;
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             this.Range,
             this.pageSize,
             this.changeFeedMode,
-            this.contentSerializationFormat,
+            this.jsonSerializationFormat,
             trace,
             cancellationToken);
     }

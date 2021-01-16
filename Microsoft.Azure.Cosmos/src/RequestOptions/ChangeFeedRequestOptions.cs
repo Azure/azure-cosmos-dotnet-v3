@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
 
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ContentSerializationFormatOptions ContentSerializationFormatOptions { get; set; }
+        JsonSerializationFormatOptions JsonSerializationFormatOptions { get; set; }
 
         internal ChangeFeedRequestOptions Clone()
         {

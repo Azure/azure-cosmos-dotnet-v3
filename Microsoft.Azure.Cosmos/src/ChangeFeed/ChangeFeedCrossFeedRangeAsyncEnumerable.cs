@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             return new ChangeFeedCrossFeedRangeAsyncEnumerator(
                 innerEnumerator, 
-                this.changeFeedRequestOptions.ContentSerializationFormatOptions);
+                this.changeFeedRequestOptions?.JsonSerializationFormatOptions);
         }
     }
 }

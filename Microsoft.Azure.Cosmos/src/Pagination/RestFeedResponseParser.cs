@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         public static CosmosArray ParseRestFeedResponse(
             Stream stream, 
-            ContentSerializationFormatOptions jsonSerializationFormatOptions)
+            JsonSerializationFormatOptions jsonSerializationFormatOptions)
         {
             return ParseRestFeedResponse(stream, ResourceType.Document, jsonSerializationFormatOptions);
         }
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public static CosmosArray ParseRestFeedResponse(
             Stream stream, 
             ResourceType resourceType,
-            ContentSerializationFormatOptions jsonSerializationFormatOptions)
+            JsonSerializationFormatOptions jsonSerializationFormatOptions)
         {
             // Parse out the document from the REST response like this:
             // {
@@ -63,12 +63,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return content;
         }
 
-        private static IJsonNavigator CreateNavigatorFromContent(ReadOnlyMemory<byte> content, ContentSerializationFormatOptions jsonSerializationFormatOptions)
+        private static IJsonNavigator CreateNavigatorFromContent(ReadOnlyMemory<byte> content, JsonSerializationFormatOptions jsonSerializationFormatOptions)
         {
             IJsonNavigator jsonNavigator;
             if (jsonSerializationFormatOptions != null)
             {
-                if (jsonSerializationFormatOptions is ContentSerializationFormatOptions.CustomJsonSerializationFormatOptions customOptions)
+                if (jsonSerializationFormatOptions is JsonSerializationFormatOptions.CustomJsonSerializationFormatOptions customOptions)
                 {
                     jsonNavigator = customOptions.createNavigator(content);
                     if (jsonNavigator == null)
@@ -76,13 +76,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         throw new InvalidOperationException("The CosmosSerializationOptions did not return a JSON navigator.");
                     }
                 }
-                else if (jsonSerializationFormatOptions is ContentSerializationFormatOptions.NativelySupportedJsonSerializationFormatOptions)
+                else if (jsonSerializationFormatOptions is JsonSerializationFormatOptions.NativelySupportedJsonSerializationFormatOptions)
                 {
                     jsonNavigator = JsonNavigator.Create(content);
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(ContentSerializationFormatOptions)} type: {jsonSerializationFormatOptions.GetType()}");
+                    throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormatOptions)} type: {jsonSerializationFormatOptions.GetType()}");
                 }
             }
             else

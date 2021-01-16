@@ -284,11 +284,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     ChangeFeedMode.Incremental,
                     new ChangeFeedRequestOptions()
                     {
-                        ContentSerializationFormatOptions = ContentSerializationFormatOptions.Create(Documents.ContentSerializationFormat.CosmosBinary)
+                        JsonSerializationFormatOptions = JsonSerializationFormatOptions.Create(JsonSerializationFormat.Binary)
                     });
                 await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
                 {
                     monadicPage.ThrowIfFailed();
+
+                    if (monadicPage.Result.NotModified)
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -299,13 +304,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     ChangeFeedMode.Incremental,
                     new ChangeFeedRequestOptions()
                     {
-                        ContentSerializationFormatOptions = ContentSerializationFormatOptions.Create(
-                            Documents.ContentSerializationFormat.CosmosBinary,
+                        JsonSerializationFormatOptions = JsonSerializationFormatOptions.Create(
+                            JsonSerializationFormat.Binary,
                             (content) => JsonNavigator.Create(content))
                     });
                 await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
                 {
                     monadicPage.ThrowIfFailed();
+
+                    if (monadicPage.Result.NotModified)
+                    {
+                        break;
+                    }
                 }
             }
         }

@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -280,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             int pageSize,
             ChangeFeedMode changeFeedMode,
-            ContentSerializationFormat? contentSerializationFormat,
+            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -300,9 +299,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     changeFeedMode.Accept(request);
 
-                    if (contentSerializationFormat.HasValue)
+                    if (jsonSerializationFormat.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = contentSerializationFormat.Value.ToStringOptimized();
+                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = jsonSerializationFormat.Value.ToContentSerializationFormatString();
                     }
                 },
                 feedRange: feedRange,

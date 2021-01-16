@@ -7,20 +7,20 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using Microsoft.Azure.Documents;
 
-    internal static class ContentSerializationFormatExtensions
+    internal static class JsonSerializationFormatExtensions
     {
         private static readonly string Text = ContentSerializationFormat.JsonText.ToString();
         private static readonly string Binary = ContentSerializationFormat.CosmosBinary.ToString();
         private static readonly string HybridRow = ContentSerializationFormat.HybridRow.ToString();
 
-        public static string ToStringOptimized(this ContentSerializationFormat contentSerializationFormat)
+        public static string ToContentSerializationFormatString(this JsonSerializationFormat jsonSerializationFormat)
         {
-            return contentSerializationFormat switch
+            return jsonSerializationFormat switch
             {
-                ContentSerializationFormat.JsonText => Text,
-                ContentSerializationFormat.CosmosBinary => Binary,
-                ContentSerializationFormat.HybridRow => HybridRow,
-                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(ContentSerializationFormat)}: {contentSerializationFormat}"),
+                JsonSerializationFormat.Text => Text,
+                JsonSerializationFormat.Binary => Binary,
+                JsonSerializationFormat.HybridRow => HybridRow,
+                _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(JsonSerializationFormat)}: {jsonSerializationFormat}"),
             };
         }
     }

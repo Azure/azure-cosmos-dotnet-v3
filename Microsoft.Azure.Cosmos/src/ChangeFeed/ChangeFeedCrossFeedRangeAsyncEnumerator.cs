@@ -15,11 +15,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerator : IAsyncEnumerator<TryCatch<ChangeFeedPage>>
     {
         private readonly CrossPartitionChangeFeedAsyncEnumerator enumerator;
-        private readonly ContentSerializationFormatOptions jsonSerializationFormatOptions;
+        private readonly JsonSerializationFormatOptions jsonSerializationFormatOptions;
 
         public ChangeFeedCrossFeedRangeAsyncEnumerator(
-            CrossPartitionChangeFeedAsyncEnumerator enumerator, 
-            ContentSerializationFormatOptions jsonSerializationFormatOptions)
+            CrossPartitionChangeFeedAsyncEnumerator enumerator,
+            JsonSerializationFormatOptions jsonSerializationFormatOptions)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
             this.jsonSerializationFormatOptions = jsonSerializationFormatOptions;

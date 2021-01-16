@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 ranges[0],
                 pageSize: 10,
                 changeFeedMode: ChangeFeedMode.Incremental,
-                contentSerializationFormat: null,
+                jsonSerializationFormat: null,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ranges[0],
                     pageSize: int.MaxValue,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ranges[0],
                     pageSize: 10,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ranges[0],
                     pageSize: 10,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ranges[0],
                     pageSize: int.MaxValue,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -146,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ranges[0],
                     pageSize: 10,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ranges[0],
                     pageSize: 10,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 new FeedRangePartitionKey(new Cosmos.PartitionKey(0)),
                 pageSize: int.MaxValue,
                 changeFeedMode: ChangeFeedMode.Incremental,
-                contentSerializationFormat: null,
+                jsonSerializationFormat: null,
                 NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                             isMaxInclusive: false)),
                     pageSize: int.MaxValue,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     child,
                     pageSize: 1000,
                     changeFeedMode: ChangeFeedMode.Incremental,
-                    contentSerializationFormat: null,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
