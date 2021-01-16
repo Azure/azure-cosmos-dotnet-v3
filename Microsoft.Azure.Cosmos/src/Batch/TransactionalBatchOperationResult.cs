@@ -89,7 +89,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets detail on the completion status of the operation.
         /// </summary>
-        internal virtual SubStatusCodes SubStatusCode { get; set; }
+        internal virtual SubStatusCodes SubStatusCode { get; set; } 
+
+        internal ITrace Trace { get; set; }
 
         internal static Result ReadOperationResult(ReadOnlyMemory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
@@ -210,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage: null,
                 headers: headers,
                 cosmosException: null,
-                trace: NoOpTrace.Singleton)
+                trace: this.Trace ?? NoOpTrace.Singleton)
             {
                 Content = this.ResourceStream
             };

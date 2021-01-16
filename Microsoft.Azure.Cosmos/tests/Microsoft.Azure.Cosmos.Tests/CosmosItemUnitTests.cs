@@ -85,8 +85,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> { new List<string> { "pk" } }));
-            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
-                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, NoOpTrace.Singleton, cancellationToken));
+            containerMock
+                .Setup(
+                    x => x.GetPartitionKeyValueFromStreamAsync(
+                        It.IsAny<Stream>(), 
+                        It.IsAny<ITrace>(), 
+                        It.IsAny<CancellationToken>()))
+                .Returns<Stream, ITrace, CancellationToken>(
+                (stream, trace, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(
+                    stream,
+                    trace, 
+                    cancellationToken));
 
             DateTime dateTime = new DateTime(2019, 05, 15, 12, 1, 2, 3, DateTimeKind.Utc);
             Guid guid = Guid.NewGuid();

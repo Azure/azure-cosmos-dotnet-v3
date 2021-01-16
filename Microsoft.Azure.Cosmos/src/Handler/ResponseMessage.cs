@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
 
-        internal ITrace Trace { get; }
+        internal ITrace Trace { get; set; }
 
         internal CosmosException CosmosException { get; }
 

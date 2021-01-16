@@ -293,19 +293,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = responseContent,
             };
 
-            responseMessage.Trace.AddDatum(
-                "Point Operation Statistics",
-                new PointOperationStatisticsTraceDatum(
-                activityId: Guid.NewGuid().ToString(),
-                statusCode: httpStatusCode,
-                subStatusCode: subStatusCode,
-                responseTimeUtc: DateTime.UtcNow,
-                requestCharge: 0,
-                errorMessage: string.Empty,
-                method: HttpMethod.Get,
-                requestUri: "http://localhost",
-                requestSessionToken: null,
-                responseSessionToken: null));
+            using (responseMessage.Trace = Trace.GetRootTrace("Test Trace"))
+            {
+                responseMessage.Trace.AddDatum(
+                    "Point Operation Statistics",
+                    new PointOperationStatisticsTraceDatum(
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: httpStatusCode,
+                    subStatusCode: subStatusCode,
+                    responseTimeUtc: DateTime.UtcNow,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: "http://localhost",
+                    requestSessionToken: null,
+                    responseSessionToken: null));
+            }
 
             responseMessage.Headers.SubStatusCode = subStatusCode;
             return responseMessage;

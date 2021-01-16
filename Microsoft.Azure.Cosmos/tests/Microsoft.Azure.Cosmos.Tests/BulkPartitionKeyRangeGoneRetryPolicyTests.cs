@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             It.IsAny<ITrace>(),
                             It.Is<bool>(b => b == true) // Mocking only the refresh, if it doesn't get called, the test fails
                         )
-                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
             }
 
             internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
