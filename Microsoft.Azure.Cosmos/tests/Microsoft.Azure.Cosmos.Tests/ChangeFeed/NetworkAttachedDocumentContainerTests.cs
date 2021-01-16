@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
                 changeFeedMode: ChangeFeedMode.Incremental,
+                contentSerializationFormat: null,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -128,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 feedRange: new FeedRangePartitionKeyRange("0"),
                 pageSize: 10,
                 changeFeedMode: ChangeFeedMode.FullFidelity,
+                contentSerializationFormat: null,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 

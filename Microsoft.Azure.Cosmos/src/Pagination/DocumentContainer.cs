@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Composes a <see cref="IMonadicDocumentContainer"/> and creates an <see cref="IDocumentContainer"/>.
@@ -197,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             int pageSize,
             ChangeFeedMode changeFeedMode,
+            ContentSerializationFormat? contentSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken) => TryCatch<ChangeFeedPage>.UnsafeGetResultAsync(
                 this.MonadicChangeFeedAsync(
@@ -204,6 +206,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     feedRange,
                     pageSize,
                     changeFeedMode,
+                    contentSerializationFormat,
                     trace,
                     cancellationToken), 
                 cancellationToken);
@@ -213,12 +216,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             int pageSize,
             ChangeFeedMode changeFeedMode,
+            ContentSerializationFormat? contentSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicChangeFeedAsync(
                 state,
                 feedRange,
                 pageSize,
                 changeFeedMode,
+                contentSerializationFormat,
                 trace,
                 cancellationToken);
 

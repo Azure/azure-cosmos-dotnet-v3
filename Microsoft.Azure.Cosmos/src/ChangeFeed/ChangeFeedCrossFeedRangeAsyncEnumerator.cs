@@ -10,14 +10,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerator : IAsyncEnumerator<TryCatch<ChangeFeedPage>>
     {
         private readonly CrossPartitionChangeFeedAsyncEnumerator enumerator;
+        private readonly ContentSerializationFormatOptions jsonSerializationFormatOptions;
 
-        public ChangeFeedCrossFeedRangeAsyncEnumerator(CrossPartitionChangeFeedAsyncEnumerator enumerator)
+        public ChangeFeedCrossFeedRangeAsyncEnumerator(
+            CrossPartitionChangeFeedAsyncEnumerator enumerator, 
+            ContentSerializationFormatOptions jsonSerializationFormatOptions)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
+            this.jsonSerializationFormatOptions = jsonSerializationFormatOptions;
         }
 
         public TryCatch<ChangeFeedPage> Current { get; private set; }
@@ -44,10 +49,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedPage page = innerChangeFeedPage.Page switch
             {
                 Pagination.ChangeFeedSuccessPage successPage => ChangeFeedPage.CreatePageWithChanges(
-                    CosmosQueryClientCore.ParseElementsFromRestStream(
-                        successPage.Content, 
-                        Documents.ResourceType.Document, 
-                        cosmosSerializationOptions: null),
+                    RestFeedResponseParser.ParseRestFeedResponse(
+                        successPage.Content,
+                        this.jsonSerializationFormatOptions),
                     successPage.RequestCharge,
                     successPage.ActivityId,
                     state),

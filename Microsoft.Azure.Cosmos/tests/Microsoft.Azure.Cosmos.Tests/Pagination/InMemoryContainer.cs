@@ -648,6 +648,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FeedRangeInternal feedRange,
             int pageSize,
             ChangeFeedMode changeFeedMode,
+            Microsoft.Azure.Documents.ContentSerializationFormat? contentSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {

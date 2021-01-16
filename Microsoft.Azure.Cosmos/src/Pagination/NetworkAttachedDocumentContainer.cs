@@ -14,11 +14,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -80,9 +82,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             long ticks = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
 
             Record record = new Record(
-                resourceIdentifier, 
+                resourceIdentifier,
                 new DateTime(ticks: ticks, DateTimeKind.Utc),
-                identifier, 
+                identifier,
                 insertedDocument);
 
             return TryCatch<Record>.FromResult(record);
@@ -278,6 +280,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             FeedRangeInternal feedRange,
             int pageSize,
             ChangeFeedMode changeFeedMode,
+            ContentSerializationFormat? contentSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -294,7 +297,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     state.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
 
                     request.Headers.PageSize = pageSize.ToString();
+
                     changeFeedMode.Accept(request);
+
+                    if (contentSerializationFormat.HasValue)
+                    {
+                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = contentSerializationFormat.Value.ToStringOptimized();
+                    }
                 },
                 feedRange: feedRange,
                 streamPayload: default,
