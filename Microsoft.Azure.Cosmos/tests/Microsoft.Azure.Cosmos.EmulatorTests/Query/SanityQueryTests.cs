@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Linq;
     using System.Net;
     using System.Runtime.CompilerServices;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -238,9 +240,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 bool hasOrderBy)
                             {
                                 List<CosmosObject> queryResults = await queryFunc(container, query, queryRequestOptions);
-                                HashSet<string> expectedIds = new HashSet<string>(inputDocuments
+                                HashSet<UtfAnyString> expectedIds = new HashSet<UtfAnyString>(inputDocuments
                                     .Select(document => ((CosmosString)document["id"]).Value));
-                                HashSet<string> actualIds = new HashSet<string>(queryResults
+                                HashSet<UtfAnyString> actualIds = new HashSet<UtfAnyString>(queryResults
                                     .Select(queryResult => ((CosmosString)queryResult["id"]).Value));
                                 Assert.IsTrue(
                                     expectedIds.SetEquals(actualIds),
@@ -926,7 +928,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
-        public async Task TestCosmosDiagnosticsAsync()
+        public async Task TestCancellationTokenAsync()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
             uint numberOfDocuments = 100;
@@ -934,7 +936,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct | ConnectionModes.Gateway,
+                ConnectionModes.Direct,
                 CollectionTypes.MultiPartition,
                 inputDocuments,
                 ImplementationAsync);
@@ -951,20 +953,55 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         ReturnResultsInDeterministicOrder = true,
                     };
 
-                    FeedIterator<CosmosElement> feedIterator = container.GetItemQueryIterator<CosmosElement>(
-                        queryText: query,
-                        requestOptions: queryRequestOptions);
-
-                    List<CosmosDiagnostics> diagnostics = new List<CosmosDiagnostics>();
-                    while (feedIterator.HasMoreResults)
+                    // See if cancellation token is honored for first request
+                    try
                     {
-                        FeedResponse<CosmosElement> feedResponse = await feedIterator.ReadNextAsync(default);
-                        Assert.IsTrue(feedResponse.Diagnostics is CosmosTraceDiagnostics cosmosTraceDiagnostics);
-                        diagnostics.Add(feedResponse.Diagnostics);
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        cancellationTokenSource.Cancel();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
                     }
 
-                    string concatenatedDiagnostics = string.Concat(diagnostics.Select(x => x.ToString()));
-                    Assert.IsTrue(concatenatedDiagnostics.Contains("QueryPlan"));
+                    // See if cancellation token is honored for second request
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        cancellationTokenSource.Cancel();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(default);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+
+                    // See if cancellation token is honored mid draining
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+                        cancellationTokenSource.Cancel();
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
                 }
             }
         }

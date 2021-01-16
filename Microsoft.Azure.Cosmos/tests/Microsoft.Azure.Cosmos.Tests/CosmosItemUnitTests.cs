@@ -435,6 +435,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task PartitionKeyDeleteUnitTest()
+        {
+            dynamic item = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "FF627B77-568E-4541-A47E-041EAC10E46F",
+            };
+            await this.VerifyPartitionKeyDeleteOperation(new Cosmos.PartitionKey(item.pk), "[\"FF627B77-568E-4541-A47E-041EAC10E46F\"]");
+        }
+
+        [TestMethod]
         public async Task TestNestedPartitionKeyValueFromStreamAsync()
         {
             ContainerInternal originalContainer = (ContainerInternal)MockCosmosUtil.CreateMockCosmosClient().GetContainer("TestDb", "Test");
@@ -859,6 +870,42 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.AreEqual(10, testHandlerHitCount, "A stream operation did not make it to the handler");
+        }
+
+        private async Task VerifyPartitionKeyDeleteOperation(
+            Cosmos.PartitionKey partitionKey,
+            string partitionKeySerialized,
+            RequestOptions requestOptions = null)
+        {
+            ResponseMessage response = null;
+            HttpStatusCode httpStatusCode = HttpStatusCode.OK;
+            int testHandlerHitCount = 0;
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+            {
+                Assert.IsTrue(request.RequestUri.OriginalString.StartsWith(@"dbs/testdb/colls/testcontainer"));
+                Assert.AreEqual(requestOptions, request.RequestOptions);
+                Assert.AreEqual(ResourceType.PartitionKey, request.ResourceType);
+                Assert.IsNotNull(request.Headers.PartitionKey);
+                Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
+                testHandlerHitCount++;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
+                response.Content = request.Content;
+                return Task.FromResult(response);
+            });
+
+            CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                (builder) => builder.AddCustomHandlers(testHandler));
+
+            Container container = client.GetDatabase("testdb")
+                                        .GetContainer("testcontainer");
+
+            ContainerInternal containerInternal = (ContainerInternal)container;
+            ResponseMessage responseMessage = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey: partitionKey,
+                requestOptions: requestOptions);
+            Assert.IsNotNull(responseMessage);
+            Assert.AreEqual(httpStatusCode, responseMessage.StatusCode);
+            Assert.AreEqual(1, testHandlerHitCount, "The operation did not make it to the handler");
         }
 
         private Mock<BatchAsyncContainerExecutor> GetMockedBatchExcecutor()

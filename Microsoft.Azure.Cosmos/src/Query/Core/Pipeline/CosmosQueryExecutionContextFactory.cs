@@ -333,7 +333,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     cosmosQueryContext,
                     inputParameters,
                     partitionedQueryExecutionInfo,
-                    targetRanges);
+                    targetRanges,
+                    cancellationToken);
             }
 
             return tryCreatePipelineStage;
@@ -369,7 +370,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            List<Documents.PartitionKeyRange> targetRanges)
+            List<Documents.PartitionKeyRange> targetRanges, 
+            CancellationToken cancellationToken)
         {
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
 
@@ -416,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 pageSize: (int)optimalPageSize,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken,
-                requestCancellationToken: default);
+                requestCancellationToken: cancellationToken);
         }
 
         /// <summary>

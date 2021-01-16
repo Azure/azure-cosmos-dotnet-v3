@@ -261,15 +261,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                             }
                             else if (retryCount == 1)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
+                                // Second request must go to the next preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[1]];
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 2)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[1]];
+                                // Third request must go to first preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else
@@ -303,10 +303,17 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             const bool useMultipleWriteLocations = true;
             bool enableEndpointDiscovery = true;
 
+            ReadOnlyCollection<string> preferredList = new List<string>() {
+                "location3",
+                "location2",
+                "location1"
+            }.AsReadOnly();
+
             this.Initialize(
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: preferredList);
 
             await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, enableEndpointDiscovery, new RetryOptions());
@@ -324,27 +331,25 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             if (retryCount == 0)
                             {
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
-
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 1)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
-
+                                // Second request must go to the next preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[1]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 2)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
+                                // Third request must go to the next preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[2]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 3)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[2]];
+                                // Fourth request must go to first preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else

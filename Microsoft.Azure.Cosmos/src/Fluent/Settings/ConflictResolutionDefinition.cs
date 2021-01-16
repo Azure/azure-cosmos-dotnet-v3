@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines the path used to resolve LastWrtierWins resolution mode <see cref="ConflictResolutionPolicy"/>.
         /// </summary>
         /// <param name="conflictResolutionPath"> sets the path which is present in each item in the Azure Cosmos DB service for last writer wins conflict-resolution. <see cref="ConflictResolutionPolicy.ResolutionPath"/>.</param>
-        /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
+        /// <returns>An instance of the current <see cref="ConflictResolutionDefinition"/>.</returns>
         public ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath)
         {
             if (string.IsNullOrEmpty(conflictResolutionPath))
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="conflictResolutionProcedure"> Sets the stored procedure's name to be used for conflict-resolution.</param>
         /// <remarks>The stored procedure can be created later on, but needs to honor the name specified here.</remarks>
-        /// <returns>An instance of the current <see cref="UniqueKeyDefinition"/>.</returns>
+        /// <returns>An instance of the current <see cref="ConflictResolutionDefinition"/>.</returns>
         /// <example>
         /// This example below creates a <see cref="Container"/> with a Conflict Resolution policy that uses a stored procedure to resolve conflicts:
         /// <code language="c#">

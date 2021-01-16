@@ -459,6 +459,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
                 CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                     documentContainer,
+                    ChangeFeedMode.Incremental,
                     new ChangeFeedRequestOptions()
                     {
                         PageSizeHint = int.MaxValue

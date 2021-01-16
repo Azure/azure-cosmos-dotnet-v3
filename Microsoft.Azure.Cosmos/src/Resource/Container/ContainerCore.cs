@@ -316,9 +316,22 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            return this.GetChangeFeedStreamIterator(changeFeedStartFrom, ChangeFeedMode.Incremental, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator GetChangeFeedStreamIterator(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
             if (changeFeedStartFrom == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -329,6 +342,7 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedIteratorCore(
                 documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
+                changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions);
         }
 
@@ -336,9 +350,22 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
+            return this.GetChangeFeedIterator<T>(changeFeedStartFrom, ChangeFeedMode.Incremental, changeFeedRequestOptions);
+        }
+
+        public override FeedIterator<T> GetChangeFeedIterator<T>(
+            ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null)
+        {
             if (changeFeedStartFrom == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
@@ -349,6 +376,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
+                changeFeedMode: changeFeedMode,
                 changeFeedRequestOptions: changeFeedRequestOptions);
 
             return new FeedIteratorCore<T>(
@@ -421,13 +449,13 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public override Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default)
+        public override async Task<PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(CancellationToken cancellationToken = default)
         {
-            return this.GetCachedContainerPropertiesAsync(
+            ContainerProperties cachedContainerPropertiesAsync = await this.GetCachedContainerPropertiesAsync(
                 forceRefresh: false,
                 trace: NoOpTrace.Singleton,
-                cancellationToken: cancellationToken)
-                .ContinueWith(containerPropertiesTask => containerPropertiesTask.Result?.PartitionKey, cancellationToken);
+                cancellationToken: cancellationToken);
+            return cachedContainerPropertiesAsync?.PartitionKey;
         }
 
         /// <summary>
@@ -470,29 +498,36 @@ namespace Microsoft.Azure.Cosmos
             return containerProperties.GetNoneValue();
         }
 
-        public override Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
+        public override async Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken)
         {
-            string collectionRID = null;
-            return this.GetCachedRIDAsync(
+            string collectionRid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
                 trace: NoOpTrace.Singleton,
-                cancellationToken: cancellationToken)
-                .ContinueWith(ridTask =>
-                {
-                    collectionRID = ridTask.Result;
-                    return this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                })
-                .Unwrap()
-                .ContinueWith(partitionKeyRangeCachetask =>
-                {
-                    PartitionKeyRangeCache partitionKeyRangeCache = partitionKeyRangeCachetask.Result;
-                    return partitionKeyRangeCache.TryLookupAsync(
-                            collectionRID,
-                            null,
-                            null,
-                            cancellationToken);
-                })
-                .Unwrap();
+                cancellationToken);
+
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
+                collectionRid,
+                previousValue: null,
+                request: null,
+                cancellationToken);
+
+            // Not found.
+            if (collectionRoutingMap == null)
+            {
+                collectionRid = await this.GetCachedRIDAsync(
+                    forceRefresh: true,
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken);
+
+                collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
+                    collectionRid,
+                    previousValue: null,
+                    request: null,
+                    cancellationToken);
+            }
+
+            return collectionRoutingMap;
         }
 
         private async Task<ThroughputResponse> OfferRetryHelperForStaleRidCacheAsync(

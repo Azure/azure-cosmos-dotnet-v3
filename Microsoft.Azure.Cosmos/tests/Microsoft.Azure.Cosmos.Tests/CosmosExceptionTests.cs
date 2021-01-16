@@ -98,17 +98,8 @@ namespace Microsoft.Azure.Cosmos
             string headerValue = "Test" + Guid.NewGuid();
             dce.Headers.Add(headerValue, null);
 
-            try
-            {
-                ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
-                Assert.Fail("Should throw exception");
-            }
-            catch (ArgumentNullException ane)
-            {
-                Assert.IsTrue(ane.ToString().Contains(headerValue));
-                Assert.IsTrue(ane.ToString().Contains(errorMessage));
-                Assert.IsTrue(ane.InnerException is DocumentClientException);
-            }
+            ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
+            Assert.IsNull(responseMessage.Headers.Get(headerValue));
         }
 
         [TestMethod]

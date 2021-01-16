@@ -159,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom: ChangeFeedStartFrom.Beginning(feedRange),
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 FeedRangeEpk FeedRangeEpk = feedRange as FeedRangeEpk;
@@ -194,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),
+                    changeFeedMode: ChangeFeedMode.Incremental,
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
                 if (firstResponse.IsSuccessStatusCode)
