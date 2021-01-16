@@ -28,7 +28,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return await RetryHandler.ExecuteHttpRequestAsync(
                     callbackMethod: (trace) =>
                     {
-                        return base.SendAsync(request, trace, cancellationToken);
+                        using (ITrace childTrace = trace.StartChild("Abstract Retry Handler"))
+                        {
+                            return base.SendAsync(request, cancellationToken);
+                        }
                     },
                     callShouldRetry: (cosmosResponseMessage, trace, token) =>
                     {

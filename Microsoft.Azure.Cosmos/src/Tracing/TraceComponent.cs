@@ -50,6 +50,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         ReadFeed, 
 
         /// <summary>
+        /// Request Handler pipeline.
+        /// </summary>
+        RequestHandler,
+
+        /// <summary>
         /// Component that handles routing requests to physical partitons and maintaining physical partition topology.
         /// </summary>
         Routing, 

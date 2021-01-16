@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
+            this.Trace = NoOpTrace.Singleton;
         }
 
         /// <summary>
@@ -44,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Method = method;
             this.RequestUriString = requestUri?.OriginalString;
             this.InternalRequestUri = requestUri;
+            this.Trace = NoOpTrace.Singleton;
         }
 
         /// <summary>

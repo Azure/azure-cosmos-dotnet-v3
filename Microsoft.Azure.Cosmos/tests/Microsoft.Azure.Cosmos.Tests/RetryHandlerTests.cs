@@ -215,9 +215,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null);
-            invoker.InnerHandler = retryHandler;
-            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new Uri("https://dummy.documents.azure.com:443/dbs"));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client, 
+                requestedClientConsistencyLevel: null)
+            {
+                InnerHandler = retryHandler
+            };
+            RequestMessage requestMessage = new RequestMessage(
+                HttpMethod.Get, 
+                new Uri("https://dummy.documents.azure.com:443/dbs"));
             await invoker.SendAsync(requestMessage, new CancellationToken());
             Assert.AreEqual(expectedHandlerCalls, handlerCalls);
         }

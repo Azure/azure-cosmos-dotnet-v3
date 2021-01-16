@@ -42,20 +42,15 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            return this.SendAsync(request, NoOpTrace.Singleton, cancellationToken);
-        }
-
-        internal virtual Task<ResponseMessage> SendAsync(
-            RequestMessage request,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
             if (this.InnerHandler == null)
             {
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            return this.InnerHandler.SendAsync(request, trace, cancellationToken);
+            using (request?.Trace?.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, TraceLevel.Info))
+            {
+                return this.InnerHandler.SendAsync(request, cancellationToken);
+            }
         }
     }
 }
