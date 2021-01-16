@@ -13,9 +13,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [SDK.EmulatorTests.TestClass]
@@ -269,6 +271,42 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable.WithCancellation(cancellationTokenSource.Token))
             {
                 monadicPage.ThrowIfFailed();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestContentSerializationOptions()
+        {
+            {
+                // Native format
+                IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                    ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                    ChangeFeedMode.Incremental,
+                    new ChangeFeedRequestOptions()
+                    {
+                        ContentSerializationFormatOptions = ContentSerializationFormatOptions.Create(Documents.ContentSerializationFormat.CosmosBinary)
+                    });
+                await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
+                {
+                    monadicPage.ThrowIfFailed();
+                }
+            }
+
+            {
+                // Custom format
+                IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                    ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                    ChangeFeedMode.Incremental,
+                    new ChangeFeedRequestOptions()
+                    {
+                        ContentSerializationFormatOptions = ContentSerializationFormatOptions.Create(
+                            Documents.ContentSerializationFormat.CosmosBinary,
+                            (content) => JsonNavigator.Create(content))
+                    });
+                await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
+                {
+                    monadicPage.ThrowIfFailed();
+                }
             }
         }
 

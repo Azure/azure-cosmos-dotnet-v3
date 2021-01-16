@@ -28,13 +28,13 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
         public ContentSerializationFormat ContentSerializationFormat { get; }
 
-        public ContentSerializationFormatOptions Create(
+        public static ContentSerializationFormatOptions Create(
             ContentSerializationFormat contentSerializationFormat)
         {
             return new NativelySupportedJsonSerializationFormatOptions(contentSerializationFormat);
         }
 
-        public ContentSerializationFormatOptions Create(
+        public static ContentSerializationFormatOptions Create(
             ContentSerializationFormat contentSerializationFormat,
             CreateNavigator createNavigator)
         {

@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        ContentSerializationFormatOptions JsonSerializationFormatOptions { get; set; }
+        ContentSerializationFormatOptions ContentSerializationFormatOptions { get; set; }
 
         internal ChangeFeedRequestOptions Clone()
         {
