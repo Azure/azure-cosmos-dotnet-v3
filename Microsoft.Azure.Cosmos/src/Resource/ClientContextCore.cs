@@ -192,16 +192,19 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task)
         {
-            if (SynchronizationContext.Current == null)
+            using (ITrace trace = Tracing.Trace.GetRootTrace(operationName))
             {
-                return this.RunWithDiagnosticsHelperAsync(
-                    NoOpTrace.Singleton,
+                if (SynchronizationContext.Current == null)
+                {
+                    return this.RunWithDiagnosticsHelperAsync(
+                        trace,
+                        task);
+                }
+
+                return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
+                    trace,
                     task);
             }
-
-            return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
-                NoOpTrace.Singleton,
-                task);
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(

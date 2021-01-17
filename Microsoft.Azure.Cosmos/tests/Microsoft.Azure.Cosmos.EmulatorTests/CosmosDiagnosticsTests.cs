@@ -561,13 +561,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 foreach (ITrace child in queryTrace.Children)
                 {
-                    if (QueryTraceHasQueryMetrics(child))
+                    if (!QueryTraceHasQueryMetrics(child))
                     {
-                        return true;
+                        return false;
                     }
                 }
 
-                return false;
+                return true;
             }
 
             Assert.IsTrue(QueryTraceHasQueryMetrics(rootTrace));
@@ -600,23 +600,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(stats.Method);
                             Assert.AreNotEqual(default, stats.ResponseTimeUtc);
                             Assert.IsTrue(stats.ResponseTimeUtc < DateTime.UtcNow);
-
-                            return true;
                         }
                     }
-
-                    return false;
                 }
 
                 foreach (ITrace child in pointOperationTrace.Children)
                 {
-                    if (IsValidPointOperationTrace(child))
+                    if (!IsValidPointOperationTrace(child))
                     {
-                        return true;
+                        return false;
                     }
                 }
 
-                return false;
+                return true;
             }
 
             Assert.IsTrue(IsValidPointOperationTrace(rootTrace));
@@ -638,13 +634,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 foreach (ITrace child in changeFeedTrace.Children)
                 {
-                    if (IsValidChangeFeedTrace(child))
+                    if (!IsValidChangeFeedTrace(child))
                     {
-                        return true;
+                        return false;
                     }
                 }
 
-                return false;
+                return true;
             }
 
             Assert.IsTrue(IsValidChangeFeedTrace(rootTrace));

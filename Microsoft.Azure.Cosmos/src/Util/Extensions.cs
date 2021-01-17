@@ -82,11 +82,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 headers.RequestCharge = requestChargeTracker.TotalRequestCharge;
                 DefaultTrace.TraceWarning(
-                        "Header RequestCharge {0} is less than the RequestChargeTracker: {1}; URI {2}, OperationType: {3}",
-                        headers.RequestCharge,
-                        requestChargeTracker.TotalRequestCharge,
-                        requestMessage?.RequestUriString,
-                        requestMessage?.OperationType);
+                    "Header RequestCharge {0} is less than the RequestChargeTracker: {1}; URI {2}, OperationType: {3}",
+                    headers.RequestCharge,
+                    requestChargeTracker.TotalRequestCharge,
+                    requestMessage?.RequestUriString,
+                    requestMessage?.OperationType);
             }
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosException cosmosException = CosmosExceptionFactory.Create(
                 documentClientException,
-                requestMessage?.Trace);
+                requestMessage?.Trace ?? NoOpTrace.Singleton);
 
             if (requestMessage?.Trace != null)
             {

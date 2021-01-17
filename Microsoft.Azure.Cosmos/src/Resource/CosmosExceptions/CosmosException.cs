@@ -70,6 +70,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
             this.Headers = new Headers();
+            this.Trace = NoOpTrace.Singleton;
         }
 
         /// <summary>
