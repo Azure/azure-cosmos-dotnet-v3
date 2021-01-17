@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Headers = new Headers();
             this.CosmosException = null;
+            this.Trace = NoOpTrace.Singleton;
         }
 
         /// <summary>
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.Headers = new Headers();
-            this.Trace = requestMessage?.Trace;
+            this.Trace = requestMessage?.Trace ?? NoOpTrace.Singleton;
 
             if (!string.IsNullOrEmpty(errorMessage))
             {
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
-            this.Trace = trace;
+            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
         /// <summary>

@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ValueTask<HttpRequestMessage>(httpRequestMessage),
                 ResourceType.Collection,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                null,
+                NoOpTrace.Singleton,
                 default);
 
             Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);

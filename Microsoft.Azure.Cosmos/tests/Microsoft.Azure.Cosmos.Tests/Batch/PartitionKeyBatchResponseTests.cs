@@ -85,32 +85,36 @@ namespace Microsoft.Azure.Cosmos.Tests
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default(CancellationToken));
 
-            PointOperationStatisticsTraceDatum diagnostics = new PointOperationStatisticsTraceDatum(
-                activityId: Guid.NewGuid().ToString(),
-                statusCode: HttpStatusCode.OK,
-                subStatusCode: SubStatusCodes.Unknown,
-                responseTimeUtc: DateTime.UtcNow,
-                requestCharge: 0,
-                errorMessage: string.Empty,
-                method: HttpMethod.Get,
-                requestUri: "http://localhost",
-                requestSessionToken: null,
-                responseSessionToken: null);
-
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
             {
                 Content = responseContent,
             };
 
-            responseMessage.Trace.AddDatum("Point Operation Statistics", diagnostics);
+            PointOperationStatisticsTraceDatum diagnostics = new PointOperationStatisticsTraceDatum(
+                    activityId: Guid.NewGuid().ToString(),
+                    statusCode: HttpStatusCode.OK,
+                    subStatusCode: SubStatusCodes.Unknown,
+                    responseTimeUtc: DateTime.UtcNow,
+                    requestCharge: 0,
+                    errorMessage: string.Empty,
+                    method: HttpMethod.Get,
+                    requestUri: "http://localhost",
+                    requestSessionToken: null,
+                    responseSessionToken: null);
 
-            TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
-                responseMessage,
-                batchRequest,
-                MockCosmosUtil.Serializer,
-                true,
-                NoOpTrace.Singleton,
-                CancellationToken.None);
+            TransactionalBatchResponse batchresponse;
+            using (responseMessage.Trace = Trace.GetRootTrace("test trace"))
+            {
+                responseMessage.Trace.AddDatum("Point Operation Statistics", diagnostics);
+                
+                batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                    responseMessage,
+                    batchRequest,
+                    MockCosmosUtil.Serializer,
+                    true,
+                    responseMessage.Trace,
+                    CancellationToken.None);
+            }
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(arrayOperations.Length, batchresponse, MockCosmosUtil.Serializer);
 

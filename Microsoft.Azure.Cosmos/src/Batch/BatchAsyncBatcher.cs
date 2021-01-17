@@ -218,8 +218,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
     internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(
-        PartitionKeyRangeServerBatchRequest request, 
-        ITrace trace, 
+        PartitionKeyRangeServerBatchRequest request,
+        ITrace trace,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -227,6 +227,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
     internal delegate Task BatchAsyncBatcherRetryDelegate(
-        ItemBatchOperation operation, 
+        ItemBatchOperation operation,
         CancellationToken cancellationToken);
 }

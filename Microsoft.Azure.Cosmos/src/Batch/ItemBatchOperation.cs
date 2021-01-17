@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.Layouts;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -96,6 +97,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="BatchAsyncStreamer"/>
         /// <seealso cref="BatchAsyncContainerExecutor"/>
         internal ItemBatchOperationContext Context { get; private set; }
+
+        internal ITrace Trace { get; set; }
 
         /// <summary>
         /// Disposes the current <see cref="ItemBatchOperation"/>.

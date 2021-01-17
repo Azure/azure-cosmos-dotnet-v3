@@ -83,9 +83,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.ToResponseMessage().Trace);
-
-            string diagnosticsString = result.ToResponseMessage().Diagnostics.ToString();
-            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -119,9 +116,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                 new[]
-                    {
-                        Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
-                    },
+                {
+                    Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
+                },
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
@@ -143,9 +140,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.ToResponseMessage().Trace);
-
-            string diagnosticsString = result.ToResponseMessage().Diagnostics.ToString();
-            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -203,9 +197,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
             Assert.IsNotNull(result.ToResponseMessage().Trace);
-
-            string diagnosticsString = result.ToResponseMessage().Diagnostics.ToString();
-            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -326,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static Task<ResponseMessage> Generate429ResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            return GenerateResponseAsync(itemBatchOperation, HttpStatusCode.Gone, SubStatusCodes.Unknown);
+            return GenerateResponseAsync(itemBatchOperation, (HttpStatusCode)429, SubStatusCodes.Unknown);
         }
 
         private static Task<ResponseMessage> GenerateOkResponseAsync(ItemBatchOperation itemBatchOperation)
@@ -368,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             It.IsAny<ITrace>(),
                             It.Is<bool>(b => b == true) // Mocking only the refresh, if it doesn't get called, the test fails
                         )
-                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
             }
 
             internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()

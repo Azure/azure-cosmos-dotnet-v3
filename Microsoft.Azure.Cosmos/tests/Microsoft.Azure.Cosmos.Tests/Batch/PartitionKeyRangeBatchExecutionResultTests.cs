@@ -99,6 +99,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 RequestCharge = 4.3
             };
 
+            using (ITrace trace = Trace.GetRootTrace("testtrace"))
+            {
+                result.Trace = trace;
+                trace.AddDatum("Point Operation Statistics", pointOperationStatistics);
+            }
+
             ResponseMessage response = result.ToResponseMessage();
 
             Assert.AreEqual(result.ResourceStream, response.Content);
