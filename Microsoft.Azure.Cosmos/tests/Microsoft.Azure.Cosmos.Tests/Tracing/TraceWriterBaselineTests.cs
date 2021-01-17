@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using System.Linq;
     using System.Net.Http;
     using System.Runtime.CompilerServices;
-    using System.Runtime.Serialization;
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.ChangeFeed;
