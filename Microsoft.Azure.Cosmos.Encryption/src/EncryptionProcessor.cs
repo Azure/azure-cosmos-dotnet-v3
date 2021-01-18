@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class MdeEncryptionProcessor
+    internal sealed class EncryptionProcessor
     {
         private bool isEncryptionSettingsInitDone;
 
@@ -41,16 +41,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 DateParseHandling = DateParseHandling.None,
             });
 
-        internal MdeEncryptionSettings MdeEncryptionSettings { get; }
+        internal EncryptionSettings EncryptionSettings { get; }
 
-        public MdeEncryptionProcessor(
+        public EncryptionProcessor(
             Container container,
             EncryptionCosmosClient encryptionCosmosClient)
         {
             this.Container = container ?? throw new ArgumentNullException(nameof(container));
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
             this.isEncryptionSettingsInitDone = false;
-            this.MdeEncryptionSettings = new MdeEncryptionSettings();
+            this.EncryptionSettings = new EncryptionSettings();
         }
 
         /// <summary>
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException("The Encrypton Processor has already been initialized. ");
             }
 
-            Dictionary<string, MdeEncryptionSettings> settingsByDekId = new Dictionary<string, MdeEncryptionSettings>();
+            Dictionary<string, EncryptionSettings> settingsByDekId = new Dictionary<string, EncryptionSettings>();
             this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetClientEncryptionPolicyAsync(
                 container: this.Container,
                 cancellationToken: cancellationToken,
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                            keyEncryptionKey,
                            clientEncryptionKeyProperties.WrappedDataEncryptionKey);
 
-                settingsByDekId[clientEncryptionKeyId] = new MdeEncryptionSettings
+                settingsByDekId[clientEncryptionKeyId] = new EncryptionSettings
                 {
                     // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
                     EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
@@ -129,9 +129,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 string propertyName = propertyToEncrypt.Path.Substring(1);
 
-                this.MdeEncryptionSettings.SetEncryptionSettingForProperty(
+                this.EncryptionSettings.SetEncryptionSettingForProperty(
                     propertyName,
-                    MdeEncryptionSettings.Create(
+                    EncryptionSettings.Create(
                         settingsByDekId[propertyToEncrypt.ClientEncryptionKeyId],
                         encryptionType),
                     settingsByDekId[propertyToEncrypt.ClientEncryptionKeyId].EncryptionSettingTimeToLive);
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private async Task EncryptAndSerializePropertyAsync(
             JObject itemJObj,
             JToken propertyValue,
-            MdeEncryptionSettings settings,
+            EncryptionSettings settings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<JToken> EncryptAndSerializeValueAsync(
            JToken jToken,
-           MdeEncryptionSettings settings)
+           EncryptionSettings settings)
         {
             JToken propertyValueToEncrypt = jToken;
 
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            JObject itemJObj = MdeEncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
             List<string> pathsEncrypted = new List<string>();
 
             foreach (ClientEncryptionIncludedPath pathToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
+                EncryptionSettings settings = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
 
                 if (settings == null)
                 {
@@ -318,12 +318,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             input.Dispose();
-            return MdeEncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         private async Task<JToken> DecryptAndDeserializeValueAsync(
            JToken jToken,
-           MdeEncryptionSettings settings,
+           EncryptionSettings settings,
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken)
         {
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<byte[]> DecryptPropertyAsync(
            byte[] cipherText,
-           MdeEncryptionSettings settings,
+           EncryptionSettings settings,
            CosmosDiagnosticsContext diagnosticsContext,
            CancellationToken cancellationToken)
         {
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task DecryptAndDeserializePropertyAsync(
             JObject itemJObj,
-            MdeEncryptionSettings settings,
+            EncryptionSettings settings,
             string propertyName,
             JToken propertyValue,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -464,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
                 {
                     string propertyName = path.Path.Substring(1);
-                    MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
+                    EncryptionSettings settings = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
 
                     if (settings == null)
                     {
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
 
             input.Dispose();
-            return MdeEncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         public async Task<JObject> DecryptAsync(

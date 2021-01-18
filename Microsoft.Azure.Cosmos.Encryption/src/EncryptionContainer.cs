@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal sealed class MdeContainer : Container
+    internal sealed class EncryptionContainer : Container
     {
         internal Container Container { get; private set; }
 
@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public CosmosResponseFactory ResponseFactory { get; }
 
-        internal MdeEncryptionProcessor MdeEncryptionProcessor { get; }
+        internal EncryptionProcessor EncryptionProcessor { get; }
 
         internal EncryptionCosmosClient EncryptionCosmosClient { get; }
 
@@ -29,14 +29,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptionCosmosClient"> Cosmos Client configured with Encryption.</param>
-        public MdeContainer(
+        public EncryptionContainer(
             Container container,
             EncryptionCosmosClient encryptionCosmosClient)
         {
             this.Container = container ?? throw new ArgumentNullException(nameof(container));
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(container));
 
-            this.MdeEncryptionProcessor = new MdeEncryptionProcessor(
+            this.EncryptionProcessor = new EncryptionProcessor(
                 container,
                 this.EncryptionCosmosClient);
 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (partitionKey == null)
             {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");
+                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            streamPayload = await this.MdeEncryptionProcessor.EncryptAsync(
+            streamPayload = await this.EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 diagnosticsContext,
                 cancellationToken);
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (partitionKey == null)
             {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");
+                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
@@ -305,10 +305,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (partitionKey == null)
             {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");
+                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
-            streamPayload = await this.MdeEncryptionProcessor.EncryptAsync(
+            streamPayload = await this.EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 diagnosticsContext,
                 cancellationToken);
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (partitionKey == null)
             {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");
+                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
@@ -395,10 +395,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (partitionKey == null)
             {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");
+                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
-            streamPayload = await this.MdeEncryptionProcessor.EncryptAsync(
+            streamPayload = await this.EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 diagnosticsContext,
                 cancellationToken);
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
@@ -420,9 +420,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override TransactionalBatch CreateTransactionalBatch(
             PartitionKey partitionKey)
         {
-            return new MdeEncryptionTransactionalBatch(
+            return new EncryptionTransactionalBatch(
                 this.Container.CreateTransactionalBatch(partitionKey),
-                this.MdeEncryptionProcessor,
+                this.EncryptionProcessor,
                 this.CosmosSerializer);
         }
 
@@ -471,8 +471,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new MdeEncryptionFeedIterator<T>(
-                (MdeEncryptionFeedIterator)this.GetItemQueryStreamIterator(
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
                     requestOptions),
@@ -484,8 +484,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new MdeEncryptionFeedIterator<T>(
-                (MdeEncryptionFeedIterator)this.GetItemQueryStreamIterator(
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
                     queryText,
                     continuationToken,
                     requestOptions),
@@ -563,12 +563,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new MdeEncryptionFeedIterator(
+            return new EncryptionFeedIterator(
                 this.Container.GetItemQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
                     requestOptions),
-                this.MdeEncryptionProcessor);
+                this.EncryptionProcessor);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -576,12 +576,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new MdeEncryptionFeedIterator(
+            return new EncryptionFeedIterator(
                 this.Container.GetItemQueryStreamIterator(
                     queryText,
                     continuationToken,
                     requestOptions),
-                this.MdeEncryptionProcessor);
+                this.EncryptionProcessor);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -625,13 +625,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken,
             QueryRequestOptions requestOptions = null)
         {
-            return new MdeEncryptionFeedIterator(
+            return new EncryptionFeedIterator(
                 this.Container.GetItemQueryStreamIterator(
                     feedRange,
                     queryDefinition,
                     continuationToken,
                     requestOptions),
-                this.MdeEncryptionProcessor);
+                this.EncryptionProcessor);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -640,8 +640,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string continuationToken = null,
             QueryRequestOptions requestOptions = null)
         {
-            return new MdeEncryptionFeedIterator<T>(
-                (MdeEncryptionFeedIterator)this.GetItemQueryStreamIterator(
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)this.GetItemQueryStreamIterator(
                     feedRange,
                     queryDefinition,
                     continuationToken,
@@ -660,19 +660,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new MdeEncryptionFeedIterator(
+            return new EncryptionFeedIterator(
                 this.Container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
                     changeFeedRequestOptions),
-                this.MdeEncryptionProcessor);
+                this.EncryptionProcessor);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return new MdeEncryptionFeedIterator<T>(
-                (MdeEncryptionFeedIterator)this.GetChangeFeedStreamIterator(
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
                     changeFeedRequestOptions),
                 this.ResponseFactory);

@@ -9,16 +9,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class CachedEncryptionSettings
     {
-        public MdeEncryptionSettings MdeEncryptionSettings { get; }
+        public EncryptionSettings EncryptionSettings { get; }
 
-        public DateTime MdeEncryptionSettingsExpiryUtc { get; }
+        public DateTime EncryptionSettingsExpiryUtc { get; }
 
         public CachedEncryptionSettings(
-            MdeEncryptionSettings mdeEncryptionSettings,
-            DateTime mdeEncryptionSettingsExpiryUtc)
+            EncryptionSettings encryptionSettings,
+            DateTime encryptionSettingsExpiryUtc)
         {
-            this.MdeEncryptionSettings = mdeEncryptionSettings ?? throw new ArgumentNullException(nameof(mdeEncryptionSettings));
-            this.MdeEncryptionSettingsExpiryUtc = mdeEncryptionSettingsExpiryUtc;
+            this.EncryptionSettings = encryptionSettings ?? throw new ArgumentNullException(nameof(encryptionSettings));
+            this.EncryptionSettingsExpiryUtc = encryptionSettingsExpiryUtc;
         }
     }
 }

@@ -12,19 +12,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Microsoft.Azure.Cosmos;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "To be fixed, tracked in issue #1575")]
-    internal sealed class MdeEncryptionTransactionalBatch : TransactionalBatch
+    internal sealed class EncryptionTransactionalBatch : TransactionalBatch
     {
         private readonly CosmosSerializer cosmosSerializer;
-        private readonly MdeEncryptionProcessor mdeEncryptionProcessor;
+        private readonly EncryptionProcessor encryptionProcessor;
         private TransactionalBatch transactionalBatch;
 
-        public MdeEncryptionTransactionalBatch(
+        public EncryptionTransactionalBatch(
             TransactionalBatch transactionalBatch,
-            MdeEncryptionProcessor mdeEncryptionProcessor,
+            EncryptionProcessor encryptionProcessor,
             CosmosSerializer cosmosSerializer)
         {
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
-            this.mdeEncryptionProcessor = mdeEncryptionProcessor ?? throw new ArgumentNullException(nameof(mdeEncryptionProcessor));
+            this.encryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                streamPayload = this.mdeEncryptionProcessor.EncryptAsync(
+                streamPayload = this.encryptionProcessor.EncryptAsync(
                     streamPayload,
                     diagnosticsContext,
                     cancellationToken: default).Result;
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                streamPayload = this.mdeEncryptionProcessor.EncryptAsync(
+                streamPayload = this.encryptionProcessor.EncryptAsync(
                     streamPayload,
                     diagnosticsContext,
                     default).Result;
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                streamPayload = this.mdeEncryptionProcessor.EncryptAsync(
+                streamPayload = this.encryptionProcessor.EncryptAsync(
                     streamPayload,
                     diagnosticsContext,
                     cancellationToken: default).Result;
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     if (result.ResourceStream != null)
                     {
-                        Stream decryptedStream = await this.mdeEncryptionProcessor.DecryptAsync(
+                        Stream decryptedStream = await this.encryptionProcessor.DecryptAsync(
                             result.ResourceStream,
                             diagnosticsContext,
                             cancellationToken);

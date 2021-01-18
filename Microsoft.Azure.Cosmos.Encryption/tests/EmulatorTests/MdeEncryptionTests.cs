@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (NotSupportedException ex)
             {
-                Assert.AreEqual("partitionKey cannot be null for operations using MdeContainer.", ex.Message);
+                Assert.AreEqual("partitionKey cannot be null for operations using EncryptionContainer.", ex.Message);
             }
         }
 

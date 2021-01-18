@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Container GetContainer(string id)
         {
             this.container = this.database.GetContainer(id);
-            return new MdeContainer(this.container, this.EncryptionCosmosClient);
+            return new EncryptionContainer(this.container, this.EncryptionCosmosClient);
         }
 
         public override Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
+                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
+                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
+                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
+                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
+                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
                 await containerResponse,
-                new MdeContainer(await containerResponse, this.EncryptionCosmosClient));
+                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }

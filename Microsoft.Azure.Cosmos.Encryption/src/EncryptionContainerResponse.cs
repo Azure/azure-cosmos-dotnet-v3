@@ -11,17 +11,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         public EncryptionContainerResponse(
             ContainerResponse containerResponse,
-            MdeContainer mdeContainer)
+            EncryptionContainer encryptionContainer)
         {
             this.containerResponse = containerResponse ?? throw new ArgumentNullException(nameof(containerResponse));
-            this.mdeContainer = mdeContainer ?? throw new ArgumentNullException(nameof(mdeContainer));
+            this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
         }
 
         private readonly ContainerResponse containerResponse;
 
-        private readonly MdeContainer mdeContainer;
+        private readonly EncryptionContainer encryptionContainer;
 
-        public override Container Container => this.mdeContainer;
+        public override Container Container => this.encryptionContainer;
 
         public override CosmosDiagnostics Diagnostics => this.containerResponse.Diagnostics;
 

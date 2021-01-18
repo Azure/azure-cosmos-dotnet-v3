@@ -10,17 +10,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class MdeEncryptionFeedIterator : FeedIterator
+    internal sealed class EncryptionFeedIterator : FeedIterator
     {
         private readonly FeedIterator feedIterator;
-        private readonly MdeEncryptionProcessor mdeEncryptionProcessor;
+        private readonly EncryptionProcessor encryptionProcessor;
 
-        public MdeEncryptionFeedIterator(
+        public EncryptionFeedIterator(
             FeedIterator feedIterator,
-            MdeEncryptionProcessor mdeEncryptionProcessor)
+            EncryptionProcessor encryptionProcessor)
         {
             this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
-            this.mdeEncryptionProcessor = mdeEncryptionProcessor ?? throw new ArgumentNullException(nameof(mdeEncryptionProcessor));
+            this.encryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            JObject contentJObj = MdeEncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
             JArray results = new JArray();
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                JObject decryptedDocument = await this.mdeEncryptionProcessor.DecryptAsync(
+                JObject decryptedDocument = await this.encryptionProcessor.DecryptAsync(
                     document,
                     diagnosticsContext,
                     cancellationToken);
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            return MdeEncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
+            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
         }
     }
 }

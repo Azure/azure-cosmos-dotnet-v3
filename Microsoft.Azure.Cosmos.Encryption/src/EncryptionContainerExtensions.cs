@@ -13,13 +13,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// This class provides extension methods for <see cref="Container"/>.
     /// </summary>
-    public static class MdeContainerExtensions
+    public static class EncryptionContainerExtensions
     {
         /// <summary>
         /// Initializes and Caches the Client Encryption Policy and the corresponding keys configured for the container.
         /// All the keys configured as per the Client Encryption Policy for the container must be created before its used in the policy.
         /// </summary>
-        /// <param name="container">MdeContainer.</param>
+        /// <param name="container">Encryption Container.</param>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
         /// <example>
@@ -39,9 +39,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (container is MdeContainer mdeContainer)
+            if (container is EncryptionContainer encryptionContainer)
             {
-                EncryptionCosmosClient encryptionCosmosClient = mdeContainer.EncryptionCosmosClient;
+                EncryptionCosmosClient encryptionCosmosClient = encryptionContainer.EncryptionCosmosClient;
                 ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetClientEncryptionPolicyAsync(
                     container: container,
                     cancellationToken: cancellationToken,
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
                     {
-                        CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                        CachedClientEncryptionProperties cachedClientEncryptionProperties = await encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                                 clientEncryptionKeyId: clientEncryptionKeyId,
                                 container: container,
                                 cancellationToken: cancellationToken,
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     }
                 }
 
-                return mdeContainer;
+                return encryptionContainer;
             }
             else
             {
@@ -89,14 +89,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this Container container,
             IQueryable<T> query)
         {
-            if (container is not MdeContainer mdeContainer)
+            if (container is not EncryptionContainer encryptionContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
-            return new MdeEncryptionFeedIterator<T>(
-                (MdeEncryptionFeedIterator)mdeContainer.ToEncryptionStreamIterator(query),
-                mdeContainer.ResponseFactory);
+            return new EncryptionFeedIterator<T>(
+                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
+                encryptionContainer.ResponseFactory);
         }
 
         /// <summary>
@@ -121,14 +121,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this Container container,
             IQueryable<T> query)
         {
-            if (container is not MdeContainer mdeContainer)
+            if (container is not EncryptionContainer encryptionContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
-            return new MdeEncryptionFeedIterator(
+            return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
-                mdeContainer.MdeEncryptionProcessor);
+                encryptionContainer.EncryptionProcessor);
         }
 
         /// <summary>
@@ -146,9 +146,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             PermissionMode permissionMode,
             PartitionKey? resourcePartitionKey = null)
         {
-            if (container is MdeContainer mdeContainer)
+            if (container is EncryptionContainer encryptionContainer)
             {
-                return new PermissionProperties(id, permissionMode, mdeContainer.Container, resourcePartitionKey);
+                return new PermissionProperties(id, permissionMode, encryptionContainer.Container, resourcePartitionKey);
             }
             else
             {
@@ -173,12 +173,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             PartitionKey resourcePartitionKey,
             string itemId)
         {
-            if (container is MdeContainer mdeContainer)
+            if (container is EncryptionContainer encryptionContainer)
             {
                 return new PermissionProperties(
                     id,
                     permissionMode,
-                    mdeContainer.Container,
+                    encryptionContainer.Container,
                     resourcePartitionKey,
                     itemId);
             }
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(queryText));
             }
 
-            if (container is not MdeContainer)
+            if (container is not EncryptionContainer)
             {
                 throw new ArgumentOutOfRangeException($"{nameof(CreateQueryDefinition)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }

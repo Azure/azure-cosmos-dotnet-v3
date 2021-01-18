@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override Container GetContainer(string databaseId, string containerId)
         {
-            return new MdeContainer(
+            return new EncryptionContainer(
                 this.cosmosClient.GetContainer(databaseId, containerId),
                 this);
         }

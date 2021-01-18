@@ -8,20 +8,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
 
-    internal sealed class MdeEncryptionFeedIterator<T> : FeedIterator<T>
+    internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
         private readonly FeedIterator feedIterator;
         private readonly CosmosResponseFactory responseFactory;
 
-        public MdeEncryptionFeedIterator(
-            MdeEncryptionFeedIterator feedIterator,
+        public EncryptionFeedIterator(
+            EncryptionFeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
             this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
 
-            if (feedIterator is not MdeEncryptionFeedIterator)
+            if (feedIterator is not EncryptionFeedIterator)
             {
-                throw new ArgumentOutOfRangeException($"{nameof(feedIterator)} must be of type {nameof(MdeEncryptionFeedIterator)}. ");
+                throw new ArgumentOutOfRangeException($"{nameof(feedIterator)} must be of type {nameof(EncryptionFeedIterator)}. ");
             }
 
             this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));

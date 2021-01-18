@@ -75,17 +75,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (queryDefinition is EncryptionQueryDefinition encryptionQueryDefinition)
             {
-                MdeContainer mdeContainer = (MdeContainer)encryptionQueryDefinition.Container;
-                Stream valueStream = mdeContainer.CosmosSerializer.ToStream<T>(value);
-                JToken propertyValueToEncrypt = MdeEncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
+                EncryptionContainer encryptionContainer = (EncryptionContainer)encryptionQueryDefinition.Container;
+                Stream valueStream = encryptionContainer.CosmosSerializer.ToStream<T>(value);
+                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
                 // not really required, but will have things setup for subsequent queries or operations on this Container.
-                await mdeContainer.MdeEncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
+                await encryptionContainer.EncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
                 // get the path's encryption setting.
-                MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.MdeEncryptionSettings.GetEncryptionSettingForPropertyAsync(
+                EncryptionSettings settings = await encryptionContainer.EncryptionProcessor.EncryptionSettings.GetEncryptionSettingForPropertyAsync(
                     path.Substring(1),
-                    mdeContainer.MdeEncryptionProcessor,
+                    encryptionContainer.EncryptionProcessor,
                     cancellationToken);
 
                 if (settings == null)
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
-                (MdeEncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = MdeEncryptionProcessor.Serialize(propertyValueToEncrypt);
+                (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
 
                 byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
 
