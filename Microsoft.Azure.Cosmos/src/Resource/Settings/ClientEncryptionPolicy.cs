@@ -46,6 +46,16 @@ namespace Microsoft.Azure.Cosmos
             List<string> includedPathsList = new List<string>();
             foreach (ClientEncryptionIncludedPath path in clientEncryptionIncludedPath)
             {
+                if (string.IsNullOrWhiteSpace(path.Path) || path.Path[0] != '/' || path.Path.LastIndexOf('/') != 0)
+                {
+                    throw new ArgumentException($"Invalid path {path.Path ?? string.Empty}, {nameof(path)}", nameof(clientEncryptionIncludedPath));
+                }
+
+                if (string.Equals(path.Path.Substring(1), "id"))
+                {
+                    throw new ArgumentException($"{path} includes an invalid path: '{path.Path}'.", nameof(clientEncryptionIncludedPath));
+                }
+
                 this.ValidateClientEncryptionIncludedPath(path);
                 if (includedPathsList.Contains(path.Path))
                 {
