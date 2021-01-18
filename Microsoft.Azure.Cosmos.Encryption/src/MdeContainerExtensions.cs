@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new InvalidOperationException($"Invalid {container} used for this operation");
+                throw new InvalidOperationException($"Invalid {container} used for this operation.This operation requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
 
