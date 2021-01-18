@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedIterator feedIterator,
             MdeEncryptionProcessor mdeEncryptionProcessor)
         {
-            this.feedIterator = feedIterator;
-            this.mdeEncryptionProcessor = mdeEncryptionProcessor;
+            this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
+            this.mdeEncryptionProcessor = mdeEncryptionProcessor ?? throw new ArgumentNullException(nameof(mdeEncryptionProcessor));
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
 
-                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null && this.mdeEncryptionProcessor != null)
+                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
                     Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
@@ -52,18 +52,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken)
         {
             JObject contentJObj = MdeEncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-            JArray result = new JArray();
+            JArray results = new JArray();
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
             {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
             }
 
             foreach (JToken value in documents)
             {
-                if (!(value is JObject document))
+                if (value is not JObject document)
                 {
-                    result.Add(value);
+                    results.Add(value);
                     continue;
                 }
 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     diagnosticsContext,
                     cancellationToken);
 
-                result.Add(decryptedDocument);
+                results.Add(decryptedDocument);
             }
 
             JObject decryptedResponse = new JObject();
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
                 {
-                    decryptedResponse.Add(property.Name, (JToken)result);
+                    decryptedResponse.Add(property.Name, (JToken)results);
                 }
                 else
                 {

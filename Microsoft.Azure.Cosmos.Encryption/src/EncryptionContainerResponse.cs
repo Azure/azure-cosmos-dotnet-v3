@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Net;
 
     internal sealed class EncryptionContainerResponse : ContainerResponse
@@ -12,8 +13,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ContainerResponse containerResponse,
             MdeContainer mdeContainer)
         {
-            this.containerResponse = containerResponse;
-            this.mdeContainer = mdeContainer;
+            this.containerResponse = containerResponse ?? throw new ArgumentNullException(nameof(containerResponse));
+            this.mdeContainer = mdeContainer ?? throw new ArgumentNullException(nameof(mdeContainer));
         }
 
         private readonly ContainerResponse containerResponse;

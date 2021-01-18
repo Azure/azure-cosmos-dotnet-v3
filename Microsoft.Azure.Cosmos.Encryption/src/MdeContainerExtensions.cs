@@ -30,24 +30,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (container is MdeContainer mdeContainer)
             {
                 EncryptionCosmosClient encryptionCosmosClient = mdeContainer.EncryptionCosmosClient;
-                ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(container, cancellationToken, false);
+                ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetClientEncryptionPolicyAsync(
+                    container: container,
+                    cancellationToken: cancellationToken,
+                    shouldForceRefresh: false);
 
                 if (clientEncryptionPolicy != null)
                 {
                     foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
                     {
-                        try
-                        {
-                            CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeContainer.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
-                                clientEncryptionKeyId,
-                                container,
-                                cancellationToken,
-                                false);
-                        }
-                        catch
-                        {
-                            throw;
-                        }
+                        CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                                clientEncryptionKeyId: clientEncryptionKeyId,
+                                container: container,
+                                cancellationToken: cancellationToken,
+                                shouldForceRefresh: false);
                     }
                 }
 
@@ -77,17 +73,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// ]]>
         /// </code>
         /// </example>
-        public static FeedIterator<T> ToMdeEncryptionFeedIterator<T>(
+        public static FeedIterator<T> ToEncryptionFeedIterator<T>(
             this Container container,
             IQueryable<T> query)
         {
             if (container is not MdeContainer mdeContainer)
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToMdeEncryptionFeedIterator)} is only supported with {nameof(MdeContainer)}.");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             return new MdeEncryptionFeedIterator<T>(
-                (MdeEncryptionFeedIterator)mdeContainer.ToMdeEncryptionStreamIterator(query),
+                (MdeEncryptionFeedIterator)mdeContainer.ToEncryptionStreamIterator(query),
                 mdeContainer.ResponseFactory);
         }
 
@@ -109,13 +105,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// ]]>
         /// </code>
         /// </example>
-        public static FeedIterator ToMdeEncryptionStreamIterator<T>(
+        public static FeedIterator ToEncryptionStreamIterator<T>(
             this Container container,
             IQueryable<T> query)
         {
             if (container is not MdeContainer mdeContainer)
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToMdeEncryptionStreamIterator)} is only supported with {nameof(MdeContainer)}.");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             return new MdeEncryptionFeedIterator(
@@ -132,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="permissionMode"> The Microsoft.Azure.Cosmos.PermissionProperties.PermissionMode. </param>
         /// <param name="resourcePartitionKey"> (Optional) The partition key value for the permission in the Azure Cosmos DB service. </param>
         /// <returns> PermissionProperties for the Container </returns>
-        public static PermissionProperties GetPermissionPropertiesForMdeContainer(
+        public static PermissionProperties GetPermissionPropertiesForEncryptionContainer(
             this Container container,
             string id,
             PermissionMode permissionMode,
@@ -144,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForMdeContainer)} is only supported with {nameof(MdeContainer)}.");
+                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForEncryptionContainer)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
 
@@ -158,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="resourcePartitionKey"> The partition key value for the permission in the Azure Cosmos DB service </param>
         /// <param name="itemId">  The cosmos item id </param>
         /// <returns> PermissionProperties for the Container </returns>
-        public static PermissionProperties GetPermissionPropertiesForMdeContainer(
+        public static PermissionProperties GetPermissionPropertiesForEncryptionContainer(
             this Container container,
             string id,
             PermissionMode permissionMode,
@@ -167,12 +163,38 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (container is MdeContainer mdeContainer)
             {
-                return new PermissionProperties(id, permissionMode, mdeContainer.Container, resourcePartitionKey, itemId);
+                return new PermissionProperties(
+                    id,
+                    permissionMode,
+                    mdeContainer.Container,
+                    resourcePartitionKey,
+                    itemId);
             }
             else
             {
-                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForMdeContainer)} is only supported with {nameof(MdeContainer)}.");
+                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForEncryptionContainer)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
+        }
+
+        /// <summary>
+        /// Create a Microsoft.Azure.Cosmos.QueryDefinition with encryption support.
+        /// </summary>
+        /// <param name="container"> The encryption container.</param>
+        /// <param name="queryText"> A valid Cosmos SQL query "Select * from test t" </param>
+        /// <returns> Microsoft.Azure.Cosmos.QueryDefinition </returns>
+        public static QueryDefinition CreateQueryDefinition(this Container container, string queryText)
+        {
+            if (string.IsNullOrEmpty(queryText))
+            {
+                throw new ArgumentNullException(nameof(queryText));
+            }
+
+            if (container is not MdeContainer)
+            {
+                throw new ArgumentOutOfRangeException($"{nameof(CreateQueryDefinition)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+
+            return new EncryptionQueryDefinition(queryText, container);
         }
     }
 }

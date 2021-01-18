@@ -23,23 +23,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="name"> Query Paramerter Name. </param>
         /// <param name="value"> Query Paramerter Value.</param>
         /// <param name="path"> Encrypted Property Path. </param>
-        /// <param name="container"> Container handler </param>
         /// <typeparam name="T"> Type of item.</typeparam>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> QueryDefinition with encrypted parameters. </returns>
-        public static async Task<QueryDefinition> AddEncryptedParameterAsync<T>(
+        public static async Task<QueryDefinition> AddParameterAsync<T>(
             this QueryDefinition queryDefinition,
             string name,
             T value,
             string path,
-            Container container,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             if (queryDefinition == null)
             {
-                throw new ArgumentNullException("Missing QueryDefinition in the argument");
+                throw new ArgumentNullException(nameof(queryDefinition));
             }
 
             if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
@@ -47,15 +45,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(path)}");
             }
 
-            if (string.IsNullOrWhiteSpace(name) || value == null)
+            if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentNullException("Name or Value argument is Null.");
+                throw new ArgumentNullException("Name cannot be Null or Empty. ");
+            }
+
+            if (value == null)
+            {
+                throw new ArgumentNullException(nameof(value));
             }
 
             QueryDefinition withEncryptedValues = queryDefinition;
 
-            if (container != null && container is MdeContainer mdeContainer)
+            if (queryDefinition is EncryptionQueryDefinition encryptionQueryDefinition)
             {
+                MdeContainer mdeContainer = (MdeContainer)encryptionQueryDefinition.Container;
                 Stream valueStream = mdeContainer.CosmosSerializer.ToStream<T>(value);
                 JToken propertyValueToEncrypt = MdeEncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
@@ -63,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 await mdeContainer.MdeEncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
                 // get the path's encryption setting.
-                MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.MdeEncryptionSettings.GetorUpdateEncryptionSettingForPropertyAsync(
+                MdeEncryptionSettings settings = await mdeContainer.MdeEncryptionProcessor.MdeEncryptionSettings.GetEncryptionSettingForPropertyAsync(
                     path.Substring(1),
                     mdeContainer.MdeEncryptionProcessor,
                     cancellationToken);
@@ -77,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (settings.EncryptionType == EncryptionType.Randomized)
                 {
-                    throw new ArgumentException($"Unsupported argument with Path: {path} for query.For executing queries on encrypted paths please make sure Client Encryption Policy is configured with Deterministic Encryption Type.");
+                    throw new ArgumentException($"Unsupported argument with Path: {path} for query.For executing queries on encrypted path requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
                 (MdeEncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = MdeEncryptionProcessor.Serialize(propertyValueToEncrypt);
@@ -86,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (cipherText == null)
                 {
-                    throw new InvalidOperationException($"{nameof(AddEncryptedParameterAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}.");
+                    throw new InvalidOperationException($"{nameof(AddParameterAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}.");
                 }
 
                 byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
@@ -98,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentException("For executing queries on encrypted paths please configure Cosmos Client with Encryption Support");
+                throw new ArgumentException("Executing queries on encrypted path requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
     }

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
@@ -21,6 +22,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this CosmosClient cosmosClient,
             EncryptionKeyStoreProvider encryptionKeystoreProvider)
         {
+            if (encryptionKeystoreProvider == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionKeystoreProvider));
+            }
+
+            if (cosmosClient == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosClient));
+            }
+
             return new EncryptionCosmosClient(cosmosClient, encryptionKeystoreProvider);
         }
     }

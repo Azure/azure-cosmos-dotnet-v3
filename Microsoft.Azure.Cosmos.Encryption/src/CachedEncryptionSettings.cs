@@ -17,9 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             MdeEncryptionSettings mdeEncryptionSettings,
             DateTime mdeEncryptionSettingsExpiryUtc)
         {
-            Debug.Assert(mdeEncryptionSettings != null);
-
-            this.MdeEncryptionSettings = mdeEncryptionSettings;
+            this.MdeEncryptionSettings = mdeEncryptionSettings ?? throw new ArgumentNullException(nameof(mdeEncryptionSettings));
             this.MdeEncryptionSettingsExpiryUtc = mdeEncryptionSettingsExpiryUtc;
         }
     }

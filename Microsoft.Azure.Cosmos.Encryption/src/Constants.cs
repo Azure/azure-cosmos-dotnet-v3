@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     internal static class Constants
     {
-        public const string DocumentsResourcePropertyName = "Documents";
         public const int CekPropertiesDefaultTTLInMinutes = 60;
+        public const string DocumentsResourcePropertyName = "Documents";
     }
 }

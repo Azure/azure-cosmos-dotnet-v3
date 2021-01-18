@@ -63,15 +63,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(item));
             }
 
-            if (this.MdeEncryptionProcessor == null)
-            {
-                return await this.Container.CreateItemAsync<T>(
-                    item,
-                    partitionKey,
-                    requestOptions,
-                    cancellationToken);
-            }
-
             if (partitionKey == null)
             {
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");
@@ -126,15 +117,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (this.MdeEncryptionProcessor == null)
-            {
-                return await this.Container.CreateItemStreamAsync(
-                    streamPayload,
-                    partitionKey,
-                    requestOptions,
-                    cancellationToken);
-            }
-
             streamPayload = await this.MdeEncryptionProcessor.EncryptAsync(
                 streamPayload,
                 diagnosticsContext,
@@ -233,13 +215,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            if (this.MdeEncryptionProcessor != null)
-            {
-                responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
+            responseMessage.Content = await this.MdeEncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     diagnosticsContext,
                     cancellationToken);
-            }
 
             return responseMessage;
         }
@@ -259,16 +238,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
-            }
-
-            if (!(this.MdeEncryptionProcessor != null))
-            {
-                return await this.Container.ReplaceItemAsync(
-                    item,
-                    id,
-                    partitionKey,
-                    requestOptions,
-                    cancellationToken);
             }
 
             if (partitionKey == null)
@@ -334,16 +303,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (!(this.MdeEncryptionProcessor != null))
-            {
-                return await this.Container.ReplaceItemStreamAsync(
-                    streamPayload,
-                    id,
-                    partitionKey,
-                    requestOptions,
-                    cancellationToken);
-            }
-
             if (partitionKey == null)
             {
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");
@@ -378,15 +337,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
-            }
-
-            if (!(this.MdeEncryptionProcessor != null))
-            {
-                return await this.Container.UpsertItemAsync(
-                    item,
-                    partitionKey,
-                    requestOptions,
-                    cancellationToken);
             }
 
             if (partitionKey == null)
@@ -443,15 +393,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (!(this.MdeEncryptionProcessor != null))
-            {
-                return await this.Container.UpsertItemStreamAsync(
-                    streamPayload,
-                    partitionKey,
-                    requestOptions,
-                    cancellationToken);
-            }
-
             if (partitionKey == null)
             {
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(MdeContainer)}.");

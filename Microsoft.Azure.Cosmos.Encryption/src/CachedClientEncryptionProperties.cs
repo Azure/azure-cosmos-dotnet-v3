@@ -17,8 +17,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             DateTime clientEncryptionKeyPropertiesExpiryUtc)
         {
-            Debug.Assert(clientEncryptionKeyProperties != null);
-            this.ClientEncryptionKeyProperties = clientEncryptionKeyProperties;
+            this.ClientEncryptionKeyProperties = clientEncryptionKeyProperties ?? throw new ArgumentNullException(nameof(clientEncryptionKeyProperties));
             this.ClientEncryptionKeyPropertiesExpiryUtc = clientEncryptionKeyPropertiesExpiryUtc;
         }
     }

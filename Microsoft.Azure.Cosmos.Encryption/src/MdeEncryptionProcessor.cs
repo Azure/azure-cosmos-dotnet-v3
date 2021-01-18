@@ -19,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class MdeEncryptionProcessor
     {
-        private static readonly SemaphoreSlim EncryptionSettingSema = new SemaphoreSlim(1, 1);
-
         private bool isEncryptionSettingsInitDone;
 
         /// <summary>
@@ -68,11 +66,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // update the property level setting.
             if (this.isEncryptionSettingsInitDone)
             {
-                throw new InvalidOperationException("The Encrypton Processor has already been initialized");
+                throw new InvalidOperationException("The Encrypton Processor has already been initialized. ");
             }
 
             Dictionary<string, MdeEncryptionSettings> settingsByDekId = new Dictionary<string, MdeEncryptionSettings>();
-            this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(this.Container, cancellationToken, false);
+            this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetClientEncryptionPolicyAsync(
+                container: this.Container,
+                cancellationToken: cancellationToken,
+                shouldForceRefresh: false);
 
             // no policy was configured.
             if (this.ClientEncryptionPolicy == null)
@@ -83,45 +84,31 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (string clientEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
             {
-                try
+                CachedClientEncryptionProperties cachedClientEncryptionProperties = await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                        clientEncryptionKeyId: clientEncryptionKeyId,
+                        container: this.Container,
+                        cancellationToken: cancellationToken,
+                        shouldForceRefresh: false);
+
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
+
+                KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                        this.EncryptionKeyStoreProvider);
+
+                ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                           clientEncryptionKeyId,
+                           keyEncryptionKey,
+                           clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+                settingsByDekId[clientEncryptionKeyId] = new MdeEncryptionSettings
                 {
-                    CachedClientEncryptionProperties cachedClientEncryptionProperties = await this.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
-                        clientEncryptionKeyId,
-                        this.Container,
-                        cancellationToken,
-                        false);
-
-                    ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
-
-                    if (clientEncryptionKeyProperties != null)
-                    {
-                        KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                            clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                            clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                            this.EncryptionKeyStoreProvider);
-
-                        ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                                   keyEncryptionKey,
-                                   clientEncryptionKeyProperties.WrappedDataEncryptionKey);
-
-                        settingsByDekId[clientEncryptionKeyId] = new MdeEncryptionSettings
-                        {
-                            // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
-                            EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
-                            ClientEncryptionKeyId = clientEncryptionKeyId,
-                            DataEncryptionKey = protectedDataEncryptionKey,
-                        };
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Failed to retrieve ClientEncryptionProperties for the Client Encryption Key : {clientEncryptionKeyId}.");
-                    }
-                }
-                catch
-                {
-                    throw;
-                }
+                    // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
+                    EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
+                    ClientEncryptionKeyId = clientEncryptionKeyId,
+                    DataEncryptionKey = protectedDataEncryptionKey,
+                };
             }
 
             foreach (ClientEncryptionIncludedPath propertyToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
@@ -129,14 +116,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionType encryptionType = EncryptionType.Plaintext;
                 switch (propertyToEncrypt.EncryptionType)
                 {
-                    case MdeEncryptionType.Deterministic:
+                    case CosmosEncryptionType.Deterministic:
                         encryptionType = EncryptionType.Deterministic;
                         break;
-                    case MdeEncryptionType.Randomized:
+                    case CosmosEncryptionType.Randomized:
                         encryptionType = EncryptionType.Randomized;
                         break;
                     default:
-                        Debug.Fail(string.Format("Invalid encryption type {0}", propertyToEncrypt.EncryptionType));
+                        Debug.Fail(string.Format("Invalid encryption type {0}. ", propertyToEncrypt.EncryptionType));
                         break;
                 }
 
@@ -160,19 +147,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Task to await.</returns>
         internal async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default)
         {
-            if (await EncryptionSettingSema.WaitAsync(-1))
+            if (!this.isEncryptionSettingsInitDone)
             {
-                try
-                {
-                    if (!this.isEncryptionSettingsInitDone)
-                    {
-                        await this.InitializeEncryptionSettingsAsync(cancellationToken);
-                    }
-                }
-                finally
-                {
-                    EncryptionSettingSema.Release(1);
-                }
+                await this.InitializeEncryptionSettingsAsync(cancellationToken);
             }
         }
 
@@ -191,11 +168,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                     {
                         await this.EncryptAndSerializePropertyAsync(
-                        itemJObj,
-                        jProperty.Value,
-                        settings,
-                        diagnosticsContext,
-                        cancellationToken);
+                            itemJObj,
+                            jProperty.Value,
+                            settings,
+                            diagnosticsContext,
+                            cancellationToken);
                     }
                     else
                     {
@@ -243,6 +220,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 itemJObj.Property(propertyValue.Path).Value = await this.EncryptAndSerializeValueAsync(
                     itemJObj.Property(propertyValue.Path).Value,
                     settings);
+
                 await Task.Yield();
                 return;
             }
@@ -260,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (cipherText == null)
             {
-                throw new InvalidOperationException($"{nameof(this.EncryptAndSerializeValueAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}.");
+                throw new InvalidOperationException($"{nameof(this.EncryptAndSerializeValueAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. ");
             }
 
             byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
@@ -295,12 +273,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (string.IsNullOrWhiteSpace(path.Path) || path.Path[0] != '/' || path.Path.LastIndexOf('/') != 0)
                 {
-                    throw new InvalidOperationException($"Invalid path {path.Path ?? string.Empty}, {nameof(path)}");
+                    throw new InvalidOperationException($"Invalid path {path.Path ?? string.Empty}, {nameof(path)}. ");
                 }
 
                 if (string.Equals(path.Path.Substring(1), "id"))
                 {
-                    throw new InvalidOperationException($"{path} includes an invalid path: '{path.Path}'.");
+                    throw new InvalidOperationException($"{path} includes an invalid path: '{path.Path}'. ");
                 }
             }
 
@@ -322,11 +300,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetorUpdateEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
+                MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
 
                 if (settings == null)
                 {
-                    throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}");
+                    throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
                 await this.EncryptAndSerializePropertyAsync(
@@ -380,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (plainText == null)
             {
-                throw new InvalidOperationException($"{nameof(this.DecryptPropertyAsync)} returned null plainText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}.");
+                throw new InvalidOperationException($"{nameof(this.DecryptPropertyAsync)} returned null plainText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
             }
 
             return await Task.FromResult(plainText);
@@ -486,11 +464,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
                 {
                     string propertyName = path.Path.Substring(1);
-                    MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetorUpdateEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
+                    MdeEncryptionSettings settings = await this.MdeEncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
 
                     if (settings == null)
                     {
-                        throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}");
+                        throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
                     }
 
                     await this.DecryptAndDeserializePropertyAsync(
@@ -596,7 +574,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 JTokenType.Float => (TypeMarker.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
                 JTokenType.Integer => (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
                 JTokenType.String => (TypeMarker.String, sqlNvarcharSerializer.Serialize(propertyValue.ToObject<string>())),
-                _ => throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}"),
+                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {propertyValue.Type}. "),
             };
         }
 
@@ -612,7 +590,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 TypeMarker.Double => sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
                 TypeMarker.Long => sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
                 TypeMarker.String => sqlSerializerFactory.GetDefaultSerializer<string>().Deserialize(serializedBytes),
-                _ => throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {typeMarker}"),
+                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {typeMarker}. "),
             };
         }
 

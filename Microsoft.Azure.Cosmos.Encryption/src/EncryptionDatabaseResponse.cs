@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Net;
 
     internal sealed class EncryptionDatabaseResponse : DatabaseResponse
@@ -12,8 +13,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             DatabaseResponse databaseResponse,
             EncryptionCosmosClient encryptionCosmosClient)
         {
-            this.databaseResponse = databaseResponse;
-            this.encryptionCosmosClient = encryptionCosmosClient;
+            this.databaseResponse = databaseResponse ?? throw new ArgumentNullException(nameof(databaseResponse));
+            this.encryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
         }
 
         public override Database Database => new EncryptionDatabase(this.databaseResponse.Database, this.encryptionCosmosClient);

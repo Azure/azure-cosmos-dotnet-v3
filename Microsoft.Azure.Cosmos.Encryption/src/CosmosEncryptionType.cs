@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Algorithms for use with client-side encryption support in Azure Cosmos DB.
     /// </summary>
-    public static class MdeEncryptionType
+    public static class CosmosEncryptionType
     {
         /// <summary>
         /// Randomized encryption uses a method that encrypts data in a less predictable manner. Randomized encryption is more secure.

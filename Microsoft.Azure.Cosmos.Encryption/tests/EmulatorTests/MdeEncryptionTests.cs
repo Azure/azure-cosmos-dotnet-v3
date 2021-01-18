@@ -55,56 +55,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = MdeEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
 
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_ArrayFormat",
                     ClientEncryptionKeyId = "key2",
-                    EncryptionType = MdeEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
 
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_NestedObjectFormatL1",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = MdeEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
 
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_IntArray",
                     ClientEncryptionKeyId = "key2",
-                    EncryptionType = MdeEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
 
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_IntFormat",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = MdeEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
 
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_DecimalFormat",
                     ClientEncryptionKeyId = "key2",
-                    EncryptionType = MdeEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
 
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_DateFormat",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = MdeEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
             };
 
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                    cekId,
-                   CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                   CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                    encryptionKeyWrapMetadata);
 
             Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
@@ -135,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.RewrapClientEncryptionKeyAsync(
                    cekId,
-                   CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
                    encryptionKeyWrapMetadata);
 
             Assert.AreEqual(HttpStatusCode.OK, clientEncrytionKeyResponse.StatusCode);
@@ -290,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.database.CreateUserAsync(restrictedUser.Id);
 
             PermissionProperties restrictedUserPermission = await restrictedUser.CreatePermissionAsync(
-                MdeEncryptionTests.encryptionContainer.GetPermissionPropertiesForMdeContainer(Guid.NewGuid().ToString(), PermissionMode.All));
+                MdeEncryptionTests.encryptionContainer.GetPermissionPropertiesForEncryptionContainer(Guid.NewGuid().ToString(), PermissionMode.All));
 
 
             CosmosClient clientForRestrictedUser = TestCommon.CreateCosmosClient(
@@ -308,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
-                       CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                       CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                        metadata1);
                 Assert.Fail("CreateClientEncryptionKeyAsync should have failed due to restrictions");
             }
@@ -323,7 +322,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.RewrapClientEncryptionKeyAsync(
                        cekId,
-                       CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
                        metadata1);
                 Assert.Fail("RewrapClientEncryptionKeyAsync should have failed due to restrictions");
             }
@@ -339,8 +337,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Path = "/",
                 ClientEncryptionKeyId = "unknownKey",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionType = Encryption.CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>  { unknownKeyConfigured };
@@ -371,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/id",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = "unsupported",
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
             try
@@ -454,20 +452,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
-            QueryDefinition withEncryptedParameter = new QueryDefinition(
+            QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
 
-            await withEncryptedParameter.AddEncryptedParameterAsync(
+            await withEncryptedParameter.AddParameterAsync(
                     "@Sensitive_StringFormat",
                     testDoc1.Sensitive_StringFormat,
-                    "/Sensitive_StringFormat",
-                    MdeEncryptionTests.encryptionContainer);
+                    "/Sensitive_StringFormat");
             
-            await withEncryptedParameter.AddEncryptedParameterAsync(
+            await withEncryptedParameter.AddParameterAsync(
                     "@Sensitive_IntFormat",
                     testDoc1.Sensitive_IntFormat,
-                    "/Sensitive_IntFormat",
-                    MdeEncryptionTests.encryptionContainer);
+                    "/Sensitive_IntFormat");
 
             TestDoc expectedDoc = new TestDoc(testDoc1);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
@@ -479,20 +475,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             // with encrypted and non encrypted properties
-            withEncryptedParameter = new QueryDefinition(
+            withEncryptedParameter =
+                    MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.NonSensitive = @NonSensitive AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
 
-            await withEncryptedParameter.AddEncryptedParameterAsync(
+            await withEncryptedParameter.AddParameterAsync(
                     "@NonSensitive",
                     testDoc2.NonSensitive,
-                    "/NonSensitive",
-                    MdeEncryptionTests.encryptionContainer);
+                    "/NonSensitive");
 
-            await withEncryptedParameter.AddEncryptedParameterAsync(
+            await withEncryptedParameter.AddParameterAsync(
                     "@Sensitive_IntFormat",
                     testDoc2.Sensitive_IntFormat,
-                    "/Sensitive_IntFormat",
-                    MdeEncryptionTests.encryptionContainer);
+                    "/Sensitive_IntFormat");
 
             expectedDoc = new TestDoc(testDoc2);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
@@ -643,14 +638,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await MdeEncryptionTests.ValidateQueryResponseAsync(MdeEncryptionTests.encryptionContainer, query);
 
-            QueryDefinition withEncryptedParameter = new QueryDefinition(
+            QueryDefinition withEncryptedParameter =
+                    MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT COUNT(c.Id), c.Sensitive_IntFormat FROM c WHERE c.Sensitive_IntFormat = @Sensitive_IntFormat GROUP BY c.Sensitive_IntFormat ");
 
-            await withEncryptedParameter.AddEncryptedParameterAsync(
+            await withEncryptedParameter.AddParameterAsync(
                     "@Sensitive_IntFormat",
                     testDoc1.Sensitive_IntFormat,
-                    "/Sensitive_IntFormat",
-                    MdeEncryptionTests.encryptionContainer); 
+                    "/Sensitive_IntFormat"); 
 
             FeedIterator feedIterator = MdeEncryptionTests.encryptionContainer.GetItemQueryStreamIterator(withEncryptedParameter);
 
@@ -682,8 +677,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Path = "/id",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { restrictedPathId };
@@ -701,15 +696,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch (InvalidOperationException ex)
             {
-                Assert.AreEqual("Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath includes an invalid path: '/id'.", ex.Message);
+                Assert.AreEqual("Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath includes an invalid path: '/id'. ", ex.Message);
             }
 
             ClientEncryptionIncludedPath restrictedPathPk = new ClientEncryptionIncludedPath()
             {
                 Path = "/PK",
                 ClientEncryptionKeyId = "key2",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
 
@@ -734,16 +729,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Path = "/Sensitive_StringFormat",
                 ClientEncryptionKeyId = "key2",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
             ClientEncryptionIncludedPath pathdup2 = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_StringFormat",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
 
@@ -909,7 +904,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             if (query == null)
             {
                 IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();
-                queryResponseIterator = container.ToMdeEncryptionFeedIterator<TestDoc>(linqQueryable);
+                queryResponseIterator = container.ToEncryptionFeedIterator<TestDoc>(linqQueryable);
             }
             else
             {
@@ -963,7 +958,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             if (query == null)
             {
                 IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();
-                feedIterator = container.ToMdeEncryptionStreamIterator(linqQueryable);
+                feedIterator = container.ToEncryptionStreamIterator(linqQueryable);
             }
             else
             {

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class MdeEncryptionSettings
     {
-        internal AsyncCache<string, CachedEncryptionSettings> PerPropertyEncryptionSettingCache { get; } = new AsyncCache<string, CachedEncryptionSettings>();
+        internal AsyncCache<string, CachedEncryptionSettings> EncryptionSettingCacheByPropertyName { get; } = new AsyncCache<string, CachedEncryptionSettings>();
 
         public string ClientEncryptionKeyId { get; set; }
 
@@ -28,12 +28,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
         }
 
-        public async Task<MdeEncryptionSettings> GetorUpdateEncryptionSettingForPropertyAsync(
+        internal async Task<MdeEncryptionSettings> GetEncryptionSettingForPropertyAsync(
             string propertyName,
             MdeEncryptionProcessor mdeEncryptionProcessor,
             CancellationToken cancellationToken)
         {
-            CachedEncryptionSettings cachedEncryptionSettings = await this.PerPropertyEncryptionSettingCache.GetAsync(
+            CachedEncryptionSettings cachedEncryptionSettings = await this.EncryptionSettingCacheByPropertyName.GetAsync(
                 propertyName,
                 null,
                 async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, mdeEncryptionProcessor, cancellationToken, shouldForceRefresh: false),
@@ -46,12 +46,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (cachedEncryptionSettings.MdeEncryptionSettingsExpiryUtc <= DateTime.UtcNow)
             {
-                cachedEncryptionSettings = await this.PerPropertyEncryptionSettingCache.GetAsync(
-                propertyName,
-                null,
-                async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, mdeEncryptionProcessor, cancellationToken, shouldForceRefresh: true),
-                cancellationToken,
-                forceRefresh: true);
+                cachedEncryptionSettings = await this.EncryptionSettingCacheByPropertyName.GetAsync(
+                    propertyName,
+                    null,
+                    async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, mdeEncryptionProcessor, cancellationToken, shouldForceRefresh: true),
+                    cancellationToken,
+                    forceRefresh: true);
             }
 
             return cachedEncryptionSettings.MdeEncryptionSettings;
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken,
             bool shouldForceRefresh = false)
         {
-            ClientEncryptionPolicy clientEncryptionPolicy = await mdeEncryptionProcessor.EncryptionCosmosClient.GetOrAddClientEncryptionPolicyAsync(
+            ClientEncryptionPolicy clientEncryptionPolicy = await mdeEncryptionProcessor.EncryptionCosmosClient.GetClientEncryptionPolicyAsync(
                 mdeEncryptionProcessor.Container,
                 cancellationToken,
                 false);
@@ -72,65 +72,58 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (string.Equals(propertyToEncrypt.Path.Substring(1), propertyName))
                 {
-                    try
+                    CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeEncryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                            clientEncryptionKeyId: propertyToEncrypt.ClientEncryptionKeyId,
+                            container: mdeEncryptionProcessor.Container,
+                            cancellationToken: cancellationToken,
+                            shouldForceRefresh: shouldForceRefresh);
+
+                    ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
+
+                    KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                               mdeEncryptionProcessor.EncryptionKeyStoreProvider);
+
+                    ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                               propertyToEncrypt.ClientEncryptionKeyId,
+                               keyEncryptionKey,
+                               clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+                    MdeEncryptionSettings mdeEncryptionSettings = new MdeEncryptionSettings
                     {
-                        CachedClientEncryptionProperties cachedClientEncryptionProperties = await mdeEncryptionProcessor.EncryptionCosmosClient.GetOrAddClientEncryptionKeyPropertiesAsync(
-                            propertyToEncrypt.ClientEncryptionKeyId,
-                            mdeEncryptionProcessor.Container,
-                            cancellationToken,
-                            shouldForceRefresh);
+                        // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
+                        EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
+                        ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
+                        DataEncryptionKey = protectedDataEncryptionKey,
+                    };
 
-                        ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
-
-                        KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                                   mdeEncryptionProcessor.EncryptionKeyStoreProvider);
-
-                        ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                                   keyEncryptionKey,
-                                   clientEncryptionKeyProperties.WrappedDataEncryptionKey);
-
-                        MdeEncryptionSettings mdeEncryptionSettings = new MdeEncryptionSettings
-                        {
-                            // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
-                            EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
-                            ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
-                            DataEncryptionKey = protectedDataEncryptionKey,
-                        };
-
-                        EncryptionType encryptionType = EncryptionType.Plaintext;
-                        switch (propertyToEncrypt.EncryptionType)
-                        {
-                            case MdeEncryptionType.Deterministic:
-                                encryptionType = EncryptionType.Deterministic;
-                                break;
-                            case MdeEncryptionType.Randomized:
-                                encryptionType = EncryptionType.Randomized;
-                                break;
-                            default:
-                                Debug.Fail(string.Format("Invalid encryption type {0}", propertyToEncrypt.EncryptionType));
-                                break;
-                        }
-
-                        mdeEncryptionSettings = MdeEncryptionSettings.Create(mdeEncryptionSettings, encryptionType);
-                        return new CachedEncryptionSettings(mdeEncryptionSettings, mdeEncryptionSettings.EncryptionSettingTimeToLive);
-                    }
-                    catch
+                    EncryptionType encryptionType = EncryptionType.Plaintext;
+                    switch (propertyToEncrypt.EncryptionType)
                     {
-                        throw;
+                        case CosmosEncryptionType.Deterministic:
+                            encryptionType = EncryptionType.Deterministic;
+                            break;
+                        case CosmosEncryptionType.Randomized:
+                            encryptionType = EncryptionType.Randomized;
+                            break;
+                        default:
+                            Debug.Fail(string.Format("Invalid encryption type {0}. ", propertyToEncrypt.EncryptionType));
+                            break;
                     }
+
+                    mdeEncryptionSettings = MdeEncryptionSettings.Create(mdeEncryptionSettings, encryptionType);
+                    return new CachedEncryptionSettings(mdeEncryptionSettings, mdeEncryptionSettings.EncryptionSettingTimeToLive);
                 }
             }
 
             return null;
         }
 
-        public void SetEncryptionSettingForProperty(string propertyName, MdeEncryptionSettings mdeEncryptionSettings, DateTime expiryUtc)
+        internal void SetEncryptionSettingForProperty(string propertyName, MdeEncryptionSettings mdeEncryptionSettings, DateTime expiryUtc)
         {
             CachedEncryptionSettings cachedEncryptionSettings = new CachedEncryptionSettings(mdeEncryptionSettings, expiryUtc);
-            this.PerPropertyEncryptionSettingCache.Set(propertyName, cachedEncryptionSettings);
+            this.EncryptionSettingCacheByPropertyName.Set(propertyName, cachedEncryptionSettings);
         }
 
         internal static MdeEncryptionSettings Create(
