@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new InvalidOperationException($"Invalid {container} used for this operation.This operation requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new InvalidOperationException($"Invalid {container} used for this operation.This operation requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
 
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (container is not MdeContainer mdeContainer)
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             return new MdeEncryptionFeedIterator<T>(
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             if (container is not MdeContainer mdeContainer)
             {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             return new MdeEncryptionFeedIterator(
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForEncryptionContainer)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForEncryptionContainer)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
 
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForEncryptionContainer)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentOutOfRangeException($"{nameof(GetPermissionPropertiesForEncryptionContainer)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
 
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (container is not MdeContainer)
             {
-                throw new ArgumentOutOfRangeException($"{nameof(CreateQueryDefinition)} requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentOutOfRangeException($"{nameof(CreateQueryDefinition)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             return new EncryptionQueryDefinition(queryText, container);

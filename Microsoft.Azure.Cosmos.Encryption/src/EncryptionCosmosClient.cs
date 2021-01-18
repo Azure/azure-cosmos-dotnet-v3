@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             catch (CosmosException ex)
             {
-                throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys.Please make sure you have created the Client Encryption Keys:{ex.Message}.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             CachedClientEncryptionProperties cachedClientEncryptionProperties = new CachedClientEncryptionProperties(

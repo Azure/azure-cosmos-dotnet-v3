@@ -104,12 +104,12 @@
             // Create the Client Encryption Keys for Encrypting the configured Paths.
             await database.CreateClientEncryptionKeyAsync(
                     "key1",
-                    CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                     new EncryptionKeyWrapMetadata("key1", "metadata1"));
 
             await database.CreateClientEncryptionKeyAsync(
                     "key2",
-                    CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                    CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                     new EncryptionKeyWrapMetadata("key2", "metadata2"));
 
             // Configure the required Paths to be Encrypted with appropriate settings.
@@ -117,8 +117,8 @@
             {
                 Path = "/SubTotal",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
             // non primitive data type.Leaves get encrypted.
@@ -126,16 +126,16 @@
             {
                 Path = "/Items",
                 ClientEncryptionKeyId = "key2",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256
             };
 
             ClientEncryptionIncludedPath path3 = new ClientEncryptionIncludedPath()
             {
                 Path = "/OrderDate",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = MdeEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAEAes256CbcHmacSha256,
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
             // Create a container with the appropriate partition key definition (we choose the "AccountNumber" property here) and throughput (we choose 1000 here).
@@ -182,20 +182,18 @@
 
             // Query Demo.
             // Here SubTotal and OrderDate are encrypted properties.
-            QueryDefinition withEncryptedParameter = new QueryDefinition(
+            QueryDefinition withEncryptedParameter = containerWithEncryption.CreateQueryDefinition(
                     "SELECT * FROM c where c.SubTotal = @SubTotal AND c.OrderDate = @OrderDate");
 
-            await withEncryptedParameter.AddEncryptedParameterAsync(
+            await withEncryptedParameter.AddParameterAsync(
                     "@SubTotal",
                     order2.SubTotal,
-                    "/SubTotal",
-                    containerWithEncryption);
+                    "/SubTotal");
 
-            await withEncryptedParameter.AddEncryptedParameterAsync(
+            await withEncryptedParameter.AddParameterAsync(
                     "@OrderDate",
                     order2.OrderDate,
-                    "/OrderDate",
-                    containerWithEncryption);
+                    "/OrderDate");
 
             FeedIterator<SalesOrder> queryResponseIterator;
             queryResponseIterator = containerWithEncryption.GetItemQueryIterator<SalesOrder>(withEncryptedParameter);

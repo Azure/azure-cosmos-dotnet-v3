@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.LastIndexOf('/') != 0)
             {
-                throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(path)}");
+                throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(path)}. ");
             }
 
             if (string.IsNullOrWhiteSpace(name))
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (settings.EncryptionType == EncryptionType.Randomized)
                 {
-                    throw new ArgumentException($"Unsupported argument with Path: {path} for query.For executing queries on encrypted path requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                    throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
                 (MdeEncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = MdeEncryptionProcessor.Serialize(propertyValueToEncrypt);
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (cipherText == null)
                 {
-                    throw new InvalidOperationException($"{nameof(AddParameterAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}.");
+                    throw new InvalidOperationException($"{nameof(AddParameterAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
                 byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentException("Executing queries on encrypted path requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException("Executing queries on encrypted path requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
     }

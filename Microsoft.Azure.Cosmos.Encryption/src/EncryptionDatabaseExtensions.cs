@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentException("Creating a ClientEncryptionKey resource requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException("Creating a ClientEncryptionKey resource requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                throw new ArgumentException("Rewraping a ClientEncryptionKey requires the use of an encryption - enabled client.Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new ArgumentException("Rewraping a ClientEncryptionKey requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
 
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
