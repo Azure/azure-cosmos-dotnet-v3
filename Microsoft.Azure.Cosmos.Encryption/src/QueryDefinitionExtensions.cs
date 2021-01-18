@@ -26,6 +26,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <typeparam name="T"> Type of item.</typeparam>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> QueryDefinition with encrypted parameters. </returns>
+        /// <example>
+        /// This example shows how to pass in a QueryDefinition with Encryption support to AddParameterAsync
+        /// to encrypt the required Property for running Query on encrypted data.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
+        /// QueryDefinition withEncryptedParameter = containerWithEncryption.CreateQueryDefinition(
+        ///     "SELECT * FROM c where c.PropertyName = @PropertyValue");
+        /// await withEncryptedParameter.AddParameterAsync(
+        ///     "@PropertyName",
+        ///     PropertyValue,
+        ///     "/PropertyName");
+        /// ]]>
+        /// </code>
+        /// </example>
         public static async Task<QueryDefinition> AddParameterAsync<T>(
             this QueryDefinition queryDefinition,
             string name,

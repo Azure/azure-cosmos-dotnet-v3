@@ -22,6 +22,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="container">MdeContainer.</param>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        /// <example>
+        /// This example shows how to get a Container with Encryption support and Initialize it with InitializeEncryptionAsync which allows for pre-fetching the
+        /// encryption policy and the encryption keys for caching.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClient cosmosClient = new CosmosClient();
+        /// cosmosClient.WithEncryption();
+        /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
+        /// ]]>
+        /// </code>
+        /// </example>
         public static async Task<Container> InitializeEncryptionAsync(
             this Container container,
             CancellationToken cancellationToken = default)
@@ -69,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = this.container.ToMdeEncryptionStreamIterator<ToDoActivity>(linqQueryable);
+        /// FeedIterator setIterator = this.container.ToEncryptionStreamIterator<ToDoActivity>(linqQueryable);
         /// ]]>
         /// </code>
         /// </example>
@@ -101,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = this.container.ToMdeEncryptionStreamIterator<ToDoActivity>(linqQueryable);
+        /// FeedIterator setIterator = this.container.ToEncryptionStreamIterator<ToDoActivity>(linqQueryable);
         /// ]]>
         /// </code>
         /// </example>
@@ -182,6 +194,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="container"> The encryption container.</param>
         /// <param name="queryText"> A valid Cosmos SQL query "Select * from test t" </param>
         /// <returns> Microsoft.Azure.Cosmos.QueryDefinition </returns>
+        /// <example>
+        /// This example shows how to get a QueryDefinition with Encryption Support.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
+        /// QueryDefinition withEncryptedParameter = containerWithEncryption.CreateQueryDefinition(
+        ///     "SELECT * FROM c where c.PropertyName = @PropertyValue");
+        /// ]]>
+        /// </code>
+        /// </example>
         public static QueryDefinition CreateQueryDefinition(this Container container, string queryText)
         {
             if (string.IsNullOrEmpty(queryText))

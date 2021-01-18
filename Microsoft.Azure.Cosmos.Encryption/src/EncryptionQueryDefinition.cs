@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Net;
 
     internal sealed class EncryptionQueryDefinition : QueryDefinition
     {

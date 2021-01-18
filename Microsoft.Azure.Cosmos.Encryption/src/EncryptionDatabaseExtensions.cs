@@ -23,6 +23,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="encryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        /// <example>
+        /// This example shows how to create a new Client Encryption Key.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ClientEncryptionKeyResponse response = await this.cosmosDatabase.CreateClientEncryptionKeyAsync(
+        ///     "testKey",
+        ///     CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+        ///     new EncryptionKeyWrapMetadata("metadataName", "MetadataValue"));
+        /// ]]>
+        /// </code>
+        /// </example>
         public static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
@@ -87,6 +99,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="newEncryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        /// <example>
+        /// This example shows how to rewrap a Client Encryption Key.
+        ///
+        /// <code language="c#">
+        /// <![CDATA[
+        /// ClientEncryptionKeyResponse response = await this.cosmosDatabase.RewrapClientEncryptionKeyAsync(
+        ///     "keyToRewrap",
+        ///     new EncryptionKeyWrapMetadata("metadataName", "UpdatedMetadataValue")));
+        /// ]]>
+        /// </code>
+        /// </example>
         public static async Task<ClientEncryptionKeyResponse> RewrapClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
