@@ -200,11 +200,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
                                     await this.EncryptAndSerializePropertyAsync(
-                                            null,
-                                            jProperty.Value,
-                                            settings,
-                                            diagnosticsContext,
-                                            cancellationToken);
+                                        itemJObj,
+                                        jProperty.Value,
+                                        settings,
+                                        diagnosticsContext,
+                                        cancellationToken);
                                 }
                                 else
                                 {
@@ -308,11 +308,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 await this.EncryptAndSerializePropertyAsync(
-                                itemJObj,
-                                propertyValue,
-                                settings,
-                                diagnosticsContext,
-                                cancellationToken);
+                    itemJObj,
+                    propertyValue,
+                    settings,
+                    diagnosticsContext,
+                    cancellationToken);
 
                 pathsEncrypted.Add(pathToEncrypt.Path);
             }
@@ -389,10 +389,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     else
                     {
                         jProperty.Value = await this.DecryptAndDeserializeValueAsync(
-                                    jProperty.Value,
-                                    settings,
-                                    diagnosticsContext,
-                                    cancellationToken);
+                            jProperty.Value,
+                            settings,
+                            diagnosticsContext,
+                            cancellationToken);
                     }
                 }
             }
@@ -405,10 +405,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         for (int i = 0; i < propertyValue.Count(); i++)
                         {
                             propertyValue[i] = await this.DecryptAndDeserializeValueAsync(
-                                         propertyValue[i],
-                                         settings,
-                                         diagnosticsContext,
-                                         cancellationToken);
+                                propertyValue[i],
+                                settings,
+                                diagnosticsContext,
+                                cancellationToken);
                         }
                     }
                     else
@@ -420,20 +420,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
                                     await this.DecryptAndDeserializePropertyAsync(
-                                           itemJObj,
-                                           settings,
-                                           propertyName,
-                                           jProperty.Value,
-                                           diagnosticsContext,
-                                           cancellationToken);
+                                        itemJObj,
+                                        settings,
+                                        propertyName,
+                                        jProperty.Value,
+                                        diagnosticsContext,
+                                        cancellationToken);
                                 }
                                 else
                                 {
                                     jProperty.Value = await this.DecryptAndDeserializeValueAsync(
-                                             jProperty.Value,
-                                             settings,
-                                             diagnosticsContext,
-                                             cancellationToken);
+                                        jProperty.Value,
+                                        settings,
+                                        diagnosticsContext,
+                                        cancellationToken);
                                 }
                             }
                         }
@@ -443,10 +443,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             else
             {
                 itemJObj.Property(propertyName).Value = await this.DecryptAndDeserializeValueAsync(
-                                     itemJObj.Property(propertyName).Value,
-                                     settings,
-                                     diagnosticsContext,
-                                     cancellationToken);
+                    itemJObj.Property(propertyName).Value,
+                    settings,
+                    diagnosticsContext,
+                    cancellationToken);
 
                 await Task.Yield();
                 return;
@@ -472,12 +472,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     }
 
                     await this.DecryptAndDeserializePropertyAsync(
-                            document,
-                            settings,
-                            propertyName,
-                            propertyValue,
-                            diagnosticsContext,
-                            cancellationToken);
+                        document,
+                        settings,
+                        propertyName,
+                        propertyValue,
+                        diagnosticsContext,
+                        cancellationToken);
 
                     pathsDecrypted.Add(path.Path);
                 }
@@ -513,9 +513,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject itemJObj = this.RetrieveItem(input);
 
             await this.DecryptObjectAsync(
-                    itemJObj,
-                    diagnosticsContext,
-                    cancellationToken);
+                itemJObj,
+                diagnosticsContext,
+                cancellationToken);
 
             input.Dispose();
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
@@ -536,9 +536,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             await this.DecryptObjectAsync(
-                         document,
-                         diagnosticsContext,
-                         cancellationToken);
+                document,
+                diagnosticsContext,
+                cancellationToken);
 
             return document;
         }
