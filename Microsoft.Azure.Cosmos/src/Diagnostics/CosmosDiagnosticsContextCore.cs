@@ -200,9 +200,9 @@ namespace Microsoft.Azure.Cosmos
             // while the enumerator is being used.
             lock (this.ContextList)
             {
-                for (int i = 0; i < this.ContextList.Count; i++)
+                foreach (CosmosDiagnosticsInternal context in this.ContextList)
                 {
-                    yield return this.ContextList[i];
+                    yield return context;
                 }
             }
         }
