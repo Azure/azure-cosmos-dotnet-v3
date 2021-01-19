@@ -283,7 +283,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-            List<string> pathsEncrypted = new List<string>();
 
             foreach (ClientEncryptionIncludedPath pathToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
             {
@@ -313,8 +312,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     settings,
                     diagnosticsContext,
                     cancellationToken);
-
-                pathsEncrypted.Add(pathToEncrypt.Path);
             }
 
             input.Dispose();
@@ -491,8 +488,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
-
             if (input == null)
             {
                 return input;
@@ -500,6 +495,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             Debug.Assert(input.CanSeek);
             Debug.Assert(diagnosticsContext != null);
+
+            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
             if (this.ClientEncryptionPolicy == null)
             {
