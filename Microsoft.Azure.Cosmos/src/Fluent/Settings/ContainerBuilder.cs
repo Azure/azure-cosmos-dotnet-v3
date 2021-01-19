@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private UniqueKeyPolicy uniqueKeyPolicy;
         private ConflictResolutionPolicy conflictResolutionPolicy;
         private ChangeFeedPolicy changeFeedPolicy;
+        private ClientEncryptionPolicy clientEncryptionPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -77,6 +78,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 this,
                 retention,
                 (changeFeedPolicy) => this.AddChangeFeedPolicy(changeFeedPolicy));
+        }
+
+        /// <summary>
+        /// Defines the ClientEncryptionPolicy for Azure Cosmos container
+        /// </summary>
+        /// <returns>An instance of <see cref="ClientEncryptionPolicyDefinition"/>.</returns>
+#if PREVIEW
+        public 
+#else
+        internal
+#endif
+            ClientEncryptionPolicyDefinition WithClientEncryptionPolicy()
+        {
+            return new ClientEncryptionPolicyDefinition(
+                this,
+                (clientEncryptionPolicy) => this.AddClientEncryptionPolicy(clientEncryptionPolicy));
         }
 
         /// <summary>
@@ -180,6 +197,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.ChangeFeedPolicy = this.changeFeedPolicy;
             }
 
+            if (this.clientEncryptionPolicy != null)
+            {
+                containerProperties.ClientEncryptionPolicy = this.clientEncryptionPolicy;
+            }
+
             return containerProperties;
         }
 
@@ -208,6 +230,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private void AddChangeFeedPolicy(ChangeFeedPolicy changeFeedPolicy)
         {
             this.changeFeedPolicy = changeFeedPolicy;
+        }
+
+        private void AddClientEncryptionPolicy(ClientEncryptionPolicy clientEncryptionPolicy)
+        {
+            this.clientEncryptionPolicy = clientEncryptionPolicy;
         }
     }
 }
