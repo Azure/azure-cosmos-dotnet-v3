@@ -18,9 +18,11 @@ namespace Microsoft.Azure.Cosmos
     /// <see cref="ItemBatchOperationContext"/>
     internal sealed class BulkExecutionRetryPolicy : IDocumentClientRetryPolicy
     {
+        private const int MaxRetryOn410 = 10;
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
         private readonly OperationType operationType;
         private readonly ContainerInternal container;
+        private int retriesOn410 = 0;
 
         public BulkExecutionRetryPolicy(
             ContainerInternal container,
@@ -92,6 +94,13 @@ namespace Microsoft.Azure.Cosmos
         {
             if (statusCode == HttpStatusCode.Gone)
             {
+                this.retriesOn410++;
+
+                if (this.retriesOn410 > MaxRetryOn410)
+                {
+                    return ShouldRetryResult.NoRetry();
+                }
+
                 if (subStatusCode == SubStatusCodes.PartitionKeyRangeGone
                     || subStatusCode == SubStatusCodes.CompletingSplit
                     || subStatusCode == SubStatusCodes.CompletingPartitionMigration)
