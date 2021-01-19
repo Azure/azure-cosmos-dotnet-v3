@@ -298,5 +298,44 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions,
                 (diagnostics, trace) => base.UpsertUserAsync(diagnostics, id, requestOptions, trace, cancellationToken));
         }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override ClientEncryptionKey GetClientEncryptionKey(string id)
+        {
+            return base.GetClientEncryptionKey(id);
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
+                QueryDefinition queryDefinition,
+                string continuationToken = null,
+                QueryRequestOptions requestOptions = null)  
+        {
+            return base.GetClientEncryptionKeyQueryIterator(queryDefinition, continuationToken, requestOptions);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+            Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateClientEncryptionKeyAsync),
+                requestOptions,
+                (diagnostics, trace) => base.CreateClientEncryptionKeyAsync(diagnostics, clientEncryptionKeyProperties, requestOptions, cancellationToken));
+        }
     }
 }
