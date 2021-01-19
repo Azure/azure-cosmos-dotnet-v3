@@ -20,12 +20,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         /// <summary>
         /// Capacity of the queue.
         /// </summary>
-        public int Capacity { get; }
+        public int Capacity => this.buffer.Length;
 
         /// <summary>
         /// True if adding an element will cause one to be evicted.
         /// </summary>
-        public bool Full => this.Increment(this.tail) == this.head;
+        public bool Full => this.GetNextIndex(this.tail) == this.head;
 
         /// <summary>
         /// True when the queue is empty.
@@ -40,7 +40,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             this.head = 0;
             this.tail = 0;
-            this.Capacity = capacity;
             this.buffer = new T[capacity];
         }
 
@@ -74,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
 
             this.buffer[this.tail] = element;
-            this.tail = this.Increment(this.tail);
+            this.tail = this.GetNextIndex(this.tail);
         }
 
         /// <summary>
@@ -89,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
         }
 
-        private int Increment(int index)
+        private int GetNextIndex(int index)
         {
             return (index + 1) % this.Capacity;
         }
@@ -100,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             if (!this.Empty)
             {
                 element = this.buffer[this.head];
-                this.head = this.Increment(this.head);
+                this.head = this.GetNextIndex(this.head);
                 return true;
             }
 
@@ -118,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             if (!this.Empty)
             {
-                for (int i = this.head; i != this.tail; i = this.Increment(i))
+                for (int i = this.head; i != this.tail; i = this.GetNextIndex(i))
                 {
                     yield return this.buffer[i];
                 }

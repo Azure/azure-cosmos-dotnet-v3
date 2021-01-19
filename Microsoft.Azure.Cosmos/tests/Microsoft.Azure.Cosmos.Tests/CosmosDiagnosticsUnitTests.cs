@@ -27,6 +27,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosDiagnosticsUnitTests
     {
+        [TestCleanup]
+        public void Cleanup()
+        {
+            typeof(CosmosDiagnosticsContextCore).TypeInitializer.Invoke(null, null);
+        }
+
         [TestMethod]
         public void ValidateActivityScope()
         {
@@ -273,10 +279,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void ValidateDiagnosticsAppendContextConcurrentCalls()
+        [DataRow(10, 100000, 1000001, DisplayName = "Unbounded")]
+        [DataRow(10, 100000, 256, DisplayName = "Bounded")]
+        public void ValidateDiagnosticsAppendContextConcurrentCalls(int threadCount, int itemCountPerThread, int expectedCount)
         {
-            int threadCount = 10;
-            int itemCountPerThread = 100000;
+            CosmosDiagnosticsContextCore.Capacity = () => expectedCount;
+
             ConcurrentStack<Exception> concurrentStack = new ConcurrentStack<Exception>();
             CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
              nameof(ValidateDiagnosticsAppendContext),
@@ -309,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(0, concurrentStack.Count, $"Exceptions count: {concurrentStack.Count} Exceptions: {string.Join(';', concurrentStack)}");
             int count = cosmosDiagnostics.Count();
-            Assert.AreEqual((threadCount * itemCountPerThread) + 1, count);
+            Assert.AreEqual(expectedCount, count);
         }
 
         private void AddDiagnosticsInBackgroundLoop(
