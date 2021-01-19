@@ -458,7 +458,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            List<string> pathsDecrypted = new List<string>();
             foreach (ClientEncryptionIncludedPath path in this.ClientEncryptionPolicy.IncludedPaths)
             {
                 if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
@@ -478,8 +477,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         propertyValue,
                         diagnosticsContext,
                         cancellationToken);
-
-                    pathsDecrypted.Add(path.Path);
                 }
             }
         }
