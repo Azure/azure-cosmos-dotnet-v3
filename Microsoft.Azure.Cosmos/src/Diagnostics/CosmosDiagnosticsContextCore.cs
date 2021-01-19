@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Detailed view of all the operations.
         /// </summary>
-        private List<CosmosDiagnosticsInternal> ContextList { get; }
+        private BoundedList<CosmosDiagnosticsInternal> ContextList { get; }
 
         private int totalResponseCount = 0;
         private int failedResponseCount = 0;
@@ -49,7 +49,8 @@ namespace Microsoft.Azure.Cosmos
             this.UserAgent = userAgentString ?? throw new ArgumentNullException(nameof(userAgentString));
             this.OperationName = operationName ?? throw new ArgumentNullException(nameof(operationName));
             this.StartUtc = DateTime.UtcNow;
-            this.ContextList = new List<CosmosDiagnosticsInternal>();
+            _ = BoundedList<CosmosDiagnosticsInternal>.TryCreate(256, out BoundedList<CosmosDiagnosticsInternal> boundedList);
+            this.ContextList = boundedList;
             this.Diagnostics = new CosmosDiagnosticsCore(this);
             this.overallScope = new CosmosDiagnosticScope("Overall");
         }
