@@ -68,52 +68,55 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken,
                 false);
 
-            foreach (ClientEncryptionIncludedPath propertyToEncrypt in clientEncryptionPolicy.IncludedPaths)
+            if (clientEncryptionPolicy != null)
             {
-                if (string.Equals(propertyToEncrypt.Path.Substring(1), propertyName))
+                foreach (ClientEncryptionIncludedPath propertyToEncrypt in clientEncryptionPolicy.IncludedPaths)
                 {
-                    CachedClientEncryptionProperties cachedClientEncryptionProperties = await encryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                            clientEncryptionKeyId: propertyToEncrypt.ClientEncryptionKeyId,
-                            container: encryptionProcessor.Container,
-                            cancellationToken: cancellationToken,
-                            shouldForceRefresh: shouldForceRefresh);
-
-                    ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
-
-                    KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                               encryptionProcessor.EncryptionKeyStoreProvider);
-
-                    ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                               propertyToEncrypt.ClientEncryptionKeyId,
-                               keyEncryptionKey,
-                               clientEncryptionKeyProperties.WrappedDataEncryptionKey);
-
-                    EncryptionSettings encryptionSettings = new EncryptionSettings
+                    if (string.Equals(propertyToEncrypt.Path.Substring(1), propertyName))
                     {
-                        // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
-                        EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
-                        ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
-                        DataEncryptionKey = protectedDataEncryptionKey,
-                    };
+                        CachedClientEncryptionProperties cachedClientEncryptionProperties = await encryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                                clientEncryptionKeyId: propertyToEncrypt.ClientEncryptionKeyId,
+                                container: encryptionProcessor.Container,
+                                cancellationToken: cancellationToken,
+                                shouldForceRefresh: shouldForceRefresh);
 
-                    EncryptionType encryptionType = EncryptionType.Plaintext;
-                    switch (propertyToEncrypt.EncryptionType)
-                    {
-                        case CosmosEncryptionType.Deterministic:
-                            encryptionType = EncryptionType.Deterministic;
-                            break;
-                        case CosmosEncryptionType.Randomized:
-                            encryptionType = EncryptionType.Randomized;
-                            break;
-                        default:
-                            Debug.Fail(string.Format("Invalid encryption type {0}. ", propertyToEncrypt.EncryptionType));
-                            break;
+                        ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
+
+                        KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                                   clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
+                                   encryptionProcessor.EncryptionKeyStoreProvider);
+
+                        ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
+                                   propertyToEncrypt.ClientEncryptionKeyId,
+                                   keyEncryptionKey,
+                                   clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+                        EncryptionSettings encryptionSettings = new EncryptionSettings
+                        {
+                            // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
+                            EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
+                            ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
+                            DataEncryptionKey = protectedDataEncryptionKey,
+                        };
+
+                        EncryptionType encryptionType = EncryptionType.Plaintext;
+                        switch (propertyToEncrypt.EncryptionType)
+                        {
+                            case CosmosEncryptionType.Deterministic:
+                                encryptionType = EncryptionType.Deterministic;
+                                break;
+                            case CosmosEncryptionType.Randomized:
+                                encryptionType = EncryptionType.Randomized;
+                                break;
+                            default:
+                                Debug.Fail(string.Format("Invalid encryption type {0}. ", propertyToEncrypt.EncryptionType));
+                                break;
+                        }
+
+                        encryptionSettings = EncryptionSettings.Create(encryptionSettings, encryptionType);
+                        return new CachedEncryptionSettings(encryptionSettings, encryptionSettings.EncryptionSettingTimeToLive);
                     }
-
-                    encryptionSettings = EncryptionSettings.Create(encryptionSettings, encryptionType);
-                    return new CachedEncryptionSettings(encryptionSettings, encryptionSettings.EncryptionSettingTimeToLive);
                 }
             }
 

@@ -775,6 +775,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
 
+            QueryDefinition withEncryptedParameter = encryptionContainer.CreateQueryDefinition(
+                    "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_StringFormat",
+                    testDoc.Sensitive_StringFormat,
+                    "/Sensitive_StringFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_IntFormat",
+                    testDoc.Sensitive_IntFormat,
+                    "/Sensitive_IntFormat");
+
+            TestDoc expectedDoc = new TestDoc(testDoc);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                encryptionContainer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
+
             await encryptionContainer.DeleteContainerAsync();
         }
 
