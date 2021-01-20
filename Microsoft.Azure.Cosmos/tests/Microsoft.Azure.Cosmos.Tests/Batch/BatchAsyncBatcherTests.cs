@@ -203,6 +203,59 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
+        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWith413
+            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+            {
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+                ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
+                int index = 0;
+                foreach (ItemBatchOperation operation in request.Operations)
+                {
+                    if (index == 0)
+                    {
+                        // First operation is fine
+                        results.Add(
+                            new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                            {
+                                ETag = operation.Id
+                            });
+                    }
+                    else
+                    {
+                        // second operation is too big
+                        results.Add(
+                            new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge)
+                            {
+                                ETag = operation.Id
+                            });
+                    }
+
+                    arrayOperations[index++] = operation;
+                }
+
+                MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+                SinglePartitionKeyServerBatchRequest batchRequest = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                    partitionKey: null,
+                    operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                    serializerCore: MockCosmosUtil.Serializer,
+                cancellationToken: cancellationToken);
+
+                ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)207)
+                {
+                    Content = responseContent
+                };
+
+                TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
+                    responseMessage,
+                    batchRequest,
+                    MockCosmosUtil.Serializer,
+                    true,
+                    CancellationToken.None);
+
+                return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
+            };
+
         // The response will include all but 2 operation responses
         private BatchAsyncBatcherExecuteDelegate ExecutorWithLessResponses
             = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
@@ -448,12 +501,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOnSplit()
         {
-            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
+                OperationType.Read,
                 new ResourceThrottleRetryPolicy(1));
 
-            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
+                OperationType.Read,
                 new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
@@ -477,12 +532,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOnCompletingSplit()
         {
-            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
+                OperationType.Read,
                 new ResourceThrottleRetryPolicy(1));
 
-            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
+                OperationType.Read,
                 new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
@@ -506,12 +563,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task RetrierGetsCalledOnCompletingPartitionMigration()
         {
-            IDocumentClientRetryPolicy retryPolicy1 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
+                OperationType.Read,
                 new ResourceThrottleRetryPolicy(1));
 
-            IDocumentClientRetryPolicy retryPolicy2 = new BulkPartitionKeyRangeGoneRetryPolicy(
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
                 GetSplitEnabledContainer(),
+                OperationType.Read,
                 new ResourceThrottleRetryPolicy(1));
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
@@ -550,6 +609,64 @@ namespace Microsoft.Azure.Cosmos.Tests
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
             retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
             retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task RetrierGetsCalledOn413_OnRead()
+        {
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
+                GetSplitEnabledContainer(),
+                OperationType.Read,
+                new ResourceThrottleRetryPolicy(1));
+
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
+                GetSplitEnabledContainer(),
+                OperationType.Read,
+                new ResourceThrottleRetryPolicy(1));
+
+            ItemBatchOperation operation1 = this.CreateItemBatchOperation();
+            ItemBatchOperation operation2 = this.CreateItemBatchOperation();
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
+
+            Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
+
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWith413, retryDelegate.Object);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
+            await batchAsyncBatcher.DispatchAsync(metric);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task RetrierGetsCalledOn413_OnWrite()
+        {
+            IDocumentClientRetryPolicy retryPolicy1 = new BulkExecutionRetryPolicy(
+                GetSplitEnabledContainer(),
+                OperationType.Create,
+                new ResourceThrottleRetryPolicy(1));
+
+            IDocumentClientRetryPolicy retryPolicy2 = new BulkExecutionRetryPolicy(
+                GetSplitEnabledContainer(),
+                OperationType.Create,
+                new ResourceThrottleRetryPolicy(1));
+
+            ItemBatchOperation operation1 = this.CreateItemBatchOperation();
+            ItemBatchOperation operation2 = this.CreateItemBatchOperation();
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
+
+            Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
+
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWith413, retryDelegate.Object);
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
+            Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
+            await batchAsyncBatcher.DispatchAsync(metric);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         private static ContainerInternal GetSplitEnabledContainer()
