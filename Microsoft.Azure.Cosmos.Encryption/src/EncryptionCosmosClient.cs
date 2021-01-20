@@ -124,13 +124,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<DatabaseResponse> databaseResponse = this.cosmosClient.CreateDatabaseAsync(
+            EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
+                await this.cosmosClient.CreateDatabaseAsync(
                 id,
                 throughput,
                 requestOptions,
-                cancellationToken);
+                cancellationToken),
+                this);
 
-            EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(await databaseResponse, this);
             return encryptionDatabaseResponse;
         }
 
