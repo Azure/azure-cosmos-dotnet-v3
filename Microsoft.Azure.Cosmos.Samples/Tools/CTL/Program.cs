@@ -30,7 +30,7 @@ namespace CosmosCTL
 
                 using (logger.BeginScope(config.WorkloadType))
                 {
-                    IMetricsRoot metrics = ConfigureReporting(config);
+                    IMetricsRoot metrics = ConfigureReporting(config, logger);
 
                     ICTLScenario scenario = CreateScenario(config.WorkloadType);
 
@@ -75,10 +75,13 @@ namespace CosmosCTL
             }
         }
 
-        private static IMetricsRoot ConfigureReporting(CTLConfig config)
+        private static IMetricsRoot ConfigureReporting(
+            CTLConfig config,
+            ILogger logger)
         {
             if (!string.IsNullOrEmpty(config.GraphiteEndpoint))
             {
+                logger.LogInformation($"Using Graphite server at {config.GraphiteEndpoint}:{config.GraphitePort}");
                 return new MetricsBuilder()
                     .Report.ToGraphite(
                         options => {

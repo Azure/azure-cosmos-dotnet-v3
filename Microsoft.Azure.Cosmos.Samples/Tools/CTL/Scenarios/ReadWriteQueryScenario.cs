@@ -97,12 +97,12 @@ namespace CosmosCTL
             CancellationToken cancellationToken)
         {
             logger.LogInformation("Initializing counters and metrics.");
-            CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations" };
-            CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations" };
-            CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations" };
-            CounterOptions writeFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations" };
-            CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations" };
-            CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations" };
+            CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
+            CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
+            CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
+            CounterOptions writeFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
+            CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
+            CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
 
             TimerOptions readLatencyTimer = new TimerOptions
             {
@@ -110,6 +110,7 @@ namespace CosmosCTL
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
+                Context = nameof(WorkloadType.ReadWriteQuery),
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
@@ -119,6 +120,7 @@ namespace CosmosCTL
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
+                Context = nameof(WorkloadType.ReadWriteQuery),
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
@@ -128,6 +130,7 @@ namespace CosmosCTL
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
+                Context = nameof(WorkloadType.ReadWriteQuery),
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
