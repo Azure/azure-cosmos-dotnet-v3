@@ -370,6 +370,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 pageSize: inputParameters.MaxItemCount,
                 partitionKey: inputParameters.PartitionKey,
                 maxConcurrency: inputParameters.MaxConcurrency,
+                isStreamingOperation: true,
                 cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }

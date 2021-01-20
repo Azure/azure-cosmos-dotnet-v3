@@ -142,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
+                    isStreamingOperation: true,
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]
                         {
@@ -168,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     createPartitionRangeEnumerator: createEnumerator,
                     comparer: PartitionRangePageAsyncEnumeratorComparer.Singleton,
                     maxConcurrency: 10,
+                    isStreamingOperation: true,
                     cancellationToken: default,
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]

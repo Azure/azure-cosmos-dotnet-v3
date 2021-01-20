@@ -139,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             Cosmos.PartitionKey? partitionKey,
             int pageSize,
             int maxConcurrency,
+            bool isStreamingOperation,
             CosmosElement continuationToken,
             CancellationToken cancellationToken)
         {
@@ -170,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize, partitionKey, cancellationToken),
                 comparer: Comparer.Singleton,
                 maxConcurrency,
+                isStreamingOperation,
                 state: state,
                 cancellationToken: cancellationToken);
 

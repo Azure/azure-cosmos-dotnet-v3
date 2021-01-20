@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: 10,
                 partitionKey: null,
                 maxConcurrency: 10,
+                isStreamingOperation: true,
                 cancellationToken: default,
                 continuationToken: null);
             Assert.IsTrue(monadicCreate.Succeeded);
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: 10,
                 partitionKey: null,
                 maxConcurrency: 10,
+                isStreamingOperation: true,
                 cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
@@ -71,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: 10,
                 partitionKey: null,
                 maxConcurrency: 10,
+                isStreamingOperation: true,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
             Assert.IsTrue(monadicCreate.Failed);
@@ -89,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: 10,
                 partitionKey: null,
                 maxConcurrency: 10,
+                isStreamingOperation: true,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
             Assert.IsTrue(monadicCreate.Failed);
@@ -111,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: 10,
                 partitionKey: null,
                 maxConcurrency: 10,
+                isStreamingOperation: true,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { ParallelContinuationToken.ToCosmosElement(token) }));
             Assert.IsTrue(monadicCreate.Succeeded);
@@ -140,6 +145,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 pageSize: 10,
                 partitionKey: null,
                 maxConcurrency: 10,
+                isStreamingOperation: true,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(
                     new List<CosmosElement>()
@@ -172,6 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     pageSize: 10,
                     partitionKey: null,
                     maxConcurrency: 10,
+                    isStreamingOperation: true,
                     cancellationToken: default,
                     continuationToken: continuationToken);
                 Assert.IsTrue(monadicQueryPipelineStage.Succeeded);

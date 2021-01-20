@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
             else
             {
+                bool isStreamingOperation = !(queryInfo.HasAggregates || queryInfo.HasGroupBy);
                 monadicCreatePipelineStage = (continuationToken, cancellationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
@@ -87,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     pageSize: pageSize,
                     partitionKey: partitionKey,
                     maxConcurrency: maxConcurrency,
+                    isStreamingOperation: isStreamingOperation,
                     continuationToken: continuationToken,
                     cancellationToken: cancellationToken);
             }

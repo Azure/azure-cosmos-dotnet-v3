@@ -108,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                     cancellationToken),
                 comparer: comparer,
                 maxConcurrency: default,
+                isStreamingOperation: true,
                 cancellationToken,
                 crossFeedRangeState);
 

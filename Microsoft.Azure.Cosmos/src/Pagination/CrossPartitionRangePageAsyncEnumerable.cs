@@ -18,12 +18,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer;
         private readonly IFeedRangeProvider feedRangeProvider;
         private readonly int maxConcurrency;
+        private readonly bool isStreamingOperation;
 
         public CrossPartitionRangePageAsyncEnumerable(
             IFeedRangeProvider feedRangeProvider,
             CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator,
             IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             int maxConcurrency,
+            bool isStreamingOperation,
             CrossFeedRangeState<TState> state = default)
         {
             this.feedRangeProvider = feedRangeProvider ?? throw new ArgumentNullException(nameof(comparer));
@@ -31,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.comparer = comparer ?? throw new ArgumentNullException(nameof(comparer));
             this.state = state;
             this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException(nameof(maxConcurrency)) : maxConcurrency;
+            this.isStreamingOperation = isStreamingOperation;
         }
 
         public IAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
@@ -42,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.createPartitionRangeEnumerator,
                 this.comparer,
                 this.maxConcurrency,
+                this.isStreamingOperation,
                 cancellationToken,
                 this.state);
         }
