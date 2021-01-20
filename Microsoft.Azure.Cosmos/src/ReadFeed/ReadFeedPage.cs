@@ -7,7 +7,15 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
-    internal sealed class ReadFeedPage
+    #if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif 
+        sealed class ReadFeedPage
     {
         public ReadFeedPage(
             CosmosArray documents,

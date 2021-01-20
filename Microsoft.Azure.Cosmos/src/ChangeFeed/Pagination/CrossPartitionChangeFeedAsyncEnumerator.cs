@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -152,6 +153,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     documentContainer,
                     changeFeedRequestOptions.PageSizeHint.GetValueOrDefault(int.MaxValue),
                     changeFeedMode,
+                    changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
                     cancellationToken),
                 comparer: default /* this uses a regular queue instead of prioirty queue */,
                 maxConcurrency: default,
@@ -169,11 +171,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             IChangeFeedDataSource changeFeedDataSource,
             int pageSize,
             ChangeFeedMode changeFeedMode,
+            JsonSerializationFormat? jsonSerializationFormat,
             CancellationToken cancellationToken) => (FeedRangeInternal range, ChangeFeedState state) => new ChangeFeedPartitionRangePageAsyncEnumerator(
                 changeFeedDataSource,
                 range,
                 pageSize,
                 changeFeedMode,
+                jsonSerializationFormat,
                 state,
                 cancellationToken);
     }
