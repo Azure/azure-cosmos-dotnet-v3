@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
+    using System;
     using System.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -14,24 +15,24 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         {
             foreach (int x in new[] {-512, -256, -1, 0 })
             {
-                Assert.IsFalse(BoundedList<int>.TryCreate(x, out _));
+                Assert.ThrowsException<ArgumentOutOfRangeException>(() => new BoundedList<int>(x));
             }
 
             foreach (int x in new[] { 1, 2, 8, 256 })
             {
-                Assert.IsTrue(BoundedList<int>.TryCreate(x, out _));
+                Assert.IsNotNull(new BoundedList<int>(x));
             }
         }
 
         [TestMethod]
-        [DataRow(   3,   21, DisplayName = "Extra small")]
-        [DataRow(   5,   25, DisplayName = "Small")]
-        [DataRow(  64,  256, DisplayName = "Medium")]
-        [DataRow( 256, 1024, DisplayName = "Large")]
-        [DataRow(2048, 4096, DisplayName = "Extra large")]
+        [DataRow(    3,    21, DisplayName = "Extra small")]
+        [DataRow(    5,    25, DisplayName = "Small")]
+        [DataRow(  256,  1024, DisplayName = "Medium")]
+        [DataRow( 5120, 10240, DisplayName = "Large")]
+        [DataRow(10240, 20480, DisplayName = "Large")]
         public void BasicTests(int capacity, int numElements)
         {
-            Assert.IsTrue(BoundedList<int>.TryCreate(capacity, out BoundedList<int> boundedList));
+            BoundedList<int> boundedList = new BoundedList<int>(capacity);
 
             for (int i = 0; i < numElements; ++i)
             {

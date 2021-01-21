@@ -36,29 +36,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         /// Initializes a new instance of the <see cref="CircularQueue{T}"/> class.
         /// </summary>
         /// <param name="capacity"></param>
-        private CircularQueue(int capacity)
+        public CircularQueue(int capacity)
         {
-            this.head = 0;
-            this.tail = 0;
-            this.buffer = new T[capacity];
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CircularQueue{T}"/> class.
-        /// </summary>
-        /// <param name="capacity"></param>
-        /// <param name="queue">the newly created queue</param>
-        /// <returns>True if successful, false otherwise</returns>
-        public static bool TryCreate(int capacity, out CircularQueue<T> queue)
-        {
-            queue = null;
-            if (capacity > 0)
+            if (capacity < 1)
             {
-                queue = new CircularQueue<T>(capacity + 1);
-                return true;
+                throw new ArgumentOutOfRangeException("circular queue capacity must be positive");
             }
 
-            return false;
+            this.head = 0;
+            this.tail = 0;
+            this.buffer = new T[capacity + 1]; // one empty slot
         }
 
         /// <summary>
@@ -96,14 +83,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         private bool TryPop(out T element)
         {
             element = default;
-            if (!this.Empty)
-            {
-                element = this.buffer[this.head];
-                this.head = this.GetNextIndex(this.head);
-                return true;
-            }
+            if (this.Empty) return false;
 
-            return false;
+            element = this.buffer[this.head];
+            this.head = this.GetNextIndex(this.head);
+            return true;
         }
 
         /// <inheritdoc/>

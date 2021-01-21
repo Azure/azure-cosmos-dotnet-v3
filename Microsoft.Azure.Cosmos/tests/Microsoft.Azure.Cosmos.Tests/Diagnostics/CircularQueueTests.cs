@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         [TestMethod]
         public void BasicTests()
         {
-            Assert.IsTrue(CircularQueue<int>.TryCreate(4, out CircularQueue<int> queue));
+            CircularQueue<int> queue = new CircularQueue<int>(4);
 
             Assert.IsTrue(queue.Empty);
             Assert.IsFalse(queue.Full);

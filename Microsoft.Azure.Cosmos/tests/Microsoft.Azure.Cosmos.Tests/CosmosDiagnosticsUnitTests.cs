@@ -230,22 +230,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (cosmosDiagnostics.GetOverallScope())
             {
-                // Test all the different operations on diagnostics context
-                using (cosmosDiagnostics.CreateScope("ValidateScope"))
-                {
-                    Thread.Sleep(TimeSpan.FromSeconds(2));
-                }
-
-                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
-                    nameof(ValidateDiagnosticsAppendContext),
-                    "MyCustomUserAgentString");
-                cosmosDiagnostics2.GetOverallScope().Dispose();
-
-                using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
-                {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(100));
-                }
-
                 bool insertIntoDiagnostics1 = true;
                 bool isInsertDiagnostics = false;
                 // Start a background thread and ensure that no exception occurs even if items are getting added to the context
@@ -257,13 +241,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                         cpuLoadHistory: new Documents.Rntbd.CpuLoadHistory(new List<Documents.Rntbd.CpuLoad>().AsReadOnly(), TimeSpan.FromSeconds(1)));
                     while (insertIntoDiagnostics1)
                     {
+                        Task.Delay(TimeSpan.FromMilliseconds(1)).Wait();
                         cosmosDiagnostics.AddDiagnosticsInternal(cosmosSystemInfo);
                     }
                 });
 
                 while (!isInsertDiagnostics)
                 {
-                    Task.Delay(TimeSpan.FromMilliseconds(10)).Wait();
+                    Task.Delay(TimeSpan.FromMilliseconds(5)).Wait();
+                }
+
+                // Test all the different operations on diagnostics context
+                using (cosmosDiagnostics.CreateScope("ValidateScope"))
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(3));
+                }
+
+                cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
+                    nameof(ValidateDiagnosticsAppendContext),
+                    "MyCustomUserAgentString");
+                cosmosDiagnostics2.GetOverallScope().Dispose();
+
+                using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
+                {
+                    Thread.Sleep(TimeSpan.FromMilliseconds(3));
                 }
 
                 cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
@@ -280,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [DataRow(10, 100000, 1000001, DisplayName = "Unbounded")]
-        [DataRow(10, 100000, 256, DisplayName = "Bounded")]
+        [DataRow(10, 100000, 5120, DisplayName = "Bounded")]
         public void ValidateDiagnosticsAppendContextConcurrentCalls(int threadCount, int itemCountPerThread, int expectedCount)
         {
             CosmosDiagnosticsContextCore.Capacity = () => expectedCount;

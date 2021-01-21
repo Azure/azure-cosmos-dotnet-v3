@@ -3,6 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
 
@@ -19,24 +20,16 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         private CircularQueue<T> circularQueue;
 
-        private BoundedList(int capacity)
+        public BoundedList(int capacity)
         {
+            if (capacity < 1)
+            {
+                throw new ArgumentOutOfRangeException("BoundedList capacity must be positive");
+            }
+
             this.capacity = capacity;
             this.elementList = new List<T>();
             this.circularQueue = null;
-        }
-
-        internal static bool TryCreate(int capacity, out BoundedList<T> boundedList)
-        {
-            boundedList = null;
-
-            if (capacity > 0)
-            {
-                boundedList = new BoundedList<T>(capacity);
-                return true;
-            }
-
-            return false;
         }
 
         public void Add(T element)
@@ -51,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             }
             else
             {
-                _ = CircularQueue<T>.TryCreate(this.capacity, out this.circularQueue);
+                this.circularQueue = new CircularQueue<T>(this.capacity);
                 this.circularQueue.AddRange(this.elementList);
                 this.elementList = null;
                 this.circularQueue.Add(element);
