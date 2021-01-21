@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
 
         public ClientPipelineBuilder(
             CosmosClient client,
+            CosmosClientOptions clientOptions,
             DocumentClient documentClient,
             ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
@@ -43,15 +44,18 @@ namespace Microsoft.Azure.Cosmos
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
 
-            if (PartitionKeyRangeWriteFailoverHandler.TryCreate(
-                client.GetAccountConsistencyLevelAsync,
-                () => documentClient.GlobalEndpointManager.ReadEndpoints,
-                documentClient.AddressResolver,
-                requestedClientConsistencyLevel,
-                connectionMode,
-                out RequestHandler partitionKeyRangeWriteFailoverHandler))
+            if (clientOptions.EnablePartitionLevelFailover)
             {
-                this.partitionFailoverHandler = partitionKeyRangeWriteFailoverHandler;
+                if (PartitionKeyRangeWriteFailoverHandler.TryCreate(
+                    client.GetAccountConsistencyLevelAsync,
+                    () => documentClient.GlobalEndpointManager.ReadEndpoints,
+                    documentClient.AddressResolver,
+                    requestedClientConsistencyLevel,
+                    connectionMode,
+                    out RequestHandler partitionKeyRangeWriteFailoverHandler))
+                {
+                    this.partitionFailoverHandler = partitionKeyRangeWriteFailoverHandler;
+                }
             }
 
             this.UseRetryPolicy();
