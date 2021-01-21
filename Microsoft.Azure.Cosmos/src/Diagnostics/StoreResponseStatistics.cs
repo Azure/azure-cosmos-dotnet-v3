@@ -14,9 +14,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public readonly OperationType RequestOperationType;
         public readonly Uri LocationEndpoint;
         public readonly bool IsSupplementalResponse;
-        public readonly StatusCodes? StatusCode;
-        public readonly string ActivityId;
-        public readonly string StoreResult;
+        public readonly StoreResultStatistics StoreResultStatistics;
 
         public StoreResponseStatistics(
             DateTime? requestStartTime,
@@ -30,11 +28,24 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.RequestResponseTime = requestResponseTime;
             this.RequestResourceType = resourceType;
             this.RequestOperationType = operationType;
-            this.StatusCode = storeResult?.StatusCode;
-            this.ActivityId = storeResult?.ActivityId;
-            this.StoreResult = storeResult?.ToString();
             this.LocationEndpoint = locationEndpoint;
             this.IsSupplementalResponse = operationType == OperationType.Head || operationType == OperationType.HeadFeed;
+
+            if (storeResult != null)
+            {
+                this.StoreResultStatistics = new StoreResultStatistics(
+                    exception: storeResult.Exception,
+                    partitionKeyRangeId: storeResult.PartitionKeyRangeId,
+                    lsn: storeResult.LSN,
+                    requestCharge: storeResult.RequestCharge,
+                    isValid: storeResult.IsValid,
+                    storePhysicalAddress: storeResult.StorePhysicalAddress,
+                    globalCommittedLSN: storeResult.GlobalCommittedLSN,
+                    itemLSN: storeResult.ItemLSN,
+                    sessionToken: storeResult.SessionToken,
+                    usingLocalLSN: storeResult.UsingLocalLSN,
+                    activityId: storeResult.ActivityId);
+            }
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
