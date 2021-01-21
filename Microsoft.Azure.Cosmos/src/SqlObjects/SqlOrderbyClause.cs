@@ -14,11 +14,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #else
     internal
 #endif
-    sealed class SqlOrderbyClause : SqlObject
+    sealed class SqlOrderByClause : SqlObject
     {
-        private SqlOrderbyClause(ImmutableArray<SqlOrderByItem> orderbyItems)
+        private SqlOrderByClause(ImmutableArray<SqlOrderByItem> orderByItems)
         {
-            foreach (SqlOrderByItem sqlOrderbyItem in orderbyItems)
+            foreach (SqlOrderByItem sqlOrderbyItem in orderByItems)
             {
                 if (sqlOrderbyItem == null)
                 {
@@ -26,19 +26,19 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 }
             }
 
-            this.OrderbyItems = orderbyItems;
+            this.OrderByItems = orderByItems;
         }
 
-        public ImmutableArray<SqlOrderByItem> OrderbyItems { get; }
+        public ImmutableArray<SqlOrderByItem> OrderByItems { get; }
 
-        public static SqlOrderbyClause Create(params SqlOrderByItem[] orderbyItems)
+        public static SqlOrderByClause Create(params SqlOrderByItem[] orderByItems)
         {
-            return new SqlOrderbyClause(orderbyItems.ToImmutableArray());
+            return new SqlOrderByClause(orderByItems.ToImmutableArray());
         }
 
-        public static SqlOrderbyClause Create(ImmutableArray<SqlOrderByItem> orderbyItems)
+        public static SqlOrderByClause Create(ImmutableArray<SqlOrderByItem> orderByItems)
         {
-            return new SqlOrderbyClause(orderbyItems);
+            return new SqlOrderByClause(orderByItems);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

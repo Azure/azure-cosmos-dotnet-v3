@@ -73,11 +73,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             // We sort before the projection,
             // since the projection might remove the order by items.
-            if (sqlQuery.OrderbyClause != null)
+            if (sqlQuery.OrderByClause != null)
             {
                 dataSource = ExecuteOrderByClause(
                     dataSource,
-                    sqlQuery.OrderbyClause,
+                    sqlQuery.OrderByClause,
                     ridToPartitionKeyRange);
             }
             else
@@ -290,14 +290,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
         private static IEnumerable<CosmosElement> ExecuteOrderByClause(
             IEnumerable<CosmosElement> dataSource,
-            SqlOrderbyClause sqlOrderByClause,
+            SqlOrderByClause sqlOrderByClause,
             IReadOnlyDictionary<string, PartitionKeyRange> ridToPartitionKeyRange)
         {
             // Sort by the columns left to right
-            SqlOrderByItem firstItem = sqlOrderByClause.OrderbyItems[0];
+            SqlOrderByItem firstItem = sqlOrderByClause.OrderByItems[0];
 
             // Since we don't supply an explicit index on the policy undefined items don't show up in the sort order
-            if (sqlOrderByClause.OrderbyItems.Length == 1)
+            if (sqlOrderByClause.OrderByItems.Length == 1)
             {
                 dataSource = dataSource.Where(element => firstItem.Expression.Accept(
                     ScalarExpressionEvaluator.Singleton,
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         element));
             }
 
-            foreach (SqlOrderByItem sqlOrderByItem in sqlOrderByClause.OrderbyItems.Skip(1))
+            foreach (SqlOrderByItem sqlOrderByItem in sqlOrderByClause.OrderByItems.Skip(1))
             {
                 if (sqlOrderByItem.IsDescending)
                 {
