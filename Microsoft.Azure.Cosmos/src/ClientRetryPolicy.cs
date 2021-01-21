@@ -143,11 +143,11 @@ namespace Microsoft.Azure.Cosmos
                 this.sharedStatistics = request.RequestContext.ClientRequestStatistics;
             }
 
-            // clear previous location-based routing directive
-            request.RequestContext.ClearRouteToLocation();
-
             if (this.retryContext != null)
             {
+                // clear previous location-based routing directive
+                request.RequestContext.ClearRouteToLocation();
+
                 // set location-based routing directive based on request retry context
                 request.RequestContext.RouteToLocation(this.retryContext.RetryLocationIndex, this.retryContext.RetryRequestOnPreferredLocations);
             }

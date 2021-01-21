@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Data.Common;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -504,6 +505,8 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        internal bool EnablePartitionLevelFailover { get; set; }
+
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
         /// </summary>
@@ -641,6 +644,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
+                EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 HttpClientFactory = this.httpClientFactory,

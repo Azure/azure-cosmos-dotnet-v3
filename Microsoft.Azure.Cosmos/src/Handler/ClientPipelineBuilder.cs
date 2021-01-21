@@ -17,13 +17,17 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
+        private readonly RequestHandler partitionFailoverHandler;
+
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
+            DocumentClient documentClient,
             ConsistencyLevel? requestedClientConsistencyLevel,
-            IReadOnlyCollection<RequestHandler> customHandlers)
+            IReadOnlyCollection<RequestHandler> customHandlers,
+            ConnectionMode connectionMode)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
@@ -38,6 +42,17 @@ namespace Microsoft.Azure.Cosmos
 
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
+
+            if (PartitionKeyRangeWriteFailoverHandler.TryCreate(
+                client.GetAccountConsistencyLevelAsync,
+                () => documentClient.GlobalEndpointManager.ReadEndpoints,
+                documentClient.AddressResolver,
+                requestedClientConsistencyLevel,
+                connectionMode,
+                out RequestHandler partitionKeyRangeWriteFailoverHandler))
+            {
+                this.partitionFailoverHandler = partitionKeyRangeWriteFailoverHandler;
+            }
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
@@ -141,6 +156,12 @@ namespace Microsoft.Azure.Cosmos
             current.InnerHandler = this.retryHandler;
             current = current.InnerHandler;
 
+            if (this.partitionFailoverHandler != null)
+            {
+                current.InnerHandler = this.partitionFailoverHandler;
+                current = current.InnerHandler;
+            }
+
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();
 
@@ -151,7 +172,6 @@ namespace Microsoft.Azure.Cosmos
                 pointOperationHandler: this.transportHandler);
 
             current.InnerHandler = routerHandler;
-            current = current.InnerHandler;
 
             return root;
         }
