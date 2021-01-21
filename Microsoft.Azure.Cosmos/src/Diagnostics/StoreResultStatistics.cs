@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public StoreResultStatistics(
             DocumentClientException exception,
+            StatusCodes statusCode,
+            SubStatusCodes subStatusCode,
             string partitionKeyRangeId,
             long lsn,
             double requestCharge,
@@ -50,6 +52,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             string activityId)
         {
             this.Exception = exception;
+            this.StatusCode = statusCode;
+            this.SubStatusCode = subStatusCode;
             this.PartitionKeyRangeId = partitionKeyRangeId;
             this.LSN = lsn;
             this.RequestCharge = requestCharge;

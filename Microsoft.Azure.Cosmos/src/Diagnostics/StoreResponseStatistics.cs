@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             {
                 this.StoreResultStatistics = new StoreResultStatistics(
                     exception: storeResult.Exception,
+                    statusCode: storeResult.StatusCode,
+                    subStatusCode: storeResult.SubStatusCode,
                     partitionKeyRangeId: storeResult.PartitionKeyRangeId,
                     lsn: storeResult.LSN,
                     requestCharge: storeResult.RequestCharge,
