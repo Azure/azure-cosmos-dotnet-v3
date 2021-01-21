@@ -138,35 +138,38 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // The request should not be retried in another region
                 if (!isWriteForbidden || !isServiceUnavailable)
                 {
-                    // The initial location failed and was retried on other regions
-                    if (locationToFailover != null)
+                    // No retries occurred. Return original response
+                    if (locationToFailover == null)
                     {
-                        documentServiceRequest ??= request.ToDocumentServiceRequest();
+                        return responseMessage;
+                    }
 
-                        // The starting location is now the correct location. 
-                        if (locationToFailover.Current.isPrimaryLocation)
-                        {
-                            // Remove the override so it uses default location for future requests.
-                            if (changedInitialLocation && primaryReplicaUri != null)
-                            {
-                                this.lazyUriToFailedOverLocation.Value.TryRemove(primaryReplicaUri, out _);
-                            }
-                        }
-                        else
-                        {
-                            // Update the primary replica Uri to point to the new location
-                            if (primaryReplicaUri == null)
-                            {
-                                primaryReplicaUri = await this.GetPrimaryReplicaUriAsync(
-                                    documentServiceRequest,
-                                    cancellationToken);
-                            }
+                    // The initial location failed and was retried on other regions
+                    documentServiceRequest ??= request.ToDocumentServiceRequest();
 
-                            this.lazyUriToFailedOverLocation.Value.AddOrUpdate(
-                                primaryReplicaUri,
-                                locationToFailover.Current.endpoint,
-                                (key, currentLocation) => locationToFailover.Current.endpoint);
+                    // The starting location is now the correct location. 
+                    if (locationToFailover.Current.isPrimaryLocation)
+                    {
+                        // Remove the override so it uses default location for future requests.
+                        if (changedInitialLocation && primaryReplicaUri != null)
+                        {
+                            this.lazyUriToFailedOverLocation.Value.TryRemove(primaryReplicaUri, out _);
                         }
+                    }
+                    else
+                    {
+                        // Update the primary replica Uri to point to the new location
+                        if (primaryReplicaUri == null)
+                        {
+                            primaryReplicaUri = await this.GetPrimaryReplicaUriAsync(
+                                documentServiceRequest,
+                                cancellationToken);
+                        }
+
+                        this.lazyUriToFailedOverLocation.Value.AddOrUpdate(
+                            primaryReplicaUri,
+                            locationToFailover.Current.endpoint,
+                            (key, currentLocation) => locationToFailover.Current.endpoint);
                     }
 
                     return responseMessage;
