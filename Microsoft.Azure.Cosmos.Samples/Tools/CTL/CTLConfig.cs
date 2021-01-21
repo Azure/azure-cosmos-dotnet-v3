@@ -69,8 +69,8 @@ namespace CosmosCTL
         [Option("ctl_content_response_on_write", Required = false, HelpText = "Should return content response on writes")]
         public bool IsContentResponseOnWriteEnabled { get; set; } = true;
 
-        [Option("ctl_output_event_traces", Required = false, HelpText = "Should return content response on writes")]
-        public bool OutputEventTraces { get; set; } = true;
+        [Option("ctl_output_event_traces", Required = false, HelpText = "Outputs TraceSource to console")]
+        public bool OutputEventTraces { get; set; } = false;
 
         [Option("ctl_reporting_interval", Required = false, HelpText = "Reporting interval")]
         public int ReportingIntervalInSeconds { get; set; } = 10;

@@ -26,6 +26,11 @@ namespace CosmosCTL
             try
             {
                 CTLConfig config = CTLConfig.From(args);
+                if (config.OutputEventTraces)
+                {
+                    EnableTraceSourcesToConsole();
+                }
+
                 using CosmosClient client = config.CreateCosmosClient();
 
                 using (logger.BeginScope(config.WorkloadType))
@@ -112,12 +117,13 @@ namespace CosmosCTL
             };
         }
 
-        private static void ClearCoreSdkListeners()
+        private static void EnableTraceSourcesToConsole()
         {
             Type defaultTrace = Type.GetType("Microsoft.Azure.Cosmos.Core.Trace.DefaultTrace,Microsoft.Azure.Cosmos.Direct");
             TraceSource traceSource = (TraceSource)defaultTrace.GetProperty("TraceSource").GetValue(null);
             traceSource.Switch.Level = SourceLevels.All;
             traceSource.Listeners.Clear();
+            traceSource.Listeners.Add(new ConsoleTraceListener());
         }
     }
 }
