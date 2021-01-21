@@ -233,6 +233,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     GC.WaitForPendingFinalizers();
                     GC.Collect();
                     await Task.Delay(500 /*ms*/);
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
 
                     Assert.IsFalse(weakReference.IsAlive);
                 }
