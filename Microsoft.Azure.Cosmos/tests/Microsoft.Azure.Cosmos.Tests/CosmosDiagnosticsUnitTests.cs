@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(10, 100000, 5120, DisplayName = "Bounded")]
         public void ValidateDiagnosticsAppendContextConcurrentCalls(int threadCount, int itemCountPerThread, int expectedCount)
         {
-            CosmosDiagnosticsContextCore.Capacity = () => expectedCount;
+            CosmosDiagnosticsContextCore.Capacity = expectedCount;
 
             ConcurrentStack<Exception> concurrentStack = new ConcurrentStack<Exception>();
             CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(

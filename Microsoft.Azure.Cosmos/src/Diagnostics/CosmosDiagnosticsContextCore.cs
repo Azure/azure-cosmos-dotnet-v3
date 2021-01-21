@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosDiagnosticsContextCore : CosmosDiagnosticsContext
     {
         private static readonly string DefaultUserAgentString;
-        internal static Func<int> Capacity = () => 5120;
+        internal static int Capacity = 5120;
         private readonly CosmosDiagnosticScope overallScope;
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.UserAgent = userAgentString ?? throw new ArgumentNullException(nameof(userAgentString));
             this.OperationName = operationName ?? throw new ArgumentNullException(nameof(operationName));
             this.StartUtc = DateTime.UtcNow;
-            this.ContextList = new BoundedList<CosmosDiagnosticsInternal>(Capacity());
+            this.ContextList = new BoundedList<CosmosDiagnosticsInternal>(Capacity);
             this.Diagnostics = new CosmosDiagnosticsCore(this);
             this.overallScope = new CosmosDiagnosticScope("Overall");
         }
