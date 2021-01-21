@@ -8,7 +8,7 @@ parameters:
 
 jobs:
 - job:
-  displayName: CTL
+  displayName: Build CTL project
   pool:
     vmImage: ${{ parameters.VmImage }}
 
@@ -17,7 +17,7 @@ jobs:
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
   - task: DotNetCoreCLI@2
-    displayName: CTL
+    displayName: Build CTL project
     condition: succeeded()
     inputs:
       command: build  
