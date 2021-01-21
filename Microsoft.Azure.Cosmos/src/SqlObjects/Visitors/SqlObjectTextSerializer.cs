@@ -370,15 +370,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             sqlObject.OffsetExpression.Accept(this);
         }
 
-        public override void Visit(SqlOrderbyClause sqlOrderByClause)
+        public override void Visit(SqlOrderByClause sqlOrderByClause)
         {
             this.writer.Write("ORDER BY ");
-            sqlOrderByClause.OrderbyItems[0].Accept(this);
+            sqlOrderByClause.OrderByItems[0].Accept(this);
 
-            for (int i = 1; i < sqlOrderByClause.OrderbyItems.Length; i++)
+            for (int i = 1; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
                 this.writer.Write(", ");
-                sqlOrderByClause.OrderbyItems[i].Accept(this);
+                sqlOrderByClause.OrderByItems[i].Accept(this);
             }
         }
 
@@ -450,10 +450,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 this.writer.Write(" ");
             }
 
-            if (sqlQuery.OrderbyClause != null)
+            if (sqlQuery.OrderByClause != null)
             {
                 this.WriteDelimiter(string.Empty);
-                sqlQuery.OrderbyClause.Accept(this);
+                sqlQuery.OrderByClause.Accept(this);
             }
 
             if (sqlQuery.OffsetLimitClause != null)
@@ -776,64 +776,40 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         private static string SqlUnaryScalarOperatorKindToString(SqlUnaryScalarOperatorKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case SqlUnaryScalarOperatorKind.BitwiseNot:
-                    return "~";
-                case SqlUnaryScalarOperatorKind.Not:
-                    return "NOT";
-                case SqlUnaryScalarOperatorKind.Minus:
-                    return "-";
-                case SqlUnaryScalarOperatorKind.Plus:
-                    return "+";
-                default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind));
-            }
+                SqlUnaryScalarOperatorKind.BitwiseNot => "~",
+                SqlUnaryScalarOperatorKind.Not => "NOT",
+                SqlUnaryScalarOperatorKind.Minus => "-",
+                SqlUnaryScalarOperatorKind.Plus => "+",
+                _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
+            };
         }
 
         private static string SqlBinaryScalarOperatorKindToString(SqlBinaryScalarOperatorKind kind)
         {
-            switch (kind)
+            return kind switch
             {
-                case SqlBinaryScalarOperatorKind.Add:
-                    return "+";
-                case SqlBinaryScalarOperatorKind.And:
-                    return "AND";
-                case SqlBinaryScalarOperatorKind.BitwiseAnd:
-                    return "&";
-                case SqlBinaryScalarOperatorKind.BitwiseOr:
-                    return "|";
-                case SqlBinaryScalarOperatorKind.BitwiseXor:
-                    return "^";
-                case SqlBinaryScalarOperatorKind.Coalesce:
-                    return "??";
-                case SqlBinaryScalarOperatorKind.Divide:
-                    return "/";
-                case SqlBinaryScalarOperatorKind.Equal:
-                    return "=";
-                case SqlBinaryScalarOperatorKind.GreaterThan:
-                    return ">";
-                case SqlBinaryScalarOperatorKind.GreaterThanOrEqual:
-                    return ">=";
-                case SqlBinaryScalarOperatorKind.LessThan:
-                    return "<";
-                case SqlBinaryScalarOperatorKind.LessThanOrEqual:
-                    return "<=";
-                case SqlBinaryScalarOperatorKind.Modulo:
-                    return "%";
-                case SqlBinaryScalarOperatorKind.Multiply:
-                    return "*";
-                case SqlBinaryScalarOperatorKind.NotEqual:
-                    return "!=";
-                case SqlBinaryScalarOperatorKind.Or:
-                    return "OR";
-                case SqlBinaryScalarOperatorKind.StringConcat:
-                    return "||";
-                case SqlBinaryScalarOperatorKind.Subtract:
-                    return "-";
-                default:
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind));
-            }
+                SqlBinaryScalarOperatorKind.Add => "+",
+                SqlBinaryScalarOperatorKind.And => "AND",
+                SqlBinaryScalarOperatorKind.BitwiseAnd => "&",
+                SqlBinaryScalarOperatorKind.BitwiseOr => "|",
+                SqlBinaryScalarOperatorKind.BitwiseXor => "^",
+                SqlBinaryScalarOperatorKind.Coalesce => "??",
+                SqlBinaryScalarOperatorKind.Divide => "/",
+                SqlBinaryScalarOperatorKind.Equal => "=",
+                SqlBinaryScalarOperatorKind.GreaterThan => ">",
+                SqlBinaryScalarOperatorKind.GreaterThanOrEqual => ">=",
+                SqlBinaryScalarOperatorKind.LessThan => "<",
+                SqlBinaryScalarOperatorKind.LessThanOrEqual => "<=",
+                SqlBinaryScalarOperatorKind.Modulo => "%",
+                SqlBinaryScalarOperatorKind.Multiply => "*",
+                SqlBinaryScalarOperatorKind.NotEqual => "!=",
+                SqlBinaryScalarOperatorKind.Or => "OR",
+                SqlBinaryScalarOperatorKind.StringConcat => "||",
+                SqlBinaryScalarOperatorKind.Subtract => "-",
+                _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
+            };
         }
     }
 }
