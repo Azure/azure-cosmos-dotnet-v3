@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemCreateNoResponseTest()
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            PatchRequestOptions requestOptions = new PatchRequestOptions()
             {
                 EnableContentResponseOnWrite = false
             };
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemReadNoResponseTest()
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            PatchRequestOptions requestOptions = new PatchRequestOptions()
             {
                 EnableContentResponseOnRead = false
             };
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task Validate(
-            ItemRequestOptions requestOptions,
+            PatchRequestOptions requestOptions,
             Action<ItemResponse<ToDoActivity>> ValidateWrite,
             Action<ItemResponse<ToDoActivity>> ValidateRead)
         {
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemStreamCreateNoResponseTest()
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            PatchRequestOptions requestOptions = new PatchRequestOptions()
             {
                 EnableContentResponseOnWrite = false
             };
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemStreamReadNoResponseTest()
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            PatchRequestOptions requestOptions = new PatchRequestOptions()
             {
                 EnableContentResponseOnRead = false
             };
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task ValidateItemStream(
-            ItemRequestOptions requestOptions,
+            PatchRequestOptions requestOptions,
             Action<ResponseMessage> ValidateWrite,
             Action<ResponseMessage> ValidateRead)
         {
@@ -315,9 +315,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.ValidateItemNoContentResponse(itemResponse);
             }
 
+            PatchRequestOptions patchRequestOptions = new PatchRequestOptions()
+            {
+                EnableContentResponseOnWrite = false
+            };
+
             foreach (ToDoActivity item in items)
             {
-                bulkOperations.Add(bulkContainerInternal.PatchItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), patch, requestOptions: requestOptions));
+                bulkOperations.Add(bulkContainerInternal.PatchItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), patch, requestOptions: patchRequestOptions));
             }
 
             foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)

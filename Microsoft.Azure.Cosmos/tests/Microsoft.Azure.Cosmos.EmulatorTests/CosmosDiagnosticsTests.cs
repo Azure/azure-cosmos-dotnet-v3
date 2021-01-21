@@ -287,9 +287,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions();
+            PatchRequestOptions patchRequestOptions = new PatchRequestOptions();
             if (disableDiagnostics)
             {
                 requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
+                patchRequestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
             }
             else
             {
@@ -338,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: testItem.id,
                 partitionKey: new PartitionKey(testItem.status),
                 patchOperations: patch,
-                requestOptions: requestOptions);
+                requestOptions: patchRequestOptions);
 
             Assert.AreEqual(patchResponse.Resource.description, "PatchedDescription");
 
@@ -386,7 +388,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                id: testItem.id,
                partitionKey: new PartitionKey(testItem.status),
                patchOperations: patch,
-               requestOptions: requestOptions);
+               requestOptions: patchRequestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 patchStreamResponse.Diagnostics,
                 disableDiagnostics);

@@ -722,7 +722,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 #endif
 

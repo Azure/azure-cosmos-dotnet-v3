@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }
-            else if (inputType.IsGenericType && inputType.GetGenericArguments()[0] == typeof(PatchOperation))
+            else if (inputType == typeof(PatchSpec))
             {
                 return this.patchOperationSerializer;
             }

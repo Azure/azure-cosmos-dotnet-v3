@@ -41,7 +41,18 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            IReadOnlyList<PatchOperation> patchOperations = (IReadOnlyList<PatchOperation>)value;
+            PatchSpec patchSpec = (PatchSpec)value;
+            IReadOnlyList<PatchOperation> patchOperations = (IReadOnlyList<PatchOperation>)patchSpec.PatchOperations;
+
+            writer.WriteStartObject();
+
+            if (!string.IsNullOrWhiteSpace(patchSpec.Condition))
+            {
+                writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
+                writer.WriteValue(patchSpec.Condition);
+            }
+
+            writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Operations);
 
             writer.WriteStartArray();
 
@@ -63,6 +74,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             writer.WriteEndArray();
+
+            writer.WriteEndObject();
         }
 
         /// <summary>
