@@ -5,8 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Pagination
 {
     internal delegate PartitionRangePageAsyncEnumerator<TPage, TState> CreatePartitionRangePageAsyncEnumerator<TPage, TState>(
-        FeedRangeInternal feedRange,
-        TState state)
+        FeedRangeState<TState> feedRangeState)
             where TPage : Page<TState>
             where TState : State;
 }

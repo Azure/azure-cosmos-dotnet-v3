@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -133,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             PartitionKey partitionKey,
-            ITrace trace, 
+            ITrace trace,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -576,7 +578,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Routing.PartitionKeyRangeCache pkRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetCachedRIDAsync(
-                forceRefresh: false, 
+                forceRefresh: false,
                 cancellationToken: cancellationToken);
             IReadOnlyList<Documents.PartitionKeyRange> allRanges = await pkRangeCache.TryGetOverlappingRangesAsync(
                         containerRid,
@@ -601,11 +603,31 @@ namespace Microsoft.Azure.Cosmos
                 new CosmosDiagnosticsContextCore());
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
+            Dictionary<string, string> additionalHeaders;
+            if ((changeFeedRequestOptions?.Properties != null) && changeFeedRequestOptions.Properties.Any())
+            {
+                additionalHeaders = new Dictionary<string, string>();
+                foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
+                {
+                    additionalHeaders[keyValuePair.Key] = keyValuePair.Value.ToString();
+                }
+            }
+            else
+            {
+                additionalHeaders = null;
+            }
+
+            ChangeFeedPaginationOptions changeFeedPaginationOptions = new ChangeFeedPaginationOptions(
+                changeFeedMode,
+                changeFeedRequestOptions?.PageSizeHint,
+                changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
+                additionalHeaders);
+
             return new ChangeFeedCrossFeedRangeAsyncEnumerable(
                 documentContainer,
-                changeFeedMode,
-                changeFeedRequestOptions,
-                state);
+                state,
+                changeFeedPaginationOptions,
+                changeFeedRequestOptions?.JsonSerializationFormatOptions);
         }
 
         public override FeedIterator GetStandByFeedIterator(
@@ -657,11 +679,21 @@ namespace Microsoft.Azure.Cosmos
 
                 DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
+                ReadFeedPaginationOptions.PaginationDirection? direction = null;
+                if ((requestOptions.Properties != null) && requestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
+                {
+                    direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedPaginationOptions.PaginationDirection.Reverse : ReadFeedPaginationOptions.PaginationDirection.Forward;
+                }
+
+                ReadFeedPaginationOptions readFeedPaginationOptions = new ReadFeedPaginationOptions(
+                    direction,
+                    pageSizeHint: requestOptions.MaxItemCount ?? int.MaxValue);
+
                 return new ReadFeedIteratorCore(
-                    documentContainer: documentContainer,
-                    queryRequestOptions: requestOptions,
-                    continuationToken: continuationToken,
-                    pageSize: requestOptions.MaxItemCount ?? int.MaxValue,
+                    documentContainer,
+                    continuationToken,
+                    readFeedPaginationOptions,
+                    requestOptions,
                     cancellationToken: default);
             }
 
@@ -688,6 +720,8 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken,
             int pageSize)
         {
+            queryRequestOptions ??= new QueryRequestOptions();
+
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
@@ -717,18 +751,28 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                ReadFeedPaginationOptions.PaginationDirection? direction = null;
+                if ((queryRequestOptions.Properties != null) && queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
+                {
+                    direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedPaginationOptions.PaginationDirection.Reverse : ReadFeedPaginationOptions.PaginationDirection.Forward;
+                }
+
+                ReadFeedPaginationOptions readFeedPaginationOptions = new ReadFeedPaginationOptions(
+                    direction,
+                    pageSizeHint: queryRequestOptions.MaxItemCount ?? int.MaxValue);
+
                 feedIterator = new ReadFeedIteratorCore(
                     documentContainer: documentContainer,
                     queryRequestOptions: queryRequestOptions,
                     continuationToken: continuationToken,
-                    pageSize: queryRequestOptions?.MaxItemCount ?? int.MaxValue,
+                    readFeedPaginationOptions: readFeedPaginationOptions,
                     cancellationToken: default);
             }
 
             return feedIterator;
         }
 
-        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+        public override IAsyncEnumerable<TryCatch<ReadFeed.ReadFeedPage>> GetReadFeedAsyncEnumerable(
             ReadFeedCrossFeedRangeState state,
             QueryRequestOptions queryRequestOptions = default)
         {
@@ -738,10 +782,20 @@ namespace Microsoft.Azure.Cosmos
                 new CosmosDiagnosticsContextCore());
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
+            ReadFeedPaginationOptions.PaginationDirection? direction = null;
+            if ((queryRequestOptions.Properties != null) && queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
+            {
+                direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedPaginationOptions.PaginationDirection.Reverse : ReadFeedPaginationOptions.PaginationDirection.Forward;
+            }
+
+            ReadFeedPaginationOptions readFeedPaginationOptions = new ReadFeedPaginationOptions(
+                direction,
+                pageSizeHint: queryRequestOptions.MaxItemCount ?? int.MaxValue);
+
             return new ReadFeedCrossFeedRangeAsyncEnumerable(
                 documentContainer,
-                queryRequestOptions,
-                state);
+                state,
+                readFeedPaginationOptions);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

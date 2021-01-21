@@ -13,17 +13,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         where TPage : Page<TState>
         where TState : State
     {
-        private readonly FeedRangeInternal range;
-        private readonly TState state;
+        private readonly FeedRangeState<TState> feedRangeState;
         private readonly CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator;
 
         public PartitionRangePageAsyncEnumerable(
-            FeedRangeInternal range,
-            TState state,
+            FeedRangeState<TState> feedRangeState,
             CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator)
         {
-            this.range = range ?? throw new ArgumentNullException(nameof(range));
-            this.state = state;
+            this.feedRangeState = feedRangeState;
             this.createPartitionRangeEnumerator = createPartitionRangeEnumerator ?? throw new ArgumentNullException(nameof(createPartitionRangeEnumerator));
         }
 
@@ -31,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            return this.createPartitionRangeEnumerator(this.range, this.state);
+            return this.createPartitionRangeEnumerator(this.feedRangeState);
         }
     }
 }

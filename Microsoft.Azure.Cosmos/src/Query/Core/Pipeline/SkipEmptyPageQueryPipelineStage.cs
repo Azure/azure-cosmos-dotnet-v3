@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class SkipEmptyPageQueryPipelineStage : IQueryPipelineStage

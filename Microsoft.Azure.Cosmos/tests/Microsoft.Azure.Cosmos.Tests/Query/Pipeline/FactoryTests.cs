@@ -9,9 +9,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 queryInfo: new QueryInfo() { },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 requestCancellationToken: default,
                 requestContinuationToken: default); ;

@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 for (int i = 0; i < rangeAndStates.Length; i++)
                 {
                     FeedRangeState<TState> feedRangeState = rangeAndStates.Span[i];
-                    PartitionRangePageAsyncEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(feedRangeState.FeedRange, feedRangeState.State);
+                    PartitionRangePageAsyncEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(feedRangeState);
                     BufferedPartitionRangePageAsyncEnumerator<TPage, TState> bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator, cancellationToken);
                     bufferedEnumerators.Add(bufferedEnumerator);
                 }
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         // Handle split
 
                         List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
-                            currentPaginator.Range,
+                            currentPaginator.FeedRangeState.FeedRange,
                             childTrace,
                             this.cancellationToken);
                         if (childRanges.Count == 0)
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             // Then we need to refresh the cache
                             await this.feedRangeProvider.RefreshProviderAsync(childTrace, this.cancellationToken);
                             childRanges = await this.feedRangeProvider.GetChildRangeAsync(
-                                currentPaginator.Range,
+                                currentPaginator.FeedRangeState.FeedRange,
                                 childTrace,
                                 this.cancellationToken);
                         }
@@ -173,8 +173,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         foreach (FeedRangeInternal childRange in childRanges)
                         {
                             PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
-                                childRange,
-                                currentPaginator.State);
+                                new FeedRangeState<TState>(currentPaginator.FeedRangeState.FeedRange, currentPaginator.FeedRangeState.State));
                             enumerators.Enqueue(childPaginator);
                         }
 
@@ -186,11 +185,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     enumerators.Enqueue(currentPaginator);
 
                     this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
-                    this.CurrentRange = currentPaginator.Range;
+                    this.CurrentRange = currentPaginator.FeedRangeState.FeedRange;
                     return true;
                 }
 
-                if (currentPaginator.State != default)
+                if (currentPaginator.FeedRangeState.State != default)
                 {
                     // Don't enqueue the paginator otherwise it's an infinite loop.
                     enumerators.Enqueue(currentPaginator);
@@ -207,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     int i = 0;
                     foreach (PartitionRangePageAsyncEnumerator<TPage, TState> enumerator in enumerators)
                     {
-                        feedRangeAndStates[i++] = new FeedRangeState<TState>(enumerator.Range, enumerator.State);
+                        feedRangeAndStates[i++] = enumerator.FeedRangeState;
                     }
 
                     crossPartitionState = new CrossFeedRangeState<TState>(feedRangeAndStates);
@@ -215,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                 this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromResult(
                     new CrossFeedRangePage<TPage, TState>(currentPaginator.Current.Result, crossPartitionState));
-                this.CurrentRange = currentPaginator.Range;
+                this.CurrentRange = currentPaginator.FeedRangeState.FeedRange;
                 return true;
             }
         }

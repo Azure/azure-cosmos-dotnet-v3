@@ -8,10 +8,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Transactions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Has the ability to page through a partition range.
@@ -22,22 +20,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private CancellationToken cancellationToken;
 
-        protected PartitionRangePageAsyncEnumerator(FeedRangeInternal range, CancellationToken cancellationToken, TState state = default)
+        protected PartitionRangePageAsyncEnumerator(FeedRangeState<TState> feedRangeState, CancellationToken cancellationToken)
         {
-            this.Range = range ?? throw new ArgumentNullException(nameof(range));
-            this.State = state;
+            this.FeedRangeState = feedRangeState;
             this.cancellationToken = cancellationToken;
         }
 
-        public FeedRangeInternal Range { get; }
+        public FeedRangeState<TState> FeedRangeState { get; private set; }
 
         public TryCatch<TPage> Current { get; private set; }
 
-        public TState State { get; private set; }
-
         public bool HasStarted { get; private set; }
 
-        private bool HasMoreResults => !this.HasStarted || (this.State != default);
+        private bool HasMoreResults => !this.HasStarted || (this.FeedRangeState.State != default);
 
         public ValueTask<bool> MoveNextAsync()
         {
@@ -51,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            using (ITrace childTrace = trace.StartChild(name: $"{this.Range} move next", TraceComponent.Pagination, TraceLevel.Info))
+            using (ITrace childTrace = trace.StartChild(name: $"{this.FeedRangeState.FeedRange} move next", TraceComponent.Pagination, TraceLevel.Info))
             {
                 if (!this.HasMoreResults)
                 {
@@ -61,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken: this.cancellationToken);
                 if (this.Current.Succeeded)
                 {
-                    this.State = this.Current.Result.State;
+                    this.FeedRangeState = new FeedRangeState<TState>(this.FeedRangeState.FeedRange, this.Current.Result.State);
                     this.HasStarted = true;
                 }
 

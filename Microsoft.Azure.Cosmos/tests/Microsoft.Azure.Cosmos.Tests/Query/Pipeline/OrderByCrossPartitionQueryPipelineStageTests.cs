@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: null);
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosObject.Create(new Dictionary<string, CosmosElement>()));
@@ -83,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>()));
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }));
@@ -138,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("_ts", SortOrder.Ascending)
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: CosmosArray.Create(
@@ -222,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     new OrderByColumn("c._ts", SortOrder.Ascending)
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 cancellationToken: default,
                 continuationToken: null);
@@ -274,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         new OrderByColumn("c.pk", SortOrder.Ascending)
                     },
-                    pageSize: 10,
+                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     maxConcurrency: 10,
                     cancellationToken: default,
                     continuationToken: continuationToken);

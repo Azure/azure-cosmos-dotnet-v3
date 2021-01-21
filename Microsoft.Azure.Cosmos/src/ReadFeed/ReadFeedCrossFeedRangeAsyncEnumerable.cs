@@ -14,17 +14,17 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     internal sealed class ReadFeedCrossFeedRangeAsyncEnumerable : IAsyncEnumerable<TryCatch<ReadFeedPage>>
     {
         private readonly IDocumentContainer documentContainer;
-        private readonly QueryRequestOptions requestOptions;
         private readonly ReadFeedCrossFeedRangeState state;
+        private readonly ReadFeedPaginationOptions readFeedPaginationOptions;
 
         public ReadFeedCrossFeedRangeAsyncEnumerable(
             IDocumentContainer documentContainer,
-            QueryRequestOptions requestOptions,
-            ReadFeedCrossFeedRangeState state)
+            ReadFeedCrossFeedRangeState state,
+            ReadFeedPaginationOptions readFeedPaginationOptions)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
-            this.requestOptions = requestOptions;
             this.state = state;
+            this.readFeedPaginationOptions = readFeedPaginationOptions;
         }
 
         public IAsyncEnumerator<TryCatch<ReadFeedPage>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
@@ -32,9 +32,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             CrossFeedRangeState<ReadFeedState> innerState = new CrossFeedRangeState<ReadFeedState>(this.state.FeedRangeStates);
             CrossPartitionReadFeedAsyncEnumerator innerEnumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
                 this.documentContainer,
-                this.requestOptions,
                 innerState,
-                this.requestOptions?.MaxItemCount ?? int.MaxValue,
+                this.readFeedPaginationOptions,
                 cancellationToken);
 
             return new ReadFeedCrossFeedRangeAsyncEnumerator(innerEnumerator);

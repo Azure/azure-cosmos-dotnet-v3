@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using static Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.PartitionMapper;
 
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
             Cosmos.PartitionKey? partitionKey,
-            int pageSize,
+            QueryPaginationOptions queryPaginationOptions,
             int maxConcurrency,
             CosmosElement continuationToken,
             CancellationToken cancellationToken)
@@ -152,11 +153,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentException($"{nameof(targetRanges)} must have some elements");
             }
 
-            if (pageSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pageSize));
-            }
-
             TryCatch<CrossFeedRangeState<QueryState>> monadicExtractState = MonadicExtractState(continuationToken, targetRanges);
             if (monadicExtractState.Failed)
             {
@@ -167,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 documentContainer,
-                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, pageSize, partitionKey, cancellationToken),
+                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, cancellationToken),
                 comparer: Comparer.Singleton,
                 maxConcurrency,
                 state: state,
@@ -251,16 +247,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            int pageSize,
+            QueryPaginationOptions queryPaginationOptions,
             Cosmos.PartitionKey? partitionKey,
-            CancellationToken cancellationToken) => (FeedRangeInternal range, QueryState state) => new QueryPartitionRangePageAsyncEnumerator(
+            CancellationToken cancellationToken) => (FeedRangeState<QueryState> feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
-                range,
+                feedRangeState,
                 partitionKey,
-                pageSize,
-                cancellationToken: cancellationToken,
-                state);
+                queryPaginationOptions,
+                cancellationToken);
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {
@@ -283,8 +278,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
                 // Either both don't have results or both do.
                 return string.CompareOrdinal(
-                    ((FeedRangeEpk)partitionRangePageEnumerator1.Range).Range.Min,
-                    ((FeedRangeEpk)partitionRangePageEnumerator2.Range).Range.Min);
+                    ((FeedRangeEpk)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
+                    ((FeedRangeEpk)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
             }
         }
     }

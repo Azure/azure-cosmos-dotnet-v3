@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -159,37 +159,47 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public async Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
-            ReadFeedState readFeedState,
-            FeedRangeInternal feedRange,
-            QueryRequestOptions queryRequestOptions,
-            int pageSize,
+            FeedRangeState<ReadFeedState> feedRangeState,
+            ReadFeedPaginationOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+
             CosmosDiagnosticsContext cosmosDiagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
             using (cosmosDiagnosticsContext.GetOverallScope())
             {
-                if (queryRequestOptions != null)
-                {
-                    queryRequestOptions.MaxItemCount = pageSize;
-                }
-
                 ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                    resourceUri: this.resourceLink,
                    resourceType: this.resourceType,
                    operationType: OperationType.ReadFeed,
-                   requestOptions: queryRequestOptions,
+                   requestOptions: this.queryRequestOptions,
                    cosmosContainerCore: this.container,
                    requestEnricher: request =>
                    {
-                       if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
+                       if (feedRangeState.State is ReadFeedContinuationState readFeedContinuationState)
                        {
                            request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
                        }
+
+                       if (readFeedPaginationOptions.PageSizeHint.HasValue)
+                       {
+                           request.Headers.PageSize = readFeedPaginationOptions.PageSizeHint.Value.ToString();
+                       }
+
+                       if (readFeedPaginationOptions.JsonSerializationFormat.HasValue)
+                       {
+                           request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = readFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
+                       }
+
+                       foreach (KeyValuePair<string, string> kvp in readFeedPaginationOptions.AdditionalHeaders)
+                       {
+                           request.Headers[kvp.Key] = kvp.Value;
+                       }
                    },
-                   feedRange: feedRange,
+                   feedRange: feedRangeState.FeedRange,
                    streamPayload: default,
                    diagnosticsContext: cosmosDiagnosticsContext,
                    trace: trace,
@@ -232,9 +242,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
-            FeedRangeInternal feedRange,
-            int pageSize,
+            FeedRangeState<QueryState> feedRangeState,
+            QueryPaginationOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -245,9 +254,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(sqlQuerySpec));
             }
 
-            if (feedRange == null)
+            if (queryPaginationOptions == null)
             {
-                throw new ArgumentNullException(nameof(feedRange));
+                throw new ArgumentNullException(nameof(queryPaginationOptions));
             }
 
             if (trace == null)
@@ -261,13 +270,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.resourceType,
                 Documents.OperationType.Query,
                 Guid.NewGuid(),
-                feedRange,
+                feedRangeState.FeedRange,
                 queryRequestOptions,
                 queryPageDiagnostics: this.AddQueryPageDiagnostic,
                 sqlQuerySpec,
-                continuationToken,
+                feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
                 isContinuationExpected: false,
-                pageSize,
+                queryPaginationOptions.PageSizeHint ?? int.MaxValue,
                 trace,
                 cancellationToken);
 
@@ -275,15 +284,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            ChangeFeedState state,
-            FeedRangeInternal feedRange,
-            int pageSize,
-            ChangeFeedMode changeFeedMode,
-            JsonSerializationFormat? jsonSerializationFormat,
+            FeedRangeState<ChangeFeedState> feedRangeState,
+            ChangeFeedPaginationOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (changeFeedPaginationOptions == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedPaginationOptions));
+            }
 
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: this.container.LinkUri,
@@ -293,18 +304,26 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 cosmosContainerCore: this.container,
                 requestEnricher: (request) =>
                 {
-                    state.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
+                    feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
 
-                    request.Headers.PageSize = pageSize.ToString();
-
-                    changeFeedMode.Accept(request);
-
-                    if (jsonSerializationFormat.HasValue)
+                    if (changeFeedPaginationOptions.PageSizeHint.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = jsonSerializationFormat.Value.ToContentSerializationFormatString();
+                        request.Headers.PageSize = changeFeedPaginationOptions.PageSizeHint.Value.ToString();
+                    }
+
+                    changeFeedPaginationOptions.Mode.Accept(request);
+
+                    if (changeFeedPaginationOptions.JsonSerializationFormat.HasValue)
+                    {
+                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = changeFeedPaginationOptions.JsonSerializationFormat.Value.ToContentSerializationFormatString();
+                    }
+
+                    foreach (KeyValuePair<string, string> kvp in changeFeedPaginationOptions.AdditionalHeaders)
+                    {
+                        request.Headers[kvp.Key] = kvp.Value;
                     }
                 },
-                feedRange: feedRange,
+                feedRange: feedRangeState.FeedRange,
                 streamPayload: default,
                 diagnosticsContext: this.diagnosticsContext,
                 trace: trace,

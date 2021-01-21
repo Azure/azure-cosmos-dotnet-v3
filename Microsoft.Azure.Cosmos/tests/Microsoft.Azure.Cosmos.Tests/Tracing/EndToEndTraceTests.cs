@@ -11,6 +11,7 @@
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -62,9 +63,8 @@
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
             CrossPartitionReadFeedAsyncEnumerator enumerator = CrossPartitionReadFeedAsyncEnumerator.Create(
                 documentContainer,
-                new QueryRequestOptions(),
                 new CrossFeedRangeState<ReadFeedState>(ReadFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
-                pageSize: 10,
+                new ReadFeedPaginationOptions(pageSizeHint: 10),
                 cancellationToken: default);
 
             int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
@@ -115,13 +115,9 @@
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
-                ChangeFeedMode.Incremental,
-                new ChangeFeedRequestOptions()
-                { 
-                    PageSizeHint = int.MaxValue
-                },
                 new CrossFeedRangeState<ChangeFeedState>(
                     ChangeFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
+                new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: int.MaxValue),
                 cancellationToken: default);
 
             int numChildren = 0;
@@ -159,7 +155,7 @@
                 new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 GetQueryPlan(query),
-                pageSize: pageSize,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
                 maxConcurrency: 10,
                 requestCancellationToken: default,
                 requestContinuationToken: state);

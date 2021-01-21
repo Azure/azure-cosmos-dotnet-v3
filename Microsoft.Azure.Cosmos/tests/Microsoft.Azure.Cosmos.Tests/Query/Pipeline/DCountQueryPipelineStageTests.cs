@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using PageList = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.CosmosElements.CosmosElement>>;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
 
     [TestClass]
     public sealed class DCountQueryPipelineStageTests

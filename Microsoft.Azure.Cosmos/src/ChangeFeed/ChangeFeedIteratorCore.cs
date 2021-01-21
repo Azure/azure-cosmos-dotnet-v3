@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public ChangeFeedIteratorCore(
             IDocumentContainer documentContainer,
             ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions,            
+            ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedStartFrom changeFeedStartFrom)
         {
             if (changeFeedStartFrom == null)
@@ -153,11 +153,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 innerException: monadicChangeFeedCrossFeedRangeState.Exception));
                     }
 
+                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+                    foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
+                    {
+                        additionalHeaders[keyValuePair.Key] = keyValuePair.Value.ToString();
+                    }
+
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,
-                        changeFeedMode,
-                        changeFeedRequestOptions,
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
+                        new ChangeFeedPaginationOptions(
+                            changeFeedMode,
+                            changeFeedRequestOptions.PageSizeHint,
+                            changeFeedRequestOptions.JsonSerializationFormatOptions?.JsonSerializationFormat,
+                            additionalHeaders),
                         cancellationToken: default);
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);

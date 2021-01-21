@@ -2,20 +2,20 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
+namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
 {
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal interface IMonadicQueryDataSource
+    internal interface IQueryDataSource : IMonadicQueryDataSource
     {
-        Task<TryCatch<QueryPage>> MonadicQueryAsync(
+        Task<QueryPage> QueryAsync(
             SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
-            FeedRangeInternal feedRange,
-            int pageSize,
+            FeedRangeState<QueryState> feedRangeState,
+            QueryPaginationOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken);
     }

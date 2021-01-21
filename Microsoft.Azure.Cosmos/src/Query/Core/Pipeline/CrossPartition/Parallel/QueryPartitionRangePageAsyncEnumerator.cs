@@ -7,31 +7,30 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class QueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<QueryPage, QueryState>
     {
         private readonly IQueryDataSource queryDataSource;
         private readonly SqlQuerySpec sqlQuerySpec;
-        private readonly int pageSize;
+        private readonly QueryPaginationOptions queryPaginationOptions;
         private readonly Cosmos.PartitionKey? partitionKey;
 
         public QueryPartitionRangePageAsyncEnumerator(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            FeedRangeInternal feedRange,
+            FeedRangeState<QueryState> feedRangeState,
             Cosmos.PartitionKey? partitionKey,
-            int pageSize,
-            CancellationToken cancellationToken,
-            QueryState state = default)
-            : base(feedRange, cancellationToken, state)
+            QueryPaginationOptions queryPaginationOptions,
+            CancellationToken cancellationToken)
+            : base(feedRangeState, cancellationToken)
         {
             this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
             this.sqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
-            this.pageSize = pageSize;
+            this.queryPaginationOptions = queryPaginationOptions;
             this.partitionKey = partitionKey;
         }
 
@@ -46,12 +45,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            FeedRangeInternal feedRange = this.partitionKey.HasValue ? new FeedRangePartitionKey(this.partitionKey.Value) : this.Range;
+            FeedRangeInternal feedRange = this.partitionKey.HasValue ? new FeedRangePartitionKey(this.partitionKey.Value) : this.FeedRangeState.FeedRange;
             return this.queryDataSource.MonadicQueryAsync(
               sqlQuerySpec: this.sqlQuerySpec,
-              continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
-              feedRange: feedRange,
-              pageSize: this.pageSize,
+              feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
+              queryPaginationOptions: this.queryPaginationOptions,
               trace: trace,
               cancellationToken);
         }

@@ -27,12 +27,13 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
         public ReadFeedIteratorCore(
             IDocumentContainer documentContainer,
-            QueryRequestOptions queryRequestOptions,
             string continuationToken,
-            int pageSize,
+            ReadFeedPaginationOptions readFeedPaginationOptions,
+            QueryRequestOptions queryRequestOptions,
             CancellationToken cancellationToken)
         {
             this.queryRequestOptions = queryRequestOptions;
+            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
 
             if (!string.IsNullOrEmpty(continuationToken))
             {
@@ -127,11 +128,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 FeedRange feedRange;
                 if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
                 {
-                    feedRange = new FeedRangePartitionKey(queryRequestOptions.PartitionKey.Value);
+                    feedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
                 }
-                else if ((this.queryRequestOptions != null) && (queryRequestOptions.FeedRange != null))
+                else if ((this.queryRequestOptions != null) && (this.queryRequestOptions.FeedRange != null))
                 {
-                    feedRange = queryRequestOptions.FeedRange;
+                    feedRange = this.queryRequestOptions.FeedRange;
                 }
                 else
                 {
@@ -154,9 +155,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 this.monadicEnumerator = TryCatch<CrossPartitionReadFeedAsyncEnumerator>.FromResult(
                     CrossPartitionReadFeedAsyncEnumerator.Create(
                         documentContainer,
-                        queryRequestOptions,
                         new CrossFeedRangeState<ReadFeedState>(monadicReadFeedState.Result.FeedRangeStates),
-                        pageSize,
+                        readFeedPaginationOptions,
                         cancellationToken));
             }
 
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 {
                     outerFeedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
                 }
-                else if ((this.queryRequestOptions != null) && (queryRequestOptions.FeedRange != null))
+                else if ((this.queryRequestOptions != null) && (this.queryRequestOptions.FeedRange != null))
                 {
                     outerFeedRange = (FeedRangeInternal)this.queryRequestOptions.FeedRange;
                 }

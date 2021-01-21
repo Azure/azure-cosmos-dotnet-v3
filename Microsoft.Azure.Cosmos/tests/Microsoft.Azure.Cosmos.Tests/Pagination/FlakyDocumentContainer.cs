@@ -17,10 +17,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
 
     /// <summary>
     /// Implementation of <see cref="IMonadicDocumentContainer"/> that composes another <see cref="IMonadicDocumentContainer"/> and randomly adds in exceptions.
@@ -57,9 +56,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     RequestRateTooLargeException));
         }
 
-        private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
+        private static readonly QueryState StateForStartedButNoDocumentsReturned = new QueryState(CosmosString.Create("Started But Haven't Returned Any Documents Yet"));
 
-        private static readonly ReadFeedState ReadFeedNotStartedState = ReadFeedState.Continuation(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
+        private static readonly ReadFeedState ReadFeedNotStartedState = ReadFeedState.Continuation(CosmosString.Create("Started But Haven't Returned Any Documents Yet"));
 
         private readonly IMonadicDocumentContainer documentContainer;
 
@@ -103,13 +102,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
-            ReadFeedState readFeedState,
-            FeedRangeInternal feedRange,
-            QueryRequestOptions queryRequestOptions,
-            int pageSize,
+            FeedRangeState<ReadFeedState> feedRangeState,
+            ReadFeedPaginationOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            ReadFeedState readFeedState = feedRangeState.State;
             if ((readFeedState != null) && readFeedState.Equals(ReadFeedNotStartedState))
             {
                 readFeedState = null;
@@ -135,25 +133,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             return this.documentContainer.MonadicReadFeedAsync(
-                readFeedState,
-                feedRange,
-                queryRequestOptions,
-                pageSize,
+                feedRangeState,
+                readFeedPaginationOptions,
                 trace,
                 cancellationToken);
         }
 
         public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
-            FeedRangeInternal feedRange,
-            int pageSize,
+            FeedRangeState<QueryState> feedRangeState,
+            QueryPaginationOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (continuationToken == ContinuationForStartedButNoDocumentsReturned)
+            if (feedRangeState.State == StateForStartedButNoDocumentsReturned)
             {
-                continuationToken = null;
+                feedRangeState = new FeedRangeState<QueryState>(feedRangeState.FeedRange, null);
             }
 
             if (this.ShouldReturn429())
@@ -163,17 +158,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (this.ShouldReturnEmptyPage())
             {
-                string nonNullContinuationToken;
-                if (continuationToken == null)
-                {
-                    // We can't return a null continuation, since that signals the query has ended.
-                    nonNullContinuationToken = ContinuationForStartedButNoDocumentsReturned;
-                }
-                else
-                {
-                    nonNullContinuationToken = continuationToken;
-                }
-
                 return Task.FromResult(
                     TryCatch<QueryPage>.FromResult(
                         new QueryPage(
@@ -183,24 +167,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
-                            state: new QueryState(CosmosString.Create(nonNullContinuationToken)))));
+                            state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned)));
             }
 
             return this.documentContainer.MonadicQueryAsync(
                 sqlQuerySpec,
-                continuationToken,
-                feedRange,
-                pageSize,
+                feedRangeState,
+                queryPaginationOptions,
                 trace,
                 cancellationToken);
         }
 
         public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            ChangeFeedState state, 
-            FeedRangeInternal feedRange, 
-            int pageSize, 
-            ChangeFeedMode changeFeedMode,
-            JsonSerializationFormat? jsonSerializationFormat,
+            FeedRangeState<ChangeFeedState> feedRangeState, 
+            ChangeFeedPaginationOptions changeFeedPaginationOptions, 
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -217,15 +197,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
-                            state: state)));
+                            state: feedRangeState.State)));
             }
 
             return this.documentContainer.MonadicChangeFeedAsync(
-                state,
-                feedRange,
-                pageSize,
-                changeFeedMode,
-                jsonSerializationFormat,
+                feedRangeState,
+                changeFeedPaginationOptions,
                 trace,
                 cancellationToken);
         }

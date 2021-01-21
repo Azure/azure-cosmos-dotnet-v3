@@ -10,6 +10,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
 
     /// <summary>
     /// A helper that forces the SDK to use the gateway or the service interop for the query plan

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             IReadOnlyList<FeedRangeEpk> targetRanges,
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
-            int pageSize,
+            QueryPaginationOptions queryPaginationOptions,
             int maxConcurrency,
             CosmosElement requestContinuationToken,
             CancellationToken requestCancellationToken)
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     orderByColumns: queryInfo
                         .OrderByExpressions
                         .Zip(queryInfo.OrderBy, (expression, sortOrder) => new OrderByColumn(expression, sortOrder)).ToList(),
-                    pageSize: pageSize,
+                    queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken,
                     cancellationToken: cancellationToken);
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
-                    pageSize: pageSize,
+                    queryPaginationOptions: queryPaginationOptions,
                     partitionKey: partitionKey,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken,
@@ -127,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
                     queryInfo.HasSelectValue,
-                    pageSize);
+                    (queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeHint.GetValueOrDefault(int.MaxValue));
             }
 
             if (queryInfo.HasOffset)

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -168,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer,
                 queryRequestOptions: null,
                 continuationToken: continuationToken,
-                pageSize: pageSize,
+                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: pageSize),
                 cancellationToken: default);
         }
 
