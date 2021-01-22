@@ -41,10 +41,6 @@
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               │   (
-    │                               │       [CPU Load History]
-    │                               │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                               │   )
     │                               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                       └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -52,9 +48,7 @@
     │                                               └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                                       (
     │                                                           [Client Side Request Stats]
-    │                                                           
-    │                                                           RequestStartTime: 2021-01-22T22:07:19.3907648Z, RequestEndTime: 2021-01-22T22:07:19.4213106Z,  Number of regions attempted:1
-    │                                                           ResponseTime: 2021-01-22T22:07:19.4213106Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.21, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                                           Redacted To Not Change The Baselines From Run To Run
     │                                                       )
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -65,10 +59,6 @@
     │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           │   (
-    │                           │       [CPU Load History]
-    │                           │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                           │   )
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -76,9 +66,7 @@
     │                                           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                                   (
     │                                                       [Client Side Request Stats]
-    │                                                       
-    │                                                       RequestStartTime: 2021-01-22T22:07:19.4336230Z, RequestEndTime: 2021-01-22T22:07:19.4428511Z,  Number of regions attempted:1
-    │                                                       ResponseTime: 2021-01-22T22:07:19.4428511Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.78, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -89,10 +77,6 @@
     │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           │   (
-    │                           │       [CPU Load History]
-    │                           │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                           │   )
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -100,9 +84,7 @@
     │                                           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                                   (
     │                                                       [Client Side Request Stats]
-    │                                                       
-    │                                                       RequestStartTime: 2021-01-22T22:07:19.4512578Z, RequestEndTime: 2021-01-22T22:07:19.4543417Z,  Number of regions attempted:1
-    │                                                       ResponseTime: 2021-01-22T22:07:19.4543417Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.44, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
     └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -113,10 +95,6 @@
                     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                             └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                │   (
-                                │       [CPU Load History]
-                                │       (2021-01-22T22:07:15.2170357Z 76.923)
-                                │   )
                                 └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                     └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                         └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -124,9 +102,7 @@
                                                 └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                                         (
                                                             [Client Side Request Stats]
-                                                            
-                                                            RequestStartTime: 2021-01-22T22:07:19.4546904Z, RequestEndTime: 2021-01-22T22:07:19.4567462Z,  Number of regions attempted:1
-                                                            ResponseTime: 2021-01-22T22:07:19.4567462Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.32, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+                                                            Redacted To Not Change The Baselines From Run To Run
                                                         )
 ]]></Text>
       <Json><![CDATA[{
@@ -446,11 +422,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -516,7 +488,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.3907648Z, RequestEndTime: 2021-01-22T22:07:19.4213106Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.4213106Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.21, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -661,11 +633,7 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "CPU Load History": {
-                                  "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                }
-                              },
+                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -731,7 +699,7 @@
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
                                                   "data": {
-                                                    "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.4336230Z, RequestEndTime: 2021-01-22T22:07:19.4428511Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.4428511Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.78, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                   },
                                                   "children": []
                                                 }
@@ -874,11 +842,7 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "CPU Load History": {
-                                  "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                }
-                              },
+                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -944,7 +908,7 @@
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
                                                   "data": {
-                                                    "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.4512578Z, RequestEndTime: 2021-01-22T22:07:19.4543417Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.4543417Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.44, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                   },
                                                   "children": []
                                                 }
@@ -1087,11 +1051,7 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "CPU Load History": {
-                                  "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                }
-                              },
+                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -1157,7 +1117,7 @@
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
                                                   "data": {
-                                                    "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.4546904Z, RequestEndTime: 2021-01-22T22:07:19.4567462Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.4567462Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.32, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                   },
                                                   "children": []
                                                 }
@@ -1235,10 +1195,6 @@
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               │   (
-    │                               │       [CPU Load History]
-    │                               │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                               │   )
     │                               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                       └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1246,9 +1202,7 @@
     │                                               └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                                       (
     │                                                           [Client Side Request Stats]
-    │                                                           
-    │                                                           RequestStartTime: 2021-01-22T22:07:19.4806407Z, RequestEndTime: 2021-01-22T22:07:19.4835138Z,  Number of regions attempted:1
-    │                                                           ResponseTime: 2021-01-22T22:07:19.4835138Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.21, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                                           Redacted To Not Change The Baselines From Run To Run
     │                                                       )
     ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1261,10 +1215,6 @@
     │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           │   (
-    │                           │       [CPU Load History]
-    │                           │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                           │   )
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1272,9 +1222,7 @@
     │                                           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                                   (
     │                                                       [Client Side Request Stats]
-    │                                                       
-    │                                                       RequestStartTime: 2021-01-22T22:07:19.4948276Z, RequestEndTime: 2021-01-22T22:07:19.4978875Z,  Number of regions attempted:1
-    │                                                       ResponseTime: 2021-01-22T22:07:19.4978875Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.78, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
     ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1287,10 +1235,6 @@
     │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           │   (
-    │                           │       [CPU Load History]
-    │                           │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                           │   )
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1298,9 +1242,7 @@
     │                                           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                                   (
     │                                                       [Client Side Request Stats]
-    │                                                       
-    │                                                       RequestStartTime: 2021-01-22T22:07:19.4985135Z, RequestEndTime: 2021-01-22T22:07:19.5013729Z,  Number of regions attempted:1
-    │                                                       ResponseTime: 2021-01-22T22:07:19.5013729Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.44, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
     ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1313,10 +1255,6 @@
     │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           │   (
-    │                           │       [CPU Load History]
-    │                           │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                           │   )
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1324,9 +1262,7 @@
     │                                           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                                   (
     │                                                       [Client Side Request Stats]
-    │                                                       
-    │                                                       RequestStartTime: 2021-01-22T22:07:19.5018295Z, RequestEndTime: 2021-01-22T22:07:19.5036365Z,  Number of regions attempted:1
-    │                                                       ResponseTime: 2021-01-22T22:07:19.5036365Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.32, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
     ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1339,10 +1275,6 @@
     │   │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │                       │   (
-    │   │                       │       [CPU Load History]
-    │   │                       │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │   │                       │   )
     │   │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │                               ├── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1350,9 +1282,7 @@
     │   │                               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │                               │               (
     │   │                               │                   [Client Side Request Stats]
-    │   │                               │                   
-    │   │                               │                   RequestStartTime: 2021-01-22T22:07:19.5046512Z, RequestEndTime: 2021-01-22T22:07:19.5066041Z,  Number of regions attempted:1
-    │   │                               │                   ResponseTime: 2021-01-22T22:07:19.5066041Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │   │                               │                   Redacted To Not Change The Baselines From Run To Run
     │   │                               │               )
     │   │                               └── Should Retry Check(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Drain NotModified Pages(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1364,10 +1294,6 @@
     │       │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │                       │   (
-    │       │                       │       [CPU Load History]
-    │       │                       │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │       │                       │   )
     │       │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                               ├── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1375,9 +1301,7 @@
     │       │                               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                               │               (
     │       │                               │                   [Client Side Request Stats]
-    │       │                               │                   
-    │       │                               │                   RequestStartTime: 2021-01-22T22:07:19.5187117Z, RequestEndTime: 2021-01-22T22:07:19.5220760Z,  Number of regions attempted:1
-    │       │                               │                   ResponseTime: 2021-01-22T22:07:19.5220760Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │       │                               │                   Redacted To Not Change The Baselines From Run To Run
     │       │                               │               )
     │       │                               └── Should Retry Check(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1388,10 +1312,6 @@
     │       │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │                       │   (
-    │       │                       │       [CPU Load History]
-    │       │                       │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │       │                       │   )
     │       │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                               ├── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1399,9 +1319,7 @@
     │       │                               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                               │               (
     │       │                               │                   [Client Side Request Stats]
-    │       │                               │                   
-    │       │                               │                   RequestStartTime: 2021-01-22T22:07:19.5265443Z, RequestEndTime: 2021-01-22T22:07:19.5285296Z,  Number of regions attempted:1
-    │       │                               │                   ResponseTime: 2021-01-22T22:07:19.5285296Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │       │                               │                   Redacted To Not Change The Baselines From Run To Run
     │       │                               │               )
     │       │                               └── Should Retry Check(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1412,10 +1330,6 @@
     │       │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │                       │   (
-    │       │                       │       [CPU Load History]
-    │       │                       │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │       │                       │   )
     │       │                       └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                               ├── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1423,9 +1337,7 @@
     │       │                               │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       │                               │               (
     │       │                               │                   [Client Side Request Stats]
-    │       │                               │                   
-    │       │                               │                   RequestStartTime: 2021-01-22T22:07:19.5333925Z, RequestEndTime: 2021-01-22T22:07:19.5364909Z,  Number of regions attempted:1
-    │       │                               │                   ResponseTime: 2021-01-22T22:07:19.5364909Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │       │                               │                   Redacted To Not Change The Baselines From Run To Run
     │       │                               │               )
     │       │                               └── Should Retry Check(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1436,10 +1348,6 @@
     │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               │   (
-    │                               │       [CPU Load History]
-    │                               │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │                               │   )
     │                               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                       ├── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1447,9 +1355,7 @@
     │                                       │       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                                       │               (
     │                                       │                   [Client Side Request Stats]
-    │                                       │                   
-    │                                       │                   RequestStartTime: 2021-01-22T22:07:19.5405108Z, RequestEndTime: 2021-01-22T22:07:19.5430472Z,  Number of regions attempted:1
-    │                                       │                   ResponseTime: 2021-01-22T22:07:19.5430472Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed
+    │                                       │                   Redacted To Not Change The Baselines From Run To Run
     │                                       │               )
     │                                       └── Should Retry Check(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1772,11 +1678,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -1842,7 +1744,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.4806407Z, RequestEndTime: 2021-01-22T22:07:19.4835138Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.4835138Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.21, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -2015,11 +1917,7 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "CPU Load History": {
-                                  "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                }
-                              },
+                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2085,7 +1983,7 @@
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
                                                   "data": {
-                                                    "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.4948276Z, RequestEndTime: 2021-01-22T22:07:19.4978875Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.4978875Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.78, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                   },
                                                   "children": []
                                                 }
@@ -2256,11 +2154,7 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "CPU Load History": {
-                                  "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                }
-                              },
+                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2326,7 +2220,7 @@
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
                                                   "data": {
-                                                    "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.4985135Z, RequestEndTime: 2021-01-22T22:07:19.5013729Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.5013729Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.44, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                   },
                                                   "children": []
                                                 }
@@ -2497,11 +2391,7 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "CPU Load History": {
-                                  "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                }
-                              },
+                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2567,7 +2457,7 @@
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
                                                   "data": {
-                                                    "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.5018295Z, RequestEndTime: 2021-01-22T22:07:19.5036365Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.5036365Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1.32, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                   },
                                                   "children": []
                                                 }
@@ -2738,11 +2628,7 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {
-                                "CPU Load History": {
-                                  "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                }
-                              },
+                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2808,7 +2694,7 @@
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
                                                   "data": {
-                                                    "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.5046512Z, RequestEndTime: 2021-01-22T22:07:19.5066041Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.5066041Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                   },
                                                   "children": []
                                                 }
@@ -2963,11 +2849,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3033,7 +2915,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.5187117Z, RequestEndTime: 2021-01-22T22:07:19.5220760Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.5220760Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -3175,11 +3057,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3245,7 +3123,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.5265443Z, RequestEndTime: 2021-01-22T22:07:19.5285296Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.5285296Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -3387,11 +3265,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3457,7 +3331,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.5333925Z, RequestEndTime: 2021-01-22T22:07:19.5364909Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.5364909Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -3599,11 +3473,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3669,7 +3539,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.5405108Z, RequestEndTime: 2021-01-22T22:07:19.5430472Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.5430472Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 304, SubStatusCode: 0, RequestCharge: 1, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: ReadFeed\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -3775,29 +3645,7 @@
     │           └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │   (
     │               │       [Query Metrics]
-    │               │       Retrieved Document Count                 :              21             
-    │               │       Retrieved Document Size                  :           4,682 bytes       
-    │               │       Output Document Count                    :              21             
-    │               │       Output Document Size                     :           4,752 bytes       
-    │               │       Index Utilization                        :          100.00 %           
-    │               │       Total Query Execution Time               :            0.73 milliseconds
-    │               │         Query Preparation Times
-    │               │           Query Compilation Time               :            0.12 milliseconds
-    │               │           Logical Plan Build Time              :            0.05 milliseconds
-    │               │           Physical Plan Build Time             :            0.06 milliseconds
-    │               │           Query Optimization Time              :            0.00 milliseconds
-    │               │         Index Lookup Time                      :            0.00 milliseconds
-    │               │         Document Load Time                     :            0.15 milliseconds
-    │               │         Runtime Execution Times
-    │               │           Query Engine Times                   :            0.05 milliseconds
-    │               │           System Function Execution Time       :            0.00 milliseconds
-    │               │           User-defined Function Execution Time :            0.00 milliseconds
-    │               │         Document Write Time                    :            0.00 milliseconds
-    │               │       Index Utilization Information
-    │               │         Utilized Single Indexes
-    │               │         Potential Single Indexes
-    │               │         Utilized Composite Indexes
-    │               │         Potential Composite Indexes
+    │               │       Redacted To Not Change The Baselines From Run To Run
     │               │   )
     │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3805,10 +3653,6 @@
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               │               │   (
-    │               │               │       [CPU Load History]
-    │               │               │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │               │               │   )
     │               │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                       └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3816,9 +3660,7 @@
     │               │                               └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                                       (
     │               │                                           [Client Side Request Stats]
-    │               │                                           
-    │               │                                           RequestStartTime: 2021-01-22T22:07:19.6514516Z, RequestEndTime: 2021-01-22T22:07:19.6550025Z,  Number of regions attempted:1
-    │               │                                           ResponseTime: 2021-01-22T22:07:19.6550025Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.61, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query
+    │               │                                           Redacted To Not Change The Baselines From Run To Run
     │               │                                       )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3827,29 +3669,7 @@
     │           └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │   (
     │               │       [Query Metrics]
-    │               │       Retrieved Document Count                 :              31             
-    │               │       Retrieved Document Size                  :           6,910 bytes       
-    │               │       Output Document Count                    :              31             
-    │               │       Output Document Size                     :           6,990 bytes       
-    │               │       Index Utilization                        :          100.00 %           
-    │               │       Total Query Execution Time               :            0.69 milliseconds
-    │               │         Query Preparation Times
-    │               │           Query Compilation Time               :            0.14 milliseconds
-    │               │           Logical Plan Build Time              :            0.03 milliseconds
-    │               │           Physical Plan Build Time             :            0.05 milliseconds
-    │               │           Query Optimization Time              :            0.00 milliseconds
-    │               │         Index Lookup Time                      :            0.00 milliseconds
-    │               │         Document Load Time                     :            0.20 milliseconds
-    │               │         Runtime Execution Times
-    │               │           Query Engine Times                   :            0.03 milliseconds
-    │               │           System Function Execution Time       :            0.00 milliseconds
-    │               │           User-defined Function Execution Time :            0.00 milliseconds
-    │               │         Document Write Time                    :            0.01 milliseconds
-    │               │       Index Utilization Information
-    │               │         Utilized Single Indexes
-    │               │         Potential Single Indexes
-    │               │         Utilized Composite Indexes
-    │               │         Potential Composite Indexes
+    │               │       Redacted To Not Change The Baselines From Run To Run
     │               │   )
     │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3857,10 +3677,6 @@
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               │               │   (
-    │               │               │       [CPU Load History]
-    │               │               │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │               │               │   )
     │               │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                       └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3868,9 +3684,7 @@
     │               │                               └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                                       (
     │               │                                           [Client Side Request Stats]
-    │               │                                           
-    │               │                                           RequestStartTime: 2021-01-22T22:07:19.6983415Z, RequestEndTime: 2021-01-22T22:07:19.7018334Z,  Number of regions attempted:1
-    │               │                                           ResponseTime: 2021-01-22T22:07:19.7018334Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.78, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query
+    │               │                                           Redacted To Not Change The Baselines From Run To Run
     │               │                                       )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3879,29 +3693,7 @@
     │           └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │   (
     │               │       [Query Metrics]
-    │               │       Retrieved Document Count                 :              25             
-    │               │       Retrieved Document Size                  :           5,573 bytes       
-    │               │       Output Document Count                    :              25             
-    │               │       Output Document Size                     :           5,647 bytes       
-    │               │       Index Utilization                        :          100.00 %           
-    │               │       Total Query Execution Time               :            0.46 milliseconds
-    │               │         Query Preparation Times
-    │               │           Query Compilation Time               :            0.08 milliseconds
-    │               │           Logical Plan Build Time              :            0.02 milliseconds
-    │               │           Physical Plan Build Time             :            0.03 milliseconds
-    │               │           Query Optimization Time              :            0.00 milliseconds
-    │               │         Index Lookup Time                      :            0.00 milliseconds
-    │               │         Document Load Time                     :            0.12 milliseconds
-    │               │         Runtime Execution Times
-    │               │           Query Engine Times                   :            0.03 milliseconds
-    │               │           System Function Execution Time       :            0.00 milliseconds
-    │               │           User-defined Function Execution Time :            0.00 milliseconds
-    │               │         Document Write Time                    :            0.00 milliseconds
-    │               │       Index Utilization Information
-    │               │         Utilized Single Indexes
-    │               │         Potential Single Indexes
-    │               │         Utilized Composite Indexes
-    │               │         Potential Composite Indexes
+    │               │       Redacted To Not Change The Baselines From Run To Run
     │               │   )
     │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3909,10 +3701,6 @@
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               │               │   (
-    │               │               │       [CPU Load History]
-    │               │               │       (2021-01-22T22:07:15.2170357Z 76.923)
-    │               │               │   )
     │               │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                       └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3920,9 +3708,7 @@
     │               │                               └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               │                                       (
     │               │                                           [Client Side Request Stats]
-    │               │                                           
-    │               │                                           RequestStartTime: 2021-01-22T22:07:19.7043799Z, RequestEndTime: 2021-01-22T22:07:19.7071155Z,  Number of regions attempted:1
-    │               │                                           ResponseTime: 2021-01-22T22:07:19.7071155Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.68, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query
+    │               │                                           Redacted To Not Change The Baselines From Run To Run
     │               │                                       )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3931,29 +3717,7 @@
                 └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     │   (
                     │       [Query Metrics]
-                    │       Retrieved Document Count                 :              23             
-                    │       Retrieved Document Size                  :           5,125 bytes       
-                    │       Output Document Count                    :              23             
-                    │       Output Document Size                     :           5,197 bytes       
-                    │       Index Utilization                        :          100.00 %           
-                    │       Total Query Execution Time               :            0.31 milliseconds
-                    │         Query Preparation Times
-                    │           Query Compilation Time               :            0.04 milliseconds
-                    │           Logical Plan Build Time              :            0.02 milliseconds
-                    │           Physical Plan Build Time             :            0.02 milliseconds
-                    │           Query Optimization Time              :            0.00 milliseconds
-                    │         Index Lookup Time                      :            0.00 milliseconds
-                    │         Document Load Time                     :            0.11 milliseconds
-                    │         Runtime Execution Times
-                    │           Query Engine Times                   :            0.02 milliseconds
-                    │           System Function Execution Time       :            0.00 milliseconds
-                    │           User-defined Function Execution Time :            0.00 milliseconds
-                    │         Document Write Time                    :            0.01 milliseconds
-                    │       Index Utilization Information
-                    │         Utilized Single Indexes
-                    │         Potential Single Indexes
-                    │         Utilized Composite Indexes
-                    │         Potential Composite Indexes
+                    │       Redacted To Not Change The Baselines From Run To Run
                     │   )
                     ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3961,10 +3725,6 @@
                     │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     │       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     │           └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    │               │   (
-                    │               │       [CPU Load History]
-                    │               │       (2021-01-22T22:07:15.2170357Z 76.923)
-                    │               │   )
                     │               └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     │                       └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3972,9 +3732,7 @@
                     │                               └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     │                                       (
                     │                                           [Client Side Request Stats]
-                    │                                           
-                    │                                           RequestStartTime: 2021-01-22T22:07:19.7083274Z, RequestEndTime: 2021-01-22T22:07:19.7106111Z,  Number of regions attempted:1
-                    │                                           ResponseTime: 2021-01-22T22:07:19.7106111Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.65, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query
+                    │                                           Redacted To Not Change The Baselines From Run To Run
                     │                                       )
                     └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
@@ -4128,7 +3886,7 @@
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
-                    "Query Metrics": "Retrieved Document Count                 :              21             \r\nRetrieved Document Size                  :           4,682 bytes       \r\nOutput Document Count                    :              21             \r\nOutput Document Size                     :           4,752 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :            0.73 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.12 milliseconds\r\n    Logical Plan Build Time              :            0.05 milliseconds\r\n    Physical Plan Build Time             :            0.06 milliseconds\r\n    Query Optimization Time              :            0.00 milliseconds\r\n  Index Lookup Time                      :            0.00 milliseconds\r\n  Document Load Time                     :            0.15 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :            0.05 milliseconds\r\n    System Function Execution Time       :            0.00 milliseconds\r\n    User-defined Function Execution Time :            0.00 milliseconds\r\n  Document Write Time                    :            0.00 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n  Potential Single Indexes\r\n  Utilized Composite Indexes\r\n  Potential Composite Indexes\r\n"
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
                   },
                   "children": [
                     {
@@ -4209,11 +3967,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -4279,7 +4033,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.6514516Z, RequestEndTime: 2021-01-22T22:07:19.6550025Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.6550025Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer3/partitions/a4cb494f-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 111, GlobalCommittedLsn: -1, PartitionKeyRangeId: 0, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.61, ItemLSN: -1, SessionToken: -1#111, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -4372,7 +4126,7 @@
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
-                    "Query Metrics": "Retrieved Document Count                 :              31             \r\nRetrieved Document Size                  :           6,910 bytes       \r\nOutput Document Count                    :              31             \r\nOutput Document Size                     :           6,990 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :            0.69 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.14 milliseconds\r\n    Logical Plan Build Time              :            0.03 milliseconds\r\n    Physical Plan Build Time             :            0.05 milliseconds\r\n    Query Optimization Time              :            0.00 milliseconds\r\n  Index Lookup Time                      :            0.00 milliseconds\r\n  Document Load Time                     :            0.20 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :            0.03 milliseconds\r\n    System Function Execution Time       :            0.00 milliseconds\r\n    User-defined Function Execution Time :            0.00 milliseconds\r\n  Document Write Time                    :            0.01 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n  Potential Single Indexes\r\n  Utilized Composite Indexes\r\n  Potential Composite Indexes\r\n"
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
                   },
                   "children": [
                     {
@@ -4453,11 +4207,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -4523,7 +4273,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.6983415Z, RequestEndTime: 2021-01-22T22:07:19.7018334Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.7018334Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.78, ItemLSN: -1, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -4616,7 +4366,7 @@
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
-                    "Query Metrics": "Retrieved Document Count                 :              25             \r\nRetrieved Document Size                  :           5,573 bytes       \r\nOutput Document Count                    :              25             \r\nOutput Document Size                     :           5,647 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :            0.46 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.08 milliseconds\r\n    Logical Plan Build Time              :            0.02 milliseconds\r\n    Physical Plan Build Time             :            0.03 milliseconds\r\n    Query Optimization Time              :            0.00 milliseconds\r\n  Index Lookup Time                      :            0.00 milliseconds\r\n  Document Load Time                     :            0.12 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :            0.03 milliseconds\r\n    System Function Execution Time       :            0.00 milliseconds\r\n    User-defined Function Execution Time :            0.00 milliseconds\r\n  Document Write Time                    :            0.00 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n  Potential Single Indexes\r\n  Utilized Composite Indexes\r\n  Potential Composite Indexes\r\n"
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
                   },
                   "children": [
                     {
@@ -4697,11 +4447,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -4767,7 +4513,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.7043799Z, RequestEndTime: 2021-01-22T22:07:19.7071155Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.7071155Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer8/partitions/a4cb4954-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 110, GlobalCommittedLsn: -1, PartitionKeyRangeId: 2, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.68, ItemLSN: -1, SessionToken: -1#110, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -4860,7 +4606,7 @@
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
-                    "Query Metrics": "Retrieved Document Count                 :              23             \r\nRetrieved Document Size                  :           5,125 bytes       \r\nOutput Document Count                    :              23             \r\nOutput Document Size                     :           5,197 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :            0.31 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.04 milliseconds\r\n    Logical Plan Build Time              :            0.02 milliseconds\r\n    Physical Plan Build Time             :            0.02 milliseconds\r\n    Query Optimization Time              :            0.00 milliseconds\r\n  Index Lookup Time                      :            0.00 milliseconds\r\n  Document Load Time                     :            0.11 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :            0.02 milliseconds\r\n    System Function Execution Time       :            0.00 milliseconds\r\n    User-defined Function Execution Time :            0.00 milliseconds\r\n  Document Write Time                    :            0.01 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n  Potential Single Indexes\r\n  Utilized Composite Indexes\r\n  Potential Composite Indexes\r\n"
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
                   },
                   "children": [
                     {
@@ -4941,11 +4687,7 @@
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "CPU Load History": {
-                                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                                    }
-                                  },
+                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -5011,7 +4753,7 @@
                                                       "start time": "12:00:00:000",
                                                       "duration in milliseconds": 0,
                                                       "data": {
-                                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.7083274Z, RequestEndTime: 2021-01-22T22:07:19.7106111Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.7106111Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 129, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 2.65, ItemLSN: -1, SessionToken: -1#129, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Query\r\n"
+                                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                                       },
                                                       "children": []
                                                     }
@@ -5070,161 +4812,151 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ReadItemAsync(e852fe4f-7da4-4a85-8e19-0d97ccb4bac7)  Unknown-Component  GetRootTrace@Trace.cs:97  10:07:19:712  5.43 milliseconds  
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(b2465286-56ba-406e-9bd9-05ea19245147)  RequestHandler-Component  SendAsync@RequestInvokerHandler.cs:130  10:07:19:715  3.34 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(93ed7205-e3b1-4701-80c7-49719f507b17)  RequestHandler-Component  SendAsync@RequestInvokerHandler.cs:51  10:07:19:715  3.31 milliseconds  
-            └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(8494b516-dcf4-433f-8839-4824f6fda91b)  RequestHandler-Component  SendAsync@RequestHandler.cs:50  10:07:19:715  2.48 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(0b1bd890-b538-4412-b8d3-75853ea14c83)  RequestHandler-Component  SendAsync@DiagnosticsHandler.cs:27  10:07:19:715  2.48 milliseconds  
-                    │   (
-                    │       [CPU Load History]
-                    │       (2021-01-22T22:07:15.2170357Z 76.923)
-                    │   )
-                    └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(85e2a411-ef02-412d-9b58-263b4671a456)  RequestHandler-Component  SendAsync@RequestHandler.cs:50  10:07:19:715  2.48 milliseconds  
-                        └── Send Async(807be5d3-e0f3-4e18-a0fd-9ffdc9c15909)  RequestHandler-Component  SendAsync@AbstractRetryHandler.cs:23  10:07:19:715  3.26 milliseconds  
-                            └── Abstract Retry Handler(4047f85c-4b15-4baa-b2c0-f146397f7ca6)  RequestHandler-Component  SendAsync@AbstractRetryHandler.cs:34  10:07:19:715  2.28 milliseconds  
-                                └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(65048687-3eb4-4302-a664-c5c228af4447)  RequestHandler-Component  SendAsync@RequestHandler.cs:50  10:07:19:715  2.28 milliseconds  
-                                    └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(3ec08b2c-d7f3-49c5-806e-c37256e54f38)  Transport-Component  ProcessMessageAsync@TransportHandler.cs:85  10:07:19:715  3.05 milliseconds  
+└── ReadItemAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                            └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                    └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                             (
                                                 [Client Side Request Stats]
-                                                
-                                                RequestStartTime: 2021-01-22T22:07:19.7152236Z, RequestEndTime: 2021-01-22T22:07:19.7180162Z,  Number of regions attempted:1
-                                                ResponseTime: 2021-01-22T22:07:19.7180162Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1, ItemLSN: 98, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Read
+                                                Redacted To Not Change The Baselines From Run To Run
                                             )
 ]]></Text>
       <Json><![CDATA[{
   "name": "ReadItemAsync",
-  "id": "e852fe4f-7da4-4a85-8e19-0d97ccb4bac7",
+  "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
   "caller information": {
-    "member name": "GetRootTrace",
-    "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Tracing\\Trace.cs",
-    "line number": 97
+    "member name": "MemberName",
+    "file path": "FilePath",
+    "line number": 42
   },
-  "start time": "10:07:19:712",
-  "duration in milliseconds": 5.4328,
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
   "data": {},
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "b2465286-56ba-406e-9bd9-05ea19245147",
+      "id": "00000000-0000-0000-0000-000000000000",
       "component": "RequestHandler",
       "caller information": {
-        "member name": "SendAsync",
-        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestInvokerHandler.cs",
-        "line number": 130
+        "member name": "MemberName",
+        "file path": "FilePath",
+        "line number": 42
       },
-      "start time": "10:07:19:715",
-      "duration in milliseconds": 3.341,
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
       "data": {},
       "children": [
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "id": "93ed7205-e3b1-4701-80c7-49719f507b17",
+          "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
           "caller information": {
-            "member name": "SendAsync",
-            "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestInvokerHandler.cs",
-            "line number": 51
+            "member name": "MemberName",
+            "file path": "FilePath",
+            "line number": 42
           },
-          "start time": "10:07:19:715",
-          "duration in milliseconds": 3.3124000000000002,
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
           "data": {},
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-              "id": "8494b516-dcf4-433f-8839-4824f6fda91b",
+              "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
               "caller information": {
-                "member name": "SendAsync",
-                "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestHandler.cs",
-                "line number": 50
+                "member name": "MemberName",
+                "file path": "FilePath",
+                "line number": 42
               },
-              "start time": "10:07:19:715",
-              "duration in milliseconds": 2.4795000000000003,
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
               "data": {},
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                  "id": "0b1bd890-b538-4412-b8d3-75853ea14c83",
+                  "id": "00000000-0000-0000-0000-000000000000",
                   "component": "RequestHandler",
                   "caller information": {
-                    "member name": "SendAsync",
-                    "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\DiagnosticsHandler.cs",
-                    "line number": 27
+                    "member name": "MemberName",
+                    "file path": "FilePath",
+                    "line number": 42
                   },
-                  "start time": "10:07:19:715",
-                  "duration in milliseconds": 2.4783,
-                  "data": {
-                    "CPU Load History": {
-                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                    }
-                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                      "id": "85e2a411-ef02-412d-9b58-263b4671a456",
+                      "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
                       "caller information": {
-                        "member name": "SendAsync",
-                        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestHandler.cs",
-                        "line number": 50
+                        "member name": "MemberName",
+                        "file path": "FilePath",
+                        "line number": 42
                       },
-                      "start time": "10:07:19:715",
-                      "duration in milliseconds": 2.4751000000000003,
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
                       "data": {},
                       "children": [
                         {
                           "name": "Send Async",
-                          "id": "807be5d3-e0f3-4e18-a0fd-9ffdc9c15909",
+                          "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
                           "caller information": {
-                            "member name": "SendAsync",
-                            "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\AbstractRetryHandler.cs",
-                            "line number": 23
+                            "member name": "MemberName",
+                            "file path": "FilePath",
+                            "line number": 42
                           },
-                          "start time": "10:07:19:715",
-                          "duration in milliseconds": 3.2643,
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
                           "data": {},
                           "children": [
                             {
                               "name": "Abstract Retry Handler",
-                              "id": "4047f85c-4b15-4baa-b2c0-f146397f7ca6",
+                              "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
                               "caller information": {
-                                "member name": "SendAsync",
-                                "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\AbstractRetryHandler.cs",
-                                "line number": 34
+                                "member name": "MemberName",
+                                "file path": "FilePath",
+                                "line number": 42
                               },
-                              "start time": "10:07:19:715",
-                              "duration in milliseconds": 2.2805,
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
                               "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "65048687-3eb4-4302-a664-c5c228af4447",
+                                  "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
                                   "caller information": {
-                                    "member name": "SendAsync",
-                                    "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestHandler.cs",
-                                    "line number": 50
+                                    "member name": "MemberName",
+                                    "file path": "FilePath",
+                                    "line number": 42
                                   },
-                                  "start time": "10:07:19:715",
-                                  "duration in milliseconds": 2.2792,
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
                                   "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                      "id": "3ec08b2c-d7f3-49c5-806e-c37256e54f38",
+                                      "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "Transport",
                                       "caller information": {
-                                        "member name": "ProcessMessageAsync",
-                                        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\TransportHandler.cs",
-                                        "line number": 85
+                                        "member name": "MemberName",
+                                        "file path": "FilePath",
+                                        "line number": 42
                                       },
-                                      "start time": "10:07:19:715",
-                                      "duration in milliseconds": 3.0531,
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
                                       "data": {
-                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:19.7152236Z, RequestEndTime: 2021-01-22T22:07:19.7180162Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:19.7180162Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer22/partitions/a4cb4962-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 128, GlobalCommittedLsn: -1, PartitionKeyRangeId: 1, IsValid: True, StatusCode: 200, SubStatusCode: 0, RequestCharge: 1, ItemLSN: 98, SessionToken: -1#128, UsingLocalLSN: True, TransportException: null, ResourceType: Document, OperationType: Read\r\n"
+                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                       },
                                       "children": []
                                     }
@@ -5265,191 +4997,181 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── CreateItemAsync(65a9308e-8f7d-4a63-b68f-3a4e6e8eae03)  Unknown-Component  GetRootTrace@Trace.cs:97  10:07:24:548  12.15 milliseconds  
-    ├── ItemSerialize(9735964a-cef7-43e5-8de4-0b29e2346079)  Unknown-Component  ExtractPartitionKeyAndProcessItemStreamAsync@ContainerCore.Items.cs:723  10:07:24:548  1.33 milliseconds  
-    ├── Get PkValue From Stream(f60e795f-8986-4204-9336-1a703b3a6a37)  Routing-Component  GetPartitionKeyValueFromStreamAsync@ContainerCore.Items.cs:829  10:07:24:549  0.72 milliseconds  
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(2fcba187-b513-4c8d-a5b5-989a6d7b4901)  RequestHandler-Component  SendAsync@RequestInvokerHandler.cs:130  10:07:24:550  11.01 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(958155d7-3eb7-4fc2-942d-34c6c4c3c05f)  RequestHandler-Component  SendAsync@RequestInvokerHandler.cs:51  10:07:24:550  10.86 milliseconds  
-            └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(0b9a19cd-1c9f-4c15-9e2b-32182ebcab92)  RequestHandler-Component  SendAsync@RequestHandler.cs:50  10:07:24:550  7.58 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(2cf6223f-9e98-47e0-afef-91e1feea70dd)  RequestHandler-Component  SendAsync@DiagnosticsHandler.cs:27  10:07:24:550  7.58 milliseconds  
-                    │   (
-                    │       [CPU Load History]
-                    │       (2021-01-22T22:07:15.2170357Z 76.923)
-                    │   )
-                    └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(bc4cc3f8-1632-4c74-9b44-aa1aaa674ce9)  RequestHandler-Component  SendAsync@RequestHandler.cs:50  10:07:24:550  7.57 milliseconds  
-                        └── Send Async(9deef6d9-ead6-4f08-a895-27b95c7226b7)  RequestHandler-Component  SendAsync@AbstractRetryHandler.cs:23  10:07:24:550  10.78 milliseconds  
-                            └── Abstract Retry Handler(ebc9716d-b19f-4bbf-a40e-5e39be9fe3ff)  RequestHandler-Component  SendAsync@AbstractRetryHandler.cs:34  10:07:24:550  7.46 milliseconds  
-                                └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(25786c1c-7935-4dc0-b0a5-2c0954e93d88)  RequestHandler-Component  SendAsync@RequestHandler.cs:50  10:07:24:550  7.45 milliseconds  
-                                    └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(c4ed3ce9-fc8a-4e7e-b9bf-6662be6119ee)  Transport-Component  ProcessMessageAsync@TransportHandler.cs:85  10:07:24:550  10.63 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                            └── Abstract Retry Handler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                    └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                             (
                                                 [Client Side Request Stats]
-                                                
-                                                RequestStartTime: 2021-01-22T22:07:24.5508699Z, RequestEndTime: 2021-01-22T22:07:24.5613159Z,  Number of regions attempted:1
-                                                ResponseTime: 2021-01-22T22:07:24.5613159Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 130, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 201, SubStatusCode: 0, RequestCharge: 5.52, ItemLSN: -1, SessionToken: -1#130, UsingLocalLSN: False, TransportException: null, ResourceType: Document, OperationType: Create
+                                                Redacted To Not Change The Baselines From Run To Run
                                             )
 ]]></Text>
       <Json><![CDATA[{
   "name": "CreateItemAsync",
-  "id": "65a9308e-8f7d-4a63-b68f-3a4e6e8eae03",
+  "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
   "caller information": {
-    "member name": "GetRootTrace",
-    "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Tracing\\Trace.cs",
-    "line number": 97
+    "member name": "MemberName",
+    "file path": "FilePath",
+    "line number": 42
   },
-  "start time": "10:07:24:548",
-  "duration in milliseconds": 12.1518,
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
   "data": {},
   "children": [
     {
       "name": "ItemSerialize",
-      "id": "9735964a-cef7-43e5-8de4-0b29e2346079",
+      "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
       "caller information": {
-        "member name": "ExtractPartitionKeyAndProcessItemStreamAsync",
-        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Resource\\Container\\ContainerCore.Items.cs",
-        "line number": 723
+        "member name": "MemberName",
+        "file path": "FilePath",
+        "line number": 42
       },
-      "start time": "10:07:24:548",
-      "duration in milliseconds": 1.3318,
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
       "data": {},
       "children": []
     },
     {
       "name": "Get PkValue From Stream",
-      "id": "f60e795f-8986-4204-9336-1a703b3a6a37",
+      "id": "00000000-0000-0000-0000-000000000000",
       "component": "Routing",
       "caller information": {
-        "member name": "GetPartitionKeyValueFromStreamAsync",
-        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Resource\\Container\\ContainerCore.Items.cs",
-        "line number": 829
+        "member name": "MemberName",
+        "file path": "FilePath",
+        "line number": 42
       },
-      "start time": "10:07:24:549",
-      "duration in milliseconds": 0.71710000000000007,
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
       "data": {},
       "children": []
     },
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-      "id": "2fcba187-b513-4c8d-a5b5-989a6d7b4901",
+      "id": "00000000-0000-0000-0000-000000000000",
       "component": "RequestHandler",
       "caller information": {
-        "member name": "SendAsync",
-        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestInvokerHandler.cs",
-        "line number": 130
+        "member name": "MemberName",
+        "file path": "FilePath",
+        "line number": 42
       },
-      "start time": "10:07:24:550",
-      "duration in milliseconds": 11.0067,
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
       "data": {},
       "children": [
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-          "id": "958155d7-3eb7-4fc2-942d-34c6c4c3c05f",
+          "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
           "caller information": {
-            "member name": "SendAsync",
-            "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestInvokerHandler.cs",
-            "line number": 51
+            "member name": "MemberName",
+            "file path": "FilePath",
+            "line number": 42
           },
-          "start time": "10:07:24:550",
-          "duration in milliseconds": 10.8596,
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
           "data": {},
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-              "id": "0b9a19cd-1c9f-4c15-9e2b-32182ebcab92",
+              "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
               "caller information": {
-                "member name": "SendAsync",
-                "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestHandler.cs",
-                "line number": 50
+                "member name": "MemberName",
+                "file path": "FilePath",
+                "line number": 42
               },
-              "start time": "10:07:24:550",
-              "duration in milliseconds": 7.5839000000000008,
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
               "data": {},
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                  "id": "2cf6223f-9e98-47e0-afef-91e1feea70dd",
+                  "id": "00000000-0000-0000-0000-000000000000",
                   "component": "RequestHandler",
                   "caller information": {
-                    "member name": "SendAsync",
-                    "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\DiagnosticsHandler.cs",
-                    "line number": 27
+                    "member name": "MemberName",
+                    "file path": "FilePath",
+                    "line number": 42
                   },
-                  "start time": "10:07:24:550",
-                  "duration in milliseconds": 7.5803,
-                  "data": {
-                    "CPU Load History": {
-                      "CPU History": "(2021-01-22T22:07:15.2170357Z 76.923)"
-                    }
-                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
-                      "id": "bc4cc3f8-1632-4c74-9b44-aa1aaa674ce9",
+                      "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
                       "caller information": {
-                        "member name": "SendAsync",
-                        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestHandler.cs",
-                        "line number": 50
+                        "member name": "MemberName",
+                        "file path": "FilePath",
+                        "line number": 42
                       },
-                      "start time": "10:07:24:550",
-                      "duration in milliseconds": 7.5743,
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
                       "data": {},
                       "children": [
                         {
                           "name": "Send Async",
-                          "id": "9deef6d9-ead6-4f08-a895-27b95c7226b7",
+                          "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
                           "caller information": {
-                            "member name": "SendAsync",
-                            "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\AbstractRetryHandler.cs",
-                            "line number": 23
+                            "member name": "MemberName",
+                            "file path": "FilePath",
+                            "line number": 42
                           },
-                          "start time": "10:07:24:550",
-                          "duration in milliseconds": 10.782,
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
                           "data": {},
                           "children": [
                             {
                               "name": "Abstract Retry Handler",
-                              "id": "ebc9716d-b19f-4bbf-a40e-5e39be9fe3ff",
+                              "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
                               "caller information": {
-                                "member name": "SendAsync",
-                                "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\AbstractRetryHandler.cs",
-                                "line number": 34
+                                "member name": "MemberName",
+                                "file path": "FilePath",
+                                "line number": 42
                               },
-                              "start time": "10:07:24:550",
-                              "duration in milliseconds": 7.4569,
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
                               "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
-                                  "id": "25786c1c-7935-4dc0-b0a5-2c0954e93d88",
+                                  "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
                                   "caller information": {
-                                    "member name": "SendAsync",
-                                    "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\RequestHandler.cs",
-                                    "line number": 50
+                                    "member name": "MemberName",
+                                    "file path": "FilePath",
+                                    "line number": 42
                                   },
-                                  "start time": "10:07:24:550",
-                                  "duration in milliseconds": 7.4536000000000007,
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
                                   "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                      "id": "c4ed3ce9-fc8a-4e7e-b9bf-6662be6119ee",
+                                      "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "Transport",
                                       "caller information": {
-                                        "member name": "ProcessMessageAsync",
-                                        "file path": "C:\\azure-cosmos-dotnet-v3\\Microsoft.Azure.Cosmos\\src\\Handler\\TransportHandler.cs",
-                                        "line number": 85
+                                        "member name": "MemberName",
+                                        "file path": "FilePath",
+                                        "line number": 42
                                       },
-                                      "start time": "10:07:24:550",
-                                      "duration in milliseconds": 10.6285,
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
                                       "data": {
-                                        "Client Side Request Stats": "\r\nRequestStartTime: 2021-01-22T22:07:24.5508699Z, RequestEndTime: 2021-01-22T22:07:24.5613159Z,  Number of regions attempted:1\r\nResponseTime: 2021-01-22T22:07:24.5613159Z, StoreResult: StorePhysicalAddress: rntbd://127.0.0.1:10253/apps/DocDbApp/services/DocDbServer21/partitions/a4cb4961-38c8-11e6-8106-8cdcd42c33be/replicas/1p/, LSN: 130, GlobalCommittedLsn: -1, PartitionKeyRangeId: 3, IsValid: True, StatusCode: 201, SubStatusCode: 0, RequestCharge: 5.52, ItemLSN: -1, SessionToken: -1#130, UsingLocalLSN: False, TransportException: null, ResourceType: Document, OperationType: Create\r\n"
+                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                       },
                                       "children": []
                                     }

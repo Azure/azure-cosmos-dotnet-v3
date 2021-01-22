@@ -160,10 +160,30 @@
 
         public override Output ExecuteTest(Input input)
         {
-            string text = TraceWriter.TraceToText(input.Trace);
-            string json = TraceWriter.TraceToJson(input.Trace);
+            ITrace traceForBaselineTesting = CreateTraceForBaslineTesting(input.Trace, parent: null);
+
+            string text = TraceWriter.TraceToText(traceForBaselineTesting);
+            string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
             return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
+        }
+
+        private TraceForBaselineTesting CreateTraceForBaslineTesting(ITrace trace, TraceForBaselineTesting parent)
+        {
+            TraceForBaselineTesting convertedTrace = new TraceForBaselineTesting(trace.Name, trace.Level, trace.Component, parent);
+
+            foreach (ITrace child in trace.Children)
+            {
+                TraceForBaselineTesting convertedChild = CreateTraceForBaslineTesting(child, convertedTrace);
+                convertedTrace.children.Add(convertedChild);
+            }
+
+            foreach (KeyValuePair<string, object> kvp in trace.Data)
+            {
+                convertedTrace.AddDatum(kvp.Key, kvp.Value);
+            }
+
+            return convertedTrace;
         }
 
         private static int GetLineNumber([CallerLineNumber] int lineNumber = 0)
@@ -245,8 +265,8 @@
 
         private sealed class TraceForBaselineTesting : ITrace
         {
-            private readonly Dictionary<string, object> data;
-            private readonly List<TraceForBaselineTesting> children;
+            public readonly Dictionary<string, object> data;
+            public readonly List<TraceForBaselineTesting> children;
 
             public TraceForBaselineTesting(
                 string name,
@@ -289,7 +309,13 @@
 
             public void AddDatum(string key, object value)
             {
-                this.data[key] = value;
+                if (key.Contains("cpu"))
+                {
+                    // Redacted To Not Change The Baselines From Run To Run
+                    return;
+                }
+
+                this.data[key] = "Redacted To Not Change The Baselines From Run To Run";
             }
 
             public void Dispose()
