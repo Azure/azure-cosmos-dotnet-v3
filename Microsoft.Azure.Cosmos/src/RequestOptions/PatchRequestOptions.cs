@@ -11,6 +11,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos item request options
     /// </summary>
+#if INTERNAL
+    public
+#else
+    internal
+#endif
+
     public class PatchRequestOptions : ItemRequestOptions
     {
         /// <summary>
