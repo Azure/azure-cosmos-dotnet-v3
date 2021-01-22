@@ -30,6 +30,10 @@ namespace Microsoft.Azure.Cosmos
             Permission permission,
             ResponseMessage responseMessage);
 
+        public abstract ClientEncryptionKeyResponse CreateClientEncryptionKeyResponse(
+            ClientEncryptionKey clientEncryptionKey,
+            ResponseMessage responseMessage);
+
         public abstract DatabaseResponse CreateDatabaseResponse(
             Database database,
             ResponseMessage responseMessage);
