@@ -16,11 +16,32 @@ jobs:
       vmImage: $(VmImage)
 
     steps:
-    # Below will build the image and push it to azure container registry
+    - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+      clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+    - task: CopyFiles@2
+      displayName: 'Copy docker config files'
+      inputs:
+        Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/Dockerfile'
+        TargetFolder: $(Agent.TempDirectory)/ctl
+    - task: CopyFiles@2
+      displayName: 'Copy shell files'
+      inputs:
+        Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/run_ctl.sh'
+        TargetFolder: $(Agent.TempDirectory)/ctl
+    - task: DotNetCoreCLI@2
+      displayName: Build CTL project
+      condition: succeeded()
+      inputs:
+        command: publish  
+        configuration: Release
+        nugetConfigPath: NuGet.config
+        projects: Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.sln
+        versioningScheme: OFF
+        outputDir: $(Agent.TempDirectory)/ctl
     - pwsh: |
-        cd Microsoft.Azure.Cosmos.Samples/Tools/CTL
+        cd $(Agent.TempDirectory)/ctl
         Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
-        docker build -t cosmos-dotnet-ctl -f Microsoft.Azure.Cosmos.Samples/Tools/CTL/Dockerfile .
+        docker build -t cosmos-dotnet-ctl -f Dockerfile .
         Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)"
         az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)
         Write-Host "Executing docker tag cosmos-dotnet-ctl $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload"
