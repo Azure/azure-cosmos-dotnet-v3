@@ -167,9 +167,17 @@ namespace Microsoft.Azure.Cosmos
             if (ItemRequestOptions.ShouldSetNoContentHeader(
                 this.EnableContentResponseOnWrite,
                 this.EnableContentResponseOnRead,
-                request.OperationType))
+                request.OperationType) &&
+                !request.Headers.TryGetValue(HttpConstants.HttpHeaders.Prefer, out _))
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+            }
+
+            if (ShouldRemoveNoContentHeader(this.EnableContentResponseOnWrite, request.OperationType)
+                && request.Headers.TryGetValue(HttpConstants.HttpHeaders.Prefer, out _))
+            {
+                // Remove Header if already present and EnableContentResponseOnWrite is true
+                request.Headers.Remove(HttpConstants.HttpHeaders.Prefer);
             }
 
             base.PopulateRequestOptions(request);
@@ -189,6 +197,18 @@ namespace Microsoft.Azure.Cosmos
 
             return enableContentResponseOnWrite.HasValue &&
               !enableContentResponseOnWrite.Value &&
+              (operationType == OperationType.Create ||
+              operationType == OperationType.Replace ||
+              operationType == OperationType.Upsert ||
+              operationType == OperationType.Patch);
+        }
+
+        internal static bool ShouldRemoveNoContentHeader(
+            bool? enableContentResponseOnWrite,
+            OperationType operationType)
+        {
+            return enableContentResponseOnWrite.HasValue &&
+              enableContentResponseOnWrite.Value &&
               (operationType == OperationType.Create ||
               operationType == OperationType.Replace ||
               operationType == OperationType.Upsert ||

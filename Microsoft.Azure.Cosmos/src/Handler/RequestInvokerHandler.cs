@@ -48,6 +48,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(request));
             }
 
+            // Sets the NoRepsonseContentOnWrite flag for Item requests. Can be overrided by ItemRequestOptions
+            this.SetNoContentResponseHeaders(request);
+
             RequestOptions promotedRequestOptions = request.RequestOptions;
             if (promotedRequestOptions != null)
             {
@@ -379,6 +382,18 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             consistencyLevel.Value.ToString(),
                             this.AccountConsistencyLevel));
                 }
+            }
+        }
+
+        private void SetNoContentResponseHeaders(RequestMessage request)
+        {
+            // Sets the headers to only return the headers and status code in
+            // the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
+            if (request.ResourceType == ResourceType.Document
+                && this.client.ClientOptions != null 
+                && ItemRequestOptions.ShouldSetNoContentHeader(this.client.ClientOptions.EnableContentResponseOnWrite, null, request.OperationType))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
             }
         }
     }
