@@ -344,6 +344,12 @@
     <Folder Include="Diagnostics\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="Tracing\TraceWriterBaselineTests.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
+  </ItemGroup>
+
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>

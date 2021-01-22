@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Uri InternalRequestUri { get; private set; }
 
-        internal ITrace Trace { get; }
+        internal ITrace Trace { get; set; }
 
         internal RequestOptions RequestOptions { get; set; }
 

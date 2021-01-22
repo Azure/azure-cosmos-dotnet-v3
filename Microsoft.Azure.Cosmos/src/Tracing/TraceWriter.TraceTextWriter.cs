@@ -211,27 +211,27 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         writer.Write(']');
                         writer.WriteLine();
 
+                        string traceDatumToString;
                         if (value is TraceDatum traceDatum)
                         {
                             TraceDatumTextWriter traceDatumTextWriter = new TraceDatumTextWriter();
                             traceDatum.Accept(traceDatumTextWriter);
 
-                            string[] infoLines = traceDatumTextWriter
-                                .ToString()
-                                .TrimEnd(newLineCharacters)
-                                .Split(newLines, StringSplitOptions.None);
-                            foreach (string infoLine in infoLines)
-                            {
-                                WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
-                                writer.Write(asciiTreeIndents.Blank);
-                                writer.WriteLine(infoLine);
-                            }
+                            traceDatumToString = traceDatumTextWriter.ToString();
                         }
                         else
                         {
+                            traceDatumToString = value.ToString();
+                        }
+
+                        string[] infoLines = traceDatumToString
+                            .TrimEnd(newLineCharacters)
+                            .Split(newLines, StringSplitOptions.None);
+                        foreach (string infoLine in infoLines)
+                        {
                             WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
                             writer.Write(asciiTreeIndents.Blank);
-                            writer.WriteLine(value.ToString());
+                            writer.WriteLine(infoLine);
                         }
                     }
 

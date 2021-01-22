@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
+        private static readonly string userAgent = new UserAgentContainer().UserAgent;
+
         public CosmosTraceDiagnostics(ITrace trace)
         {
             this.Value = trace ?? throw new ArgumentNullException(nameof(trace));
@@ -18,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString()
         {
-            return TraceWriter.TraceToText(this.Value);
+            return $"User Agent: {userAgent} {Environment.NewLine} {TraceWriter.TraceToText(this.Value)}";
         }
     }
 }
