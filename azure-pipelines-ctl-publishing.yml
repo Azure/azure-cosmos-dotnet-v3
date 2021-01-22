@@ -2,7 +2,7 @@ variables:
   VmImage: 'ubuntu-18.04'
 
 jobs:
-  - job: Build and publish Docker image
+  - job: BuildDockerImage
     timeoutInMinutes: 20
     variables:
       - name: ContainerRegistryName
