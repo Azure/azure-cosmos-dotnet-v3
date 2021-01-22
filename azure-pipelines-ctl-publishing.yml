@@ -23,11 +23,13 @@ jobs:
       inputs:
         Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/Dockerfile'
         TargetFolder: $(Agent.TempDirectory)/ctl
+        flattenFolders: true
     - task: CopyFiles@2
       displayName: 'Copy shell files'
       inputs:
         Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/run_ctl.sh'
         TargetFolder: $(Agent.TempDirectory)/ctl
+        flattenFolders: true
     - task: DotNetCoreCLI@2
       displayName: Build CTL project
       condition: succeeded()
