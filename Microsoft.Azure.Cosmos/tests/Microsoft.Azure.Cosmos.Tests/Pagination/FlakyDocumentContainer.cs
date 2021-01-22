@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -198,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FeedRangeInternal feedRange, 
             int pageSize, 
             ChangeFeedMode changeFeedMode,
+            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -222,6 +224,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRange,
                 pageSize,
                 changeFeedMode,
+                jsonSerializationFormat,
                 trace,
                 cancellationToken);
         }

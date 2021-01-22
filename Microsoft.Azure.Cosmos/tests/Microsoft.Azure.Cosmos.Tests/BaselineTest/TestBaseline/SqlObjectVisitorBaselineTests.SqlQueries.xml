@@ -423,7 +423,7 @@ inputPathCollection["somePath"] AS some alias
       "FromClause": null,
       "WhereClause": null,
       "GroupByClause": null,
-      "OrderbyClause": null,
+      "OrderByClause": null,
       "OffsetLimitClause": null
     }
   },
@@ -460,7 +460,7 @@ inputPathCollection["somePath"] AS some alias
       "FromClause": null,
       "WhereClause": null,
       "GroupByClause": null,
-      "OrderbyClause": null,
+      "OrderByClause": null,
       "OffsetLimitClause": null
     }
   }
@@ -492,7 +492,7 @@ some alias IN (
         "FromClause": null,
         "WhereClause": null,
         "GroupByClause": null,
-        "OrderbyClause": null,
+        "OrderByClause": null,
         "OffsetLimitClause": null
       }
     },
@@ -514,7 +514,7 @@ some alias IN (
         "FromClause": null,
         "WhereClause": null,
         "GroupByClause": null,
-        "OrderbyClause": null,
+        "OrderByClause": null,
         "OffsetLimitClause": null
       }
     }
@@ -677,9 +677,9 @@ GROUP BY "some"["random"]["path"][42], "some"["random"]["path"][42]
   </Result>
   <Result>
     <Input>
-      <Description>SqlOrderbyClause Single</Description>
+      <Description>SqlOrderByClause Single</Description>
       <SqlObject><![CDATA[{
-  "OrderbyItems": [
+  "OrderByItems": [
     {
       "Expression": {
         "Member": {
@@ -723,9 +723,9 @@ ORDER BY "some"["random"]["path"][42] ASC
   </Result>
   <Result>
     <Input>
-      <Description>SqlOrderbyClause Multi</Description>
+      <Description>SqlOrderByClause Multi</Description>
       <SqlObject><![CDATA[{
-  "OrderbyItems": [
+  "OrderByItems": [
     {
       "Expression": {
         "Member": {
@@ -937,8 +937,8 @@ OFFSET 0 LIMIT 0
       }
     ]
   },
-  "OrderbyClause": {
-    "OrderbyItems": [
+  "OrderByClause": {
+    "OrderByItems": [
       {
         "Expression": {
           "Member": {
@@ -1074,8 +1074,8 @@ OFFSET 0 LIMIT 0
         }
       ]
     },
-    "OrderbyClause": {
-      "OrderbyItems": [
+    "OrderByClause": {
+      "OrderByItems": [
         {
           "Expression": {
             "Member": {
@@ -1214,8 +1214,8 @@ OFFSET 0 LIMIT 0
         }
       ]
     },
-    "OrderbyClause": {
-      "OrderbyItems": [
+    "OrderByClause": {
+      "OrderByItems": [
         {
           "Expression": {
             "Member": {
@@ -1354,8 +1354,8 @@ ARRAY(
         }
       ]
     },
-    "OrderbyClause": {
-      "OrderbyItems": [
+    "OrderByClause": {
+      "OrderByItems": [
         {
           "Expression": {
             "Member": {

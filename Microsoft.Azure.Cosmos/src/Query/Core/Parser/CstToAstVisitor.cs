@@ -89,10 +89,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 sqlWhereClause = default;
             }
 
-            SqlOrderbyClause sqlOrderByClause;
+            SqlOrderByClause sqlOrderByClause;
             if (context.order_by_clause() != null)
             {
-                sqlOrderByClause = (SqlOrderbyClause)this.Visit(context.order_by_clause());
+                sqlOrderByClause = (SqlOrderByClause)this.Visit(context.order_by_clause());
             }
             else
             {
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 orderByItems.Add(orderByItem);
             }
 
-            return SqlOrderbyClause.Create(orderByItems.ToImmutableArray());
+            return SqlOrderByClause.Create(orderByItems.ToImmutableArray());
         }
 
         public override SqlObject VisitOrder_by_item([NotNull] sqlParser.Order_by_itemContext context)

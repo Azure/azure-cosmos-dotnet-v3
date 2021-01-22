@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
-            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId, BatchAsyncContainerExecutor.GetRetryPolicy(this.cosmosContainer, this.retryOptions));
+            ItemBatchOperationContext context = new ItemBatchOperationContext(resolvedPartitionKeyRangeId, BatchAsyncContainerExecutor.GetRetryPolicy(this.cosmosContainer, operation.OperationType, this.retryOptions));
             operation.AttachContext(context);
             streamer.Add(operation);
             return await context.OperationTask;
@@ -128,10 +128,12 @@ namespace Microsoft.Azure.Cosmos
 
         private static IDocumentClientRetryPolicy GetRetryPolicy(
             ContainerInternal containerInternal,
+            OperationType operationType,
             RetryOptions retryOptions)
         {
-            return new BulkPartitionKeyRangeGoneRetryPolicy(
+            return new BulkExecutionRetryPolicy(
                containerInternal,
+               operationType,
                new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
                 retryOptions.MaxRetryWaitTimeInSeconds));
