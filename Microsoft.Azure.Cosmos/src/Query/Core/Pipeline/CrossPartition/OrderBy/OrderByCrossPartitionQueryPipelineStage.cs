@@ -842,7 +842,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     // but the engine evaluates to undefined instead of true or false,
                     // so we work around this by using the IS_DEFINED() system function.
 
-                    ComparisionWithUndefinedFilters filters = ComparisionWithUndefinedFilters.Create(expression);
+                    ComparisionWithUndefinedFilters filters = new ComparisionWithUndefinedFilters(expression);
                     left.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThan : filters.GreaterThan)}");
                     target.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThanOrEqualTo : filters.GreaterThanOrEqualTo)}");
                     right.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThanOrEqualTo : filters.GreaterThanOrEqualTo)}");
@@ -912,7 +912,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         // We need to add the filter for within the same type.
                         if (orderByItem == default)
                         {
-                            ComparisionWithUndefinedFilters filters = ComparisionWithUndefinedFilters.Create(expression);
+                            ComparisionWithUndefinedFilters filters = new ComparisionWithUndefinedFilters(expression);
 
                             // Refer to the logic from single order by for how we are handling order by undefined
                             if (lastItem)
@@ -1187,7 +1187,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 IsSystemFunctions.Object,
             };
 
-            private static class Indexes
+            private static class SortOrder
             {
                 public const int Undefined = 0;
                 public const int Null = 1;
@@ -1204,7 +1204,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public ReadOnlyMemory<string> Visit(CosmosArray cosmosArray, bool isAscending)
             {
-                return GetIsDefinedFunctions(Indexes.Array, isAscending);
+                return GetIsDefinedFunctions(SortOrder.Array, isAscending);
             }
 
             public ReadOnlyMemory<string> Visit(CosmosBinary cosmosBinary, bool isAscending)
@@ -1214,7 +1214,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public ReadOnlyMemory<string> Visit(CosmosBoolean cosmosBoolean, bool isAscending)
             {
-                return GetIsDefinedFunctions(Indexes.Boolean, isAscending);
+                return GetIsDefinedFunctions(SortOrder.Boolean, isAscending);
             }
 
             public ReadOnlyMemory<string> Visit(CosmosGuid cosmosGuid, bool isAscending)
@@ -1224,22 +1224,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public ReadOnlyMemory<string> Visit(CosmosNull cosmosNull, bool isAscending)
             {
-                return GetIsDefinedFunctions(Indexes.Null, isAscending);
+                return GetIsDefinedFunctions(SortOrder.Null, isAscending);
             }
 
             public ReadOnlyMemory<string> Visit(CosmosNumber cosmosNumber, bool isAscending)
             {
-                return GetIsDefinedFunctions(Indexes.Number, isAscending);
+                return GetIsDefinedFunctions(SortOrder.Number, isAscending);
             }
 
             public ReadOnlyMemory<string> Visit(CosmosObject cosmosObject, bool isAscending)
             {
-                return GetIsDefinedFunctions(Indexes.Object, isAscending);
+                return GetIsDefinedFunctions(SortOrder.Object, isAscending);
             }
 
             public ReadOnlyMemory<string> Visit(CosmosString cosmosString, bool isAscending)
             {
-                return GetIsDefinedFunctions(Indexes.String, isAscending);
+                return GetIsDefinedFunctions(SortOrder.String, isAscending);
             }
 
             public static ReadOnlyMemory<string> VisitUndefined(bool isAscending)
@@ -1255,18 +1255,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private readonly struct ComparisionWithUndefinedFilters
         {
-            private ComparisionWithUndefinedFilters(
-                string lessThan,
-                string lessThanOrEqualTo,
-                string equalTo,
-                string greaterThan,
-                string greaterThanOrEqualTo)
+            public ComparisionWithUndefinedFilters(
+                string expression)
             {
-                this.LessThan = lessThan ?? throw new ArgumentNullException(nameof(lessThan));
-                this.LessThanOrEqualTo = lessThanOrEqualTo ?? throw new ArgumentNullException(nameof(lessThanOrEqualTo));
-                this.EqualTo = equalTo ?? throw new ArgumentNullException(nameof(lessThanOrEqualTo));
-                this.GreaterThan = greaterThan ?? throw new ArgumentNullException(nameof(greaterThan));
-                this.GreaterThanOrEqualTo = greaterThanOrEqualTo ?? throw new ArgumentNullException(nameof(greaterThanOrEqualTo));
+                this.LessThan = "false";
+                this.LessThanOrEqualTo = $"NOT IS_DEFINED({expression})";
+                this.EqualTo = $"NOT IS_DEFINED({expression})";
+                this.GreaterThan = $"IS_DEFINED({expression})";
+                this.GreaterThanOrEqualTo = "true";
             }
 
             public string LessThan { get; }
@@ -1274,16 +1270,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public string EqualTo { get; }
             public string GreaterThan { get; }
             public string GreaterThanOrEqualTo { get; }
-
-            public static ComparisionWithUndefinedFilters Create(string expression)
-            {
-                return new ComparisionWithUndefinedFilters(
-                    lessThan: "false",
-                    lessThanOrEqualTo: $"not IS_DEFINED({expression})",
-                    equalTo: $"not IS_DEFINED({expression})",
-                    greaterThan: $"IS_DEFINED({expression})",
-                    greaterThanOrEqualTo: "true");
-            }
         }
     }
 }
