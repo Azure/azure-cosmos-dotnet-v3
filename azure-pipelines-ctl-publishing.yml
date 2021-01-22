@@ -1,0 +1,30 @@
+variables:
+  VmImage: 'ubuntu-18.04'
+
+jobs:
+  - job: Build and publish Docker image
+    timeoutInMinutes: 20
+    variables:
+      - name: ContainerRegistryName
+        value: 'cosmosdotnetsdkctl'
+      - name: ContainerRegistryUserName
+        value: 'cosmosdotnetsdkctl'
+      - name: ContainerRegistryUrl
+        value: 'cosmosdotnetsdkctl.azurecr.io'
+
+    pool:
+      vmImage: $(VmImage)
+
+    steps:
+    # Below will build the image and push it to azure container registry
+    - pwsh: |
+        cd Microsoft.Azure.Cosmos.Samples/Tools/CTL
+        Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
+        docker build -t cosmos-dotnet-ctl -f Dockerfile .
+        Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)"
+        az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)
+        Write-Host "Executing docker tag cosmos-dotnet-ctl $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload"
+        docker tag java-ctl $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload
+        Write-Host "Executing docker push $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload"
+        docker push $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload
+      displayName: 'Build and push docker image to registry'
