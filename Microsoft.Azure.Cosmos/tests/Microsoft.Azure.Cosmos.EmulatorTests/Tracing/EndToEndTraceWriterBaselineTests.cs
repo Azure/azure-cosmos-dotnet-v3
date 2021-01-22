@@ -133,6 +133,26 @@
             }
             //----------------------------------------------------------------
 
+            //----------------------------------------------------------------
+            //  Point Write
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                CosmosObject cosmosObject = CosmosObject.Create(
+                    new Dictionary<string, CosmosElement>()
+                    {
+                        { "id", CosmosString.Create(9001.ToString()) }
+                    });
+
+                ItemResponse<JToken> itemResponse = await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
+
+                ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Point Write", trace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
             await database.DeleteAsync();
 
             this.ExecuteTestSuite(inputs);

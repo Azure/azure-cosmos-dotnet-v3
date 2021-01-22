@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -23,8 +24,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            DiagnosticsHandlerHelper.Instance.RecordCpuDiagnostics(request);
-            return base.SendAsync(request, cancellationToken);
+            using (ITrace childTrace = request.Trace.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, TraceLevel.Info))
+            {
+                request.Trace = childTrace;
+
+                DiagnosticsHandlerHelper.Instance.RecordCpuDiagnostics(request);
+                return base.SendAsync(request, cancellationToken);
+            }
         }
 
         /// <summary>

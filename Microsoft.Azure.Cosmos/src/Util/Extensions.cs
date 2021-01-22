@@ -119,12 +119,19 @@ namespace Microsoft.Azure.Cosmos
                 return cosmosException.ToCosmosResponseMessage(requestMessage);
             }
 
+            // Get the root trace to put in the reponse message
+            ITrace rootTrace = requestMessage.Trace;
+            while (rootTrace.Parent != null)
+            {
+                rootTrace = rootTrace.Parent;
+            }
+
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: documentServiceResponse.StatusCode,
                 requestMessage: requestMessage,
                 headers: headers,
                 cosmosException: null,
-                trace: requestMessage.Trace)
+                trace: rootTrace)
             {
                 Content = documentServiceResponse.ResponseBody
             };

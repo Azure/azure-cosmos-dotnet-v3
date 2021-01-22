@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString()
         {
-            return $"User Agent: {userAgent} {Environment.NewLine} {TraceWriter.TraceToText(this.Value)}";
+            return $"User Agent: {userAgent} {Environment.NewLine}{TraceWriter.TraceToText(this.Value)}";
         }
     }
 }

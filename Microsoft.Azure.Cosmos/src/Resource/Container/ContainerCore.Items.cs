@@ -766,7 +766,7 @@ namespace Microsoft.Azure.Cosmos
                 if (requestRetryPolicy == null)
                 {
                     requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                        await this.ClientContext.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton),
+                        await this.ClientContext.DocumentClient.GetCollectionCacheAsync(trace),
                         requestRetryPolicy);
                 }
 

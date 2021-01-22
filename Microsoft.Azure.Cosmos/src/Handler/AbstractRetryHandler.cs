@@ -20,62 +20,69 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
-            request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
+            using (ITrace childTrace = request.Trace.StartChild("Send Async", TraceComponent.RequestHandler, TraceLevel.Info))
+            {
+                request.Trace = childTrace;
+                IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+                request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
-            try
-            {
-                return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: (trace) =>
-                    {
-                        using (ITrace childTrace = trace.StartChild("Abstract Retry Handler"))
-                        {
-                            return base.SendAsync(request, cancellationToken);
-                        }
-                    },
-                    callShouldRetry: (cosmosResponseMessage, trace, token) =>
-                    {
-                        using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
-                        {
-                            return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-                        }
-                    },
-                    callShouldRetryException: (exception, trace, token) =>
-                    {
-                        using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
-                        {
-                            return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
-                        }
-                    },
-                    trace: request.Trace,
-                    cancellationToken: cancellationToken);
-            }
-            catch (DocumentClientException ex)
-            {
-                return ex.ToCosmosResponseMessage(request);
-            }
-            catch (CosmosException ex)
-            {
-                return ex.ToCosmosResponseMessage(request);
-            }
-            catch (AggregateException ex)
-            {
-                // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
-                // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
-                // is removed this catch can be safely removed.
-                AggregateException innerExceptions = ex.Flatten();
-                Exception docClientException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
-                if (docClientException != null)
+                try
                 {
-                    return ((DocumentClientException)docClientException).ToCosmosResponseMessage(request);
+                    return await RetryHandler.ExecuteHttpRequestAsync(
+                        callbackMethod: (trace) =>
+                        {
+                            using (ITrace childTrace = trace.StartChild("Abstract Retry Handler"))
+                            {
+                                request.Trace = childTrace;
+                                return base.SendAsync(request, cancellationToken);
+                            }
+                        },
+                        callShouldRetry: (cosmosResponseMessage, trace, token) =>
+                        {
+                            using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
+                            {
+                                request.Trace = shouldRetryTrace;
+                                return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+                            }
+                        },
+                        callShouldRetryException: (exception, trace, token) =>
+                        {
+                            using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
+                            {
+                                request.Trace = shouldRetryTrace;
+                                return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
+                            }
+                        },
+                        trace: request.Trace,
+                        cancellationToken: cancellationToken);
                 }
+                catch (DocumentClientException ex)
+                {
+                    return ex.ToCosmosResponseMessage(request);
+                }
+                catch (CosmosException ex)
+                {
+                    return ex.ToCosmosResponseMessage(request);
+                }
+                catch (AggregateException ex)
+                {
+                    // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
+                    // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
+                    // is removed this catch can be safely removed.
+                    AggregateException innerExceptions = ex.Flatten();
+                    Exception docClientException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
+                    if (docClientException != null)
+                    {
+                        return ((DocumentClientException)docClientException).ToCosmosResponseMessage(request);
+                    }
 
-                throw;
-            }
-            finally
-            {
-                request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
-            }
+                    throw;
+                }
+                finally
+                {
+                    request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
+                }
+            } 
         }
 
         private static async Task<ResponseMessage> ExecuteHttpRequestAsync(
