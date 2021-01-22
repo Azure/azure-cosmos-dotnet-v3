@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         public IReadOnlyList<PatchOperation> PatchOperations { get; }
 
         /// <summary>
-        /// Details of Patch operation that is to be applied to the referred Cosmos item.
+        /// Cosmos item request options specific to patch.
         /// </summary>
         public PatchRequestOptions PatchRequestOptions { get; }
     }
