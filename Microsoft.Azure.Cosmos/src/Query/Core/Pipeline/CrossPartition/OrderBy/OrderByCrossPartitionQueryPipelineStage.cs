@@ -112,6 +112,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         responseLengthInBytes: 0,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
+                        additionalHeaders: default,
                         state: this.state));
                 return true;
             }
@@ -147,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 responseLengthInBytes: 0,
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
+                                additionalHeaders: default,
                                 state: null));
                         this.returnedFinalPage = true;
                         return true;
@@ -167,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         responseLengthInBytes: page.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                        additionalHeaders: page.AdditionalHeaders,
                         state: this.state));
             }
 
@@ -227,6 +230,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             responseLengthInBytes: 0,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
+                            additionalHeaders: default,
                             state: null));
                     this.returnedFinalPage = true;
                     return true;
@@ -270,6 +274,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     responseLengthInBytes: page.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                    additionalHeaders: page.AdditionalHeaders,
                     state: InitializingQueryState));
 
             return true;
@@ -397,6 +402,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 responseLengthInBytes: 0,
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
+                                additionalHeaders: default,
                                 state: this.state));
                         return new ValueTask<bool>(true);
                     }
@@ -451,6 +457,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     responseLengthInBytes: 0,
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
+                    additionalHeaders: default,
                     state: this.state));
 
             if (state == null)
@@ -517,6 +524,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             responseLengthInBytes: 0,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
+                            additionalHeaders: default,
                             state: null));
                     this.returnedFinalPage = true;
                     return new ValueTask<bool>(true);

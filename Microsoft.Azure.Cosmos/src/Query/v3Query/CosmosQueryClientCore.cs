@@ -372,6 +372,15 @@ namespace Microsoft.Azure.Cosmos
                         queryState = default;
                     }
 
+                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+                    foreach (string key in cosmosResponseMessage.Headers)
+                    {
+                        if (!QueryPage.BannedHeaders.Contains(key))
+                        {
+                            additionalHeaders[key] = cosmosResponseMessage.Headers[key];
+                        }
+                    }
+
                     QueryPage response = new QueryPage(
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
@@ -379,6 +388,7 @@ namespace Microsoft.Azure.Cosmos
                         responseLengthBytes,
                         cosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
+                        additionalHeaders,
                         queryState);
 
                     return TryCatch<QueryPage>.FromResult(response);

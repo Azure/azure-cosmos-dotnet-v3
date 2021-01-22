@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 {
-    using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Pagination;
 
     internal abstract class ChangeFeedPage : Page<ChangeFeedState>
@@ -12,15 +12,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         protected ChangeFeedPage(
             double requestCharge,
             string activityId,
+            IReadOnlyDictionary<string, string> additionalHeaders,
             ChangeFeedState state)
-            : base(state)
+            : base(requestCharge, activityId, additionalHeaders, state)
         {
-            this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
-            this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
         }
-
-        public double RequestCharge { get; }
-
-        public string ActivityId { get; }
     }
 }

@@ -129,7 +129,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
                             diagnostics: CosmosDiagnosticsContext.Create(default),
-                            nonNullState)));
+                            additionalHeaders: null,
+                            state: nonNullState)));
             }
 
             return this.documentContainer.MonadicReadFeedAsync(
@@ -167,6 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseLengthInBytes: "[]".Length,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
+                            additionalHeaders: default,
                             state: feedRangeState.State ?? StateForStartedButNoDocumentsReturned)));
             }
 
@@ -197,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             content: new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
+                            additionalHeaders: default,
                             state: feedRangeState.State)));
             }
 

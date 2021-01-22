@@ -440,6 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     requestCharge: 42,
                     activityId: Guid.NewGuid().ToString(),
                     CosmosDiagnosticsContext.Create(default),
+                    additionalHeaders: null,
                     continuationState);
 
                 return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
@@ -638,6 +639,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
+                            additionalHeaders: default,
                             state: queryState)));
             }
         }
@@ -692,6 +694,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ChangeFeedNotModifiedPage(
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
+                            additionalHeaders: default,
                             notModifiedResponseState)));
                 }
 
@@ -734,6 +737,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseStream,
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
+                            additionalHeaders: default,
                             responseState)));
             }
         }

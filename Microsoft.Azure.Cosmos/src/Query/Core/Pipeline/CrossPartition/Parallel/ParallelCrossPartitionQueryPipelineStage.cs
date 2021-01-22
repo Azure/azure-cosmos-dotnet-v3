@@ -127,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 backendQueryPage.ResponseLengthInBytes,
                 backendQueryPage.CosmosQueryExecutionInfo,
                 backendQueryPage.DisallowContinuationTokenMessage,
+                backendQueryPage.AdditionalHeaders,
                 queryState);
 
             this.Current = TryCatch<QueryPage>.FromResult(crossPartitionQueryPage);

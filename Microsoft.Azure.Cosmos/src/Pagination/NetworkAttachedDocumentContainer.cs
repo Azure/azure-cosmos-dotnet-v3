@@ -208,12 +208,25 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 TryCatch<ReadFeedPage> monadicReadFeedPage;
                 if (responseMessage.StatusCode == HttpStatusCode.OK)
                 {
+                    double requestCharge = responseMessage.Headers.RequestCharge;
+                    string activityId = responseMessage.Headers.ActivityId;
+                    ReadFeedState state = responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null;
+                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+                    foreach (string key in responseMessage.Headers.CosmosMessageHeaders)
+                    {
+                        if (!ReadFeedPage.BannedHeaders.Contains(key))
+                        {
+                            additionalHeaders[key] = responseMessage.Headers[key];
+                        }
+                    }
+
                     ReadFeedPage readFeedPage = new ReadFeedPage(
                         responseMessage.Content,
-                        responseMessage.Headers.RequestCharge,
-                        responseMessage.Headers.ActivityId,
+                        requestCharge,
+                        activityId,
                         responseMessage.DiagnosticsContext,
-                        responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null);
+                        additionalHeaders,
+                        state);
 
                     monadicReadFeedPage = TryCatch<ReadFeedPage>.FromResult(readFeedPage);
                 }
@@ -329,23 +342,37 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 trace: trace,
                 cancellationToken: cancellationToken);
 
+            double requestCharge = responseMessage.Headers.RequestCharge;
+            string activityId = responseMessage.Headers.ActivityId;
+            ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
+            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+            foreach (string key in responseMessage.Headers)
+            {
+                if (!ReadFeedPage.BannedHeaders.Contains(key))
+                {
+                    additionalHeaders[key] = responseMessage.Headers[key];
+                }
+            }
+
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;
             if (responseMessage.StatusCode == HttpStatusCode.OK)
             {
                 ChangeFeedPage changeFeedPage = new ChangeFeedSuccessPage(
                     responseMessage.Content,
-                    responseMessage.Headers.RequestCharge,
-                    responseMessage.Headers.ActivityId,
-                    ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag)));
+                    requestCharge,
+                    activityId,
+                    additionalHeaders,
+                    state);
 
                 monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
             }
             else if (responseMessage.StatusCode == HttpStatusCode.NotModified)
             {
                 ChangeFeedPage changeFeedPage = new ChangeFeedNotModifiedPage(
-                    responseMessage.Headers.RequestCharge,
-                    responseMessage.Headers.ActivityId,
-                    ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag)));
+                    requestCharge,
+                    activityId,
+                    additionalHeaders,
+                    state);
 
                 monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
             }

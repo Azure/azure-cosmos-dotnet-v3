@@ -231,6 +231,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    additionalHeaders: sourcePage.AdditionalHeaders,
                     state: state);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

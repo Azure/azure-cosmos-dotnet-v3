@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                 changeFeedSuccessPage.Content,
                                 totalRequestCharge,
                                 changeFeedSuccessPage.ActivityId,
+                                changeFeedSuccessPage.AdditionalHeaders,
                                 changeFeedSuccessPage.State);
                         }
                         else
@@ -113,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                             backendPage = new ChangeFeedNotModifiedPage(
                                 totalRequestCharge,
                                 backendPage.ActivityId,
+                                backendPage.AdditionalHeaders,
                                 backendPage.State);
                         }
                     }

@@ -143,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
+                        additionalHeaders: sourcePage.AdditionalHeaders,
                         state: state);
                 }
                 else
@@ -172,6 +173,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         responseLengthInBytes: default,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
+                        additionalHeaders: default,
                         state: state);
                 }
 

@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 responseLengthInBytes: default,
                 cosmosQueryExecutionInfo: default,
                 disallowContinuationTokenMessage: default,
+                additionalHeaders: default,
                 state: state);
             this.Current = TryCatch<QueryPage>.FromResult(page);
             return new ValueTask<bool>(true);

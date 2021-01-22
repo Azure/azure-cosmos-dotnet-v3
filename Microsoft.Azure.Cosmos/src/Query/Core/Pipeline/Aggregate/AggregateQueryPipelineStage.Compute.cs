@@ -147,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        additionalHeaders: sourcePage.AdditionalHeaders,
                         state: queryState);
 
                     queryPage = emptyPage;
@@ -169,6 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         responseLengthInBytes: default,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
+                        additionalHeaders: default,
                         state: default);
 
                     queryPage = finalPage;
