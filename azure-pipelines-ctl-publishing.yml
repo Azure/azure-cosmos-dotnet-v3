@@ -18,6 +18,7 @@ jobs:
     steps:
     # Below will build the image and push it to azure container registry
     - pwsh: |
+        cd Microsoft.Azure.Cosmos.Samples/Tools/CTL
         Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
         docker build -t cosmos-dotnet-ctl -f Microsoft.Azure.Cosmos.Samples/Tools/CTL/Dockerfile .
         Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)"
