@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     internal
 #endif
 
-    public class PatchRequestOptions : ItemRequestOptions
+    class PatchRequestOptions : ItemRequestOptions
     {
         /// <summary>
         /// Gets or sets condition to be checked before the patch operations in the Azure Cosmos DB service.
@@ -27,6 +27,9 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// condition only sql statement.
+        /// creates a conditional SQL argument which is of format "FROM X where CONDITION"
+        /// the condition has to be withing the scope of the document which is supposed to be patched in the particular request.
+        /// If the condition is satisfied the patch transaction will take place otherwise it will be retured with precondition failed.
         /// </remarks>
         public string Condition { get; set; }
     }

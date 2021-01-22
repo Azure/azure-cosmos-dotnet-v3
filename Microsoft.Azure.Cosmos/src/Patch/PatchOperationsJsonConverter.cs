@@ -46,10 +46,10 @@ namespace Microsoft.Azure.Cosmos
 
             writer.WriteStartObject();
 
-            if (!string.IsNullOrWhiteSpace(patchSpec.Condition))
+            if (!string.IsNullOrWhiteSpace(patchSpec.PatchRequestOptions.Condition))
             {
                 writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
-                writer.WriteValue(patchSpec.Condition);
+                writer.WriteValue(patchSpec.PatchRequestOptions.Condition);
             }
 
             writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Operations);

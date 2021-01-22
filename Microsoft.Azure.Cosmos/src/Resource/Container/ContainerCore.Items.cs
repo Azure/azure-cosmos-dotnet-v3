@@ -1103,14 +1103,7 @@ namespace Microsoft.Azure.Cosmos
             Stream patchOperationsStream;
             using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
             {
-                if (requestOptions == null)
-                {
-                    patchOperationsStream = this.ClientContext.SerializerCore.ToStream(new PatchSpec(patchOperations));
-                }
-                else
-                {
-                    patchOperationsStream = this.ClientContext.SerializerCore.ToStream(new PatchSpec(patchOperations, requestOptions.Condition));
-                }
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(new PatchSpec(patchOperations, requestOptions));
             }
 
             return this.ClientContext.ProcessResourceOperationStreamAsync(
