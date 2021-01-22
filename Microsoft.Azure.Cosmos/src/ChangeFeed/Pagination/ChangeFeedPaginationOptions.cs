@@ -7,13 +7,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedPaginationOptions : PaginationOptions
     {
         public static readonly ChangeFeedPaginationOptions Default = new ChangeFeedPaginationOptions(
             mode: ChangeFeedMode.Incremental);
+
+        public static readonly ImmutableHashSet<string> BannedHeaders = new HashSet<string>()
+        {
+            HttpConstants.HttpHeaders.A_IM,
+            HttpConstants.HttpHeaders.IfModifiedSince,
+            HttpConstants.HttpHeaders.IfNoneMatch,
+        }
+        .Concat(PaginationOptions.bannedAdditionalHeaders)
+        .ToImmutableHashSet();
 
         public ChangeFeedPaginationOptions(
             ChangeFeedMode mode,
@@ -27,6 +38,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         public ChangeFeedMode Mode { get; }
 
-        protected override ImmutableHashSet<string> BannedAdditionalHeaders => throw new System.NotImplementedException();
+        protected override ImmutableHashSet<string> BannedAdditionalHeaders => BannedHeaders;
     }
 }

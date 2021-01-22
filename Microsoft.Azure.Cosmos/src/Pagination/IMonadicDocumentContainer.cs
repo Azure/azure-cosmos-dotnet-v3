@@ -13,7 +13,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal interface IMonadicDocumentContainer : IMonadicFeedRangeProvider, IMonadicQueryDataSource, IMonadicReadFeedDataSource, IMonadicChangeFeedDataSource
+    internal interface IMonadicDocumentContainer :  
+        IMonadicFeedRangeProvider,  
+        IMonadicQueryDataSource, 
+        IMonadicReadFeedDataSource, 
+        IMonadicChangeFeedDataSource
     {
         Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,

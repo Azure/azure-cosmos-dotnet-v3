@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Globalization;
     using System.Linq;
     using System.Net;
@@ -211,14 +212,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     double requestCharge = responseMessage.Headers.RequestCharge;
                     string activityId = responseMessage.Headers.ActivityId;
                     ReadFeedState state = responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null;
-                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
-                    foreach (string key in responseMessage.Headers.CosmosMessageHeaders)
-                    {
-                        if (!ReadFeedPage.BannedHeaders.Contains(key))
-                        {
-                            additionalHeaders[key] = responseMessage.Headers[key];
-                        }
-                    }
+                    Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
+                        responseMessage.Headers.CosmosMessageHeaders,
+                        ReadFeedPaginationOptions.BannedHeaders);
 
                     ReadFeedPage readFeedPage = new ReadFeedPage(
                         responseMessage.Content,
@@ -345,14 +341,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             double requestCharge = responseMessage.Headers.RequestCharge;
             string activityId = responseMessage.Headers.ActivityId;
             ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
-            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
-            foreach (string key in responseMessage.Headers)
-            {
-                if (!ReadFeedPage.BannedHeaders.Contains(key))
-                {
-                    additionalHeaders[key] = responseMessage.Headers[key];
-                }
-            }
+            Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
+                responseMessage.Headers.CosmosMessageHeaders, 
+                ChangeFeedPaginationOptions.BannedHeaders);
 
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;
             if (responseMessage.StatusCode == HttpStatusCode.OK)
@@ -455,6 +446,20 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 message.Headers.IfNoneMatch = ChangeFeedStateRequestMessagePopulator.IfNoneMatchAllHeaderValue;
             }
+        }
+
+        private static Dictionary<string, string> GetAdditionalHeaders(CosmosMessageHeadersInternal headers, ImmutableHashSet<string> bannedHeaders)
+        {
+            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>(capacity: headers.Count());
+            foreach (string key in headers)
+            {
+                if (!bannedHeaders.Contains(key))
+                {
+                    additionalHeaders[key] = headers[key];
+                }
+            }
+
+            return additionalHeaders;
         }
     }
 }

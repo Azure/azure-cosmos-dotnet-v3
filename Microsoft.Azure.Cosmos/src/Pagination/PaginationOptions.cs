@@ -12,9 +12,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
     internal abstract class PaginationOptions
     {
-        private static readonly ImmutableHashSet<string> bannedAdditionalHeaders = new HashSet<string>()
+        protected static readonly ImmutableHashSet<string> bannedAdditionalHeaders = new HashSet<string>()
         {
             HttpConstants.HttpHeaders.PageSize,
+            HttpConstants.HttpHeaders.ContentSerializationFormat,
         }.ToImmutableHashSet<string>();
 
         private static readonly ImmutableDictionary<string, string> EmptyDictionary = new Dictionary<string, string>()
