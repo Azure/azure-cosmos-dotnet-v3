@@ -107,6 +107,7 @@ namespace Microsoft.Azure.Cosmos
                 //Request pipeline 
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
+                    clientOptions,
                     documentClient,
                     clientOptions.ConsistencyLevel,
                     clientOptions.CustomHandlers,
