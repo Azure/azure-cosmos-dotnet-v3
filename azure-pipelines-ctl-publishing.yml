@@ -12,7 +12,7 @@ jobs:
       - name: ContainerRegistryUrl
         value: 'cosmosdotnetsdkctl.azurecr.io'
       - name: DefaultTag
-        value: 'latest'
+        value: 'default'
 
     pool:
       vmImage: $(VmImage)
