@@ -51,26 +51,18 @@
             Output Document Size                     :       1,125,600 bytes       
             Index Utilization                        :          100.00 %           
             Total Query Execution Time               :           33.67 milliseconds
-              Query Preparation Times
-                Query Compilation Time               :            0.06 milliseconds
-                Logical Plan Build Time              :            0.02 milliseconds
-                Physical Plan Build Time             :            0.10 milliseconds
-                Query Optimization Time              :            0.01 milliseconds
+              Query Preparation Time                 :            0.19 milliseconds
               Index Lookup Time                      :            0.36 milliseconds
               Document Load Time                     :            9.58 milliseconds
-              Runtime Execution Times
-                Query Engine Times                   :           33.55 milliseconds
-                System Function Execution Time       :            0.05 milliseconds
-                User-defined Function Execution Time :            0.07 milliseconds
+              Runtime Execution Times                :            0.12 milliseconds
               Document Write Time                    :           18.10 milliseconds
+            
             Index Utilization Information
               Utilized Single Indexes
-                Filter Expression: FilterExpression
                 Index Spec: IndexDocumentExpression
                 Index Impact Score: IndexImpactScore
                 ---
               Potential Single Indexes
-                Filter Expression: FilterExpression
                 Index Spec: IndexDocumentExpression
                 Index Impact Score: IndexImpactScore
                 ---
@@ -96,7 +88,7 @@
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
-    "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.06 milliseconds\r\n    Logical Plan Build Time              :            0.02 milliseconds\r\n    Physical Plan Build Time             :            0.10 milliseconds\r\n    Query Optimization Time              :            0.01 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :           33.55 milliseconds\r\n    System Function Execution Time       :            0.05 milliseconds\r\n    User-defined Function Execution Time :            0.07 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+    "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
   },
   "children": []
 }]]></Json>
@@ -177,26 +169,18 @@
                 Output Document Size                     :       1,125,600 bytes       
                 Index Utilization                        :          100.00 %           
                 Total Query Execution Time               :           33.67 milliseconds
-                  Query Preparation Times
-                    Query Compilation Time               :            0.06 milliseconds
-                    Logical Plan Build Time              :            0.02 milliseconds
-                    Physical Plan Build Time             :            0.10 milliseconds
-                    Query Optimization Time              :            0.01 milliseconds
+                  Query Preparation Time                 :            0.19 milliseconds
                   Index Lookup Time                      :            0.36 milliseconds
                   Document Load Time                     :            9.58 milliseconds
-                  Runtime Execution Times
-                    Query Engine Times                   :           33.55 milliseconds
-                    System Function Execution Time       :            0.05 milliseconds
-                    User-defined Function Execution Time :            0.07 milliseconds
+                  Runtime Execution Times                :            0.12 milliseconds
                   Document Write Time                    :           18.10 milliseconds
+                
                 Index Utilization Information
                   Utilized Single Indexes
-                    Filter Expression: FilterExpression
                     Index Spec: IndexDocumentExpression
                     Index Impact Score: IndexImpactScore
                     ---
                   Potential Single Indexes
-                    Filter Expression: FilterExpression
                     Index Spec: IndexDocumentExpression
                     Index Impact Score: IndexImpactScore
                     ---
@@ -235,7 +219,7 @@
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
-        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.06 milliseconds\r\n    Logical Plan Build Time              :            0.02 milliseconds\r\n    Physical Plan Build Time             :            0.10 milliseconds\r\n    Query Optimization Time              :            0.01 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :           33.55 milliseconds\r\n    System Function Execution Time       :            0.05 milliseconds\r\n    User-defined Function Execution Time :            0.07 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
       },
       "children": []
     }
@@ -342,26 +326,18 @@
     │           Output Document Size                     :       1,125,600 bytes       
     │           Index Utilization                        :          100.00 %           
     │           Total Query Execution Time               :           33.67 milliseconds
-    │             Query Preparation Times
-    │               Query Compilation Time               :            0.06 milliseconds
-    │               Logical Plan Build Time              :            0.02 milliseconds
-    │               Physical Plan Build Time             :            0.10 milliseconds
-    │               Query Optimization Time              :            0.01 milliseconds
+    │             Query Preparation Time                 :            0.19 milliseconds
     │             Index Lookup Time                      :            0.36 milliseconds
     │             Document Load Time                     :            9.58 milliseconds
-    │             Runtime Execution Times
-    │               Query Engine Times                   :           33.55 milliseconds
-    │               System Function Execution Time       :            0.05 milliseconds
-    │               User-defined Function Execution Time :            0.07 milliseconds
+    │             Runtime Execution Times                :            0.12 milliseconds
     │             Document Write Time                    :           18.10 milliseconds
+    │           
     │           Index Utilization Information
     │             Utilized Single Indexes
-    │               Filter Expression: FilterExpression
     │               Index Spec: IndexDocumentExpression
     │               Index Impact Score: IndexImpactScore
     │               ---
     │             Potential Single Indexes
-    │               Filter Expression: FilterExpression
     │               Index Spec: IndexDocumentExpression
     │               Index Impact Score: IndexImpactScore
     │               ---
@@ -383,26 +359,18 @@
                 Output Document Size                     :       1,125,600 bytes       
                 Index Utilization                        :          100.00 %           
                 Total Query Execution Time               :           33.67 milliseconds
-                  Query Preparation Times
-                    Query Compilation Time               :            0.06 milliseconds
-                    Logical Plan Build Time              :            0.02 milliseconds
-                    Physical Plan Build Time             :            0.10 milliseconds
-                    Query Optimization Time              :            0.01 milliseconds
+                  Query Preparation Time                 :            0.19 milliseconds
                   Index Lookup Time                      :            0.36 milliseconds
                   Document Load Time                     :            9.58 milliseconds
-                  Runtime Execution Times
-                    Query Engine Times                   :           33.55 milliseconds
-                    System Function Execution Time       :            0.05 milliseconds
-                    User-defined Function Execution Time :            0.07 milliseconds
+                  Runtime Execution Times                :            0.12 milliseconds
                   Document Write Time                    :           18.10 milliseconds
+                
                 Index Utilization Information
                   Utilized Single Indexes
-                    Filter Expression: FilterExpression
                     Index Spec: IndexDocumentExpression
                     Index Impact Score: IndexImpactScore
                     ---
                   Potential Single Indexes
-                    Filter Expression: FilterExpression
                     Index Spec: IndexDocumentExpression
                     Index Impact Score: IndexImpactScore
                     ---
@@ -441,7 +409,7 @@
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
-        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.06 milliseconds\r\n    Logical Plan Build Time              :            0.02 milliseconds\r\n    Physical Plan Build Time             :            0.10 milliseconds\r\n    Query Optimization Time              :            0.01 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :           33.55 milliseconds\r\n    System Function Execution Time       :            0.05 milliseconds\r\n    User-defined Function Execution Time :            0.07 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
       },
       "children": []
     },
@@ -457,7 +425,7 @@
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
-        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Times\r\n    Query Compilation Time               :            0.06 milliseconds\r\n    Logical Plan Build Time              :            0.02 milliseconds\r\n    Physical Plan Build Time             :            0.10 milliseconds\r\n    Query Optimization Time              :            0.01 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times\r\n    Query Engine Times                   :           33.55 milliseconds\r\n    System Function Execution Time       :            0.05 milliseconds\r\n    User-defined Function Execution Time :            0.07 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Filter Expression: FilterExpression\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
       },
       "children": []
     }

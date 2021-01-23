@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         private const string TotalQueryExecutionTime = "Total Query Execution Time";
 
         // QueryPreparationTimes 
-        private const string QueryPreparationTimes = "Query Preparation Times";
+        private const string QueryPreparationTime = "Query Preparation Time";
         private const string QueryCompileTime = "Query Compilation Time";
         private const string LogicalPlanBuildTime = "Logical Plan Build Time";
         private const string PhysicalPlanBuildTime = "Physical Plan Build Time";
@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         private const string DocumentWriteTime = "Document Write Time";
 
         // RuntimeExecutionTimes 
-        private const string RuntimeExecutionTimes = "Runtime Execution Times";
+        private const string RuntimeExecutionTime = "Runtime Execution Times";
         private const string TotalExecutionTime = "Query Engine Execution Time";
         private const string SystemFunctionExecuteTime = "System Function Execution Time";
         private const string UserDefinedFunctionExecutionTime = "User-defined Function Execution Time";
@@ -215,56 +215,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
                 indentLevel: 0);
         }
 
-        #region QueryPreparationTimes
-        protected override void WriteBeforeQueryPreparationTimes()
+        protected override void WriteQueryPreparationTime(QueryPreparationTimes queryPreparationTimes)
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
                 this.stringBuilder,
-                QueryMetricsTextWriter.QueryPreparationTimes,
+                QueryMetricsTextWriter.QueryPreparationTime,
+                queryPreparationTimes.LogicalPlanBuildTime 
+                + queryPreparationTimes.PhysicalPlanBuildTime 
+                + queryPreparationTimes.QueryCompilationTime 
+                + queryPreparationTimes.QueryOptimizationTime,
                 indentLevel: 1);
         }
-
-        protected override void WriteQueryCompilationTime(TimeSpan queryCompilationTime)
-        {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
-                this.stringBuilder,
-                QueryMetricsTextWriter.QueryCompileTime,
-                queryCompilationTime,
-                indentLevel: 2);
-        }
-
-        protected override void WriteLogicalPlanBuildTime(TimeSpan logicalPlanBuildTime)
-        {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
-                this.stringBuilder,
-                QueryMetricsTextWriter.LogicalPlanBuildTime,
-                logicalPlanBuildTime,
-                indentLevel: 2);
-        }
-
-        protected override void WritePhysicalPlanBuildTime(TimeSpan physicalPlanBuildTime)
-        {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
-                this.stringBuilder,
-                QueryMetricsTextWriter.PhysicalPlanBuildTime,
-                physicalPlanBuildTime,
-                indentLevel: 2);
-        }
-
-        protected override void WriteQueryOptimizationTime(TimeSpan queryOptimizationTime)
-        {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
-                this.stringBuilder,
-                QueryMetricsTextWriter.QueryOptimizationTime,
-                queryOptimizationTime,
-                indentLevel: 2);
-        }
-
-        protected override void WriteAfterQueryPreparationTimes()
-        {
-            // Do Nothing
-        }
-        #endregion
 
         protected override void WriteIndexLookupTime(TimeSpan indexLookupTime)
         {
@@ -289,47 +250,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             // Do Nothing
         }
 
-        #region RuntimeExecutionTimes
-        protected override void WriteBeforeRuntimeExecutionTimes()
+        protected override void WriteRuntimeExecutionTime(RuntimeExecutionTimes runtimeExecutionTimes)
         {
-            QueryMetricsTextWriter.AppendHeaderToStringBuilder(
+            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
                 this.stringBuilder,
-                QueryMetricsTextWriter.RuntimeExecutionTimes,
+                QueryMetricsTextWriter.RuntimeExecutionTime,
+                runtimeExecutionTimes.SystemFunctionExecutionTime 
+                + runtimeExecutionTimes.UserDefinedFunctionExecutionTime,
                 indentLevel: 1);
         }
-
-        protected override void WriteQueryEngineExecutionTime(TimeSpan queryEngineExecutionTime)
-        {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
-                this.stringBuilder,
-                QueryMetricsTextWriter.QueryEngineTimes,
-                queryEngineExecutionTime,
-                indentLevel: 2);
-        }
-
-        protected override void WriteSystemFunctionExecutionTime(TimeSpan systemFunctionExecutionTime)
-        {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
-                this.stringBuilder,
-                QueryMetricsTextWriter.SystemFunctionExecuteTime,
-                systemFunctionExecutionTime,
-                indentLevel: 2);
-        }
-
-        protected override void WriteUserDefinedFunctionExecutionTime(TimeSpan userDefinedFunctionExecutionTime)
-        {
-            QueryMetricsTextWriter.AppendTimeSpanToStringBuilder(
-                this.stringBuilder,
-                QueryMetricsTextWriter.UserDefinedFunctionExecutionTime,
-                userDefinedFunctionExecutionTime,
-                indentLevel: 2);
-        }
-
-        protected override void WriteAfterRuntimeExecutionTimes()
-        {
-            // Do Nothing
-        }
-        #endregion
 
         protected override void WriteDocumentWriteTime(TimeSpan documentWriteTime)
         {
@@ -513,6 +442,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         #region IndexUtilizationInfo
         protected override void WriteBeforeIndexUtilizationInfo()
         {
+            QueryMetricsTextWriter.AppendNewlineToStringBuilder(this.stringBuilder);
             QueryMetricsTextWriter.AppendHeaderToStringBuilder(
                 this.stringBuilder,
                 QueryMetricsTextWriter.IndexUtilizationInfo,
@@ -551,7 +481,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
             void WriteSingleIndexUtilizationEntity(SingleIndexUtilizationEntity indexUtilizationEntity)
             {
-                QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{QueryMetricsTextWriter.FilterExpression}: {indexUtilizationEntity.FilterExpression}", indentLevel: 2);
                 QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{QueryMetricsTextWriter.IndexExpression}: {indexUtilizationEntity.IndexDocumentExpression}", indentLevel: 2);
                 QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, $"{QueryMetricsTextWriter.IndexImpactScore}: {indexUtilizationEntity.IndexImpactScore}", indentLevel: 2);
                 QueryMetricsTextWriter.AppendHeaderToStringBuilder(this.stringBuilder, IndexUtilizationSeparator, indentLevel: 2);
