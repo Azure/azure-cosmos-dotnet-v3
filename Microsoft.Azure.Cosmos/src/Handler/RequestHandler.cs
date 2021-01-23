@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            using (ITrace childTrace = request?.Trace?.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, TraceLevel.Info) ?? NoOpTrace.Singleton)
+            using (ITrace childTrace = request.Trace.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, TraceLevel.Info))
             {
                 request.Trace = childTrace;
                 return this.InnerHandler.SendAsync(request, cancellationToken);

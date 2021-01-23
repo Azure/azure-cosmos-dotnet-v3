@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
@@ -195,12 +194,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
-                while (feedIterator.HasMoreResults)
+                using (ResponseMessage response = await feedIterator.ReadNextAsync())
                 {
-                    using (ResponseMessage response = await feedIterator.ReadNextAsync())
-                    {
-                        Assert.IsNotNull(response.Content);
-                    }
+                    Assert.IsNotNull(response.Content);
                 }
             }
 

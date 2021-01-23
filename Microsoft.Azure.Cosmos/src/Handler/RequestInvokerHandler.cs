@@ -127,16 +127,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(trace));
             }
 
+            // This is needed for query where a single
+            // user request might span multiple backend requests.
+            // This will still have a single request id for retry scenarios
+            ActivityScope activityScope = ActivityScope.CreateIfDefaultActivityId();
+            Debug.Assert(activityScope == null || (activityScope != null &&
+                         (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan)),
+                "There should be an activity id already set");
+
             using (ITrace childTrace = trace.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, Tracing.TraceLevel.Info))
             {
-                // This is needed for query where a single
-                // user request might span multiple backend requests.
-                // This will still have a single request id for retry scenarios
-                ActivityScope activityScope = ActivityScope.CreateIfDefaultActivityId();
-                Debug.Assert(activityScope == null || (activityScope != null &&
-                             (operationType != OperationType.SqlQuery || operationType != OperationType.Query || operationType != OperationType.QueryPlan)),
-                    "There should be an activity id already set");
-
                 try
                 {
                     HttpMethod method = RequestInvokerHandler.GetHttpMethod(resourceType, operationType);

@@ -64,8 +64,7 @@ namespace Microsoft.Azure.Cosmos
         internal static ResponseMessage ToCosmosResponseMessage(
             this DocumentServiceResponse documentServiceResponse,
             RequestMessage requestMessage,
-            RequestChargeTracker requestChargeTracker,
-            ITrace trace)
+            RequestChargeTracker requestChargeTracker)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
             Headers headers = new Headers(documentServiceResponse.Headers);
@@ -75,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
                 StringBuilder stringBuilder = new StringBuilder();
                 documentServiceResponse.RequestStats.AppendToBuilder(stringBuilder);
 
-                trace.AddDatum("Client Side Request Stats", stringBuilder.ToString());
+                requestMessage.Trace.AddDatum("Client Side Request Stats", stringBuilder.ToString());
             }
 
             if (requestChargeTracker != null && headers.RequestCharge < requestChargeTracker.TotalRequestCharge)
@@ -105,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
                     requestSessionToken: requestMessage?.Headers?.Session,
                     responseSessionToken: headers.Session);
 
-                trace.AddDatum(nameof(PointOperationStatisticsTraceDatum), pointOperationStatistics);
+                requestMessage.Trace.AddDatum(nameof(PointOperationStatisticsTraceDatum), pointOperationStatistics);
             }
 
             // If it's considered a failure create the corresponding CosmosException
@@ -119,19 +118,12 @@ namespace Microsoft.Azure.Cosmos
                 return cosmosException.ToCosmosResponseMessage(requestMessage);
             }
 
-            // Get the root trace to put in the reponse message
-            ITrace rootTrace = requestMessage.Trace;
-            while (rootTrace.Parent != null)
-            {
-                rootTrace = rootTrace.Parent;
-            }
-
             ResponseMessage responseMessage = new ResponseMessage(
                 statusCode: documentServiceResponse.StatusCode,
                 requestMessage: requestMessage,
                 headers: headers,
                 cosmosException: null,
-                trace: rootTrace)
+                trace: null)
             {
                 Content = documentServiceResponse.ResponseBody
             };

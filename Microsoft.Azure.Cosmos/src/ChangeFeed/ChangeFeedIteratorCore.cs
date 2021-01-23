@@ -277,6 +277,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.ContinuationToken = continuationToken;
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;
             responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;
+            responseMessage.Trace = trace;
 
             return responseMessage;
         }

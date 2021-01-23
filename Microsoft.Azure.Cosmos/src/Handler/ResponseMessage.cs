@@ -77,7 +77,14 @@ namespace Microsoft.Azure.Cosmos
             this.RequestMessage = requestMessage;
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
-            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+            if (requestMessage != null && requestMessage.Trace != null)
+            {
+                this.Trace = requestMessage.Trace;
+            }
+            else
+            {
+                this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+            }
         }
 
         /// <summary>

@@ -87,14 +87,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 TraceComponent.Transport,
                 Tracing.TraceLevel.Info))
             {
+                request.Trace = processMessageAsyncTrace;
                 DocumentServiceResponse response = request.OperationType == OperationType.Upsert
                         ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
                         : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
 
                 return response.ToCosmosResponseMessage(
                     request,
-                    serviceRequest.RequestContext.RequestChargeTracker,
-                    processMessageAsyncTrace);
+                    serviceRequest.RequestContext.RequestChargeTracker);
             }
         }
 

@@ -172,14 +172,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(trace, cancellationToken);
-            ITrace rootTrace = trace;
-            while (rootTrace.Parent != null)
-            {
-                rootTrace = rootTrace.Parent;
-            }
-
-            response.Trace = rootTrace;
-
             return this.responseCreator(response);
         }
 

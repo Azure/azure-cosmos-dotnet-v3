@@ -583,27 +583,27 @@
             //----------------------------------------------------------------
 
             //----------------------------------------------------------------
-            //  Point Patch
+            //  Point Patch (this one is flaky)
             //----------------------------------------------------------------
-            {
-                startLineNumber = GetLineNumber();
-                ItemRequestOptions requestOptions = new ItemRequestOptions();
-                ContainerInternal containerInternal = (ContainerInternal)container;
-                List<PatchOperation> patch = new List<PatchOperation>()
-                {
-                    PatchOperation.Replace("/someField", "42")
-                };
-                ResponseMessage patchResponse = await containerInternal.PatchItemStreamAsync(
-                    id: "9001",
-                    partitionKey: new PartitionKey("9001"),
-                    patchOperations: patch,
-                    requestOptions: requestOptions);
+            //{
+            //    startLineNumber = GetLineNumber();
+            //    ItemRequestOptions requestOptions = new ItemRequestOptions();
+            //    ContainerInternal containerInternal = (ContainerInternal)container;
+            //    List<PatchOperation> patch = new List<PatchOperation>()
+            //    {
+            //        PatchOperation.Replace("/someField", "42")
+            //    };
+            //    ResponseMessage patchResponse = await containerInternal.PatchItemStreamAsync(
+            //        id: "9001",
+            //        partitionKey: new PartitionKey("9001"),
+            //        patchOperations: patch,
+            //        requestOptions: requestOptions);
 
-                ITrace trace = ((CosmosTraceDiagnostics)patchResponse.Diagnostics).Value;
-                endLineNumber = GetLineNumber();
+            //    ITrace trace = ((CosmosTraceDiagnostics)patchResponse.Diagnostics).Value;
+            //    endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Patch", trace, startLineNumber, endLineNumber));
-            }
+            //    inputs.Add(new Input("Point Patch", trace, startLineNumber, endLineNumber));
+            //}
             //----------------------------------------------------------------
 
             //----------------------------------------------------------------
