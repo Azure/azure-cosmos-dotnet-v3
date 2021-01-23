@@ -350,6 +350,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string id = Guid.NewGuid().ToString();
             string pkPath = "/partitionKey";
 
+#if PREVIEW
             SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties),
                 "Id",
                 "UniqueKeyPolicy",
@@ -360,7 +361,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
+                "ConflictResolutionPolicy",
+                "ClientEncryptionPolicy");
+#else
+            SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties),
+                "Id",
+                "UniqueKeyPolicy",
+                "DefaultTimeToLive",
+                "ChangeFeedPolicy",
+                "AnalyticalStoreTimeToLiveInSeconds",
+                "IndexingPolicy",
+                "GeospatialConfig",
+                "TimeToLivePropertyPath",
+                "PartitionKeyPath",
+                "PartitionKeyDefinitionVersion",
                 "ConflictResolutionPolicy");
+#endif
 
             // Two equivalent definitions 
             ContainerProperties cosmosContainerSettings = new ContainerProperties(id, pkPath);
@@ -374,6 +390,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(cosmosContainerSettings.DefaultTimeToLive);
 
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy);
+            Assert.IsNotNull(cosmosContainerSettings.ChangeFeedPolicy);
             Assert.IsNotNull(cosmosContainerSettings.ConflictResolutionPolicy);
             Assert.IsTrue(object.ReferenceEquals(cosmosContainerSettings.IndexingPolicy, cosmosContainerSettings.IndexingPolicy));
             Assert.IsNotNull(cosmosContainerSettings.IndexingPolicy.IncludedPaths);
@@ -607,6 +624,56 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(typeof(TriggerProperties), conflictSettings.ResourceType);
 
             Assert.AreEqual("Conflict1", conflictSettings.Id);
+        }
+
+        [TestMethod]
+        public void ChangeFeedPolicySerialization()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            string serialization = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsFalse(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should not be included by default");
+
+            TimeSpan desiredTimeSpan = TimeSpan.FromHours(1);
+            containerSettings.ChangeFeedPolicy = new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = desiredTimeSpan };
+            string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsTrue(serializationWithValues.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should be included");
+            Assert.IsTrue(serializationWithValues.Contains(Constants.Properties.LogRetentionDuration), "Change Feed Policy retention should be included");
+
+            JObject parsed = JObject.Parse(serializationWithValues);
+            JToken retentionValue = parsed[Constants.Properties.ChangeFeedPolicy][Constants.Properties.LogRetentionDuration];
+            Assert.AreEqual(JTokenType.Integer, retentionValue.Type, "Change Feed Policy serialized retention should be an integer");
+            Assert.AreEqual((int)desiredTimeSpan.TotalMinutes, retentionValue.Value<int>(), "Change Feed Policy serialized retention value incorrect");
+        }
+
+        [TestMethod]
+        public void ChangeFeedPolicySerialization_Disabled()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            string serialization = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsFalse(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should not be included by default");
+
+            TimeSpan desiredTimeSpan = TimeSpan.FromHours(1);
+            containerSettings.ChangeFeedPolicy = new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = Cosmos.ChangeFeedPolicy.FullFidelityNoRetention };
+            string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsTrue(serializationWithValues.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should be included");
+            Assert.IsTrue(serializationWithValues.Contains(Constants.Properties.LogRetentionDuration), "Change Feed Policy retention should be included");
+
+            JObject parsed = JObject.Parse(serializationWithValues);
+            JToken retentionValue = parsed[Constants.Properties.ChangeFeedPolicy][Constants.Properties.LogRetentionDuration];
+            Assert.AreEqual(JTokenType.Integer, retentionValue.Type, "Change Feed Policy serialized retention should be an integer");
+            Assert.AreEqual(0, retentionValue.Value<int>(), "Change Feed Policy serialized retention value incorrect");
+        }
+
+        [TestMethod]
+        public void ChangeFeedPolicySerialization_InvalidValues()
+        {
+            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey");
+            string serialization = JsonConvert.SerializeObject(containerSettings);
+            Assert.IsFalse(serialization.Contains(Constants.Properties.ChangeFeedPolicy), "Change Feed Policy should not be included by default");
+
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(10) });
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromMilliseconds(10) });
+            Assert.ThrowsException<ArgumentOutOfRangeException>(() => new Cosmos.ChangeFeedPolicy() { FullFidelityRetention = TimeSpan.FromSeconds(-10) });
         }
 
         private static T CosmosDeserialize<T>(string payload)

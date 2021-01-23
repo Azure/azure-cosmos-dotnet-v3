@@ -37,9 +37,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             List<string> requestedPKRanges = new List<string>();
 
-            FeedIterator feedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning)
+            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
-                requestedPKRanges.Add(partitionKeyRangeId);
+                requestedPKRanges.Add(lease.CurrentLeaseToken);
                 return mockIterator.Object;
             }
 
@@ -83,9 +83,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning)
+            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
-                if (partitionKeyRangeId == "0")
+                if (lease.CurrentLeaseToken == "0")
                 {
                     return mockIteratorPKRange0.Object;
                 }
@@ -141,9 +141,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning)
+            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
-                if (partitionKeyRangeId == "0")
+                if (lease.CurrentLeaseToken == "0")
                 {
                     return mockIteratorPKRange0.Object;
                 }
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning)
+            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning)
+            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning)
+            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock<DocumentServiceLeaseContainer> mockContainer = new Mock<DocumentServiceLeaseContainer>();
             mockContainer.Setup(c => c.GetAllLeasesAsync()).ReturnsAsync(leases);
 
-            FeedIterator feedCreator(string partitionKeyRangeId, string continuationToken, bool startFromBeginning)
+            FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
             {
                 return mockIterator.Object;
             }

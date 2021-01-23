@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
@@ -80,9 +81,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             long ticks = Number64.ToLong(((CosmosNumber)insertedDocument["_ts"]).Value);
 
             Record record = new Record(
-                resourceIdentifier, 
+                resourceIdentifier,
                 new DateTime(ticks: ticks, DateTimeKind.Utc),
-                identifier, 
+                identifier,
                 insertedDocument);
 
             return TryCatch<Record>.FromResult(record);
@@ -277,6 +278,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
+            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -293,9 +296,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     state.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
 
                     request.Headers.PageSize = pageSize.ToString();
-                    request.Headers.Add(
-                        HttpConstants.HttpHeaders.A_IM,
-                        HttpConstants.A_IMHeaderValues.IncrementalFeed);
+
+                    changeFeedMode.Accept(request);
+
+                    if (jsonSerializationFormat.HasValue)
+                    {
+                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = jsonSerializationFormat.Value.ToContentSerializationFormatString();
+                    }
                 },
                 feedRange: feedRange,
                 streamPayload: default,

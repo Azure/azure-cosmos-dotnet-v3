@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
@@ -129,6 +131,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id);
             Assert.IsNotNull(deleteResponse);
+        }
+
+        [TestMethod]
+        public async Task NegativeCreateItemTest()
+        {
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper();
+            HttpClient httpClient = new HttpClient(httpHandler);
+            using CosmosClient client = TestCommon.CreateCosmosClient(x => x.WithHttpClientFactory(() => httpClient));
+
+            httpHandler.RequestCallBack = (request, cancellation) =>
+            {
+                if(request.Method == HttpMethod.Get &&
+                    request.RequestUri.AbsolutePath == "//addresses/")
+                {
+                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.Forbidden);
+
+                    // Add a substatus code that is not part of the enum. 
+                    // This ensures that if the backend adds a enum the status code is not lost.
+                    result.Headers.Add(WFConstants.BackendHeaders.SubStatus, 999999.ToString(CultureInfo.InvariantCulture));
+                    string payload = JsonConvert.SerializeObject(new Error() { Message = "test message" });
+                    result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+                    return Task.FromResult(result);
+                }
+
+                return null;
+            };
+            
+            try
+            {
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                await client.GetContainer(this.database.Id, this.Container.Id).CreateItemAsync<ToDoActivity>(item: testItem);
+                Assert.Fail("Request should throw exception.");
+            }
+            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Assert.AreEqual(999999, ce.SubStatusCode);
+                string exception = ce.ToString();
+                Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
+                string diagnostics = ce.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("\"SubStatusCode\":999999"));
+            }
         }
 
         [TestMethod]
@@ -562,6 +605,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Assert.IsNull(lastContinuationToken);
             Assert.AreEqual(itemIds.Count, 0);
+        }
+
+        [TestMethod]
+        public async Task PartitionKeyDeleteTest()
+        {
+            string pKString = "PK1";
+            string pKString2 = "PK2";
+            dynamic testItem1 = new
+            {
+                id = "item1",
+                status = pKString
+            };
+
+            dynamic testItem2 = new
+            {
+                id = "item2",
+                status = pKString
+            };
+
+            dynamic testItem3 = new
+            {
+                id = "item3",
+                status = pKString2
+            };
+
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+            ItemResponse<dynamic>  itemResponse = await this.Container.CreateItemAsync<dynamic>(testItem1);
+            ItemResponse<dynamic> itemResponse2 = await this.Container.CreateItemAsync<dynamic>(testItem2);
+            ItemResponse<dynamic> itemResponse3 = await this.Container.CreateItemAsync<dynamic>(testItem3);
+            Cosmos.PartitionKey partitionKey1 = new Cosmos.PartitionKey(pKString);
+            Cosmos.PartitionKey partitionKey2 = new Cosmos.PartitionKey(pKString2);
+            using (ResponseMessage pKDeleteResponse = await containerInternal.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey1))
+            {
+                Assert.AreEqual(pKDeleteResponse.StatusCode, HttpStatusCode.OK);
+            }
+
+            using (ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item1", partitionKey1))
+            {
+                Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
+                Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+            }
+
+            using (ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item2", partitionKey1))
+            {
+                Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.NotFound);
+                Assert.AreEqual(readResponse.Headers.SubStatusCode, SubStatusCodes.Unknown);
+            }
+
+            //verify item with the other Partition Key is not deleted
+            using (ResponseMessage readResponse = await this.Container.ReadItemStreamAsync("item3", partitionKey2))
+            {
+                Assert.AreEqual(readResponse.StatusCode, HttpStatusCode.OK);
+            }
         }
 
         [TestMethod]

@@ -24,9 +24,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         public DocumentServiceLeaseStoreManagerCosmos(
             DocumentServiceLeaseStoreManagerOptions options,
-            Container leaseContainer,
+            ContainerInternal monitoredContainer,
+            ContainerInternal leaseContainer,
             RequestOptionsFactory requestOptionsFactory)
-            : this(options, leaseContainer, requestOptionsFactory, new DocumentServiceLeaseUpdaterCosmos(leaseContainer))
+            : this(options, monitoredContainer, leaseContainer, requestOptionsFactory, new DocumentServiceLeaseUpdaterCosmos(leaseContainer))
         {
         }
 
@@ -38,24 +39,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </remarks>
         internal DocumentServiceLeaseStoreManagerCosmos(
             DocumentServiceLeaseStoreManagerOptions options,
-            Container container,
+            ContainerInternal monitoredContainer,
+            ContainerInternal leaseContainer,
             RequestOptionsFactory requestOptionsFactory,
             DocumentServiceLeaseUpdater leaseUpdater) // For testing purposes only.
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
             if (options.ContainerNamePrefix == null) throw new ArgumentNullException(nameof(options.ContainerNamePrefix));
             if (string.IsNullOrEmpty(options.HostName)) throw new ArgumentNullException(nameof(options.HostName));
-            if (container == null) throw new ArgumentNullException(nameof(container));
+            if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
+            if (leaseContainer == null) throw new ArgumentNullException(nameof(leaseContainer));
             if (requestOptionsFactory == null) throw new ArgumentException(nameof(requestOptionsFactory));
             if (leaseUpdater == null) throw new ArgumentException(nameof(leaseUpdater));
 
             this.leaseStore = new DocumentServiceLeaseStoreCosmos(
-                container,
+                leaseContainer,
                 options.ContainerNamePrefix,
                 requestOptionsFactory);
 
             this.leaseManager = new DocumentServiceLeaseManagerCosmos(
-                container,
+                monitoredContainer,
+                leaseContainer,
                 leaseUpdater,
                 options,
                 requestOptionsFactory);
@@ -65,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 requestOptionsFactory);
 
             this.leaseContainer = new DocumentServiceLeaseContainerCosmos(
-                container,
+                leaseContainer,
                 options);
         }
 
