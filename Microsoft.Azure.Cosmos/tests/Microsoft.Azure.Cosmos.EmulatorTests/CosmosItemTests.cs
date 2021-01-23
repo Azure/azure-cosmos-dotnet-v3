@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string exception = ce.ToString();
                 Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
                 string diagnostics = ce.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("\"SubStatusCode\":999999"));
+                Assert.IsTrue(diagnostics.Contains("Forbidden/999999"));
             }
         }
 

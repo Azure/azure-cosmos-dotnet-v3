@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             string diagnostics = response.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(settings, response);
 
             response = await this.scripts.ReadUserDefinedFunctionAsync(settings.Id);
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             diagnostics = response.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(settings, response);
 
             UserDefinedFunctionProperties updatedSettings = response.Resource;
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(replaceResponse.Diagnostics);
             diagnostics = replaceResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
 
             replaceResponse = await this.scripts.DeleteUserDefinedFunctionAsync(settings.Id);
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(replaceResponse.Diagnostics);
             diagnostics = replaceResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
         }
 

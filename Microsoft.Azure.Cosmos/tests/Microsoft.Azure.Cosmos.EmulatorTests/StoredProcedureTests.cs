@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(storedProcedureResponse.Diagnostics);
             string diagnostics = storedProcedureResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
 
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(storedProcedureResponse.Diagnostics);
             diagnostics = storedProcedureResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
             string updatedBody = @"function(name) { var context = getContext();
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(replaceResponse.Diagnostics);
             diagnostics = replaceResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, updatedBody, replaceResponse);
 
 
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(deleteResponse.Diagnostics);
             diagnostics = deleteResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
         }
 
         [TestMethod]

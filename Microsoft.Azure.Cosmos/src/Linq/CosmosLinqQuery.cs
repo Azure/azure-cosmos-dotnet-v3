@@ -181,10 +181,10 @@ namespace Microsoft.Azure.Cosmos.Linq
             FeedIterator<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false);
             FeedIteratorInternal<T> localFeedIteratorInternal = (FeedIteratorInternal<T>)localFeedIterator;
 
-            ITrace rootTrace = null;
-            while (localFeedIterator.HasMoreResults)
+            ITrace rootTrace;
+            using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
             {
-                using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
+                while (localFeedIterator.HasMoreResults)
                 {
                     FeedResponse<T> response = await localFeedIteratorInternal.ReadNextAsync(rootTrace, cancellationToken);
                     headers.RequestCharge += response.RequestCharge;

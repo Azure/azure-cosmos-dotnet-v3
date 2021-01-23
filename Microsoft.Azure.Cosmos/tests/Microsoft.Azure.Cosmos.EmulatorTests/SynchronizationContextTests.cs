@@ -5,29 +5,10 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
-    using System.Net;
-    using System.Text;
     using System.Threading;
-    using System.Threading.Tasks;
-    using System.Xml.Linq;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using JsonReader = Json.JsonReader;
-    using JsonWriter = Json.JsonWriter;
 
     [TestClass]
     public class SynchronizationContextTests

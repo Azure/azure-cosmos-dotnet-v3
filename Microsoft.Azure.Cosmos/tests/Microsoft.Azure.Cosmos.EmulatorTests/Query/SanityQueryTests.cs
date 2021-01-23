@@ -195,9 +195,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
-                using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                while (feedIterator.HasMoreResults)
                 {
-                    Assert.IsNotNull(response.Content);
+                    using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                    {
+                        Assert.IsNotNull(response.Content);
+                    }
                 }
             }
 
