@@ -37,7 +37,7 @@ jobs:
         command: publish  
         configuration: Release
         nugetConfigPath: NuGet.config
-        projects: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.sln'
+        projects: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.csproj'
         versioningScheme: OFF
         outputDir: $(Agent.TempDirectory)/ctl
     - pwsh: |
