@@ -38,12 +38,8 @@ jobs:
         publishWebProjects: false
         projects: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.csproj'
         arguments: '-c Release'
+        outputDir: '$(Agent.TempDirectory)/ctl'
         nugetConfigPath: NuGet.config
-    - task: CopyFiles@2
-      displayName: 'Copy publish files'
-      inputs:
-        SourceFolder: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/bin/Release/netcoreapp3.1/publish'
-        TargetFolder: $(Agent.TempDirectory)/ctl
     - pwsh: |
         cd $(Agent.TempDirectory)/ctl
         Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
