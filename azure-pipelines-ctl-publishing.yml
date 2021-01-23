@@ -40,6 +40,8 @@ jobs:
         arguments: '-c Release -o $(Agent.TempDirectory)/artifacts'
         nugetConfigPath: NuGet.config
     - pwsh: |
+        cd $(Agent.TempDirectory)/artifacts
+        ls
         cd $(Agent.TempDirectory)/ctl
         ls
         Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
