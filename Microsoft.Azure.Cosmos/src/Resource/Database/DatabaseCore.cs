@@ -14,6 +14,11 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
+#if INTERNAL || SUBPARTITIONING
+    using System.Collections.Generic;
+    using System.Linq;
+#endif
+
     /// <summary>
     /// Operations for reading or deleting an existing database.
     ///

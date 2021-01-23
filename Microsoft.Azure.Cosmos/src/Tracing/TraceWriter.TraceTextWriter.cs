@@ -423,7 +423,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
                             stringBuilder.AppendLine($"{space}{space}Is Client CPU Overloaded: {stat.StoreResult.IsClientCpuOverloaded}");
                             stringBuilder.AppendLine($"{space}{space}Exception");
-                            stringBuilder.AppendLine($"{space}{space}{stat.StoreResult.GetException()}");
+                            try
+                            {
+                                stringBuilder.AppendLine($"{space}{space}{stat.StoreResult.GetException()}");
+                            }
+                            catch (Exception)
+                            {
+                                // This method throws if there is no exception.
+                            }
                         }
                     }
 

@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         DateTime.MaxValue,
                         new Documents.StoreResult(
                             storeResponse: new StoreResponse(),
-                            exception: new InternalServerErrorException(),
+                            exception: null,
                             partitionKeyRangeId: 42.ToString(),
                             lsn: 1337,
                             quorumAckedLsn: 23,

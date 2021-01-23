@@ -167,7 +167,7 @@
             DateTime.MaxValue,
             new Documents.StoreResult(
                 storeResponse: new StoreResponse(),
-                exception: new InternalServerErrorException(),
+                exception: null,
                 partitionKeyRangeId: 42.ToString(),
                 lsn: 1337,
                 quorumAckedLsn: 23,
@@ -235,7 +235,6 @@
                   Current Write Quorum: 3
                 Is Client CPU Overloaded: False
                 Exception
-                Microsoft.Azure.Documents.InternalServerErrorException: Unknown server error occurred when processing this request., Windows/10.0.19042 cosmos-netstandard-sdk/3.15.4
         )
 ]]></Text>
       <Json><![CDATA[{
