@@ -796,10 +796,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(
-                diagnostics: response.Diagnostics,
-                isFirstPage: false);
         }
     }
 }

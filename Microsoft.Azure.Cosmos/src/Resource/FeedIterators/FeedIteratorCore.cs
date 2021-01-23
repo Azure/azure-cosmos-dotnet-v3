@@ -158,7 +158,10 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+            using (ITrace trace = Trace.GetRootTrace("FeedIteratorCore ReadNextAsync", TraceComponent.Unknown, TraceLevel.Info))
+            {
+                return this.ReadNextAsync(trace, cancellationToken);
+            }
         }
 
         public override async Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
@@ -169,6 +172,14 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(trace, cancellationToken);
+            ITrace rootTrace = trace;
+            while (rootTrace.Parent != null)
+            {
+                rootTrace = rootTrace.Parent;
+            }
+
+            response.Trace = rootTrace;
+
             return this.responseCreator(response);
         }
 

@@ -24,7 +24,15 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ScenariosAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BatchOperationsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BulkOperationsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ChangeFeedAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.MiscellanousAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.PointOperationsExceptionsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.QueryAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadFeedAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -51,7 +59,31 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ScenariosAsync.xml">
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.MiscellanousAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BulkOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BatchOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadFeedAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.PointOperationsExceptionsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.QueryAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ChangeFeedAsync.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\LinqAggregateFunctionBaselineTests.TestAny.xml">
