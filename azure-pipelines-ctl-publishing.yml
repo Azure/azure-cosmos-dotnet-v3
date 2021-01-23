@@ -34,12 +34,9 @@ jobs:
       displayName: Build CTL project
       condition: succeeded()
       inputs:
-        command: publish  
-        configuration: Release
+        command: custom
+        custom: 'publish $(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.csproj -c Release -o $(Agent.TempDirectory)/ctl'
         nugetConfigPath: NuGet.config
-        projects: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.csproj'
-        versioningScheme: OFF
-        outputDir: $(Agent.TempDirectory)/ctl
     - pwsh: |
         cd $(Agent.TempDirectory)/ctl
         Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
