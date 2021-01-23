@@ -68,6 +68,30 @@
             //----------------------------------------------------------------
 
             //----------------------------------------------------------------
+            //  ReadFeed Public API
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryText: null);
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("ReadFeed Public API", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
             //  ChangeFeed
             //----------------------------------------------------------------
             {
@@ -96,6 +120,37 @@
             //----------------------------------------------------------------
 
             //----------------------------------------------------------------
+            //  ChangeFeed Public API
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                ContainerInternal containerInternal = (ContainerInternal)container;
+                FeedIterator feedIterator = containerInternal.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.Beginning(),
+                    ChangeFeedMode.Incremental);
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    {
+                        break;
+                    }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("ChangeFeed Public API", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
             //  Query
             //----------------------------------------------------------------
             {
@@ -114,6 +169,30 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Query", rootTrace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Query Public API
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryText: "SELECT * FROM c");
+
+                List<ITrace> traces = new List<ITrace>();
+
+                while (feedIterator.HasMoreResults)
+                {
+                    ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -309,7 +388,7 @@
 
             public void AddDatum(string key, object value)
             {
-                if (key.Contains("cpu"))
+                if (key.Contains("CPU"))
                 {
                     // Redacted To Not Change The Baselines From Run To Run
                     return;

@@ -38,9 +38,15 @@ namespace Microsoft.Azure.Cosmos
             return this.feedIteratorInternal.GetCosmosElementContinuationToken();
         }
 
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+            using (ITrace trace = Trace.GetRootTrace("FeedIterator Read Next Async", TraceComponent.Unknown, TraceLevel.Info))
+            {
+                ResponseMessage responseMessage = await this.ReadNextAsync(trace, cancellationToken);
+                responseMessage.Trace = trace;
+
+                return responseMessage;
+            }
         }
 
         public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)

@@ -168,9 +168,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+            using (ITrace trace = Trace.GetRootTrace("Change Feed Iterator Read Next Async", TraceComponent.ChangeFeed, TraceLevel.Info))
+            {
+                ResponseMessage responseMessage = await this.ReadNextAsync(trace, cancellationToken);
+                responseMessage.Trace = trace;
+
+                return responseMessage;
+            } 
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
