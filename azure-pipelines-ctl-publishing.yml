@@ -50,7 +50,7 @@ jobs:
         Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)"
         az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)
         Write-Host "Executing docker tag cosmos-dotnet-ctl $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload"
-        docker tag cosmos-dotnet-ctl:$(DefaultTag) $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload
+        docker tag cosmos-dotnet-ctl $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload:$(DefaultTag)
         Write-Host "Executing docker push $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload"
         docker push $(ContainerRegistryUrl)/cosmos-dotnet-ctl/workload
       displayName: 'Build and push docker image to registry'
