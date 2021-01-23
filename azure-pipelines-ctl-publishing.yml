@@ -11,8 +11,6 @@ jobs:
         value: 'cosmosdotnetsdkctl'
       - name: ContainerRegistryUrl
         value: 'cosmosdotnetsdkctl.azurecr.io'
-      - name: DefaultTag
-        value: 'default'
 
     pool:
       vmImage: $(VmImage)
