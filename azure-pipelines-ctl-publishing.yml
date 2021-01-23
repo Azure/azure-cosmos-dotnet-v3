@@ -22,13 +22,13 @@ jobs:
       displayName: 'Copy docker config files'
       inputs:
         Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/Dockerfile'
-        TargetFolder: $(Agent.TempDirectory)/CTL
+        TargetFolder: $(Agent.TempDirectory)/ctl
         flattenFolders: true
     - task: CopyFiles@2
       displayName: 'Copy shell files'
       inputs:
         Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/run_ctl.sh'
-        TargetFolder: $(Agent.TempDirectory)/CTL
+        TargetFolder: $(Agent.TempDirectory)/ctl
         flattenFolders: true
     - task: DotNetCoreCLI@2
       displayName: Build CTL project
@@ -37,11 +37,11 @@ jobs:
         command: 'publish'
         publishWebProjects: false
         projects: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.csproj'
-        arguments: '-c Release -o $(Agent.TempDirectory)'
+        arguments: '-c Release'
+        outputDir: $(Agent.TempDirectory)/ctl
         nugetConfigPath: NuGet.config
     - pwsh: |
-        cd $(Agent.TempDirectory)/CTL
-        ls
+        cd $(Agent.TempDirectory)/ctl
         Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
         docker build -t cosmos-dotnet-ctl -f Dockerfile .
         Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)"
