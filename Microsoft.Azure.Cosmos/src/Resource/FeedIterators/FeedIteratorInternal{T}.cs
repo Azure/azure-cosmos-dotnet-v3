@@ -21,12 +21,11 @@ namespace Microsoft.Azure.Cosmos
 #endif
     abstract class FeedIteratorInternal<T> : FeedIterator<T>
     {
-        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             using (ITrace trace = Trace.GetRootTrace("Typed FeedIterator ReadNextAsync", TraceComponent.Unknown, TraceLevel.Info))
             {
-                FeedResponse<T> feedResponse = await this.ReadNextAsync(trace, cancellationToken);
-                return feedResponse;
+                return this.ReadNextAsync(trace, cancellationToken);
             }
         }
 

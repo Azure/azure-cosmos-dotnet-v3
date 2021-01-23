@@ -376,16 +376,19 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
-            // Used on NETFX applications with SynchronizationContext when doing locking calls
-            return Task.Run(() =>
+            using (ITrace childTrace = trace.StartChild("Synchronization Context"))
             {
-                using (new ActivityScope(Guid.NewGuid()))
+                // Used on NETFX applications with SynchronizationContext when doing locking calls
+                return Task.Run(() =>
                 {
-                    return this.RunWithDiagnosticsHelperAsync<TResult>(
-                        trace,
-                        task);
-                }
-            });
+                    using (new ActivityScope(Guid.NewGuid()))
+                    {
+                        return this.RunWithDiagnosticsHelperAsync<TResult>(
+                            childTrace,
+                            task);
+                    }
+                });
+            }
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(

@@ -35,7 +35,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
+            using (ITrace childTrace = trace.StartChild("Synchronization Context"))
+            {
+                return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
+            }
         }
 
         public override CosmosElement GetCosmosElementContinuationToken()

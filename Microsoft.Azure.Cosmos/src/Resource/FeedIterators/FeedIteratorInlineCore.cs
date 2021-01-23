@@ -48,7 +48,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
+            using (ITrace childTrace = trace.StartChild("Synchronization Context"))
+            {
+                return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(childTrace, cancellationToken));
+            }
         }
 
         protected override void Dispose(bool disposing)

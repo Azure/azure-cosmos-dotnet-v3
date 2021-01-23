@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         ItemResponse<ToDoActivity> response = container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(response);
                         string diagnostics = response.Diagnostics.ToString();
-                        Assert.IsTrue(diagnostics.Contains("SynchronizationContext"));
+                        Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
 
                         using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         }catch(CosmosOperationCanceledException oe)
                         {
                             string exception = oe.ToString();
-                            Assert.IsTrue(exception.Contains("SynchronizationContext"));
+                            Assert.IsTrue(exception.Contains("Synchronization Context"));
                         }
 
                         // Test read feed
