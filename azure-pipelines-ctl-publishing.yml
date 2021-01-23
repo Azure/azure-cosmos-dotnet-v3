@@ -42,10 +42,7 @@ jobs:
         arguments: '-c Release -o $(Agent.TempDirectory)/ctl/artifacts'
         nugetConfigPath: NuGet.config
     - pwsh: |
-        cd $(Agent.TempDirectory)/ctl/artifacts/CTL
-        ls
         cd $(Agent.TempDirectory)/ctl
-        ls
         Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
         docker build -t cosmos-dotnet-ctl -f Dockerfile .
         Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)"
