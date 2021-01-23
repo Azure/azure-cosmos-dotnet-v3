@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         TryCatch<QueryPage> monadicQueryPage = antecedent.Result;
                         if (monadicQueryPage.Failed)
                         {
+                            Console.WriteLine(this.SqlQuerySpec);
                             return TryCatch<OrderByQueryPage>.FromException(monadicQueryPage.Exception);
                         }
 
