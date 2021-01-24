@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return double.Parse(numberString);
         }
 
-        public override string GetStringValue()
+        public override UtfAnyString GetStringValue()
         {
             return this.reader.Value.ToString();
         }

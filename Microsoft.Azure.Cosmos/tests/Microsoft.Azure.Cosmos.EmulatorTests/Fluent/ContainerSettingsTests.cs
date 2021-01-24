@@ -34,6 +34,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ContainerContractTest()
         {
+            ClientEncryptionIncludedPath clientEncryptionIncludedPath1 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/path",
+                ClientEncryptionKeyId = "dekId",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                EncryptionType = "Randomized"
+            };
+
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                clientEncryptionIncludedPath1
+            };
+
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/users")
             {
                 IndexingPolicy = new IndexingPolicy()
@@ -81,7 +94,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             }
                         }
                     }
-                }
+                },
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
             };
 
             CosmosJsonDotNetSerializer serializer = new CosmosJsonDotNetSerializer();
@@ -118,6 +132,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             SpatialPath spatialPath = responseProperties.IndexingPolicy.SpatialIndexes.First();
             Assert.AreEqual("/address/spatial/*", spatialPath.Path);
             Assert.AreEqual(4, spatialPath.SpatialTypes.Count); // All SpatialTypes are returned
+
+            Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.IncludedPaths.Count());
+            Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.PolicyFormatVersion);
+            ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseProperties.ClientEncryptionPolicy.IncludedPaths.First();
+            Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(clientEncryptionIncludedPath1, clientEncryptionIncludedPath));
         }
 
         [TestMethod]
@@ -344,6 +363,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task TestChangeFeedPolicy()
+        {
+            Database databaseForChangeFeed = await this.cosmosClient.CreateDatabaseAsync("changeFeedRetentionContainerTest",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                string containerName = "changeFeedRetentionContainerTest";
+                string partitionKeyPath = "/users";
+                TimeSpan retention = TimeSpan.FromMinutes(10);
+
+                ContainerResponse containerResponse =
+                    await databaseForChangeFeed.DefineContainer(containerName, partitionKeyPath)
+                        .WithChangeFeedPolicy(retention)
+                            .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+                Assert.IsNotNull(containerSettings.ChangeFeedPolicy);
+                Assert.AreEqual(retention.TotalMinutes, containerSettings.ChangeFeedPolicy.FullFidelityRetention.TotalMinutes);
+            }
+            finally
+            {
+                await databaseForChangeFeed.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
         public async Task WithIndexingPolicy()
         {
             string containerName = Guid.NewGuid().ToString();
@@ -502,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string partitionKeyPath = "/user";
             int timeToLivetimeToLiveInSeconds = 10;
 
-            ContainerResponse containerResponse = null;
+            ContainerResponse containerResponse;
             try
             {
                 containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
@@ -539,5 +589,122 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
-    }
+
+        [TestMethod]
+        public async Task WithClientEncryptionPolicyTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+            ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/path1",
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "Randomized",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256"
+            };
+
+            ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
+            {
+                Path = "/path2",
+                ClientEncryptionKeyId = "key2",
+                EncryptionType = "Randomized",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+            
+            ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                .WithClientEncryptionPolicy()
+                    .WithIncludedPath(path1)
+                    .WithIncludedPath(path2)
+                    .Attach()
+                .CreateAsync();
+
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Container container = containerResponse;
+            ContainerProperties responseSettings = containerResponse;
+
+            Assert.IsNotNull(responseSettings.ClientEncryptionPolicy);
+            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
+            ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.First();
+            Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(path1, clientEncryptionIncludedPath));
+            clientEncryptionIncludedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.Last();
+            Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(path2, clientEncryptionIncludedPath));
+
+            ContainerResponse readResponse = await container.ReadContainerAsync();
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+        }
+
+        [TestMethod]
+        public async Task WithClientEncryptionPolicyFailureTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+            ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
+            {
+                ClientEncryptionKeyId = "key1",
+                EncryptionType = "random",
+                EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256"
+            };
+            
+            // Null value for Path
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateColleciton with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentNullException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Parameter name: Path"));
+            }
+
+            path1.Path = "/path";
+
+            // Invalid EncryptionType
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateColleciton with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'."));
+            }
+
+            path1.EncryptionType = "Deterministic";
+
+            // Invalid EncryptionAlgorithm
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateColleciton with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."));
+            }
+        }
+
+        private bool VerifyClientEncryptionIncludedPath(ClientEncryptionIncludedPath expected, ClientEncryptionIncludedPath actual)
+        {
+            return expected.Path == actual.Path &&
+                   expected.ClientEncryptionKeyId == actual.ClientEncryptionKeyId &&
+                   expected.EncryptionType == actual.EncryptionType &&
+                   expected.EncryptionAlgorithm == actual.EncryptionAlgorithm;
+        }
+    }    
 }
