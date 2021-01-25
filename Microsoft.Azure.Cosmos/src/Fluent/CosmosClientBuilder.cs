@@ -448,8 +448,14 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// the resource back over the network and serializing it on the client.
         /// </summary>
         /// <param name="contentResponseOnWriteEnabled">a boolean indicating whether payload will be included in the response or not.</param>
+        /// <remarks>
+        /// <para>
+        /// This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions
+        /// </para>
+        /// </remarks>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
+        /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
         public CosmosClientBuilder WithContentResponseOnWriteEnabled(bool contentResponseOnWriteEnabled)
         {
             this.clientOptions.EnableContentResponseOnWrite = contentResponseOnWriteEnabled;

@@ -18,44 +18,63 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosClientContentResponseTests
     {
-        private CosmosClient cosmosClient;
-        private Database database;
-        private Container container;
-        private ContainerInternal containerInternal;
+        private CosmosClient cosmosClientWithFlag;
+        private Database databaseWithFlag;
+        private Container containerWithFlag;
+
+        private CosmosClient cosmosClientWithoutFlag;
+        private Database databaseWithoutFlag;
+        private Container containerWithoutFlag;
 
         [TestInitialize]
         public async Task TestInit()
         {
-            this.cosmosClient = this.CreateCosmosClientWithContentResponse();
-            this.database = await this.cosmosClient.CreateDatabaseAsync(
+            this.cosmosClientWithFlag = this.CreateCosmosClientWithContentResponse(true);
+            this.databaseWithFlag = await this.cosmosClientWithFlag.CreateDatabaseAsync(
                    id: Guid.NewGuid().ToString());
 
-            this.container = await this.database.CreateContainerAsync(
+            this.containerWithFlag = await this.databaseWithFlag.CreateContainerAsync(
                      id: "ClientItemNoResponseTest",
                      partitionKeyPath: "/status");
-            this.containerInternal = (ContainerInternal)this.container;
+
+            this.cosmosClientWithoutFlag = this.CreateCosmosClientWithContentResponse(false);
+            this.databaseWithoutFlag = await this.cosmosClientWithoutFlag.CreateDatabaseAsync(
+                   id: Guid.NewGuid().ToString());
+
+            this.containerWithoutFlag = await this.databaseWithoutFlag.CreateContainerAsync(
+                     id: "ClientItemNoResponseTest",
+                     partitionKeyPath: "/status");
         }
 
         [TestCleanup]
         public async Task TestCleanup()
         {
-            if (this.cosmosClient == null)
+            if (this.cosmosClientWithFlag != null)
             {
-                return;
+                using (await this.databaseWithFlag.DeleteStreamAsync()) { }
+                this.cosmosClientWithFlag.Dispose();
             }
 
-            using (await this.database.DeleteStreamAsync()) { }
-            this.cosmosClient.Dispose();
+            if (this.cosmosClientWithoutFlag != null)
+            {
+                using (await this.databaseWithoutFlag.DeleteStreamAsync()) { }
+                this.cosmosClientWithoutFlag.Dispose();
+            }
         }
 
         [TestMethod]
         public async Task ClientContentResponseTest()
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> itemResponse = await this.container.CreateItemAsync(item);
+            ItemResponse<ToDoActivity> itemResponse = await this.containerWithFlag.CreateItemAsync(item);
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
             Assert.IsNotNull(itemResponse);
             Assert.IsNotNull(itemResponse.Resource);
+
+            ItemResponse<ToDoActivity> itemResponseWithoutFlag = await this.containerWithoutFlag.CreateItemAsync(item);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponseWithoutFlag);
+            Assert.IsNull(itemResponseWithoutFlag.Resource);
         }
 
         [TestMethod]
@@ -68,10 +87,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableContentResponseOnWrite = false
             };
 
-            ItemResponse<ToDoActivity> itemResponse = await this.container.CreateItemAsync(item, requestOptions: requestOptions);
+            ItemResponse<ToDoActivity> itemResponse = await this.containerWithFlag.CreateItemAsync(item, requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
             Assert.IsNotNull(itemResponse);
             Assert.IsNull(itemResponse.Resource);
+
+            ItemResponse<ToDoActivity> itemResponseWithoutFlag = await this.containerWithoutFlag.CreateItemAsync(item, requestOptions: requestOptions);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponseWithoutFlag);
+            Assert.IsNull(itemResponseWithoutFlag.Resource);
         }
 
         [TestMethod]
@@ -84,16 +108,110 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 EnableContentResponseOnWrite = true
             };
 
-            ItemResponse<ToDoActivity> itemResponse = await this.container.CreateItemAsync(item, requestOptions: requestOptions);
+            ItemResponse<ToDoActivity> itemResponse = await this.containerWithFlag.CreateItemAsync(item, requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponse);
+            Assert.IsNotNull(itemResponse.Resource);
+
+            ItemResponse<ToDoActivity> itemResponseWithoutFlag = await this.containerWithoutFlag.CreateItemAsync(item, requestOptions: requestOptions);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponseWithoutFlag);
+            Assert.IsNotNull(itemResponseWithoutFlag.Resource);
+        }
+
+        [TestMethod]
+        public async Task ClientContentResponseReadTest()
+        {
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+
+            ItemResponse<ToDoActivity> itemResponse = await this.containerWithFlag.CreateItemAsync(item);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+
+            // Ensuring the Reads are returning the Resource
+            ItemResponse<ToDoActivity> readResponse = await this.containerWithFlag.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status));
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.IsNotNull(itemResponse);
             Assert.IsNotNull(itemResponse.Resource);
         }
 
-        private CosmosClient CreateCosmosClientWithContentResponse()
+        [TestMethod]
+        public async Task NoContentResponseTransactionBatchTest()
+        {
+            string pkId = "TestBatchId";
+            TransactionalBatch batch = this.containerWithoutFlag.CreateTransactionalBatch(new PartitionKey(pkId));
+
+            int noResponseItemCount = 100;
+            for (int i = 0; i < noResponseItemCount; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
+                batch.CreateItem<ToDoActivity>(item);
+            }
+
+            TransactionalBatchResponse response = await batch.ExecuteAsync();
+            Assert.AreEqual(response.Count, 100);
+            foreach (TransactionalBatchOperationResult itemResponse in response)
+            {
+                Assert.IsTrue(itemResponse.StatusCode == HttpStatusCode.Created);
+                Assert.IsNull(itemResponse.ResourceStream);
+            }
+        }
+
+        [TestMethod]
+        public async Task NoContentResponseTransactionBatchOverrideTest()
+        {
+            string pkId = "TestBatchId";
+            TransactionalBatch batch = this.containerWithFlag.CreateTransactionalBatch(new PartitionKey(pkId));
+            TransactionalBatchItemRequestOptions requestOptions = new TransactionalBatchItemRequestOptions()
+            {
+                EnableContentResponseOnWrite = false
+            };
+
+            int noResponseItemCount = 100;
+            for (int i = 0; i < noResponseItemCount; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
+                batch.CreateItem<ToDoActivity>(item, requestOptions: requestOptions);
+            }
+
+            TransactionalBatchResponse response = await batch.ExecuteAsync();
+            Assert.AreEqual(response.Count, 100);
+            foreach (TransactionalBatchOperationResult itemResponse in response)
+            {
+                Assert.IsTrue(itemResponse.StatusCode == HttpStatusCode.Created);
+                Assert.IsNull(itemResponse.ResourceStream);
+            }
+        }
+
+        [TestMethod]
+        public async Task NoContentResponseBulkTest()
         {
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
-            cosmosClientBuilder = cosmosClientBuilder.WithContentResponseOnWriteEnabled(true);
+            cosmosClientBuilder = cosmosClientBuilder.WithBulkExecution(true).WithContentResponseOnWriteEnabled(false);
+            CosmosClient bulkClient = cosmosClientBuilder.Build();
+            Container bulkContainer = bulkClient.GetContainer(this.databaseWithoutFlag.Id, this.containerWithoutFlag.Id);
+
+            string pkId = "TestBulkId";
+            List<Task<ItemResponse<ToDoActivity>>> bulkOperations = new List<Task<ItemResponse<ToDoActivity>>>();
+            List<ToDoActivity> items = new List<ToDoActivity>();
+            for (int i = 0; i < 50; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkId);
+                items.Add(item);
+                bulkOperations.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item));
+            }
+
+            foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)
+            {
+                ItemResponse<ToDoActivity> itemResponse = await result;
+                Assert.AreEqual(itemResponse.StatusCode, HttpStatusCode.Created);
+                Assert.IsNull(itemResponse.Resource);
+            }
+        }
+
+        private CosmosClient CreateCosmosClientWithContentResponse(bool flag = false)
+        {
+            CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
+            cosmosClientBuilder = cosmosClientBuilder.WithContentResponseOnWriteEnabled(flag);
             return cosmosClientBuilder.Build();
         }
     }

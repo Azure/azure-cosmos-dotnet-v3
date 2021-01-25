@@ -463,7 +463,8 @@ namespace Microsoft.Azure.Cosmos
                 id: itemId,
                 resourceStream: streamPayload,
                 requestOptions: batchItemRequestOptions,
-                diagnosticsContext: diagnosticsContext);
+                diagnosticsContext: diagnosticsContext,
+                cosmosClientContext: this);
 
             TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(
                 itemBatchOperation,

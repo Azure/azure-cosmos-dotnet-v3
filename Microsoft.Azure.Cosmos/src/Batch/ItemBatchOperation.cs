@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos
             string id = null,
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null,
-            CosmosDiagnosticsContext diagnosticsContext = null)
+            CosmosDiagnosticsContext diagnosticsContext = null,
+            CosmosClientContext cosmosClientContext = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
             this.DiagnosticsContext = diagnosticsContext;
+            this.ClientContext = cosmosClientContext;
         }
 
         public ItemBatchOperation(
@@ -49,7 +52,8 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerCore,
             string id = null,
             Stream resourceStream = null,
-            TransactionalBatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null,
+            CosmosClientContext cosmosClientContext = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -58,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
             this.DiagnosticsContext = null;
+            this.ClientContext = cosmosClientContext;
         }
 
         public PartitionKey? PartitionKey { get; internal set; }
@@ -79,6 +84,8 @@ namespace Microsoft.Azure.Cosmos
         internal string PartitionKeyJson { get; set; }
 
         internal Documents.PartitionKey ParsedPartitionKey { get; set; }
+
+        internal CosmosClientContext ClientContext { get; set; }
 
         internal Memory<byte> ResourceBody
         {
@@ -166,7 +173,7 @@ namespace Microsoft.Azure.Cosmos
                         return r;
                     }
                 }
-
+                                                                    
                 if (ItemRequestOptions.ShouldSetNoContentHeader(
                     options.EnableContentResponseOnWrite,
                     options.EnableContentResponseOnRead,
@@ -247,6 +254,19 @@ namespace Microsoft.Azure.Cosmos
                             }
                         }
                     }
+                }
+            }
+
+            // If EnableContentResponse is set at Client level and not at Indivisual Operation Level
+            if (((operation.RequestOptions != null && !operation.RequestOptions.EnableContentResponseOnWrite.HasValue) || operation.RequestOptions == null)
+                && operation.ClientContext != null
+                && operation.ClientContext.ClientOptions != null
+                && ItemRequestOptions.ShouldSetNoContentHeader(operation.ClientContext.ClientOptions.EnableContentResponseOnWrite, null, operation.OperationType))
+            {
+                r = writer.WriteBool("minimalReturnPreference", true);
+                if (r != Result.Success)
+                {
+                    return r;
                 }
             }
 
@@ -369,8 +389,9 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             T resource,
             string id = null,
-            TransactionalBatchItemRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions)
+            TransactionalBatchItemRequestOptions requestOptions = null,
+            CosmosClientContext cosmosClientContext = null)
+            : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions, cosmosClientContext: cosmosClientContext)
         {
             this.Resource = resource;
         }
@@ -381,8 +402,9 @@ namespace Microsoft.Azure.Cosmos
             T resource,
             ContainerInternal containerCore,
             string id = null,
-            TransactionalBatchItemRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)
+            TransactionalBatchItemRequestOptions requestOptions = null,
+            CosmosClientContext cosmosClientContext = null)
+            : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions, cosmosClientContext: cosmosClientContext)
         {
             this.Resource = resource;
         }

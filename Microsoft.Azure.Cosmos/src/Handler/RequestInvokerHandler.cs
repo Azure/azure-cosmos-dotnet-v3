@@ -48,15 +48,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(request));
             }
 
-            // Sets the NoRepsonseContentOnWrite flag for Item requests. Can be overrided by ItemRequestOptions
-            this.SetNoContentResponseHeaders(request);
-
             RequestOptions promotedRequestOptions = request.RequestOptions;
             if (promotedRequestOptions != null)
             {
                 // Fill request options
                 promotedRequestOptions.PopulateRequestOptions(request);
             }
+
+            // Adds the NoContent header if not already added based on 
+            this.SetClientLevelNoContentResponseHeaders(request);
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
@@ -385,13 +385,34 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private void SetNoContentResponseHeaders(RequestMessage request)
+        private void SetClientLevelNoContentResponseHeaders(RequestMessage request)
         {
             // Sets the headers to only return the headers and status code in
             // the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
+            if (request.RequestOptions == null)
+            {
+                this.SetMinimalContentHeader(request);
+            }
+
+            if (!(request.RequestOptions is ItemRequestOptions))
+            {
+                return;
+            }
+
+            ItemRequestOptions itemRequestOptions = (ItemRequestOptions)request.RequestOptions;
             if (request.ResourceType == ResourceType.Document
-                && this.client.ClientOptions != null 
-                && ItemRequestOptions.ShouldSetNoContentHeader(this.client.ClientOptions.EnableContentResponseOnWrite, null, request.OperationType))
+                && !itemRequestOptions.EnableContentResponseOnWrite.HasValue)
+            {
+                this.SetMinimalContentHeader(request);
+            }
+        }
+
+        private void SetMinimalContentHeader(RequestMessage request)
+        {
+            if (this.client.ClientOptions != null
+                && ItemRequestOptions.ShouldSetNoContentHeader(enableContentResponseOnWrite: this.client.ClientOptions.EnableContentResponseOnWrite, 
+                                                               enableContentResponseOnRead: null, 
+                                                               operationType: request.OperationType))
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
             }

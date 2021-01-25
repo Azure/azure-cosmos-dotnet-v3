@@ -271,8 +271,12 @@ namespace Microsoft.Azure.Cosmos
         /// the resource back over the network and serializing it on the client.
         /// </summary>
         /// <remarks>
-        /// This is optimal for workloads where the returned resource is not used.
+        /// <para>This is optimal for workloads where the returned resource is not used.</para>
+        /// <para>This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions</para>
         /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithContentResponseOnWriteEnabled(bool)"/>
+        /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
+        /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
