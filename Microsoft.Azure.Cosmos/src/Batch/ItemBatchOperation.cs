@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Documents.PartitionKey ParsedPartitionKey { get; set; }
 
-        private CosmosClientContext ClientContext { get; set; }
+        private readonly CosmosClientContext ClientContext;
 
         internal Memory<byte> ResourceBody
         {

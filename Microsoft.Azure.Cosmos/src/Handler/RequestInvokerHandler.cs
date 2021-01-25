@@ -390,7 +390,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
         }
 
         internal static bool ShouldSetClientLevelNoContentResponseHeaders(RequestOptions requestOptions, 
-            CosmosClientOptions clientOptions, OperationType operationType, ResourceType resourceType)
+            CosmosClientOptions clientOptions,
+            OperationType operationType, 
+            ResourceType resourceType)
         {
             if (resourceType != ResourceType.Document)
             {

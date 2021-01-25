@@ -71,8 +71,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(itemResponse);
             Assert.IsNotNull(itemResponse.Resource);
 
+            itemResponse = await this.containerWithFlag.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status));
+            Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            item.cost = 424242.42;
+            
+            itemResponse = await this.containerWithFlag.UpsertItemAsync<ToDoActivity>(item);
+            Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponse.Resource);
+
+            item.cost = 9000.42;
+            itemResponse = await this.containerWithFlag.ReplaceItemAsync<ToDoActivity>(
+                item,
+                item.id,
+                new PartitionKey(item.status));
+            Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponse.Resource);
+
+            ContainerInternal containerInternal = (ContainerInternal)this.containerWithFlag;
+            item.cost = 1000;
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Replace("/cost", item.cost)
+            };
+            itemResponse = await containerInternal.PatchItemAsync<ToDoActivity>(
+                item.id,
+                new PartitionKey(item.status),
+                patchOperations: patch);
+            Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            Assert.IsNotNull(itemResponse.Resource);
+
             ItemResponse<ToDoActivity> itemResponseWithoutFlag = await this.containerWithoutFlag.CreateItemAsync(item);
-            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponseWithoutFlag.StatusCode);
             Assert.IsNotNull(itemResponseWithoutFlag);
             Assert.IsNull(itemResponseWithoutFlag.Resource);
         }
@@ -93,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(itemResponse.Resource);
 
             ItemResponse<ToDoActivity> itemResponseWithoutFlag = await this.containerWithoutFlag.CreateItemAsync(item, requestOptions: requestOptions);
-            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponseWithoutFlag.StatusCode);
             Assert.IsNotNull(itemResponseWithoutFlag);
             Assert.IsNull(itemResponseWithoutFlag.Resource);
         }
@@ -114,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(itemResponse.Resource);
 
             ItemResponse<ToDoActivity> itemResponseWithoutFlag = await this.containerWithoutFlag.CreateItemAsync(item, requestOptions: requestOptions);
-            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponseWithoutFlag.StatusCode);
             Assert.IsNotNull(itemResponseWithoutFlag);
             Assert.IsNotNull(itemResponseWithoutFlag.Resource);
         }
