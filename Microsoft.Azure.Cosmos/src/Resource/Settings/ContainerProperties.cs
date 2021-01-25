@@ -58,6 +58,9 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
+        [JsonProperty(PropertyName = Constants.Properties.ChangeFeedPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        private ChangeFeedPolicy changeFeedPolicyInternal;
+
         [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private IndexingPolicy indexingPolicyInternal;
 
@@ -70,6 +73,9 @@ namespace Microsoft.Azure.Cosmos
 
         [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ConflictResolutionPolicy conflictResolutionInternal;
+
+        [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
@@ -232,6 +238,31 @@ namespace Microsoft.Azure.Cosmos
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
+        /// Gets the client encryption policy information for storing items in a container from the Azure Cosmos service.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// By default, ClientEncryptionPolicy is set to null meaning the feature is turned off for the container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="ClientEncryptionPolicy"/> will be applied to all the items in the container as the default policy.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+#if PREVIEW
+        public 
+#else
+        internal
+#endif
+            ClientEncryptionPolicy ClientEncryptionPolicy
+        {
+            get => this.clientEncryptionPolicyInternal;
+
+            set => this.clientEncryptionPolicyInternal = value;
+        }
+
+        /// <summary>
         /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -262,6 +293,27 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// The change feed policy associated with the container.
+        /// </value>
+        [JsonIgnore]
+        internal ChangeFeedPolicy ChangeFeedPolicy
+        {
+            get
+            {
+                if (this.changeFeedPolicyInternal == null)
+                {
+                    this.changeFeedPolicyInternal = new ChangeFeedPolicy();
+                }
+
+                return this.changeFeedPolicyInternal;
+            }
+            set => this.changeFeedPolicyInternal = value;
+        }
+
+        /// <summary>
         /// Gets the <see cref="GeospatialConfig"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -281,6 +333,7 @@ namespace Microsoft.Azure.Cosmos
             }
             set => this.geospatialConfigInternal = value;
         }
+
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>

@@ -102,12 +102,12 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override string GetStringValue(IJsonNavigatorNode stringNode)
+            public override UtfAnyString GetStringValue(IJsonNavigatorNode stringNode)
             {
                 ReadOnlyMemory<byte> buffer = JsonBinaryNavigator.GetNodeOfType(
                     JsonNodeType.String,
                     stringNode);
-                return JsonBinaryEncoding.GetStringValue(
+                return JsonBinaryEncoding.GetUtf8StringValue(
                     this.rootBuffer,
                     buffer);
             }

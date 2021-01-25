@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract Number64 GetNumberValue();
 
         /// <inheritdoc />
-        public abstract string GetStringValue();
+        public abstract UtfAnyString GetStringValue();
 
         /// <inheritdoc />
         public abstract Utf8String GetUtf8StringValue();
