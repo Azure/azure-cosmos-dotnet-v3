@@ -1100,10 +1100,16 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
+            List<PatchOperation> patchOperationsClone = new List<PatchOperation>(patchOperations.Count());
+            foreach (PatchOperation operation in patchOperations)
+            {
+                patchOperationsClone.Add(operation);
+            }
+
             Stream patchOperationsStream;
             using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
             {
-                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(new PatchSpec(patchOperations, requestOptions));
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(new PatchSpec(patchOperationsClone, requestOptions));
             }
 
             return this.ClientContext.ProcessResourceOperationStreamAsync(

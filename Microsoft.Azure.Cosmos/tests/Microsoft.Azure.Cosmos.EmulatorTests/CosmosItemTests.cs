@@ -1573,7 +1573,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             PatchRequestOptions requestOptions = new PatchRequestOptions()
             {
-                Condition = "from root where root.x = 3"
+                FilterPredicate = "from root where root.x = 3"
             };
 
             // Patch a non-existing item. It should fail, and not throw an exception.
@@ -1659,7 +1659,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             PatchRequestOptions requestOptionsFalse = new PatchRequestOptions()
             {
-                Condition = "from c where c.taskNum = 3"
+                FilterPredicate = "from c where c.taskNum = 3"
             };
 
             // Patch that fails due to condition not met.
@@ -1686,7 +1686,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             PatchRequestOptions requestOptionsTrue = new PatchRequestOptions()
             {
-                Condition = "from root where root.taskNum = 8"
+                FilterPredicate = "from root where root.taskNum = 8"
             };
 
             // Patch

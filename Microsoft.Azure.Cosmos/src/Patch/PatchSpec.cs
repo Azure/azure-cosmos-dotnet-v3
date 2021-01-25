@@ -16,17 +16,13 @@ namespace Microsoft.Azure.Cosmos
     internal
 #endif
 
-        class PatchSpec
+        struct PatchSpec
     {
         public PatchSpec(
             IReadOnlyList<PatchOperation> patchOperations,
             PatchRequestOptions patchRequestOptions = null)
         {
-            if (patchOperations == null)
-            {
-                throw new ArgumentNullException(nameof(patchOperations));
-            }
-            this.PatchOperations = patchOperations;
+            this.PatchOperations = patchOperations ?? throw new ArgumentNullException(nameof(patchOperations));
             this.PatchRequestOptions = patchRequestOptions;
         }
 
