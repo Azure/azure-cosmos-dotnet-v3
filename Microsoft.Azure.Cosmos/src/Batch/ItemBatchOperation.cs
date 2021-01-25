@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.Layouts;
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Documents.PartitionKey ParsedPartitionKey { get; set; }
 
-        internal CosmosClientContext ClientContext { get; set; }
+        private CosmosClientContext ClientContext { get; set; }
 
         internal Memory<byte> ResourceBody
         {
@@ -257,11 +258,10 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            // If EnableContentResponse is set at Client level and not at Indivisual Operation Level
-            if (((operation.RequestOptions != null && !operation.RequestOptions.EnableContentResponseOnWrite.HasValue) || operation.RequestOptions == null)
-                && operation.ClientContext != null
-                && operation.ClientContext.ClientOptions != null
-                && ItemRequestOptions.ShouldSetNoContentHeader(operation.ClientContext.ClientOptions.EnableContentResponseOnWrite, null, operation.OperationType))
+            // If EnableContentResponse is set at Client level and not at Indivisual Item Level
+            if (operation.ClientContext != null 
+                && RequestInvokerHandler.ShouldSetClientLevelNoContentResponseHeaders(operation.RequestOptions, 
+                operation.ClientContext.ClientOptions, operation.OperationType, ResourceType.Document))
             {
                 r = writer.WriteBool("minimalReturnPreference", true);
                 if (r != Result.Success)

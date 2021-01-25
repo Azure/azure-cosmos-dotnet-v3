@@ -55,8 +55,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 promotedRequestOptions.PopulateRequestOptions(request);
             }
 
-            // Adds the NoContent header if not already added based on 
-            this.SetClientLevelNoContentResponseHeaders(request);
+            // Adds the NoContent header if not already added based on Client Level flag
+            if (RequestInvokerHandler.ShouldSetClientLevelNoContentResponseHeaders(request.RequestOptions, this.client.ClientOptions,
+                                                                                request.OperationType, request.ResourceType))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+            }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
@@ -385,37 +389,30 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private void SetClientLevelNoContentResponseHeaders(RequestMessage request)
+        internal static bool ShouldSetClientLevelNoContentResponseHeaders(RequestOptions requestOptions, 
+            CosmosClientOptions clientOptions, OperationType operationType, ResourceType resourceType)
         {
-            // Sets the headers to only return the headers and status code in
-            // the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
-            if (request.RequestOptions == null)
+            if (resourceType != ResourceType.Document)
             {
-                this.SetMinimalContentHeader(request);
+                return false;
             }
 
-            if (!(request.RequestOptions is ItemRequestOptions))
+            if (requestOptions == null
+                || ((requestOptions is ItemRequestOptions itemRequestOptions) && (!itemRequestOptions.EnableContentResponseOnWrite.HasValue))
+                || ((requestOptions is TransactionalBatchItemRequestOptions batchRequestOptions) && (!batchRequestOptions.EnableContentResponseOnWrite.HasValue)))
             {
-                return;
+                return RequestInvokerHandler.IsClientNoResponseSet(clientOptions, operationType);
             }
 
-            ItemRequestOptions itemRequestOptions = (ItemRequestOptions)request.RequestOptions;
-            if (request.ResourceType == ResourceType.Document
-                && !itemRequestOptions.EnableContentResponseOnWrite.HasValue)
-            {
-                this.SetMinimalContentHeader(request);
-            }
+            return false;
         }
 
-        private void SetMinimalContentHeader(RequestMessage request)
+        private static bool IsClientNoResponseSet(CosmosClientOptions clientOptions, OperationType operationType)
         {
-            if (this.client.ClientOptions != null
-                && ItemRequestOptions.ShouldSetNoContentHeader(enableContentResponseOnWrite: this.client.ClientOptions.EnableContentResponseOnWrite, 
-                                                               enableContentResponseOnRead: null, 
-                                                               operationType: request.OperationType))
-            {
-                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
-            }
+            return clientOptions != null
+                && ItemRequestOptions.ShouldSetNoContentHeader(enableContentResponseOnWrite: clientOptions.EnableContentResponseOnWrite,
+                                                               enableContentResponseOnRead: null,
+                                                               operationType: operationType);
         }
     }
 }
