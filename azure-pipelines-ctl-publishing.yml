@@ -1,0 +1,54 @@
+variables:
+  VmImage: 'ubuntu-18.04'
+
+jobs:
+  - job: BuildDockerImage
+    timeoutInMinutes: 20
+    variables:
+      - name: ContainerRegistryName
+        value: 'cosmosdotnetsdkctl'
+      - name: ContainerRegistryUserName
+        value: 'cosmosdotnetsdkctl'
+      - name: ContainerRegistryUrl
+        value: 'cosmosdotnetsdkctl.azurecr.io'
+
+    pool:
+      vmImage: $(VmImage)
+
+    steps:
+    - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+      clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+    - task: CopyFiles@2
+      displayName: 'Copy docker config files'
+      inputs:
+        Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/Dockerfile'
+        TargetFolder: $(Agent.TempDirectory)/ctl
+        flattenFolders: true
+    - task: CopyFiles@2
+      displayName: 'Copy shell files'
+      inputs:
+        Contents: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/run_ctl.sh'
+        TargetFolder: $(Agent.TempDirectory)/ctl
+        flattenFolders: true
+    - task: DotNetCoreCLI@2
+      displayName: Build CTL project
+      condition: succeeded()
+      inputs:
+        command: 'publish'
+        publishWebProjects: false
+        zipAfterPublish: false
+        modifyOutputPath: true
+        projects: '$(build.sourcesdirectory)/Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.csproj'
+        arguments: '-c Release -o $(Agent.TempDirectory)/ctl/artifacts'
+        nugetConfigPath: NuGet.config
+    - pwsh: |
+        cd $(Agent.TempDirectory)/ctl
+        Write-Host "Executing docker build . -t cosmos-dotnet-ctl"
+        docker build -t cosmos-dotnet-ctl -f Dockerfile .
+        Write-Host "Executing az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)"
+        az acr login --name $(ContainerRegistryName) -u $(ContainerRegistryUserName) -p $(dotnet-cosmos-container-registry-pwd)
+        Write-Host "Executing docker tag cosmos-dotnet-ctl $(ContainerRegistryUrl)/cosmos-dotnet-ctl/$(DefaultTag)"
+        docker tag cosmos-dotnet-ctl $(ContainerRegistryUrl)/cosmos-dotnet-ctl/$(DefaultTag)
+        Write-Host "Executing docker push $(ContainerRegistryUrl)/cosmos-dotnet-ctl/$(DefaultTag)"
+        docker push $(ContainerRegistryUrl)/cosmos-dotnet-ctl/$(DefaultTag)
+      displayName: 'Build and push docker image to registry'
