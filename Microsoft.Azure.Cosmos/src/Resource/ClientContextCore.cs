@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task)
         {
-            using (ITrace trace = Tracing.Trace.GetRootTrace(operationName))
+            using (ITrace trace = NoOpTrace.Singleton)
             {
                 if (SynchronizationContext.Current == null)
                 {
