@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            CosmosDiagnosticsContext cosmosDiagnosticsContext = CosmosDiagnosticsContext.Create(this.queryRequestOptions);
+            CosmosDiagnosticsContext cosmosDiagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
             using (cosmosDiagnosticsContext.GetOverallScope())
             {
                 if (queryRequestOptions != null)

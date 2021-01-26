@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<FeedResponse<ChangeFeedProcessorState>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(requestOptions: null);
+            CosmosDiagnosticsContext diagnostics = EmptyCosmosDiagnosticsContext.Singleton;
             using (diagnostics.GetOverallScope())
             {
                 if (!this.lazyLeaseDocuments.ValueInitialized)

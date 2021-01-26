@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
-            CosmosDiagnosticsContext queryPipelineCreationDiagnostics = CosmosDiagnosticsContext.Create(queryRequestOptions);
+            CosmosDiagnosticsContext queryPipelineCreationDiagnostics = EmptyCosmosDiagnosticsContext.Singleton;
 
             CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            CosmosDiagnosticsContext diagnostics = CosmosDiagnosticsContext.Create(this.requestOptions);
+            CosmosDiagnosticsContext diagnostics = EmptyCosmosDiagnosticsContext.Singleton;
             using (diagnostics.GetOverallScope())
             {
                 TryCatch<QueryPage> tryGetQueryPage;

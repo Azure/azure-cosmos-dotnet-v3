@@ -4,8 +4,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
@@ -14,112 +16,114 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class EmptyCosmosDiagnosticsContext : CosmosDiagnosticsContext
     {
-        private static readonly IReadOnlyList<CosmosDiagnosticsInternal> EmptyList = new List<CosmosDiagnosticsInternal>();
-        private static readonly CosmosDiagnosticScope DefaultScope = new CosmosDiagnosticScope("DisabledScope");
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
 
         private EmptyCosmosDiagnosticsContext()
         {
-            this.Diagnostics = new CosmosDiagnosticsCore(this);
         }
 
-        public override DateTime StartUtc => DateTime.MinValue;
+        public DateTime StartUtc => DateTime.UtcNow;
 
-        public override string UserAgent => "Empty Context UserAgent";
+        public string UserAgent => string.Empty;
 
-        internal override CosmosDiagnostics Diagnostics { get; }
+        public string OperationName => string.Empty;
 
-        public override string OperationName => "Empty Context OperationName";
+        CosmosDiagnostics CosmosDiagnosticsContext.Diagnostics => null;
 
-        internal override IDisposable GetOverallScope()
+        public IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
         {
-            return EmptyCosmosDiagnosticsContext.DefaultScope;
+            return Enumerable.Empty<CosmosDiagnosticsInternal>().GetEnumerator();
         }
 
-        internal override IDisposable CreateScope(string name)
+        public int GetFailedResponseCount()
         {
-            return EmptyCosmosDiagnosticsContext.DefaultScope;
+            return 0;
         }
 
-        internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
+        public int GetRetriableResponseCount()
         {
-            return EmptyCosmosDiagnosticsContext.DefaultScope;
+            return 0;
         }
 
-        internal override void AddDiagnosticsInternal(CosmosSystemInfo cpuLoadHistory)
+        public int GetTotalResponseCount()
         {
+            return 0;
         }
 
-        internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
-        {
-        }
-
-        internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(CosmosSystemInfo cpuLoadHistory)
         {
         }
 
-        internal override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
         {
         }
 
-        internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
         }
 
-        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
         {
         }
 
-        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        void CosmosDiagnosticsContext.AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
         {
-            return default;
         }
 
-        public override IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
+        IDisposable CosmosDiagnosticsContext.CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
-            return EmptyCosmosDiagnosticsContext.EmptyList.GetEnumerator();
+            return NoOp.Singleton;
         }
 
-        internal override TimeSpan GetRunningElapsedTime()
+        IDisposable CosmosDiagnosticsContext.CreateScope(string name)
+        {
+            return NoOp.Singleton;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return Enumerable.Empty<CosmosDiagnosticsInternal>().GetEnumerator();
+        }
+
+        IDisposable CosmosDiagnosticsContext.GetOverallScope()
+        {
+            return NoOp.Singleton;
+        }
+
+        TimeSpan CosmosDiagnosticsContext.GetRunningElapsedTime()
         {
             return TimeSpan.Zero;
         }
 
-        internal override bool IsComplete()
+        bool CosmosDiagnosticsContext.IsComplete()
         {
             return true;
         }
 
-        public override int GetTotalResponseCount()
-        {
-            return -1;
-        }
-
-        public override int GetFailedResponseCount()
-        {
-            return -1;
-        }
-
-        public override int GetRetriableResponseCount()
-        {
-            return -1;
-        }
-
-        internal override bool TryGetTotalElapsedTime(out TimeSpan timeSpan)
+        bool CosmosDiagnosticsContext.TryGetTotalElapsedTime(out TimeSpan timeSpan)
         {
             return false;
+        }
+
+        private class NoOp : IDisposable
+        {
+            public static readonly IDisposable Singleton = new NoOp();
+
+            public void Dispose()
+            {
+            }
         }
     }
 }

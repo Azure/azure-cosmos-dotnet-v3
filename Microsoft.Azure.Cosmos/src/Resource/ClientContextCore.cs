@@ -212,10 +212,7 @@ namespace Microsoft.Azure.Cosmos
             string operationName,
             RequestOptions requestOptions)
         {
-            return CosmosDiagnosticsContextCore.Create(
-                operationName,
-                requestOptions,
-                this.UserAgent);
+            return EmptyCosmosDiagnosticsContext.Singleton;
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
@@ -337,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
             using (ITrace childTrace = trace.StartChild("Get Container Properties", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
                 this.ThrowIfDisposed();
-                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContextCore.Create(requestOptions: null);
+                CosmosDiagnosticsContext diagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
                 using (diagnosticsContext.GetOverallScope())
                 {
                     ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync();

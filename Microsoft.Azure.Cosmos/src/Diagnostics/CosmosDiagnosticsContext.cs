@@ -12,69 +12,50 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// This represents the diagnostics interface used in the SDK.
     /// </summary>
-    internal abstract class CosmosDiagnosticsContext : CosmosDiagnosticsInternal, IEnumerable<CosmosDiagnosticsInternal>
+#pragma warning disable SA1302 // Interface names should begin with I
+    internal interface CosmosDiagnosticsContext : IEnumerable<CosmosDiagnosticsInternal>
+#pragma warning restore SA1302 // Interface names should begin with I
     {
-        public abstract DateTime StartUtc { get; }
+        public DateTime StartUtc { get; }
 
-        public abstract string UserAgent { get; }
+        public string UserAgent { get; }
 
-        public abstract string OperationName { get; }
+        public string OperationName { get; }
 
-        internal abstract CosmosDiagnostics Diagnostics { get; }
+        internal CosmosDiagnostics Diagnostics { get; }
 
-        public abstract int GetTotalResponseCount();
+        public int GetTotalResponseCount();
 
-        public abstract int GetFailedResponseCount();
+        public int GetFailedResponseCount();
 
-        public abstract int GetRetriableResponseCount();
+        public int GetRetriableResponseCount();
 
-        internal abstract IDisposable GetOverallScope();
+        internal IDisposable GetOverallScope();
 
-        internal abstract IDisposable CreateScope(string name);
+        internal IDisposable CreateScope(string name);
 
-        internal abstract IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
+        internal IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler);
 
-        internal abstract TimeSpan GetRunningElapsedTime();
+        internal TimeSpan GetRunningElapsedTime();
 
-        internal abstract bool TryGetTotalElapsedTime(out TimeSpan timeSpan);
+        internal bool TryGetTotalElapsedTime(out TimeSpan timeSpan);
 
-        internal abstract bool IsComplete();
+        internal bool IsComplete();
 
-        internal abstract void AddDiagnosticsInternal(CosmosSystemInfo cpuLoadHistory);
+        internal void AddDiagnosticsInternal(CosmosSystemInfo cpuLoadHistory);
 
-        internal abstract void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
+        internal void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics);
 
-        internal abstract void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
+        internal void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics);
 
-        internal abstract void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics);
+        internal void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics);
 
-        internal abstract void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics);
+        internal void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics);
 
-        internal abstract void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
+        internal void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics);
 
-        internal abstract void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics);
+        internal void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics);
 
-        internal abstract void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
-
-        public abstract IEnumerator<CosmosDiagnosticsInternal> GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return this.GetEnumerator();
-        }
-
-        internal static CosmosDiagnosticsContext Create(
-            RequestOptions requestOptions)
-        {
-            return EmptyCosmosDiagnosticsContext.Singleton;
-        }
-
-        internal static CosmosDiagnosticsContext Create(
-            string operationName,
-            RequestOptions requestOptions,
-            string userAgentString)
-        {
-            return EmptyCosmosDiagnosticsContext.Singleton;
-        }
+        internal void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext);
     }
 }

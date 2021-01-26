@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.ContactedReplicas = new List<Uri>();
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContacted = new HashSet<Uri>();
-            this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContextCore.Create(requestOptions: null);
+            this.DiagnosticsContext = diagnosticsContext ?? EmptyCosmosDiagnosticsContext.Singleton;
             this.DiagnosticsContext.AddDiagnosticsInternal(this);
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
@@ -217,12 +217,12 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append(DefaultToStringMessage);
         }
 
-        public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
+        public void Accept(CosmosDiagnosticsInternalVisitor visitor)
         {
             visitor.Visit(this);
         }
 
-        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        public TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
         {
             return visitor.Visit(this);
         }

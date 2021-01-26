@@ -36,12 +36,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
-        public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
+        public void Accept(CosmosDiagnosticsInternalVisitor visitor)
         {
             visitor.Visit(this);
         }
 
-        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        public TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
         {
             return visitor.Visit(this);
         }

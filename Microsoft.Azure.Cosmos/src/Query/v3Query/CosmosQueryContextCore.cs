@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Query
             lock (this.diagnosticLock)
             {
                 CosmosDiagnosticsContext current = this.diagnosticsContext;
-                this.diagnosticsContext = CosmosDiagnosticsContext.Create(new RequestOptions());
+                this.diagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
                 current.GetOverallScope().Dispose();
                 return current;
             }

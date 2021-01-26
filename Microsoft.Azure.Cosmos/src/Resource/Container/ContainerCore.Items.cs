@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                CosmosDiagnosticsContext.Create(queryRequestOptions),
+                EmptyCosmosDiagnosticsContext.Singleton,
                 queryRequestOptions,
                 resourceLink: resourceLink,
                 resourceType: resourceType);

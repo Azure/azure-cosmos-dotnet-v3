@@ -65,12 +65,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.isDisposed = true;
         }
 
-        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
+        public void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
         {
             cosmosDiagnosticsInternalVisitor.Visit(this);
         }
 
-        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        public TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
         {
             return visitor.Visit(this);
         }

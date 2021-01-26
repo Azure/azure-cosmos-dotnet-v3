@@ -10,25 +10,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     /// <summary>
     /// Extends <see cref="CosmosDiagnostics"/> to expose internal APIs.
     /// </summary>
-    internal abstract class CosmosDiagnosticsInternal
+#pragma warning disable SA1302 // Interface names should begin with I
+    internal interface CosmosDiagnosticsInternal
+#pragma warning restore SA1302 // Interface names should begin with I
     {
-        public abstract void Accept(CosmosDiagnosticsInternalVisitor visitor);
+        public void Accept(CosmosDiagnosticsInternalVisitor visitor);
 
-        public abstract TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor);
-
-        public override string ToString()
-        {
-            using (StringWriter stringWriter = new StringWriter())
-            {
-                this.WriteTo(stringWriter);
-                return stringWriter.ToString();
-            }
-        }
-
-        public void WriteTo(TextWriter textWriter)
-        {
-            CosmosDiagnosticsSerializerVisitor cosmosDiagnosticsSerializerVisitor = new CosmosDiagnosticsSerializerVisitor(textWriter);
-            this.Accept(cosmosDiagnosticsSerializerVisitor);
-        }
+        public TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor);
     }
 }
