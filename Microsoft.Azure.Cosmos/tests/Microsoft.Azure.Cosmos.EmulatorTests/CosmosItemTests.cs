@@ -465,6 +465,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(response.Headers.RequestCharge > 0);
                     Assert.IsNotNull(response.Headers.ActivityId);
                     Assert.IsNotNull(response.Headers.ETag);
+                    Assert.IsNotNull(response.Diagnostics);
                 }
             }
 
@@ -474,6 +475,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
                 Assert.IsTrue(deleteResponse.Headers.RequestCharge > 0);
                 Assert.IsNotNull(deleteResponse.Headers.ActivityId);
+                Assert.IsNotNull(deleteResponse.Diagnostics);
             }
         }
 

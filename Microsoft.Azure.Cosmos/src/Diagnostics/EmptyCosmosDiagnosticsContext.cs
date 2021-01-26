@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class EmptyCosmosDiagnosticsContext : CosmosDiagnosticsContext
     {
         public static readonly CosmosDiagnosticsContext Singleton = new EmptyCosmosDiagnosticsContext();
+        private static readonly CosmosDiagnostics cosmosDiagnostics = new CosmosDiagnosticsCore(Singleton);
 
         private EmptyCosmosDiagnosticsContext()
         {
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         public string OperationName => string.Empty;
 
-        CosmosDiagnostics CosmosDiagnosticsContext.Diagnostics => null;
+        CosmosDiagnostics CosmosDiagnosticsContext.Diagnostics => EmptyCosmosDiagnosticsContext.cosmosDiagnostics;
 
         public IEnumerator<CosmosDiagnosticsInternal> GetEnumerator()
         {
