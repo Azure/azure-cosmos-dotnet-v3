@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public int taskNum { get; set; }
         public double cost { get; set; }
         public string description { get; set; }
-        public string status { get; set; }
+        public string pk { get; set; }
         public string CamelCase { get; set; }
 
         public bool valid { get; set; }
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 && this.taskNum == input.taskNum
                 && this.cost == input.cost
                 && string.Equals(this.description, input.description)
-                && string.Equals(this.status, input.status);
+                && string.Equals(this.pk, input.pk);
         }
 
         public override int GetHashCode()
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 id = id,
                 description = "CreateRandomToDoActivity",
-                status = pk,
+                pk = pk,
                 taskNum = 42,
                 cost = double.MaxValue,
                 CamelCase = "camelCase",

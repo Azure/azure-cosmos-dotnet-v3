@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     [SDK.EmulatorTests.TestClass]
     public class ChangeFeedIteratorCoreTests : BaseCosmosClientHelper
     {
-        private static readonly string PartitionKey = "/status";
+        private static readonly string PartitionKey = "/pk";
 
         [TestInitialize]
         public async Task TestInitialize()

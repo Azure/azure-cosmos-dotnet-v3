@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             DatabaseResponse response = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             this.database = response.Database;
 
-            ContainerResponse containerResponse = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/Status", 10000);
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", 10000);
             this.container = containerResponse;
         }
 

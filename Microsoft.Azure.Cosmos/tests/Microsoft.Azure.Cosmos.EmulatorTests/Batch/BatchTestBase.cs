@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .GetAwaiter().GetResult().Database;
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            partitionKeyDefinition.Paths.Add("/Status");
+            partitionKeyDefinition.Paths.Add("/pk");
 
             BatchTestBase.LowThroughputJsonContainer = BatchTestBase.Database.CreateContainerAsync(
                 new ContainerProperties()
