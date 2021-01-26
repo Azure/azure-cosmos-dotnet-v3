@@ -48,8 +48,7 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     resource: item,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -68,8 +67,7 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -88,8 +86,7 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     id: id,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -108,8 +105,7 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     resource: item,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -128,8 +124,7 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     resourceStream: streamPayload,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -155,8 +150,7 @@ namespace Microsoft.Azure.Cosmos
                     id: id,
                     resource: item,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -182,8 +176,7 @@ namespace Microsoft.Azure.Cosmos
                     id: id,
                     resourceStream: streamPayload,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -202,8 +195,7 @@ namespace Microsoft.Azure.Cosmos
                     operationIndex: this.operations.Count,
                     id: id,
                     requestOptions: requestOptions,
-                    containerCore: this.container,
-                    cosmosClientContext: this.container.ClientContext));
+                    containerCore: this.container));
 
             return this;
         }
@@ -261,8 +253,7 @@ namespace Microsoft.Azure.Cosmos
                 id: id,
                 resourceStream: patchStream,
                 requestOptions: requestOptions,
-                containerCore: this.container,
-                cosmosClientContext: this.container.ClientContext));
+                containerCore: this.container));
 
             return this;
         }
@@ -301,8 +292,7 @@ namespace Microsoft.Azure.Cosmos
                 id: id,
                 resource: patchOperations,
                 requestOptions: requestOptions,
-                containerCore: this.container,
-                cosmosClientContext: this.container.ClientContext));
+                containerCore: this.container));
 
             return this;
         }

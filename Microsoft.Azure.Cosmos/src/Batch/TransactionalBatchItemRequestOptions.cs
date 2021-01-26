@@ -29,17 +29,6 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public bool? EnableContentResponseOnWrite { get; set; }
 
-        /// <summary>
-        /// Gets or sets the boolean to only return the headers and status code in
-        /// the Cosmos DB response for read item operations like ReadItem
-        /// This removes the resource from the response. This reduces networking and CPU load by not sending
-        /// the resource back over the network and serializing it on the client.
-        /// </summary>
-        /// <remarks>
-        /// This is optimal for workloads where the returned resource is not used.
-        /// </remarks>
-        internal bool? EnableContentResponseOnRead { get; set; }
-
         internal static TransactionalBatchItemRequestOptions FromItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             if (itemRequestOptions == null)
@@ -55,7 +44,6 @@ namespace Microsoft.Azure.Cosmos
                 IfNoneMatchEtag = itemRequestOptions.IfNoneMatchEtag,
                 Properties = itemRequestOptions.Properties,
                 EnableContentResponseOnWrite = itemRequestOptions.EnableContentResponseOnWrite,
-                EnableContentResponseOnRead = itemRequestOptions.EnableContentResponseOnRead,
                 IsEffectivePartitionKeyRouting = itemRequestOptions.IsEffectivePartitionKeyRouting
             };
             return batchItemRequestOptions;

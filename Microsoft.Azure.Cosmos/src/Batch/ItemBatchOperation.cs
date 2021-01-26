@@ -53,8 +53,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerInternal containerCore,
             string id = null,
             Stream resourceStream = null,
-            TransactionalBatchItemRequestOptions requestOptions = null,
-            CosmosClientContext cosmosClientContext = null)
+            TransactionalBatchItemRequestOptions requestOptions = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -63,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
             this.DiagnosticsContext = null;
-            this.ClientContext = cosmosClientContext;
+            this.ClientContext = containerCore.ClientContext;
         }
 
         public PartitionKey? PartitionKey { get; internal set; }
@@ -174,18 +173,6 @@ namespace Microsoft.Azure.Cosmos
                         return r;
                     }
                 }
-                                                                    
-                if (ItemRequestOptions.ShouldSetNoContentHeader(
-                    options.EnableContentResponseOnWrite,
-                    options.EnableContentResponseOnRead,
-                    operation.OperationType))
-                {
-                    r = writer.WriteBool("minimalReturnPreference", true);
-                    if (r != Result.Success)
-                    {
-                        return r;
-                    }
-                }
 
                 if (options.IfMatchEtag != null)
                 {
@@ -258,10 +245,10 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            // If EnableContentResponse is set at Client level and not at Indivisual Item Level
-            if (operation.ClientContext != null 
-                && RequestInvokerHandler.ShouldSetClientLevelNoContentResponseHeaders(operation.RequestOptions, 
-                operation.ClientContext.ClientOptions, operation.OperationType, ResourceType.Document))
+            if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(operation.RequestOptions, 
+                operation.ClientContext?.ClientOptions, 
+                operation.OperationType, 
+                ResourceType.Document))
             {
                 r = writer.WriteBool("minimalReturnPreference", true);
                 if (r != Result.Success)
@@ -402,9 +389,8 @@ namespace Microsoft.Azure.Cosmos
             T resource,
             ContainerInternal containerCore,
             string id = null,
-            TransactionalBatchItemRequestOptions requestOptions = null,
-            CosmosClientContext cosmosClientContext = null)
-            : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions, cosmosClientContext: cosmosClientContext)
+            TransactionalBatchItemRequestOptions requestOptions = null)
+            : base(operationType, operationIndex, containerCore: containerCore, id: id, requestOptions: requestOptions)
         {
             this.Resource = resource;
         }
