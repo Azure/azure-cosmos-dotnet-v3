@@ -18,12 +18,13 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosDiagnosticsContextCore : CosmosDiagnosticsContext
     {
         private static readonly string DefaultUserAgentString;
+        internal static int Capacity = 5120;
         private readonly CosmosDiagnosticScope overallScope;
 
         /// <summary>
         /// Detailed view of all the operations.
         /// </summary>
-        private List<CosmosDiagnosticsInternal> ContextList { get; }
+        private BoundedList<CosmosDiagnosticsInternal> ContextList { get; }
 
         private int totalResponseCount = 0;
         private int failedResponseCount = 0;
@@ -49,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.UserAgent = userAgentString ?? throw new ArgumentNullException(nameof(userAgentString));
             this.OperationName = operationName ?? throw new ArgumentNullException(nameof(operationName));
             this.StartUtc = DateTime.UtcNow;
-            this.ContextList = new List<CosmosDiagnosticsInternal>();
+            this.ContextList = new BoundedList<CosmosDiagnosticsInternal>(Capacity);
             this.Diagnostics = new CosmosDiagnosticsCore(this);
             this.overallScope = new CosmosDiagnosticScope("Overall");
         }
@@ -137,9 +138,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
         {
-            if (storeResponseStatistics.StoreResult != null)
+            if (storeResponseStatistics.StoreResultStatistics != null)
             {
-                this.AddResponseCount((int)storeResponseStatistics.StoreResult.StatusCode);
+                this.AddResponseCount((int)storeResponseStatistics.StoreResultStatistics.StatusCode);
             }
 
             this.AddToContextList(storeResponseStatistics);
@@ -199,9 +200,9 @@ namespace Microsoft.Azure.Cosmos
             // while the enumerator is being used.
             lock (this.ContextList)
             {
-                for (int i = 0; i < this.ContextList.Count; i++)
+                foreach (CosmosDiagnosticsInternal context in this.ContextList)
                 {
-                    yield return this.ContextList[i];
+                    yield return context;
                 }
             }
         }

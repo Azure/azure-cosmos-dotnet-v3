@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static void ValidateStoreResponseStatistics(StoreResponseStatistics stats, DateTime startTimeUtc)
         {
-            Assert.IsNotNull(stats.StoreResult);
+            Assert.IsNotNull(stats.StoreResultStatistics);
             Assert.IsNotNull(stats.LocationEndpoint);
             Assert.IsTrue(startTimeUtc < stats.RequestResponseTime);
             Assert.IsTrue(stats.RequestResponseTime < DateTime.UtcNow);

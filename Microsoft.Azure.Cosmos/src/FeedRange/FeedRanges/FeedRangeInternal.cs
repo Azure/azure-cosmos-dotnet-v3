@@ -14,30 +14,38 @@ namespace Microsoft.Azure.Cosmos
 
     [Serializable]
     [JsonConverter(typeof(FeedRangeInternalConverter))]
-    internal abstract class FeedRangeInternal : FeedRange
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif  
+        abstract class FeedRangeInternal : FeedRange
     {
-        public abstract Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
+        internal abstract Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition);
 
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        internal abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             CancellationToken cancellationToken);
 
-        public abstract void Accept(IFeedRangeVisitor visitor);
+        internal abstract void Accept(IFeedRangeVisitor visitor);
 
-        public abstract void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input);
+        internal abstract void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input);
 
-        public abstract TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input);
+        internal abstract TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input);
 
-        public abstract TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer);
+        internal abstract TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer);
 
-        public abstract Task<TResult> AcceptAsync<TResult>(IFeedRangeAsyncVisitor<TResult> visitor, CancellationToken cancellationToken = default);
+        internal abstract Task<TResult> AcceptAsync<TResult>(IFeedRangeAsyncVisitor<TResult> visitor, CancellationToken cancellationToken = default);
 
-        public abstract Task<TResult> AcceptAsync<TResult, TArg>(
+        internal abstract Task<TResult> AcceptAsync<TResult, TArg>(
             IFeedRangeAsyncVisitor<TResult, TArg> visitor,
             TArg argument,
             CancellationToken cancellationToken);

@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         state: ChangeFeedState.Beginning(),
                         pageSize: 1,
                         changeFeedMode: ChangeFeedMode.Incremental,
+                        jsonSerializationFormat: null,
                         trace: NoOpTrace.Singleton,
                         cancellationToken: default);
 
@@ -95,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             state: resumeState,
                             pageSize: 1,
                             changeFeedMode: ChangeFeedMode.Incremental,
+                            jsonSerializationFormat: null,
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
                         resumeState = page.State;

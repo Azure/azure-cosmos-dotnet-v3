@@ -314,5 +314,10 @@ namespace Microsoft.Azure.Cosmos
         /// Name of the Azure Jio India West region in the Azure Cosmos DB service.
         /// </summary>
         public const string JioIndiaWest = "Jio India West";
+
+        /// <summary>
+        /// Name of the Azure US SLV region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string EastUSSLV = "East US SLV";
     }
 }
