@@ -129,19 +129,19 @@ namespace Microsoft.Azure.Cosmos
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
 
-            if (request.RequestContext.ClientRequestStatistics == null)
-            {
-                if (this.sharedStatistics == null)
-                {
-                    this.sharedStatistics = new CosmosClientSideRequestStatistics();
-                }
+            //if (request.RequestContext.ClientRequestStatistics == null)
+            //{
+            //    if (this.sharedStatistics == null)
+            //    {
+            //        this.sharedStatistics = new CosmosClientSideRequestStatistics();
+            //    }
 
-                request.RequestContext.ClientRequestStatistics = this.sharedStatistics;
-            }
-            else
-            {
-                this.sharedStatistics = request.RequestContext.ClientRequestStatistics;
-            }
+            //    request.RequestContext.ClientRequestStatistics = this.sharedStatistics;
+            //}
+            //else
+            //{
+            //    this.sharedStatistics = request.RequestContext.ClientRequestStatistics;
+            //}
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();
