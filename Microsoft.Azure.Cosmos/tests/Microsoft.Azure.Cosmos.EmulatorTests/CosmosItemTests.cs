@@ -110,12 +110,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     JObject item = await containerByRid.ReplaceItemAsync<JObject>(
                         item: itemWithInvalidId,
                         id: itemWithInvalidId["_rid"].ToString(),
-                        partitionKey: new Cosmos.PartitionKey(itemWithInvalidId["status"].ToString()));
+                        partitionKey: new Cosmos.PartitionKey(itemWithInvalidId["pk"].ToString()));
 
                     // Validate the new id can be read using the original name based contianer reference
                     await this.Container.ReadItemAsync<ToDoActivity>(
                        item["id"].ToString(),
-                       new Cosmos.PartitionKey(item["status"].ToString())); ;
+                       new Cosmos.PartitionKey(item["pk"].ToString())); ;
                 }
             }
         }
@@ -488,7 +488,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (ResponseMessage response = await this.Container.ReadItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id))
             {
                 Assert.IsNotNull(response);
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
                 Assert.IsTrue(response.Headers.RequestCharge > 0);
                 Assert.IsNotNull(response.Headers.ActivityId);
                 Assert.IsNotNull(response.Headers.ETag);
@@ -735,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
             {
-                new QueryDefinition("select * from t where t.status = @status" ).WithParameter("@status", testItem1.status),
+                new QueryDefinition("select * from t where t.pk = @pk" ).WithParameter("@pk", testItem1.status),
                 new QueryDefinition("select * from t where t.cost = @cost" ).WithParameter("@cost", testItem1.cost),
                 new QueryDefinition("select * from t where t.taskNum = @taskNum" ).WithParameter("@taskNum", testItem1.taskNum),
                 new QueryDefinition("select * from t where t.totalCost = @totalCost" ).WithParameter("@totalCost", testItem1.totalCost),
@@ -743,8 +743,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new QueryDefinition("select * from t where t.statusCode = @statusCode" ).WithParameter("@statusCode", testItem1.statusCode),
                 new QueryDefinition("select * from t where t.itemIds = @itemIds" ).WithParameter("@itemIds", testItem1.itemIds),
                 new QueryDefinition("select * from t where t.dictionary = @dictionary" ).WithParameter("@dictionary", testItem1.dictionary),
-                new QueryDefinition("select * from t where t.status = @status and t.cost = @cost" )
-                    .WithParameter("@status", testItem1.status)
+                new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
+                    .WithParameter("@pk", testItem1.status)
                     .WithParameter("@cost", testItem1.cost),
             };
 
@@ -875,7 +875,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = deleteList = await ToDoActivity.CreateRandomItems(this.Container, pkCount: 3, perPKItemCount: perPKItemCount, randomPartitionKey: true);
             ToDoActivity find = deleteList.First();
 
-            QueryDefinition sql = new QueryDefinition("select * from r where r.status = @status").WithParameter("@status", find.pk);
+            QueryDefinition sql = new QueryDefinition("select * from r where r.pk = @pk").WithParameter("@pk", find.pk);
 
             int iterationCount = 0;
             int totalReadItem = 0;
@@ -1300,8 +1300,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity toDoActivity = deleteList.First();
             QueryDefinition sql = new QueryDefinition(
-                "select * from toDoActivity t where t.status = @status")
-                .WithParameter("@status", toDoActivity.pk);
+                "select * from toDoActivity t where t.status = @pk")
+                .WithParameter("@pk", toDoActivity.pk);
 
             // Test max size at 1
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
@@ -1542,7 +1542,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.Add("/children/1/status", "patched"),
+                PatchOperation.Add("/children/1/pk", "patched"),
                 PatchOperation.Remove("/description"),
                 PatchOperation.Replace("/taskNum", newTaskNum),
                 //PatchOperation.Increment("/taskNum", one)
@@ -1596,7 +1596,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.Add("/children/1/status", "patched"),
+                PatchOperation.Add("/children/1/pk", "patched"),
                 PatchOperation.Remove("/description"),
                 PatchOperation.Replace("/taskNum", testItem.taskNum+1)
             };
@@ -1663,7 +1663,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
-                PatchOperation.Add("/children/1/status", "patched"),
+                PatchOperation.Add("/children/1/pk", "patched"),
                 PatchOperation.Remove("/description"),
                 PatchOperation.Replace("/taskNum", newTaskNum)
             };

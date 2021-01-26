@@ -169,12 +169,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             ContainerInternal itemsCore = await this.InitializeContainerAsync();
             for (int i = 0; i < batchSize; i++)
             {
-                await itemsCore.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
             }
 
             for (int i = 0; i < batchSize; i++)
             {
-                await itemsCore.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: otherPK));
             }
 
             ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     totalCount += response.Count;
                     foreach (ToDoActivity toDoActivity in response)
                     {
-                        Assert.AreEqual(pkToRead, toDoActivity.status);
+                        Assert.AreEqual(pkToRead, toDoActivity.pk);
                     }
                 }
             }
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // Insert another batch of 25 and use the last FeedToken from the first cycle
             for (int i = 0; i < batchSize; i++)
             {
-                await itemsCore.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
             }
 
             ChangeFeedIteratorCore setIteratorNew = itemsCore.GetChangeFeedStreamIterator(
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     totalCount += response.Count;
                     foreach (ToDoActivity toDoActivity in response)
                     {
-                        Assert.AreEqual(pkToRead, toDoActivity.status);
+                        Assert.AreEqual(pkToRead, toDoActivity.pk);
                     }
                 }
             }
@@ -261,12 +261,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             ContainerInternal itemsCore = await this.InitializeContainerAsync();
             for (int i = 0; i < batchSize; i++)
             {
-                await itemsCore.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
             }
 
             for (int i = 0; i < batchSize; i++)
             {
-                await itemsCore.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: otherPK));
             }
 
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     totalCount += feedResponse.Count;
                     foreach (ToDoActivity toDoActivity in feedResponse)
                     {
-                        Assert.AreEqual(pkToRead, toDoActivity.status);
+                        Assert.AreEqual(pkToRead, toDoActivity.pk);
                     }
 
                     continuation = feedResponse.ContinuationToken;
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             // Insert another batch of 25 and use the last FeedToken from the first cycle
             for (int i = 0; i < batchSize; i++)
             {
-                await itemsCore.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+                await itemsCore.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
             }
 
             FeedIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     totalCount += feedResponse.Count;
                     foreach (ToDoActivity toDoActivity in feedResponse)
                     {
-                        Assert.AreEqual(pkToRead, toDoActivity.status);
+                        Assert.AreEqual(pkToRead, toDoActivity.pk);
                     }
                 }
                 catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
@@ -699,7 +699,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             IList<ToDoActivity> createdItems = await this.CreateRandomItems(container, totalDocuments, randomPartitionKey: true);
             foreach (ToDoActivity item in createdItems)
             {
-                await container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status));
+                await container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
             }
 
             // Resume Change Feed and verify we pickup all the events
@@ -750,7 +750,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
                 for (int j = 0; j < perPKItemCount; j++)
                 {
-                    ToDoActivity temp = this.CreateRandomToDoActivity(pk);
+                    ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity(pk: pk);
 
                     createdList.Add(temp);
 
@@ -759,32 +759,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
 
             return createdList;
-        }
-
-        private ToDoActivity CreateRandomToDoActivity(string pk = null)
-        {
-            if (string.IsNullOrEmpty(pk))
-            {
-                pk = "TBD" + Guid.NewGuid().ToString();
-            }
-
-            return new ToDoActivity()
-            {
-                id = Guid.NewGuid().ToString(),
-                description = "CreateRandomToDoActivity",
-                status = pk,
-                taskNum = 42,
-                cost = double.MaxValue
-            };
-        }
-
-        public class ToDoActivity
-        {
-            public string id { get; set; }
-            public int taskNum { get; set; }
-            public double cost { get; set; }
-            public string description { get; set; }
-            public string status { get; set; }
         }
 
         public class ToDoActivityWithMetadata : ToDoActivity
