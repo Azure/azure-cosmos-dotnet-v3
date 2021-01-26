@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Method = method;
             this.RequestUriString = requestUri?.OriginalString;
             this.InternalRequestUri = requestUri;
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.DiagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
         }
 
         /// <summary>

@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
             return this.SendHttpHelperAsync(
                 createRequestMessageAsync,
                 resourceType,
-                diagnosticsContext ?? new CosmosDiagnosticsContextCore(),
+                diagnosticsContext ?? EmptyCosmosDiagnosticsContext.Singleton,
                 timeoutPolicy,
                 cancellationToken);
         }

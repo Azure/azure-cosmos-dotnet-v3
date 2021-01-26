@@ -66,8 +66,7 @@ namespace Microsoft.Azure.Cosmos
         internal static CosmosDiagnosticsContext Create(
             RequestOptions requestOptions)
         {
-            return requestOptions?.DiagnosticContextFactory?.Invoke() ??
-                new CosmosDiagnosticsContextCore();
+            return EmptyCosmosDiagnosticsContext.Singleton;
         }
 
         internal static CosmosDiagnosticsContext Create(
@@ -75,10 +74,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             string userAgentString)
         {
-            return requestOptions?.DiagnosticContextFactory?.Invoke() ??
-                new CosmosDiagnosticsContextCore(
-                    operationName,
-                    userAgentString);
+            return EmptyCosmosDiagnosticsContext.Singleton;
         }
     }
 }

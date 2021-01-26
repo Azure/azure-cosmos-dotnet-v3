@@ -405,7 +405,7 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                new CosmosDiagnosticsContextCore());
+                EmptyCosmosDiagnosticsContext.Singleton);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(

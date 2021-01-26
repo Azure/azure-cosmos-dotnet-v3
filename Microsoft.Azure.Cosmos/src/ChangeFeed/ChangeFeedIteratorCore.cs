@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: new CosmosDiagnosticsContextCore());
+                    diagnostics: EmptyCosmosDiagnosticsContext.Singleton);
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: new CosmosDiagnosticsContextCore());
+                    diagnostics: EmptyCosmosDiagnosticsContext.Singleton);
             }
 
             CrossFeedRangePage<Pagination.ChangeFeedPage, ChangeFeedState> crossFeedRangePage = enumerator.Current.Result;

@@ -192,9 +192,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<CosmosDiagnosticsContext, ITrace, Task<TResult>> task)
         {
-            CosmosDiagnosticsContext diagnosticsContext = this.CreateDiagnosticContext(
-               operationName,
-               requestOptions);
+            CosmosDiagnosticsContext diagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
 
             if (SynchronizationContext.Current == null)
             {

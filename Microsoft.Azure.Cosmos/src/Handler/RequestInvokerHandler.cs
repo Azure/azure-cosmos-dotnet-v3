@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             bool disposeDiagnosticContext = false;
             if (diagnosticsContext == null)
             {
-                diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+                diagnosticsContext = EmptyCosmosDiagnosticsContext.Singleton;
                 disposeDiagnosticContext = true;
             }
 
