@@ -28,6 +28,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.Value = rootTrace;
         }
 
+        public override TimeSpan GetClientElapsedTime()
+        {
+            return this.Value.Duration;
+        }
+
         public ITrace Value { get; }
 
         public override string ToString()
