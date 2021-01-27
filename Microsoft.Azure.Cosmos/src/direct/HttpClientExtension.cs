@@ -24,6 +24,11 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        internal static void AddSDKSupportedCapabilitiesHeader(this HttpClient httpClient, ulong capabilities)
+        {
+            httpClient.DefaultRequestHeaders.Add(HttpConstants.HttpHeaders.SDKSupportedCapabilities, capabilities.ToString());
+        }
+
         internal static Task<HttpResponseMessage> SendHttpAsync(this HttpClient httpClient, HttpRequestMessage requestMessage, CancellationToken cancellationToken = default(CancellationToken))
         {
             try

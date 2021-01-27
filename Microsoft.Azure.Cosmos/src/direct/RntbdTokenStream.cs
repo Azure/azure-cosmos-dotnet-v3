@@ -66,6 +66,9 @@ namespace Microsoft.Azure.Documents
             for (int i = 0; i < this.tokens.Length; i++)
             {
                 this.tokens[i].isPresent = false;
+
+                // free any pending buffer references.
+                this.tokens[i].value.valueBytes = default;
             }
 
 #if COSMOSCLIENT
@@ -165,9 +168,9 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public void ParseFrom(BinaryReader reader)
+        public void ParseFrom(ref BytesDeserializer reader)
         {
-            while(reader.BaseStream.Position < reader.BaseStream.Length)
+            while(reader.Position < reader.Length)
             {
                 ushort identifier = reader.ReadUInt16();
                 RntbdTokenTypes type = (RntbdTokenTypes)reader.ReadByte();
@@ -217,7 +220,7 @@ namespace Microsoft.Azure.Documents
                         token.value.valueDouble = reader.ReadDouble();
                         break;
                     case RntbdTokenTypes.Guid:
-                        token.value.valueGuid = new Guid(reader.ReadBytes(16));
+                        token.value.valueGuid = reader.ReadGuid();
                         break;
                     case RntbdTokenTypes.SmallBytes:
                     case RntbdTokenTypes.SmallString:

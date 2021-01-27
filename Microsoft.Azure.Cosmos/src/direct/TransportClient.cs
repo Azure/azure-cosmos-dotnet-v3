@@ -78,6 +78,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.timerPool,
                     clientOptions.RequestTimeout,
                     clientOptions.OpenTimeout,
+                    clientOptions.LocalRegionOpenTimeout,
                     clientOptions.PortReuseMode,
                     userPortPool,
                     clientOptions.MaxChannels,
@@ -120,7 +121,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                 TransportClient.IncrementCounters();
 
                 operation = "GetChannel";
-                IChannel channel = this.channelDictionary.GetChannel(physicalAddress);
+
+                // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
+                bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
+                IChannel channel = this.channelDictionary.GetChannel(physicalAddress, localRegionRequest);
 
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
 
@@ -347,6 +351,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             private UserAgentContainer userAgent = null;
             private TimeSpan openTimeout = TimeSpan.Zero;
+            private TimeSpan localRegionOpenTimeout = TimeSpan.Zero;
             private TimeSpan timerPoolResolution = TimeSpan.Zero;
 
             public Options(TimeSpan requestTimeout)
@@ -410,6 +415,19 @@ namespace Microsoft.Azure.Documents.Rntbd
                 set { this.openTimeout = value; }
             }
 
+            public TimeSpan LocalRegionOpenTimeout
+            {
+                get
+                {
+                    if (this.localRegionOpenTimeout > TimeSpan.Zero)
+                    {
+                        return this.localRegionOpenTimeout;
+                    }
+                    return this.OpenTimeout;
+                }
+                set { this.localRegionOpenTimeout = value; }
+            }
+
             public PortReuseMode PortReuseMode { get; set; }
 
             public int PortPoolReuseThreshold { get; internal set; }
@@ -457,6 +475,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.AppendLine(this.UserAgent.Suffix);
                 s.Append("  CertificateHostNameOverride: ");
                 s.AppendLine(this.CertificateHostNameOverride);
+                s.Append("  LocalRegionTimeout: ");
+                s.AppendLine(this.LocalRegionOpenTimeout.ToString("c"));
                 return s.ToString();
             }
 

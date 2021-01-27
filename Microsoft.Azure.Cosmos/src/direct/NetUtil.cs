@@ -14,6 +14,12 @@ namespace Microsoft.Azure.Documents
 
     internal static class NetUtil
     {
+        // IPv6 Service Tunnel destination prefix for PaasV1 is 2603:10e1:100:2/64
+        private static readonly byte[] paasV1Prefix = new byte[] { 0x26, 0x03, 0x10, 0xe1, 0x01, 0x00, 0x00, 0x02 };
+
+        // IPv6 Service Tunnel destination prefix for PaasV2 is ace:cab:deca::/48
+        private static readonly byte[] paasV2Prefix = new byte[] { 0x0a, 0xce, 0x0c, 0xab, 0xde, 0xca };
+
         /// <summary>
         /// Get a single non-loopback (i.e., not 127.0.0.0/8)
         /// IP address of the local machine.
@@ -114,7 +120,7 @@ namespace Microsoft.Azure.Documents
                     }
                     else
                     {
-                        DefaultTrace.TraceVerbose("{0} is skipped because it is not IPv6 or is not a service tunneled IP address.", ip.Address.ToString());
+                        DefaultTrace.TraceInformation("{0} is skipped because it is not IPv6 or is not a service tunneled IP address.", ip.Address.ToString());
                     }
                 }
             }
@@ -126,9 +132,22 @@ namespace Microsoft.Azure.Documents
 
         private static bool IsServiceTunneledIPAddress(IPAddress ipAddress)
         {
-            // IPv6 Service Tunnel destination prefix is 2603:10e1:100:2/64
-            return BitConverter.ToUInt64(ipAddress.GetAddressBytes(), 0) ==
-                BitConverter.ToUInt64(new byte[] { 0x26, 0x03, 0x10, 0xe1, 0x01, 0x00, 0x00, 0x02 }, 0);
+            byte[] ipAddressBytes = ipAddress.GetAddressBytes();
+
+            if (BitConverter.ToUInt64(ipAddressBytes, 0) == BitConverter.ToUInt64(paasV1Prefix, 0))
+            {
+                return true;
+            }
+
+            for (int i = 0; i < paasV2Prefix.Length; i++)
+            {
+                if (paasV2Prefix[i] != ipAddressBytes[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

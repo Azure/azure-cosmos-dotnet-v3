@@ -108,13 +108,6 @@ namespace Microsoft.Azure.Documents
             this.RequestAuthorizationTokenType = authorizationTokenType;
             this.RequestContext = new DocumentServiceRequestContext();
 
-            bool isNameBased = false;
-            bool isFeed = false;
-            string resourceTypeString;
-            string resourceIdOrFullName;
-            string databaseName = string.Empty;
-            string collectionName = string.Empty;
-
             // for address, no parsing is needed.
             if (resourceType == ResourceType.Address
 #if !COSMOSCLIENT
@@ -123,18 +116,19 @@ namespace Microsoft.Azure.Documents
                )
                 return;
 
-            if (PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionNames(
+            if (PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionAndDocumentNames(
                 path,
-                out isFeed,
-                out resourceTypeString,
-                out resourceIdOrFullName,
-                out isNameBased,
-                out databaseName,
-                out collectionName,
-                parseDatabaseAndCollectionNames: true)
-                )
+                out bool isFeed,
+                out string resourceTypeString,
+                out string resourceIdOrFullName,
+                out bool isNameBased,
+                out string databaseName,
+                out string collectionName,
+                out string documentName,
+                parseDatabaseAndCollectionNames: true))
             {
                 this.IsNameBased = isNameBased;
+                this.IsResourceNameParsedFromUri = true;
                 this.IsFeed = isFeed;
 
                 if (this.ResourceType == ResourceType.Unknown)
@@ -147,6 +141,7 @@ namespace Microsoft.Azure.Documents
                     this.ResourceAddress = resourceIdOrFullName;
                     this.DatabaseName = databaseName;
                     this.CollectionName = collectionName;
+                    this.DocumentName = documentName;
                 }
                 else
                 {
@@ -192,6 +187,10 @@ namespace Microsoft.Azure.Documents
         public string DatabaseName { get; private set; }
 
         public string CollectionName { get; private set; }
+
+        public string DocumentName { get; private set; }
+
+        public bool IsResourceNameParsedFromUri { get; private set; }
 
         /// <summary>
         /// This is currently used to force non-Windows .NET Core target platforms(Linux and OSX)
@@ -482,7 +481,8 @@ namespace Microsoft.Azure.Documents
                             this.ResourceType == ResourceType.StoredProcedure ||
                             this.ResourceType == ResourceType.PartitionKeyRange ||
                             this.ResourceType == ResourceType.Schema ||
-                            this.ResourceType == ResourceType.PartitionedSystemDocument)
+                            this.ResourceType == ResourceType.PartitionedSystemDocument ||
+                            this.ResourceType == ResourceType.SystemDocument)
                     {
                         resourceTypeToValidate = ResourceType.Collection;
                     }

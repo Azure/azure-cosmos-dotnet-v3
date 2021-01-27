@@ -17,5 +17,6 @@ namespace Microsoft.Azure.Documents
         ResourceToken,
         ComputeGatewayKey,
         AadToken,
+        CompoundToken,
     }
 }

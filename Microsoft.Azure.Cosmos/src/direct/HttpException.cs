@@ -536,7 +536,7 @@ namespace Microsoft.Azure.Documents
             if (responseHeaders == null) return "null";
 
             IEnumerable<Tuple<string, string>> items = responseHeaders.AllKeys().SelectMany(responseHeaders.GetValues, (k, v) => new Tuple<string, string>(k, v ));
-
+            
             StringBuilder result = new StringBuilder("{");
             result.Append(Environment.NewLine);
 

@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Documents
         public Document()
         {
 
-        }        
-        
+        }
+
         /// <summary>
         /// Gets the self-link corresponding to attachments of the document from the Azure Cosmos DB service.
         /// </summary>
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Documents
             }
             return null;
         }
-        
+
         //Property Getter/Setter for Expandable User property.
         private object GetProperty(
             string propertyName, Type returnType)
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Documents
                     BindingRestrictions.GetTypeRestriction(this.Expression, this.LimitType));
 
                 return getProperty;
-            }      
+            }
 
             public override DynamicMetaObject BindSetMember(SetMemberBinder binder, DynamicMetaObject value)
             {
@@ -386,14 +386,14 @@ namespace Microsoft.Azure.Documents
                 MethodCallExpression methodExpression = Expression.Call(
                     self,
                     typeof(Document).GetMethod("AsType",
-					BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(binder.Type));
+                    BindingFlags.NonPublic | BindingFlags.Instance).MakeGenericMethod(binder.Type));
 
                 //Create a meta object to invoke AsType later.
                 DynamicMetaObject castOperator = new DynamicMetaObject(
                     methodExpression,
                     BindingRestrictions.GetTypeRestriction(this.Expression, this.LimitType));
 
-                return castOperator;         
+                return castOperator;
             }
 
             public override IEnumerable<string> GetDynamicMemberNames()

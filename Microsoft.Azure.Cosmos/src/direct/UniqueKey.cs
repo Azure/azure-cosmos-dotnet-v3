@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using System.Collections.ObjectModel;
 
     /// <summary>
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Documents
     sealed class UniqueKey : JsonSerializable
     {
         private Collection<string> paths;
-
+        private JObject filter;
         /// <summary>
         /// Gets or sets the paths, a set of which must be unique for each document in the Azure Cosmos DB service.
         /// </summary>
@@ -58,10 +59,26 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        [JsonProperty(PropertyName = Constants.Properties.Filter, NullValueHandling = NullValueHandling.Ignore)]
+        internal JObject Filter
+        {
+            get
+            {
+                this.filter = this.GetValue<JObject>(Constants.Properties.Filter);
+                return this.filter;
+            }
+            set
+            {
+                this.filter = value;
+                this.SetValue(Constants.Properties.Filter, value);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
             base.GetValue<Collection<string>>(Constants.Properties.Paths);
+            base.GetValue<JObject>(Constants.Properties.Filter);
         }
 
         internal override void OnSave()
@@ -69,6 +86,10 @@ namespace Microsoft.Azure.Documents
             if (this.paths != null)
             {
                 base.SetValue(Constants.Properties.Paths, this.paths);
+            }
+            if (this.filter != null)
+            {
+                base.SetValue(Constants.Properties.Filter, this.filter);
             }
         }
     }

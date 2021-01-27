@@ -164,6 +164,8 @@ namespace Microsoft.Azure.Documents
                 case ResourceType.StoredProcedure:
                 case ResourceType.UserDefinedFunction:
                 case ResourceType.Trigger:
+                case ResourceType.SystemDocument:
+                case ResourceType.PartitionedSystemDocument:
                     return true;
                 case ResourceType.Collection:
                     if (operationType != OperationType.ReadFeed && operationType != OperationType.Query && operationType != OperationType.SqlQuery)

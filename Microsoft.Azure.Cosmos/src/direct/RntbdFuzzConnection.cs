@@ -52,12 +52,12 @@ namespace Microsoft.Azure.Documents
             byte[] contextMessage = base.BuildContextRequest(activityId);
             if (this.sendFuzzedContext)
             {
-                byte[] fuzzedMessage = this.FuzzMessageBytes(contextMessage);
+                byte[] fuzzedMessage = this.FuzzMessageBytes(new ArraySegment<byte>(contextMessage));
 
                 if (this.createFuzzLogFile)
                 {
-                    RntbdFuzzConnection.LogFuzzInfomation(contextMessage);
-                    RntbdFuzzConnection.LogFuzzInfomation(fuzzedMessage);
+                    RntbdFuzzConnection.LogFuzzInfomation(new ArraySegment<byte>(contextMessage));
+                    RntbdFuzzConnection.LogFuzzInfomation(new ArraySegment<byte>(fuzzedMessage));
                 }
 
                 return fuzzedMessage;
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Documents
         }
               
         // build the document service request and return a modified version 
-        protected override byte[] BuildRequest(
+        protected override BufferProvider.DisposableBuffer BuildRequest(
             DocumentServiceRequest request,
             string replicaPath,
             ResourceOperation resourceOperation,
@@ -75,24 +75,27 @@ namespace Microsoft.Azure.Documents
             out int bodySize,
             Guid activityId)
         {
-            byte[] requestMessage = base.BuildRequest(request, replicaPath, resourceOperation, out headerAndMetadataSize, out bodySize, activityId);
+            BufferProvider.DisposableBuffer requestMessage = base.BuildRequest(request, replicaPath, resourceOperation, out headerAndMetadataSize, out bodySize, activityId);
 
             if (this.sendFuzzedRequest)
             {
-                byte[] fuzzedMessage = this.FuzzMessageBytes(requestMessage);
-
-                // only used for tracing. Modified to give somewhat reasonable output, but the whole message is fuzzed, so
-                // it's impossible to give a really correct answer.
-                headerAndMetadataSize = 0;
-                bodySize = fuzzedMessage.Length;
-
-                if (this.createFuzzLogFile)
+                using (requestMessage)
                 {
-                    RntbdFuzzConnection.LogFuzzInfomation(requestMessage);
-                    RntbdFuzzConnection.LogFuzzInfomation(fuzzedMessage);
-                }
+                    byte[] fuzzedMessage = this.FuzzMessageBytes(requestMessage.Buffer);
 
-                return fuzzedMessage;
+                    // only used for tracing. Modified to give somewhat reasonable output, but the whole message is fuzzed, so
+                    // it's impossible to give a really correct answer.
+                    headerAndMetadataSize = 0;
+                    bodySize = fuzzedMessage.Length;
+
+                    if (this.createFuzzLogFile)
+                    {
+                        RntbdFuzzConnection.LogFuzzInfomation(requestMessage.Buffer);
+                        RntbdFuzzConnection.LogFuzzInfomation(new ArraySegment<byte>(fuzzedMessage));
+                    }
+
+                    return new BufferProvider.DisposableBuffer(fuzzedMessage);
+                }
             }
 
             return requestMessage;
@@ -117,7 +120,7 @@ namespace Microsoft.Azure.Documents
         /// Write the bytes and the corresponding ascii codes in log file, note that this method assumes that valid directory path is provided in App.config
         /// </summary>
         /// <param name="bytes">the bytes to write</param>
-        private static void LogFuzzInfomation(byte[] bytes)
+        private static void LogFuzzInfomation(ArraySegment<byte> bytes)
         {
             // log bytes(characters) in log file
             string filePath = RntbdFuzzConnection.GetFuzzLogPath();
@@ -127,7 +130,7 @@ namespace Microsoft.Azure.Documents
                 using (FileStream fileStream = File.Open(filePath, FileMode.Append))
                 using (BinaryWriter writer = new BinaryWriter(fileStream))
                 {
-                    writer.Write(bytes);
+                    writer.Write(bytes.Array, bytes.Offset, bytes.Count);
                     writer.Flush();
                 }
             }
@@ -165,7 +168,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="original">the original bytes</param>
         /// <returns>the modified bytes</returns>
-        private byte[] FuzzMessageBytes(byte[] original)
+        private byte[] FuzzMessageBytes(ArraySegment<byte> original)
         {
             byte[] modified = null;
 
@@ -178,41 +181,43 @@ namespace Microsoft.Azure.Documents
                     // insert a few bytes
                     byte[] bytesToInsert = new byte[randomizer.Next(1, 100)];
                     randomizer.NextBytes(bytesToInsert);
-                    modified = new byte[original.Length + bytesToInsert.Length];
-                    int indexToInsertBytes = randomizer.Next(original.Length);
+                    modified = new byte[original.Count + bytesToInsert.Length];
+                    int indexToInsertBytes = randomizer.Next(original.Count);
 
                     log = string.Format(CultureInfo.CurrentCulture, "Insert {0} bytes at position {1}", bytesToInsert.Length, indexToInsertBytes);
-                    Buffer.BlockCopy(original, 0, modified, 0, indexToInsertBytes);
+                    Buffer.BlockCopy(original.Array, 0, modified, 0, indexToInsertBytes);
                     Buffer.BlockCopy(bytesToInsert, 0, modified, indexToInsertBytes, bytesToInsert.Length);
-                    Buffer.BlockCopy(original, indexToInsertBytes, modified, indexToInsertBytes + bytesToInsert.Length, original.Length - indexToInsertBytes);
+                    Buffer.BlockCopy(original.Array, indexToInsertBytes, modified, indexToInsertBytes + bytesToInsert.Length, original.Count - indexToInsertBytes);
                     break;
                 case 1:
                     // modify a few bytes
                     byte[] newBytes = new byte[randomizer.Next(1, 10)];
                     randomizer.NextBytes(newBytes);
-                    int indexToModifyBytes = randomizer.Next(original.Length - newBytes.Length);
+                    int indexToModifyBytes = randomizer.Next(original.Count - newBytes.Length);
 
                     log = string.Format(CultureInfo.CurrentCulture, "Replace {0} bytes at position {1}", newBytes.Length, indexToModifyBytes);
-                    modified = original.Clone() as byte[];
+                    modified = new byte[original.Count];
+                    Array.Copy(original.Array, 0, modified, 0, original.Count);
                     Buffer.BlockCopy(newBytes, 0, modified, indexToModifyBytes, newBytes.Length);
                     break;
                 case 2:
                     // remove a few bytes
-                    int indexToRemoveBytes = randomizer.Next(1, original.Length);
-                    int numberOfBytesToRemove = randomizer.Next(1, original.Length - indexToRemoveBytes);
+                    int indexToRemoveBytes = randomizer.Next(1, original.Count);
+                    int numberOfBytesToRemove = randomizer.Next(1, original.Count - indexToRemoveBytes);
 
                     log = string.Format(CultureInfo.CurrentCulture, "Remove {0} bytes at position {1}", numberOfBytesToRemove, indexToRemoveBytes);
-                    modified = new byte[original.Length - numberOfBytesToRemove];
-                    Buffer.BlockCopy(original, 0, modified, 0, indexToRemoveBytes);
-                    Buffer.BlockCopy(original, indexToRemoveBytes + numberOfBytesToRemove, modified, indexToRemoveBytes, original.Length - indexToRemoveBytes - numberOfBytesToRemove);
+                    modified = new byte[original.Count - numberOfBytesToRemove];
+                    Buffer.BlockCopy(original.Array, 0, modified, 0, indexToRemoveBytes);
+                    Buffer.BlockCopy(original.Array, indexToRemoveBytes + numberOfBytesToRemove, modified, indexToRemoveBytes, original.Count - indexToRemoveBytes - numberOfBytesToRemove);
                     break;
                 default:
                     // reverse a few bytes
-                    int indexToReverseBytes = randomizer.Next(original.Length - 1);
-                    int numberOfBytesToReverse = randomizer.Next(2, original.Length - indexToReverseBytes);
+                    int indexToReverseBytes = randomizer.Next(original.Count - 1);
+                    int numberOfBytesToReverse = randomizer.Next(2, original.Count - indexToReverseBytes);
 
                     log = string.Format(CultureInfo.CurrentCulture, "Reverse {0} bytes at position {1}", numberOfBytesToReverse, indexToReverseBytes);
-                    modified = original.Clone() as byte[];
+                    modified = new byte[original.Count];
+                    Array.Copy(original.Array, 0, modified, 0, original.Count);
                     Array.Reverse(modified, indexToReverseBytes, numberOfBytesToReverse);
                     break;
             }

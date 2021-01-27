@@ -318,6 +318,11 @@ namespace Microsoft.Azure.Documents
         /// Name of the Azure Jio India West region in the Azure Cosmos DB service.
         /// </summary>
         public const string JioIndiaWest = "Jio India West";
+
+        /// <summary>
+        /// Name of the Azure East US SLV region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string EastUSSLV = "East US SLV";
     }
 }
 

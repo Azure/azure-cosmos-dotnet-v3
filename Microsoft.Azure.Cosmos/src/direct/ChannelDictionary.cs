@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.channelProperties = channelProperties;
         }
 
-        public IChannel GetChannel(Uri requestUri)
+        public IChannel GetChannel(Uri requestUri, bool localRegionRequest)
         {
             this.ThrowIfDisposed();
             ServerKey key = new ServerKey(requestUri);
@@ -35,7 +35,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             value = new LoadBalancingChannel(
                 new Uri(requestUri.GetLeftPart(UriPartial.Authority)),
-                this.channelProperties);
+                this.channelProperties,
+                localRegionRequest);
             if (this.channels.TryAdd(key, value))
             {
                 return value;

@@ -7,11 +7,8 @@ namespace Microsoft.Azure.Documents
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Net;
-    using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Documents.Routing;
 
     internal sealed class StoreReader
     {
@@ -206,6 +203,8 @@ namespace Microsoft.Azure.Documents
             bool enforceSessionCheck = !string.IsNullOrEmpty(clientVersion) && VersionUtility.IsLaterThan(clientVersion, HttpConstants.VersionDates.v2016_05_30);
 
             bool hasGoneException = false;
+            bool hasCancellationException = false;
+            Exception cancellationException = null;
             Exception exceptionToThrow = null;
             // Loop until we have the read quorum number of valid responses or if we have read all the replicas
             while (replicasToRead > 0 && resolveApiResults.Count > 0)
@@ -213,13 +212,15 @@ namespace Microsoft.Azure.Documents
                 entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 Dictionary<Task<StoreResponse>, Uri> readStoreTasks = new Dictionary<Task<StoreResponse>, Uri>();
                 int uriIndex = StoreReader.GenerateNextRandom(resolveApiResults.Count);
+                this.UpdateContinuationTokenIfReadFeedOrQuery(entity);
 
                 while (resolveApiResults.Count > 0)
                 {
                     uriIndex = uriIndex % resolveApiResults.Count;
 
-                    readStoreTasks.Add(
-                        this.ReadFromStoreAsync(resolveApiResults[uriIndex], entity), 
+                    readStoreTasks.Add(this.ReadFromStoreAsync(
+                            physicalAddress: resolveApiResults[uriIndex],
+                            request: entity), 
                         resolveApiResults[uriIndex]);
                     resolveApiResults.RemoveAt(uriIndex);
 
@@ -244,8 +245,18 @@ namespace Microsoft.Azure.Documents
 
                 foreach (Task<StoreResponse> readTask in readStoreTasks.Keys)
                 {
-                    StoreResponse storeResponse = readTask.Exception == null ? readTask.Result : null;
-                    Exception storeException = readTask.Exception != null ? readTask.Exception.InnerException : null;
+                    StoreResponse storeResponse = readTask.Status == TaskStatus.RanToCompletion ? readTask.Result : null;
+                    Exception storeException = readTask.Exception?.InnerException;
+
+                    // IsCanceled can be true with storeException being null if the async call
+                    // gets canceled before it gets scheduled.
+                    if (readTask.IsCanceled || storeException is OperationCanceledException)
+                    {
+                        hasCancellationException = true;
+                        cancellationException ??= storeException;
+                        continue;
+                    }
+
                     Uri targetUri = readStoreTasks[readTask];
 
                     StoreResult storeResult = StoreResult.CreateStoreResult(
@@ -260,7 +271,7 @@ namespace Microsoft.Azure.Documents
                     {
                         entity.RequestContext.ClientRequestStatistics.ContactedReplicas.Add(targetUri);
                     }
-                    
+
                     if (storeException != null && storeException.InnerException is TransportException)
                     {
                         entity.RequestContext.ClientRequestStatistics.FailedReplicas.Add(targetUri);
@@ -315,6 +326,13 @@ namespace Microsoft.Azure.Documents
                         return new ReadReplicaResult(retryWithForceRefresh: true, responses: responseResult);
                     }
                 }
+                else if (hasCancellationException)
+                {
+                    // We did not get the required number of responses and we encountered task cancellation on some/all of the store read tasks.
+                    // We propagate the first cancellation exception we've found, or a new OperationCanceledException if none.
+                    // The latter case can happen when Task.IsCanceled = true.
+                    throw cancellationException ?? new OperationCanceledException();
+                }
             }
 
             return new ReadReplicaResult(false, responseResult);
@@ -338,8 +356,8 @@ namespace Microsoft.Azure.Documents
             else
             {
                 // Remove whatever session token can be there in headers.
-                // We don't need it. If it is global - backend will not undersand it.
-                // But there's no point in producing partition local sesison token.
+                // We don't need it. If it is global - backend will not understand it.
+                // But there's no point in producing partition local session token.
                 entity.Headers.Remove(HttpConstants.HttpHeaders.SessionToken);
             }
 
@@ -347,6 +365,7 @@ namespace Microsoft.Azure.Documents
             StoreResponse storeResponse = null;
             try
             {
+                this.UpdateContinuationTokenIfReadFeedOrQuery(entity);
                 storeResponse = await this.ReadFromStoreAsync(
                     primaryUri,
                     entity);
@@ -380,43 +399,15 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request)
         {
             request.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-
-            QueryRequestPerformanceActivity activity = null;
-            string ifNoneMatch = request.Headers[HttpConstants.HttpHeaders.IfNoneMatch];
-            string continuation = null;
-            string maxPageSize = null;
             this.LastReadAddress = physicalAddress.ToString();
-
-            if (request.OperationType == OperationType.ReadFeed ||
-                request.OperationType == OperationType.Query)
-            {
-                continuation = request.Headers[HttpConstants.HttpHeaders.Continuation];
-                maxPageSize = request.Headers[HttpConstants.HttpHeaders.PageSize];
-
-                if (continuation != null && continuation.Contains(';'))
-                {
-                    string[] parts = continuation.Split(';');
-                    if (parts.Length < 3)
-                    {
-                        throw new BadRequestException(string.Format(
-                            CultureInfo.CurrentUICulture,
-                            RMResources.InvalidHeaderValue,
-                            continuation,
-                            HttpConstants.HttpHeaders.Continuation));
-                    }
-
-                    continuation = parts[0];
-                }
-
-                request.Continuation = continuation;
-
-                activity = CustomTypeExtensions.StartActivity(request);
-            }
 
             switch (request.OperationType)
             {
                 case OperationType.Read:
                 case OperationType.Head:
+                case OperationType.HeadFeed:
+                case OperationType.SqlQuery:
+                case OperationType.ExecuteJavaScript:
                 {
                     return await this.transportClient.InvokeResourceOperationAsync(
                         physicalAddress,
@@ -424,19 +415,60 @@ namespace Microsoft.Azure.Documents
                 }
 
                 case OperationType.ReadFeed:
-                case OperationType.HeadFeed:
                 case OperationType.Query:
-                case OperationType.SqlQuery:
-                case OperationType.ExecuteJavaScript:
-                {
+                { 
+                    QueryRequestPerformanceActivity activity = CustomTypeExtensions.StartActivity(request);
                     return await StoreReader.CompleteActivity(this.transportClient.InvokeResourceOperationAsync(
                         physicalAddress,
                         request),
                         activity);
                 }
-
                 default:
                     throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Unexpected operation type {0}", request.OperationType));
+            }
+        }
+
+        private void UpdateContinuationTokenIfReadFeedOrQuery(DocumentServiceRequest request)
+        {
+            if (request.OperationType != OperationType.ReadFeed &&
+                request.OperationType != OperationType.Query)
+            {
+                return;
+            }
+
+            string continuation = request.Continuation;
+            if (continuation != null)
+            {
+                int firstSemicolonPosition = continuation.IndexOf(';');
+                // IndexOf returns -1 if ';' is not found
+                if (firstSemicolonPosition < 0)
+                {
+                    return;
+                }
+
+                int semicolonCount = 1;
+                for (int i = firstSemicolonPosition + 1; i < continuation.Length; i++)
+                {
+                    if (continuation[i] == ';')
+                    {
+                        semicolonCount++;
+                        if (semicolonCount >= 3)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+                if (semicolonCount < 3)
+                {
+                    throw new BadRequestException(string.Format(
+                        CultureInfo.CurrentUICulture,
+                        RMResources.InvalidHeaderValue,
+                        continuation,
+                        HttpConstants.HttpHeaders.Continuation));
+                }
+
+                request.Continuation = continuation.Substring(0, firstSemicolonPosition);
             }
         }
 

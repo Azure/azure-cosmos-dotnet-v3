@@ -68,6 +68,19 @@ namespace Microsoft.Azure.Documents
             return compareVersionDate.CompareTo(baseVersion) >= 0;
         }
 
+        // Format is YYYY-MM-DD
+        // true if compareVersion > baseVersion.
+        internal static bool IsLaterThanNotEqualTo(string compareVersion, DateTime baseVersion)
+        {
+            if (!VersionUtility.TryParseApiVersion(compareVersion, out DateTime compareVersionDate))
+            {
+                string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.InvalidVersionFormat, "compare", compareVersion);
+                throw new BadRequestException(errorMessage);
+            }
+
+            return compareVersionDate.CompareTo(baseVersion) > 0;
+        }
+
         internal static DateTime ParseNonPreviewDateTimeExact(string apiVersion)
         {
             return DateTime.ParseExact(

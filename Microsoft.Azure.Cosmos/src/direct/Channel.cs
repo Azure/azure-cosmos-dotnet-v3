@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly TimerPool timerPool;
         private readonly int requestTimeoutSeconds;
         private readonly Uri serverUri;
+        private readonly bool localRegionRequest;
         private bool disposed = false;
 
         private readonly ReaderWriterLockSlim stateLock =
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private ChannelOpenArguments openArguments;
 
-        public Channel(Guid activityId, Uri serverUri, ChannelProperties channelProperties)
+        public Channel(Guid activityId, Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
             Debug.Assert(channelProperties != null);
             this.dispatcher = new Dispatcher(serverUri,
@@ -43,9 +44,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.timerPool = channelProperties.RequestTimerPool;
             this.requestTimeoutSeconds = (int) channelProperties.RequestTimeout.TotalSeconds;
             this.serverUri = serverUri;
+            this.localRegionRequest = localRegionRequest;
+
+            TimeSpan openTimeout = localRegionRequest ? channelProperties.LocalRegionOpenTimeout : channelProperties.OpenTimeout;
+
             this.openArguments = new ChannelOpenArguments(
                 activityId, new ChannelOpenTimeline(),
-                (int)channelProperties.OpenTimeout.TotalSeconds,
+                openTimeout,
                 channelProperties.PortReuseMode,
                 channelProperties.UserPortPool,
                 channelProperties.CallerId);
@@ -155,7 +160,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             // be chattier:
             // - Serialization errors are handled differently from channel errors.
             // - Timeouts only apply to the call (send+recv), not to everything preceding it.
-            ChannelCallArguments callArguments = new ChannelCallArguments(activityId);
+            using ChannelCallArguments callArguments = new ChannelCallArguments(activityId);
             try
             {
                 callArguments.PreparedCall = this.dispatcher.PrepareCall(
@@ -180,7 +185,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();
             Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments);
-            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest?.Length);
+            TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.Count);
             tasks[1] = dispatcherCall;
             Task completedTask = await Task.WhenAny(tasks);
             if (object.ReferenceEquals(completedTask, tasks[0]))
@@ -308,9 +313,20 @@ namespace Microsoft.Azure.Documents.Rntbd
             try
             {
                 PooledTimer timer = this.timerPool.GetPooledTimer(
-                    this.openArguments.OpenTimeoutSeconds);
+                    this.openArguments.OpenTimeout);
                 Task[] tasks = new Task[2];
-                tasks[0] = timer.StartTimerAsync();
+
+                // For local region requests the the OpenTimeout could be lower than the TimerPool minSupportedTimerDelayInSeconds,
+                // so use the lower value
+                if (this.localRegionRequest && this.openArguments.OpenTimeout < timer.MinSupportedTimeout)
+                {
+                    tasks[0] = Task.Delay(this.openArguments.OpenTimeout);
+                }
+                else
+                {
+                    tasks[0] = timer.StartTimerAsync();
+                }
+
                 tasks[1] = this.dispatcher.OpenAsync(this.openArguments);
                 Task completedTask = await Task.WhenAny(tasks);
                 if (object.ReferenceEquals(completedTask, tasks[0]))

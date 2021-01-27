@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Diagnostics;
 
-    internal sealed class ChannelCallArguments
+    internal sealed class ChannelCallArguments : IDisposable
     {
         private readonly ChannelCommonArguments commonArguments;
 
@@ -20,5 +20,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         public ChannelCommonArguments CommonArguments { get { return this.commonArguments; } }
 
         public Dispatcher.PrepareCallResult PreparedCall { get; set; }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            this.PreparedCall?.Dispose();
+        }
     }
 }

@@ -92,6 +92,16 @@ namespace Microsoft.Azure.Documents
         public string RegionName { get; set; }
 
         /// <summary>
+        /// Indicates if the request is orginating from  the same Azure region as the Cosmos DB account
+        /// </summary>
+        public bool LocalRegionRequest { get; set; }
+
+        /// <summary>
+        /// Indicates if this request is being retried.
+        /// </summary>
+        public bool IsRetry { get; set; }
+
+        /// <summary>
         /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to endpoint based on location index
         /// </summary>
@@ -161,6 +171,7 @@ namespace Microsoft.Azure.Documents
             requestContext.LocationEndpointToRoute = this.LocationEndpointToRoute;
             requestContext.EnsureCollectionExistsCheck = this.EnsureCollectionExistsCheck;
             requestContext.EnableConnectionStateListener = this.EnableConnectionStateListener;
+            requestContext.LocalRegionRequest = this.LocalRegionRequest;
 
             return requestContext;
         }

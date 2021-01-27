@@ -94,6 +94,8 @@ namespace Microsoft.Azure.Documents
         CreateSystemSnapshot = 56,
 #endif
 
+        CollectionTruncate = 57,
+
         // These names make it unclear what they map to in RequestOperationType.
         ExecuteJavaScript = -2,
 #if !COSMOSCLIENT
@@ -110,6 +112,9 @@ namespace Microsoft.Azure.Documents
         ReadReplicaFromMasterPartition = -13,
         ReadReplicaFromServerPartition = -14,
         MasterInitiatedProgressCoordination = -15,
+        GetAadGroups = -16,
+        GetStorageAccountSas = -17,
+        GetStorageConfigurations = -18,
 #endif
     }
 
@@ -165,7 +170,9 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.GetSplitPoints ||
                    type == OperationType.ForcePartitionBackup ||
                    type == OperationType.MetadataCheckAccess ||
-                   type == OperationType.CreateSystemSnapshot
+                   type == OperationType.CreateSystemSnapshot ||
+                   type == OperationType.Pause ||
+                   type == OperationType.Resume
 #endif
                    ;
         }
@@ -220,6 +227,7 @@ namespace Microsoft.Azure.Documents
                     return HttpConstants.HttpMethods.Get;
 
                 case OperationType.Replace:
+                case OperationType.CollectionTruncate:
                     return HttpConstants.HttpMethods.Put;
 
                 case OperationType.Patch:
@@ -259,10 +267,12 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetSplitPoints:
                 case OperationType.GetUnwrappedDek:
                 case OperationType.GetDatabaseAccountConfigurations:
+                case OperationType.GetStorageConfigurations:
                 case OperationType.ForcePartitionBackup:
                 case OperationType.MasterInitiatedProgressCoordination:
                 case OperationType.MetadataCheckAccess:
                 case OperationType.CreateSystemSnapshot:
+                case OperationType.GetAadGroups:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:

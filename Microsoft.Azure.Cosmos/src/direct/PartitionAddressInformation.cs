@@ -17,8 +17,16 @@ namespace Microsoft.Azure.Documents
 
         public IReadOnlyList<AddressInformation> AllAddresses { get; }
 
+        public bool IsLocalRegion { get; set; }
+
         public PartitionAddressInformation(AddressInformation[] replicaAddresses)
             : this(replicaAddresses, null, null)
+        {
+
+        }
+
+        public PartitionAddressInformation(AddressInformation[] replicaAddresses, bool inNetworkRequest)
+            : this(replicaAddresses, null, null, inNetworkRequest)
         {
 
         }
@@ -27,6 +35,16 @@ namespace Microsoft.Azure.Documents
             AddressInformation[] replicaAddresses,
             PartitionKeyRangeIdentity partitionKeyRangeIdentity,
             Uri serviceEndpoint)
+            : this(replicaAddresses, partitionKeyRangeIdentity, serviceEndpoint, false)
+        {
+           
+        }
+
+        public PartitionAddressInformation(
+            AddressInformation[] replicaAddresses,
+            PartitionKeyRangeIdentity partitionKeyRangeIdentity,
+            Uri serviceEndpoint,
+            bool inNetworkRequest)
         {
             if (replicaAddresses == null)
             {
@@ -40,6 +58,8 @@ namespace Microsoft.Azure.Documents
                 this.perProtocolAddressInformation[(int)protocol] =
                     new PerProtocolPartitionAddressInformation(protocol, this.AllAddresses);
             }
+
+            this.IsLocalRegion = inNetworkRequest;
         }
 
         public Uri GetPrimaryUri(DocumentServiceRequest request, Protocol protocol)

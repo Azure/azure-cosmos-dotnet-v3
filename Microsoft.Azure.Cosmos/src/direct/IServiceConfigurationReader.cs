@@ -35,8 +35,6 @@ namespace Microsoft.Azure.Documents
 
         string ResourceSeedKey { get; }
 
-        bool EnableAuthorization { get; }
-
         string SubscriptionId { get; }
 
         Task InitializeAsync();

@@ -96,6 +96,18 @@ namespace Microsoft.Azure.Documents
         public static readonly ResourceOperation ReadClientEncryptionKey = new ResourceOperation(OperationType.Read, ResourceType.ClientEncryptionKey);
         public static readonly ResourceOperation ReadClientEncryptionKeyFeed = new ResourceOperation(OperationType.ReadFeed, ResourceType.ClientEncryptionKey);
 
+        public static readonly ResourceOperation CreateSystemDocument = new ResourceOperation(OperationType.Create, ResourceType.SystemDocument);
+        public static readonly ResourceOperation ReplaceSystemDocument = new ResourceOperation(OperationType.Replace, ResourceType.SystemDocument);
+        public static readonly ResourceOperation DeleteSystemDocument = new ResourceOperation(OperationType.Delete, ResourceType.SystemDocument);
+        public static readonly ResourceOperation ReadSystemDocument = new ResourceOperation(OperationType.Read, ResourceType.SystemDocument);
+        public static readonly ResourceOperation ReadSystemDocumentFeed = new ResourceOperation(OperationType.ReadFeed, ResourceType.SystemDocument);
+
+        public static readonly ResourceOperation CreatePartitionedSystemDocument = new ResourceOperation(OperationType.Create, ResourceType.PartitionedSystemDocument);
+        public static readonly ResourceOperation ReplacePartitionedSystemDocument = new ResourceOperation(OperationType.Replace, ResourceType.PartitionedSystemDocument);
+        public static readonly ResourceOperation DeletePartitionedSystemDocument = new ResourceOperation(OperationType.Delete, ResourceType.PartitionedSystemDocument);
+        public static readonly ResourceOperation ReadPartitionedSystemDocument = new ResourceOperation(OperationType.Read, ResourceType.PartitionedSystemDocument);
+        public static readonly ResourceOperation ReadPartitionedSystemDocumentFeed = new ResourceOperation(OperationType.ReadFeed, ResourceType.PartitionedSystemDocument);
+
 #if !COSMOSCLIENT
         public static readonly ResourceOperation ReadReplica = new ResourceOperation(OperationType.Read, ResourceType.Replica);
         public static readonly ResourceOperation ForceConfigRefresh = new ResourceOperation(OperationType.ForceConfigRefresh, ResourceType.Replica);

@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Documents
     internal sealed class StoreResult
     {
         private readonly StoreResponse storeResponse;
-        private readonly DocumentClientException exception;
 
         private static bool UseSessionTokenHeader = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2018_06_18);
 
@@ -269,7 +268,7 @@ namespace Microsoft.Azure.Documents
             }
 
             this.storeResponse = storeResponse;
-            this.exception = exception;
+            this.Exception = exception;
             this.PartitionKeyRangeId = partitionKeyRangeId;
             this.LSN = lsn;
             this.QuorumAckedLSN = quorumAckedLsn;
@@ -287,11 +286,13 @@ namespace Microsoft.Azure.Documents
             this.ActivityId = activityId;
 
             this.StatusCode = (StatusCodes) (this.storeResponse != null ? this.storeResponse.StatusCode :
-                ((this.exception != null && this.exception.StatusCode.HasValue) ? this.exception.StatusCode : 0));
+                ((this.Exception != null && this.Exception.StatusCode.HasValue) ? this.Exception.StatusCode : 0));
             
             this.SubStatusCode = this.storeResponse != null ? this.storeResponse.SubStatusCode :
-                (this.exception != null ? this.exception.GetSubStatus() : SubStatusCodes.Unknown);
+                (this.Exception != null ? this.Exception.GetSubStatus() : SubStatusCodes.Unknown);
         }
+
+        public DocumentClientException Exception { get; }
 
         public long LSN { get; private set; }
 
@@ -329,7 +330,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                TransportException transportException = this.exception?.InnerException as TransportException;
+                TransportException transportException = this.Exception?.InnerException as TransportException;
                 if (transportException == null)
                 {
                     return false;
@@ -340,7 +341,7 @@ namespace Microsoft.Azure.Documents
 
         public DocumentClientException GetException()
         {
-            if (this.exception == null)
+            if (this.Exception == null)
             {
                 string message = "Exception should be available but found none";
                 Debug.Assert(false, message);
@@ -348,30 +349,30 @@ namespace Microsoft.Azure.Documents
                 throw new InternalServerErrorException(RMResources.InternalServerError);
             }
 
-            return this.exception;
+            return this.Exception;
         }
 
         public StoreResponse ToResponse(RequestChargeTracker requestChargeTracker = null)
         {
             if (!this.IsValid)
             {
-                if (this.exception == null)
+                if (this.Exception == null)
                 {
                     DefaultTrace.TraceCritical("Exception not set for invalid response");
                     throw new InternalServerErrorException(RMResources.InternalServerError);
                 }
 
-                throw this.exception;
+                throw this.Exception;
             }
 
             if (requestChargeTracker != null)
             {
-                StoreResult.SetRequestCharge(this.storeResponse, this.exception, requestChargeTracker.TotalRequestCharge);
+                StoreResult.SetRequestCharge(this.storeResponse, this.Exception, requestChargeTracker.TotalRequestCharge);
             }
 
-            if (this.exception != null)
+            if (this.Exception != null)
             {
-                throw exception;
+                throw Exception;
             }
 
             return this.storeResponse;
@@ -406,7 +407,7 @@ namespace Microsoft.Azure.Documents
                 this.ItemLSN,
                 this.SessionToken?.ConvertToString(),
                 this.UsingLocalLSN,
-                this.exception?.InnerException is TransportException ? this.exception.InnerException.Message : "null");
+                this.Exception?.InnerException is TransportException ? this.Exception.InnerException.Message : "null");
         }
 
         private static void SetRequestCharge(StoreResponse response, DocumentClientException documentClientException, double totalRequestCharge)

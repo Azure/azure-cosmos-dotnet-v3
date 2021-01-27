@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Documents
 
         private const int defaultWaitTimeInMilliSeconds = 5000;
         private const int defaultInitialBackoffTimeInMilliseconds = 5;
-        private const int defaultMaximumBackoffTimeInMilliseconds = 50;
+        private const int defaultMaximumBackoffTimeInMilliseconds = 500;
         private const int backoffMultiplier = 2;
 
         private static readonly Lazy<int> sessionRetryInitialBackoffConfig;
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Documents
                     }
                     else
                     {
-                        DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_INITIAL_BACKOFF is invalid.  Value: {0}", value);
+                        DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_INITIAL_BACKOFF is invalid. Value: {0}", value);
                     }
                 }
 
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Documents
                     }
                     else
                     {
-                        DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_MAXIMUM_BACKOFF is invalid.  Value: {0}", value);
+                        DefaultTrace.TraceCritical("The value of AZURE_COSMOS_SESSION_RETRY_MAXIMUM_BACKOFF is invalid. Value: {0}", value);
                     }
                 }
 
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Documents
                 }
 
                 this.retryCount++;
-                DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy will retry. Retry count = {0}.  Backoff time = {1} ms", this.retryCount, backoffTime.Milliseconds);
+                DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy will retry. Retry count = {0}. Backoff time = {1} ms", this.retryCount, backoffTime.Milliseconds);
 
                 return ShouldRetryResult.RetryAfter(backoffTime);
             }

@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Documents
     {
         private static readonly StringSegment[] EmptyArray = new StringSegment[0];
 
+        private static readonly char[] PathSeparatorArray = new char[1] { '/' };
+
         /// <summary>
         ///     The output resourceId can be
         ///     a: (Rid based) DgJ5AJeIfQABAAAAAAAAAPy3CWY=
@@ -40,6 +42,30 @@ namespace Microsoft.Azure.Documents
             return PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionNames(resourceUrl, out isFeed, out resourcePath, out resourceIdOrFullName, out isNameBased, out databaseName, out collectionName, clientVersion, false);
         }
 
+        public static bool TryParsePathSegmentsWithDatabaseAndCollectionNames(
+            string resourceUrl,
+            out bool isFeed,
+            out string resourcePath,
+            out string resourceIdOrFullName,
+            out bool isNameBased,
+            out string databaseName,
+            out string collectionName,
+            string clientVersion = "",
+            bool parseDatabaseAndCollectionNames = false)
+        {
+            return PathsHelper.TryParsePathSegmentsWithDatabaseAndCollectionAndDocumentNames(
+                resourceUrl,
+                out isFeed,
+                out resourcePath,
+                out resourceIdOrFullName,
+                out isNameBased,
+                out databaseName,
+                out collectionName,
+                out _,
+                clientVersion,
+                parseDatabaseAndCollectionNames);
+        }
+
         /// <summary>
         ///     The output resourceId can be
         ///     a: (Rid based) DgJ5AJeIfQABAAAAAAAAAPy3CWY=
@@ -53,10 +79,11 @@ namespace Microsoft.Azure.Documents
         /// <param name="isNameBased"></param>
         /// <param name="databaseName"></param>
         /// <param name="collectionName"></param>
+        /// <param name="documentName"></param>
         /// <param name="clientVersion"></param>
         /// <param name="parseDatabaseAndCollectionNames"></param>
         /// <returns></returns>
-        public static bool TryParsePathSegmentsWithDatabaseAndCollectionNames(
+        public static bool TryParsePathSegmentsWithDatabaseAndCollectionAndDocumentNames(
             string resourceUrl,
             out bool isFeed,
             out string resourcePath,
@@ -64,6 +91,7 @@ namespace Microsoft.Azure.Documents
             out bool isNameBased,
             out string databaseName,
             out string collectionName,
+            out string documentName,
             string clientVersion = "",
             bool parseDatabaseAndCollectionNames = false)
         {
@@ -73,13 +101,14 @@ namespace Microsoft.Azure.Documents
             isNameBased = false;
             databaseName = string.Empty;
             collectionName = string.Empty;
+            documentName = string.Empty;
 
             if (string.IsNullOrEmpty(resourceUrl))
             {
                 return false;
             }
 
-            string[] segments = resourceUrl.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] segments = resourceUrl.Split(PathsHelper.PathSeparatorArray, StringSplitOptions.RemoveEmptyEntries);
 
             if (segments == null || segments.Length < 1)
             {
@@ -87,8 +116,12 @@ namespace Microsoft.Azure.Documents
             }
 
             int uriSegmentsCount = segments.Length;
-            string segmentOne = segments[uriSegmentsCount - 1].Trim('/');
-            string segmentTwo = (uriSegmentsCount >= 2) ? segments[uriSegmentsCount - 2].Trim('/') : string.Empty;
+            StringSegment segmentOne = new StringSegment(segments[uriSegmentsCount - 1]).Trim(PathsHelper.PathSeparatorArray);
+            StringSegment segmentTwo = new StringSegment(string.Empty);
+            if (uriSegmentsCount >= 2)
+            {
+                segmentTwo = new StringSegment(segments[uriSegmentsCount - 2]).Trim(PathsHelper.PathSeparatorArray);
+            } 
 
             // handle control operations
             if (PathsHelper.IsRootOperation(segmentTwo, segmentOne)
@@ -130,7 +163,7 @@ namespace Microsoft.Azure.Documents
 
                 if (isNameBased)
                 {
-                    return TryParseNameSegments(resourceUrl, segments, out isFeed, out resourcePath, out resourceIdOrFullName, out databaseName, out collectionName, parseDatabaseAndCollectionNames);
+                    return TryParseNameSegments(resourceUrl, segments, out isFeed, out resourcePath, out resourceIdOrFullName, out databaseName, out collectionName, out documentName, parseDatabaseAndCollectionNames);
                 }
             }
 
@@ -138,19 +171,19 @@ namespace Microsoft.Azure.Documents
             if ((uriSegmentsCount % 2 != 0) && PathsHelper.IsResourceType(segmentOne))
             {
                 isFeed = true;
-                resourcePath = segmentOne;
+                resourcePath = segmentOne.GetString();
 
                 // The URL for dbs may contain the management endpoint as the segmentTwo which should not be used as resourceId
                 if (!segmentOne.Equals(Paths.DatabasesPathSegment, StringComparison.OrdinalIgnoreCase))
                 {
-                    resourceIdOrFullName = segmentTwo;
+                    resourceIdOrFullName = segmentTwo.GetString();
                 }
             }
             else if (PathsHelper.IsResourceType(segmentTwo))
             {
                 isFeed = false;
-                resourcePath = segmentTwo;
-                resourceIdOrFullName = segmentOne;
+                resourcePath = segmentTwo.GetString();
+                resourceIdOrFullName = segmentOne.GetString();
 
                 // Media ID is not supposed to be used for any ID verification. However, if the old client makes a call for media ID
                 // we still need to support it.
@@ -181,8 +214,22 @@ namespace Microsoft.Azure.Documents
             out string databaseName,
             out string collectionName)
         {
+            PathsHelper.ParseDatabaseNameAndCollectionAndDocumentNameFromUrlSegments(
+                segments,
+                out databaseName,
+                out collectionName,
+                out _);
+        }
+
+        public static void ParseDatabaseNameAndCollectionAndDocumentNameFromUrlSegments(
+            string[] segments,
+            out string databaseName,
+            out string collectionName,
+            out string documentName)
+        {
             databaseName = string.Empty;
             collectionName = string.Empty;
+            documentName = string.Empty;
 
             if (segments == null || segments.Length < 2)
             {
@@ -196,6 +243,11 @@ namespace Microsoft.Azure.Documents
                 {
                     collectionName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(new StringSegment(segments[3]))).GetString());
                 }
+
+                if (segments.Length >= 6 && string.Equals(segments[4], Paths.DocumentsPathSegment, StringComparison.OrdinalIgnoreCase))
+                {
+                    documentName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(new StringSegment(segments[5]))).GetString());
+                }
             }
         }
 
@@ -207,6 +259,7 @@ namespace Microsoft.Azure.Documents
             out string resourceFullName,
             out string databaseName,
             out string collectionName,
+            out string documentName,
             bool parseDatabaseAndCollectionNames)
         {
             isFeed = false;
@@ -214,6 +267,7 @@ namespace Microsoft.Azure.Documents
             resourceFullName = string.Empty;
             databaseName = string.Empty;
             collectionName = string.Empty;
+            documentName = string.Empty;
 
             if (segments == null || segments.Length < 1)
             {
@@ -229,7 +283,7 @@ namespace Microsoft.Azure.Documents
                     resourceFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(new StringSegment(resourceUrl))).GetString());
                     if (parseDatabaseAndCollectionNames)
                     {
-                        PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
+                        PathsHelper.ParseDatabaseNameAndCollectionAndDocumentNameFromUrlSegments(segments, out databaseName, out collectionName, out documentName);
                     }
 
                     return true;
@@ -248,7 +302,8 @@ namespace Microsoft.Azure.Documents
                     resourceFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(trimmedSegment)).GetString());
                     if (parseDatabaseAndCollectionNames)
                     {
-                        PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
+                        // feed requests would not point to a document so ignore document Name.
+                        PathsHelper.ParseDatabaseNameAndCollectionAndDocumentNameFromUrlSegments(segments, out databaseName, out collectionName, out _);
                     }
 
                     return true;
@@ -328,6 +383,12 @@ namespace Microsoft.Azure.Documents
 
                 case Paths.RoleAssignmentsPathSegment:
                     return ResourceType.RoleAssignment;
+
+                case Paths.SystemDocumentsPathSegment:
+                    return ResourceType.SystemDocument;
+
+                case Paths.PartitionedSystemDocumentsPathSegment:
+                    return ResourceType.PartitionedSystemDocument;
             }
 
             string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.UnknownResourceType, resourcePathSegment);
@@ -399,6 +460,12 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.RoleAssignment:
                     return Paths.RoleAssignmentsPathSegment;
+                
+                case ResourceType.Transaction:
+                    return Paths.TransactionsPathSegment;
+
+                case ResourceType.SystemDocument:
+                    return Paths.SystemDocumentsPathSegment;
 
 #if !COSMOSCLIENT
                 case ResourceType.MasterPartition:
@@ -557,6 +624,14 @@ namespace Microsoft.Azure.Documents
             {
                 return resourceOwnerFullName + "/" + Paths.SchemasPathSegment + "/" + resourceName;
             }
+            else if (resourceType == typeof(SystemDocument))
+            {
+                return resourceOwnerFullName + "/" + Paths.SystemDocumentsPathSegment + "/" + resourceName;
+            }
+            else if (resourceType == typeof(PartitionedSystemDocument))
+            {
+                return resourceOwnerFullName + "/" + Paths.PartitionedSystemDocumentsPathSegment + "/" + resourceName;
+            }
             else if (typeof(Resource).IsAssignableFrom(resourceType))
             {
                 // just generic Resource type.
@@ -611,6 +686,11 @@ namespace Microsoft.Azure.Documents
                 resourceTypeToValidate = resourceType;
                 resourceFullName = resourceFullName + "/" + Paths.OperationsPathSegment + "/" + Paths.PartitionKeyDeletePathSegment;
                 resourcePath = resourceFullName;
+            }
+            else if ((resourceType == ResourceType.Collection) && (operationType == OperationType.CollectionTruncate))
+            {
+                resourceTypeToValidate = ResourceType.Collection;
+                resourcePath = resourceFullName + "/" + Paths.OperationsPathSegment + "/" + Paths.CollectionTruncatePathsegment;
             }
             else if (!isFeed)
             {
@@ -705,6 +785,11 @@ namespace Microsoft.Azure.Documents
             else if (resourceType == ResourceType.RoleAssignment)
             {
                 return Paths.RoleAssignmentsPathSegment;
+            }
+            else if (resourceType == ResourceType.SystemDocument)
+            {
+                resourceTypeToValidate = ResourceType.Collection;
+                resourcePath = resourceFullName + "/" + Paths.SystemDocumentsPathSegment;
             }
             else
             {
@@ -1008,6 +1093,40 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.RoleDefinitionsPathSegment + "/" + ownerOrResourceId.ToString();
             }
+            else if (isFeed && resourceType == ResourceType.SystemDocument)
+            {
+                ResourceId documentCollectionId = ResourceId.Parse(ownerOrResourceId);
+
+                return
+                    Paths.DatabasesPathSegment + "/" + documentCollectionId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + documentCollectionId.DocumentCollectionId.ToString() + "/" +
+                    Paths.SystemDocumentsPathSegment;
+            }
+            else if (resourceType == ResourceType.SystemDocument)
+            {
+                ResourceId sysdocId = ResourceId.Parse(ownerOrResourceId);
+
+                return Paths.DatabasesPathSegment + "/" + sysdocId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + sysdocId.DocumentCollectionId.ToString() + "/" +
+                    Paths.SystemDocumentsPathSegment + "/" + sysdocId.SystemDocumentId.ToString();
+            }
+            else if (isFeed && resourceType == ResourceType.PartitionedSystemDocument)
+            {
+                ResourceId documentCollectionId = ResourceId.Parse(ownerOrResourceId);
+
+                return
+                    Paths.DatabasesPathSegment + "/" + documentCollectionId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + documentCollectionId.DocumentCollectionId.ToString() + "/" +
+                    Paths.PartitionedSystemDocumentsPathSegment;
+            }
+            else if (resourceType == ResourceType.PartitionedSystemDocument)
+            {
+                ResourceId sysdocId = ResourceId.Parse(ownerOrResourceId);
+
+                return Paths.DatabasesPathSegment + "/" + sysdocId.DatabaseId.ToString() + "/" +
+                    Paths.CollectionsPathSegment + "/" + sysdocId.DocumentCollectionId.ToString() + "/" +
+                    Paths.PartitionedSystemDocumentsPathSegment + "/" + sysdocId.PartitionedSystemDocumentId.ToString();
+            }
 #if !COSMOSCLIENT
             else if (isFeed && resourceType == ResourceType.MasterPartition)
             {
@@ -1079,8 +1198,12 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetFederationConfigurations;
                 case OperationType.GetDatabaseAccountConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDatabaseAccountConfigurations;
+                case OperationType.GetStorageConfigurations:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageServiceConfigurations;
                 case OperationType.GetStorageAccountKey:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageAccountKey;
+                case OperationType.GetStorageAccountSas:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetStorageAccountSas;
                 case OperationType.GetUnwrappedDek:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetUnwrappedDek;
                 case OperationType.ReadReplicaFromMasterPartition:
@@ -1089,6 +1212,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_ReadReplicaFromServerPartition;
                 case OperationType.MasterInitiatedProgressCoordination:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_MasterInitiatedProgressCoordination;
+                case OperationType.GetAadGroups:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetAadGroups;
 #endif
 
                 default:
@@ -1131,7 +1256,9 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.SnapshotsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.PartitionedSystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.RoleDefinitionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
-                   resourcePathSegment.Equals(Paths.RoleAssignmentsPathSegment, StringComparison.OrdinalIgnoreCase);
+                   resourcePathSegment.Equals(Paths.RoleAssignmentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.TransactionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsRootOperation(in StringSegment operationSegment, in StringSegment operationTypeSegment)
@@ -1163,11 +1290,13 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.Operations_GetFederationConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetConfiguration, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountKey, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetStorageAccountSas, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetDatabaseAccountConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetUnwrappedDek, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromMasterPartition, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_ReadReplicaFromServerPartition, StringComparison.OrdinalIgnoreCase) ||
-                   operationTypeSegment.Equals(Paths.Operations_MasterInitiatedProgressCoordination, StringComparison.OrdinalIgnoreCase);
+                   operationTypeSegment.Equals(Paths.Operations_MasterInitiatedProgressCoordination, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetAadGroups, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsTopLevelOperationOperation(in StringSegment replicaSegment, in StringSegment addressSegment)
@@ -1297,7 +1426,8 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.Document ||
                 resourceType == ResourceType.PartitionKeyRange ||
                 resourceType == ResourceType.Schema ||
-                resourceType == ResourceType.PartitionedSystemDocument)
+                resourceType == ResourceType.PartitionedSystemDocument ||
+                resourceType == ResourceType.SystemDocument)
             {
                 segments.Add(Paths.CollectionsPathSegment);
                 if (resourceType == ResourceType.StoredProcedure)
@@ -1323,6 +1453,10 @@ namespace Microsoft.Azure.Documents
                 else if(resourceType == ResourceType.PartitionedSystemDocument)
                 {
                     segments.Add(Paths.PartitionedSystemDocumentsPathSegment);
+                }
+                else if (resourceType == ResourceType.SystemDocument)
+                {
+                    segments.Add(Paths.SystemDocumentsPathSegment);
                 }
             }
             else if (resourceType == ResourceType.PartitionKey)
@@ -1404,6 +1538,14 @@ namespace Microsoft.Azure.Documents
             if (resourceType == ResourceType.RoleAssignment)
             {
                 return PathsHelper.ValidateRoleAssignmentId(resourceId);
+            }
+            if (resourceType == ResourceType.SystemDocument)
+            {
+                return PathsHelper.ValidateSystemDocumentId(resourceId);
+            }
+            if (resourceType == ResourceType.PartitionedSystemDocument)
+            {
+                return PathsHelper.ValidatePartitionedSystemDocumentId(resourceId);
             }
             else
             {
@@ -1508,6 +1650,18 @@ namespace Microsoft.Azure.Documents
         {
             ResourceId resourceId = null;
             return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.RoleDefinition > 0;
+        }
+
+        internal static bool ValidateSystemDocumentId(string resourceIdString)
+        {
+            ResourceId resourceId = null;
+            return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.SystemDocument > 0;
+        }
+
+        internal static bool ValidatePartitionedSystemDocumentId(string resourceIdString)
+        {
+            ResourceId resourceId = null;
+            return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.PartitionedSystemDocument > 0;
         }
 
         internal static bool IsPublicResource(Type resourceType)

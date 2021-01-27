@@ -20,9 +20,9 @@ namespace Microsoft.Azure.Cosmos.Rntbd
         private readonly Span<byte> targetByteArray;
         private int position;
 
-        public BytesSerializer(byte[] targetByteArray)
+        public BytesSerializer(byte[] targetByteArray, int length)
         {
-            this.targetByteArray = targetByteArray;
+            this.targetByteArray = new Span<byte>(targetByteArray, 0, length);
             this.position = 0;
         }
 

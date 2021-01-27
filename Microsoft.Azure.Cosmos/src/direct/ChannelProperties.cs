@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     {
         public ChannelProperties(UserAgentContainer userAgent,
             string certificateHostNameOverride, IConnectionStateListener connectionStateListener,
-            TimerPool requestTimerPool, TimeSpan requestTimeout, TimeSpan openTimeout,
+            TimerPool requestTimerPool, TimeSpan requestTimeout, TimeSpan openTimeout, TimeSpan localRegionOpenTimeout,
             PortReuseMode portReuseMode, UserPortPool userPortPool,
             int maxChannels, int partitionCount, int maxRequestsPerChannel,
             TimeSpan receiveHangDetectionTime, TimeSpan sendHangDetectionTime,
@@ -26,6 +26,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.RequestTimerPool = requestTimerPool;
             this.RequestTimeout = requestTimeout;
             this.OpenTimeout = openTimeout;
+            this.LocalRegionOpenTimeout = localRegionOpenTimeout;
 
             this.PortReuseMode = portReuseMode;
             this.UserPortPool = userPortPool;
@@ -65,6 +66,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         public TimeSpan RequestTimeout { get; private set; }
 
         public TimeSpan OpenTimeout { get; private set; }
+
+        public TimeSpan LocalRegionOpenTimeout { get; private set; }
 
         public PortReuseMode PortReuseMode { get; private set; }
 

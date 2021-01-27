@@ -123,6 +123,7 @@ namespace Microsoft.Azure.Documents
         {
             public const string Version3_2 = "3.2";
             public const string Version3_6 = "3.6";
+            public const string Version4_0 = "4.0";
         }
 
         internal static class Indexing
@@ -247,6 +248,7 @@ namespace Microsoft.Azure.Documents
             public const string OfferKind = "offerKind";
             public const string TenantId = "tenantId";
             public const string SupportedCapabilities = "supportedCapabilities";
+            public const string PlacementHints = "placementHints";
             public const string CapabilityResource = "capabilityResource";
             public const string DocumentType = "documentType";
             public const string SystemDatabaseAccountStoreType = "systemDatabaseAccountStoreType";
@@ -256,18 +258,22 @@ namespace Microsoft.Azure.Documents
             public const string EnableUserDefinedType = "enableUserDefinedType";
             public const string ExcludeOwnerIdFromDocumentTable = "excludeOwnerIdFromDocumentTable";
             public const string EnableQuerySupportForHybridRow = "enableQuerySupportForHybridRow";
-            public const string CassandraEnableNativeBatchSupport = "CassandraEnableNativeBatchSupport";
-            public const string CassandraEnableNativePatchSupport = "CassandraEnableNativePatchSupport";
             public const string FederationProxyFqdn = "federationProxyFqdn";
             public const string IsFailedOver = "isFailedOver";
             public const string FederationProxyReservedCname = "federationProxyReservedCname";
             public const string EnableMultiMasterMigration = "enableMultiMasterMigration";
             public const string EnableNativeGridFS = "enableNativeGridFS";
+            public const string MongoDefaultsVersion = "mongoDefaultsVersion";
+            public const string ServerVersion = "serverVersion";
 
             public const string MasterValue = "masterValue";
             public const string SecondaryValue = "secondaryValue";
 
             public const string ArmLocation = "armLocation";
+
+            // Query
+            public const string Query = "query";
+            public const string Parameters = "parameters";
 
             // Global Database account properties
             public const string GlobalDatabaseAccountName = "globalDatabaseAccountName";
@@ -350,6 +356,9 @@ namespace Microsoft.Azure.Documents
             public const string FederationOperationKind = "federationOperationKind";
             public const string RollbackKind = "rollbackKind";
 
+            // Collection Truncate
+            public const string CollectionTruncate = "collectionTruncate";
+
             // Indexing Policy.
             public const string IndexingPolicy = "indexingPolicy";
             public const string Automatic = "automatic";
@@ -366,6 +375,8 @@ namespace Microsoft.Azure.Documents
 
             public const string Paths = "paths";
             public const string Path = "path";
+            public const string IsFullIndex = "isFullIndex";
+            public const string Filter = "filter";
             public const string FrequentPaths = "Frequent";
             public const string IncludedPaths = "includedPaths";
             public const string InFrequentPaths = "InFrequent";
@@ -396,6 +407,7 @@ namespace Microsoft.Azure.Documents
             public const string UniqueIndexReIndexContext = "uniqueIndexReIndexContext";
             public const string UniqueIndexReIndexingState = "uniqueIndexReIndexingState";
             public const string LastDocumentGLSN = "lastDocumentGLSN";
+            public const string UniqueIndexNameEncodingMode = "uniqueIndexNameEncodingMode";
 
             // ChangeFeed policy
             public const string ChangeFeedPolicy = "changeFeedPolicy";
@@ -406,6 +418,8 @@ namespace Microsoft.Azure.Documents
             public const string AllowMaterializedViews = "allowMaterializedViews";
             public const string SourceCollectionRid = "sourceCollectionRid";
             public const string Definition = "definition";
+            public const string ApiSpecificDefinition = "apiSpecificDefinition";
+            public const string AllowMaterializedViewsInCollectionDeleteRollForward = "allowMaterializedViewsInCollectionDeleteRollForward";
 
             // Schema Policy
             public const string SchemaPolicy = "schemaPolicy";
@@ -474,11 +488,12 @@ namespace Microsoft.Azure.Documents
             public const string CollectionBackupType = "type";
             public const string BackupStrategy = "backupStrategy";
             public const string BackupRedundancy = "backupRedundancy";
+            public const string BackupStorageRedundancy = "backupStorageRedundancy";
             public const string BackupIntervalInMinutes = "backupIntervalInMinutes";
             public const string BackupRetentionIntervalInHours = "backupRetentionIntervalInHours";
             public const string PeriodicModeProperties = "periodicModeProperties";
 
-            //Backup Storage Accounts
+            // Backup Storage Accounts
             public const string BackupStorageAccountsEnabled = "BackupStorageAccountsEnabled";
             public const string BackupStorageAccountNames = "BackupStorageAccountNames";
             public const string BackupStorageUris = "BackupStorageUris";
@@ -486,6 +501,8 @@ namespace Microsoft.Azure.Documents
             public const string ReplaceOriginalBackupStorageAccounts = "replaceOriginalBackupStorageAccounts";
             public const string StandardStreamGRSStorageServiceNames = "standardStreamGRSStorageServiceNames";
             public const string EnableDedicatedStorageAccounts = "enableDedicatedStorageAccounts";
+            public const string EnableSystemSnapshots = "enableSystemSnapshots";
+            public const string BackupStorageRedundancies = "backupStorageRedundancies";
 
             // Restore Policy
             public const string RestorePolicy = "restorePolicy";
@@ -590,6 +607,11 @@ namespace Microsoft.Azure.Documents
             public const string HostedServicesDescription = "hostedServicesDescription";
             public const string FederationProxyResource = "federationProxyResource";
             public const string ReservedDnsName = "reservedDnsName";
+
+            //Deployment Constants
+            public const string FabricApplicationName = "fabricApplicationName";
+            public const string UseMonitoredUpgrade = "useMonitoredUpgrade";
+            public const string UpgradeInfo = "UpgradeInfo";
 
             // ManagementVersion Resource
             public const string Version = "Version";
@@ -744,6 +766,7 @@ namespace Microsoft.Azure.Documents
             public const string AnalyticsStorageServiceNames = "analyticsStorageServiceNames";
             public const string LogStoreMetadataStorageAccountName = "logStoreMetadataStorageAccountName";
             public const string IsParallel = "isParallel";
+            public const string UseAccountSasForLogStoreAccounts = "useAccountSasForLogStoreAccounts";
 
             // GeoDrReplicaInformationResource
             public const string CurrentProgress = "currentProgress";
@@ -835,7 +858,7 @@ namespace Microsoft.Azure.Documents
             // Property to enable storage analytics
             public const string EnableAnalyticalStorage = "enableAnalyticalStorage";
 
-            //properties to enable MaterializedViews 
+            //properties to enable MaterializedViews
             public const string EnableMaterializedViews = "enableMaterializedViews"; //at DB account level.
 
             // property to enable full fidelity change feed (change feed with retention from remote+local storage).
@@ -898,6 +921,7 @@ namespace Microsoft.Azure.Documents
             public const string ConfigurationStoreConnectionInfoEncryptedAccountKey = "EncryptedAccountKey";
             public const string ConfigurationStoreConnectionInfoFederationCollectionUri = "FederationCollectionUri";
             public const string ConfigurationStoreConnectionInfoDatabaseAccountCollectionUri = "DatabaseAccountCollectionUri";
+            public const string ConfigurationStoreConnectionInfoRegionalCollectionUri = "RegionalCollectionUri";
 
             // ConfigurationLevel
             public const string ConfigurationLevel = "configurationLevel";
@@ -1028,11 +1052,25 @@ namespace Microsoft.Azure.Documents
             // Atp(advanced threat protection) Settings
             public const string IsAtpEnabled = "isEnabled";
 
+            // Customer Data setting for plain text logging
+            public const string IsCustomerDataEnabled = "isEnabled";
+
             // ResourceLimits
             public const string EnableExtendedResourceLimit = "enableExtendedResourceLimit";
             public const string ExtendedResourceNameLimitInBytes = "extendedResourceNameLimitInBytes";
             public const string ExtendedResourceContentLimitInKB = "extendedResourceContentLimitInKB";
             public const string MaxResourceSize = "maxResourceSize";
+            public const string MaxBatchRequestBodySize = "maxBatchRequestBodySize";
+            public const string MaxResponseMessageSize = "maxResponseMessageSize";
+            public const string AnalyzedTermChargeEnabled = "analyzedTermChargeEnabled ";
+            public const string EnableWriteConflictCharge = "enableWriteConflictCharge";
+            public const string ResourceContentBufferThreshold = "resourceContentBufferThreshold";
+            public const string EnableExtendedResourceLimitForNewCollections = "enableExtendedResourceLimitForNewCollections";
+            public const string DefaultExtendedCollectionChildResourceContentLimitInKB = "defaultExtendedCollectionChildResourceContentLimitInKB";
+            public const string MaxScriptInputSize = "maxScriptInputSize";
+            public const string MaxBatchTransactionSizeInBytes = "maxBatchTransactionSizeInBytes";
+            public const string MaxScriptTransactionSize = "maxScriptTransactionSize";
+            public const string ReplicationBatchMaxMessageSizeInBytes = "replicationBatchMaxMessageSizeInBytes";
 
             // Resource Governance Settings
             public const string MaxFeasibleRequestChargeInSeconds = "MaxFeasibleRequestChargeInSeconds";
@@ -1143,10 +1181,14 @@ namespace Microsoft.Azure.Documents
             public const string StoragePrivateEndpointConnections = "storagePrivateEndpointConnections";
             public const string PrivateLinkServiceProxyName = "privateLinkServiceProxyName";
             public const string PrivateEndpointConnections = "privateEndpointConnections";
+            public const string UpdateIpRangeFilter = "updateIpRangeFilter";
+            public const string UpdateVirtualNetworkResources = "updateVirtualNetworkResources";
+            public const string UpdatePrivateEndpointConnections = "updatePrivateEndpointConnections";
             public const string ArmSubscriptionId = "armSubscriptionId";
             public const string ChildrenNames = "childrenNames";
             public const string ParentName = "parentName";
             public const string IsActive = "isActive";
+            public const string IsRegional = "isRegional";
             public const string MapEntrySize = "mapEntrySize";
             public const string FederationMaps = "federationMaps";
             public const string FederationDns = "federationDns";
@@ -1249,13 +1291,15 @@ namespace Microsoft.Azure.Documents
 
             // AAD Authentication
             public const string TrustedAadTenants = "trustedAadTenants";
-            public const string EnableAadAuth = "enableAadAuth";
+            public const string NetworkAclBypass = "networkAclBypass";
+            public const string NetworkAclBypassResourceIds = "networkAclBypassResourceIds";
 
             // Restorable database accounts
             public const string CreationTime = "creationTime";
             public const string DeletionTime = "deletionTime";
             public const string AccountName = "accountName";
             public const string ApiType = "apiType";
+            public const string RestorableLocations = "restorableLocations";
 
             public const string CreationTimeInUtc = "creationTimeInUtc";
             public const string DeletionTimeInUtc = "deletionTimeInUtc";
@@ -1280,6 +1324,7 @@ namespace Microsoft.Azure.Documents
             public const string LongName = "longName";
             public const string HealthServiceName = "healthServiceName";
             public const string SupportsAvailabilityZone = "supportsAvailabilityZone";
+            public const string IsResidencyRestricted = "isResidencyRestricted";
         }
 
         public static class DocumentResourceExtendedProperties
@@ -1306,6 +1351,7 @@ namespace Microsoft.Azure.Documents
             public const string DocumentCollection = "documentCollection";
             public const string Database = "database";
             public const string OfferContent = "offerContent";
+            public const string Container = "container";
         }
 
         public static class RestoreMetadataResourceProperties
@@ -1344,6 +1390,7 @@ namespace Microsoft.Azure.Documents
             public const string EnableIndexingFullFidelity = "enableIndexingFullFidelity";
             public const string IndexUniquifierId = "indexUniquifierId";
             public const string CellExpiryIndexingMethod = "cellExpiryIndexingMethod";
+            public const string EnableIndexingEffectivePartitionKey = "enableIndexingEffectivePartitionKey";
         }
 
         public static class TypeSystemPolicy
@@ -1374,10 +1421,19 @@ namespace Microsoft.Azure.Documents
             public const string StorageAccountSecondaryKey = "storageAccountSecondaryKey";
             public const string StorageAccountType = "storageAccountType";
             public const string ForceRefresh = "forceRefresh";
+            public const string Permissions = "permissions";
+            public const string CurrentAccountSasToken = "currentAccountSasToken";
+            public const string KeyToSign = "keyToSign";
+            public const string AccountSasToken = "accountSasToken";
+            public const string ExpiryTime = "expiryTime";
+            public const string ListAccountSasRequestServices = "bqtf";
+            public const string ListAccountSasRequestResourceTypes = "sco";
+            public const string DefaultAccountSasPermissions = "rwdlacup";
 
-            // The Storage Management API uses these names for storage account primary and secondary keys.
+            // The Storage Management API uses these names for storage account system, primary and secondary keys/sas tokens.
             public const string Key1Name = "key1";
             public const string Key2Name = "key2";
+            public const string SystemKeyName = "system";
 
             // Config hooks
             public const string EnableStorageAccountKeyFetch = "enableStorageAccountKeyFetch";
@@ -1389,6 +1445,7 @@ namespace Microsoft.Azure.Documents
             public const string StorageAccountKeyRequestTimeoutInSeconds = "storageAccountKeyRequestTimeoutInSeconds";
             public const string StorageServiceUrlSuffix = "storageServiceUrlSuffix";
             public const string AzureResourceManagerEndpoint = "azureResourceManagerEndpoint";
+            public const string StorageSasManagementClientRequestTimeoutInSeconds = "storageSasManagementClientRequestTimeoutInSeconds";
 
             public const string FederationAzureActiveDirectoryEndpoint = "FederationAzureActiveDirectoryEndpoint";
             public const string FederationAzureActiveDirectoryClientId = "FederationAzureActiveDirectoryClientId";
@@ -1506,9 +1563,12 @@ namespace Microsoft.Azure.Documents
         {
             public const int BasedOnSubscription = 0;
             public const int EnsureOperationLogsFlushedTimeoutTimeInMinutes = 60;
-            
+
             // StreamStandard => 0x0004 = 4
             public const int PreferredLogStoreMetadataStorageKind = 4;
+
+            // Default timeout value of polling operation WaitForStorageKeyAccessOperation
+            public const double TimeoutDurationInMinutes = 60.0;
 
             // It needs to be in sync with bancked config for operation logs flush interval, which is currently 100s
             public const int EnsureOperationLogsPauseTimeInSeconds = 200;
@@ -1549,6 +1609,7 @@ namespace Microsoft.Azure.Documents
             public const string ServiceAllocationOperationType = "serviceAllocationOperationType";
             public const string MaxAllowedPartitionCount = "maxAllowedPartitionCount";
             public const string DisAllowedSubscriptionOfferKinds = "disAllowedSubscriptionOfferKinds";
+            public const string NumberOfFederationsToRandomize = "numberOfFederationsToRandomize";
         }
     }
 }

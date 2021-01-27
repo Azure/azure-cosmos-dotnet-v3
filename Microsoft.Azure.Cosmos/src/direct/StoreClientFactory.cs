@@ -40,7 +40,8 @@ namespace Microsoft.Azure.Documents
             RetryWithConfiguration retryWithConfiguration = null,
             RntbdConstants.CallerId callerId = RntbdConstants.CallerId.Anonymous, // replicatedResourceClient
             bool enableTcpConnectionEndpointRediscovery = false,
-            IAddressResolver addressResolver = null) // globalAddressResolver
+            IAddressResolver addressResolver = null, // globalAddressResolver
+            TimeSpan localRegionOpenTimeout = default) 
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -209,6 +210,7 @@ namespace Microsoft.Azure.Documents
                         UserAgent = userAgent,
                         CertificateHostNameOverride = overrideHostNameInCertificate,
                         OpenTimeout = TimeSpan.FromSeconds(openTimeoutInSeconds),
+                        LocalRegionOpenTimeout = localRegionOpenTimeout,
                         TimerPoolResolution = TimeSpan.FromSeconds(timerPoolGranularityInSeconds),
                         IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
                         EnableCpuMonitor = enableCpuMonitor,

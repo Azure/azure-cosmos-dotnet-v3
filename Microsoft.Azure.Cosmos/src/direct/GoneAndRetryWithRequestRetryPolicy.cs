@@ -104,6 +104,8 @@ namespace Microsoft.Azure.Documents
             TimeSpan timeout = TimeSpan.FromSeconds(0);
             bool forceRefreshAddressCache = false;
 
+            request.RequestContext.IsRetry = true;
+
             bool isRetryWith = false;
             if (!GoneAndRetryWithRequestRetryPolicy<TResponse>.IsBaseGone(response, exception) &&
                 !(exception is RetryWithException) &&

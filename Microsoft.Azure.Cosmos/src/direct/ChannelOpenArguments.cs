@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     {
         private readonly ChannelCommonArguments commonArguments;
         private readonly ChannelOpenTimeline openTimeline;
-        private readonly int openTimeoutSeconds;
+        private readonly TimeSpan openTimeout;
         private readonly PortReuseMode portReuseMode;
         private readonly UserPortPool userPortPool;
         private readonly RntbdConstants.CallerId callerId;
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         public ChannelOpenArguments(
             Guid activityId,
             ChannelOpenTimeline openTimeline,
-            int openTimeoutSeconds,
+            TimeSpan openTimeout,
             PortReuseMode portReuseMode,
             UserPortPool userPortPool,
             RntbdConstants.CallerId callerId)
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 activityId, TransportErrorCode.ChannelOpenTimeout,
                 userPayload: false);
             this.openTimeline = openTimeline;
-            this.openTimeoutSeconds = openTimeoutSeconds;
+            this.openTimeout = openTimeout;
 #if DEBUG
             switch (portReuseMode)
             {
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public ChannelOpenTimeline OpenTimeline { get { return this.openTimeline; } }
 
-        public int OpenTimeoutSeconds { get { return this.openTimeoutSeconds; } }
+        public TimeSpan OpenTimeout { get { return this.openTimeout; } }
 
         public PortReuseMode PortReuseMode { get { return this.portReuseMode; } }
 

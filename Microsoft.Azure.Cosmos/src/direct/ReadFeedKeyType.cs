@@ -16,6 +16,11 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Use EffectivePartitionKey
         /// </summary>
-        EffectivePartitionKey
+        EffectivePartitionKey,
+
+        /// <summary>
+        /// Use EffectivePartitionKeyRange 
+        /// </summary>
+        EffectivePartitionKeyRange
     }
 }

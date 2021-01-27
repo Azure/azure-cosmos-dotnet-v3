@@ -322,6 +322,11 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PartitionKey, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PartitionKeyRangeId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableCrossPartitionQuery, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.SDKSupportedCapabilities, request);
+
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ReadFeedKeyType, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.StartEpk, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EndEpk, request);
 
             string dateHeader = Helpers.GetDateHeader(request.Headers);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.XDate, dateHeader);
@@ -341,6 +346,11 @@ namespace Microsoft.Azure.Documents
             {
                 HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.CollectionPartitionIndex, request.Headers[WFConstants.BackendHeaders.CollectionPartitionIndex]);
                 HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.CollectionServiceIndex, request.Headers[WFConstants.BackendHeaders.CollectionServiceIndex]);
+            }
+
+            if (request.Headers[WFConstants.BackendHeaders.RequestedCollectionType] != null)
+            {
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.RequestedCollectionType, request.Headers[WFConstants.BackendHeaders.RequestedCollectionType]);
             }
 
             if (request.Headers[WFConstants.BackendHeaders.BindReplicaDirective] != null)
@@ -410,6 +420,8 @@ namespace Microsoft.Azure.Documents
             // Max polling interval and start full fidelity LSN (ETag) for change feed.
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.MaxPollingIntervalMilliseconds, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsMaterializedViewBuild, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UseArchivalPartition, request);
 
             if (resourceOperation.operationType == OperationType.Batch)
             {
@@ -556,6 +568,7 @@ namespace Microsoft.Azure.Documents
                     break;
 
                 case OperationType.GetStorageAccountKey:
+                case OperationType.GetStorageAccountSas:
                     httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
                     httpRequestMessage.Method = HttpMethod.Post;
                     Debug.Assert(clonedStream != null);
@@ -621,6 +634,10 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetRoleDefinitionFeedUri(physicalAddress, request);
                 case ResourceType.RoleAssignment:
                     return HttpTransportClient.GetRoleAssignmentFeedUri(physicalAddress, request);
+                case ResourceType.SystemDocument:
+                    return HttpTransportClient.GetSystemDocumentFeedUri(physicalAddress, request);
+                case ResourceType.PartitionedSystemDocument:
+                    return HttpTransportClient.GetPartitionedSystemDocumentFeedUri(physicalAddress, request);
 #if !COSMOSCLIENT
                 case ResourceType.Module:
                 case ResourceType.ModuleCommand:
@@ -676,6 +693,10 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetRoleDefinitionEntryUri(physicalAddress, request);
                 case ResourceType.RoleAssignment:
                     return HttpTransportClient.GetRoleAssignmentEntryUri(physicalAddress, request);
+                case ResourceType.SystemDocument:
+                    return HttpTransportClient.GetSystemDocumentEntryUri(physicalAddress, request);
+                case ResourceType.PartitionedSystemDocument:
+                    return HttpTransportClient.GetPartitionedSystemDocumentEntryUri(physicalAddress, request);
 #if !COSMOSCLIENT
                 case ResourceType.Replica:
                     return HttpTransportClient.GetRootFeedUri(physicalAddress);
@@ -872,6 +893,26 @@ namespace Microsoft.Azure.Documents
         private static Uri GetRoleAssignmentEntryUri(Uri baseAddress, DocumentServiceRequest request)
         {
             return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.RoleAssignment, request, isFeed: false));
+        }
+
+        private static Uri GetSystemDocumentFeedUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.SystemDocument, request, isFeed: true));
+        }
+
+        private static Uri GetSystemDocumentEntryUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.SystemDocument, request, isFeed: false));
+        }
+
+        private static Uri GetPartitionedSystemDocumentFeedUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.PartitionedSystemDocument, request, isFeed: true));
+        }
+
+        private static Uri GetPartitionedSystemDocumentEntryUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.PartitionedSystemDocument, request, isFeed: false));
         }
 
         public static Task<StoreResponse> ProcessHttpResponse(string resourceAddress, string activityId, HttpResponseMessage response, Uri physicalAddress, DocumentServiceRequest request)

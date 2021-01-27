@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     {
         private readonly Uri serverUri;
         private readonly ChannelProperties channelProperties;
+        private readonly bool localRegionRequest;
         private readonly int maxCapacity;  // maxChannels * maxRequestsPerChannel
 
         private int requestsPending = 0;  // Atomic.
@@ -28,12 +29,13 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly List<LbChannelState> openChannels =
             new List<LbChannelState>();  // Guarded by capacityLock.
 
-        public LoadBalancingPartition(Uri serverUri, ChannelProperties channelProperties)
+        public LoadBalancingPartition(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
             Debug.Assert(serverUri != null);
             this.serverUri = serverUri;
             Debug.Assert(channelProperties != null);
             this.channelProperties = channelProperties;
+            this.localRegionRequest = localRegionRequest;
 
             this.maxCapacity = checked(channelProperties.MaxChannels *
                 channelProperties.MaxRequestsPerChannel);
@@ -158,7 +160,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             }
                             while (this.openChannels.Count < targetChannels)
                             {
-                                Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties);
+                                Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties, this.localRegionRequest);
                                 newChannel.Initialize();
                                 this.openChannels.Add(new LbChannelState(newChannel, this.channelProperties.MaxRequestsPerChannel));
                                 this.capacity += this.channelProperties.MaxRequestsPerChannel;

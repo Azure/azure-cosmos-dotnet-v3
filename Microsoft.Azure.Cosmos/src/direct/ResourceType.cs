@@ -69,6 +69,9 @@ namespace Microsoft.Azure.Documents
 
         RoleDefinition = 146,
         RoleAssignment = 147,
+        SystemDocument = 148,
+        InteropUser = 149,
+        AuthPolicyElement = 150,
 
         // These names make it unclear what they map to in ResourceType.
         Key = -2,
@@ -118,6 +121,7 @@ namespace Microsoft.Azure.Documents
                    type == ResourceType.Schema ||
                    type == ResourceType.PartitionKey ||
                    type == ResourceType.PartitionedSystemDocument ||
+                   type == ResourceType.SystemDocument ||
                    type.IsScript();
         }
 

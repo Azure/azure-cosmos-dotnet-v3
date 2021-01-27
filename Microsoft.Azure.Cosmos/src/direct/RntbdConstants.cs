@@ -236,6 +236,7 @@ namespace Microsoft.Azure.Documents
             Invalid = 0x00,
             ResourceId = 0x01,
             EffectivePartitionKey = 0x02,
+            EffectivePartitionKeyRange = 0x03,
         }
 
         public enum RntbdContentSerializationFormat : byte
@@ -255,6 +256,13 @@ namespace Microsoft.Azure.Documents
             MaterializedViewLeaseStoreInitDocument = 0x03,
 
             Invalid = 0xFF,
+        }
+
+        public enum RntbdRequestedCollectionType : byte
+        {
+            All = 0x00,
+            Standard = 0x01,
+            MaterializedView = 0x02,
         }
 
         public enum RequestIdentifiers : ushort
@@ -410,6 +418,16 @@ namespace Microsoft.Azure.Documents
             ChangeFeedStartFullFidelityIfNoneMatch = 0x009A,
             SystemRestoreOperation = 0x009B,
             SkipRefreshDatabaseAccountConfigs = 0x009C,
+            IntendedCollectionRid = 0x009D,
+            UseArchivalPartition = 0x009E,
+            PopulateUniqueIndexReIndexProgress = 0x009F,
+            CollectionSchemaId = 0x00A0,
+            CollectionTruncate = 0x00A1,
+            SDKSupportedCapabilities = 0x00A2,
+            IsMaterializedViewBuild = 0x00A3,
+            BuilderClientIdentifier = 0x00A4,
+            SourceCollectionIfMatch = 0x00A5,
+            RequestedCollectionType = 0x00A6
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -555,6 +573,16 @@ namespace Microsoft.Azure.Documents
             public RntbdToken changeFeedStartFullFidelityIfNoneMatch;
             public RntbdToken systemRestoreOperation;
             public RntbdToken skipRefreshDatabaseAccountConfigs;
+            public RntbdToken intendedCollectionRid;
+            public RntbdToken useArchivalPartition;
+            public RntbdToken populateUniqueIndexReIndexProgress;
+            public RntbdToken schemaId;
+            public RntbdToken collectionTruncate;
+            public RntbdToken sdkSupportedCapabilities;
+            public RntbdToken isMaterializedViewBuild;
+            public RntbdToken builderClientIdentifier;
+            public RntbdToken sourceCollectionIfMatch;
+            public RntbdToken requestedCollectionType;
 
             public Request()
             {
@@ -699,6 +727,16 @@ namespace Microsoft.Azure.Documents
                 this.changeFeedStartFullFidelityIfNoneMatch = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedStartFullFidelityIfNoneMatch);
                 this.systemRestoreOperation = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.SystemRestoreOperation);
                 this.skipRefreshDatabaseAccountConfigs = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.SkipRefreshDatabaseAccountConfigs);
+                this.intendedCollectionRid = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.IntendedCollectionRid);
+                this.useArchivalPartition = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UseArchivalPartition);
+                this.populateUniqueIndexReIndexProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateUniqueIndexReIndexProgress);
+                this.schemaId = new RntbdToken(false, RntbdTokenTypes.Long, (ushort)RequestIdentifiers.CollectionSchemaId);
+                this.collectionTruncate = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.CollectionTruncate);
+                this.sdkSupportedCapabilities = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)RequestIdentifiers.SDKSupportedCapabilities);
+                this.isMaterializedViewBuild = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsMaterializedViewBuild);
+                this.builderClientIdentifier = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.BuilderClientIdentifier);
+                this.sourceCollectionIfMatch = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.SourceCollectionIfMatch);
+                this.requestedCollectionType = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.RequestedCollectionType);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -843,6 +881,16 @@ namespace Microsoft.Azure.Documents
                     this.changeFeedStartFullFidelityIfNoneMatch,
                     this.systemRestoreOperation,
                     this.skipRefreshDatabaseAccountConfigs,
+                    this.intendedCollectionRid,
+                    this.useArchivalPartition,
+                    this.populateUniqueIndexReIndexProgress,
+                    this.schemaId,
+                    this.collectionTruncate,
+                    this.sdkSupportedCapabilities,
+                    this.isMaterializedViewBuild,
+                    this.builderClientIdentifier,
+                    this.sourceCollectionIfMatch,
+                    this.requestedCollectionType
                 });
             }
         }
@@ -922,6 +970,10 @@ namespace Microsoft.Azure.Documents
             CorrelatedActivityId = 0x0052,
             ConfirmedStoreChecksum = 0x0053,
             TentativeStoreChecksum = 0x0054,
+            PendingPKDelete = 0x0055,
+            AadAppliedRoleAssignmentId = 0x0056,
+            CollectionUniqueIndexReIndexProgress = 0x0057,
+            CollectionUniqueKeysUnderReIndex = 0x0058,
         }
 
         public sealed class Response : RntbdTokenStream<ResponseIdentifiers>
@@ -992,6 +1044,10 @@ namespace Microsoft.Azure.Documents
             public RntbdToken correlatedActivityId;
             public RntbdToken confirmedStoreChecksum;
             public RntbdToken tentativeStoreChecksum;
+            public RntbdToken pendingPKDelete;
+            public RntbdToken aadAppliedRoleAssignmentId;
+            public RntbdToken collectionUniqueIndexReIndexProgress;
+            public RntbdToken collectionUniqueKeysUnderReIndex;
 
             public Response()
             {
@@ -1061,6 +1117,10 @@ namespace Microsoft.Azure.Documents
                 this.correlatedActivityId = new RntbdToken(false, RntbdTokenTypes.Guid, (ushort)ResponseIdentifiers.CorrelatedActivityId);
                 this.confirmedStoreChecksum = new RntbdToken(false, RntbdTokenTypes.ULongLong, (ushort)ResponseIdentifiers.ConfirmedStoreChecksum);
                 this.tentativeStoreChecksum = new RntbdToken(false, RntbdTokenTypes.ULongLong, (ushort)ResponseIdentifiers.TentativeStoreChecksum);
+                this.pendingPKDelete = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)ResponseIdentifiers.PendingPKDelete);
+                this.aadAppliedRoleAssignmentId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.AadAppliedRoleAssignmentId);
+                this.collectionUniqueIndexReIndexProgress = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ResponseIdentifiers.CollectionUniqueIndexReIndexProgress);
+                this.collectionUniqueKeysUnderReIndex = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.CollectionUniqueKeysUnderReIndex);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -1127,8 +1187,12 @@ namespace Microsoft.Azure.Documents
                     this.softMaxAllowedThroughput,
                     this.backendRequestDurationMilliseconds,
                     this.correlatedActivityId,
-                     this.confirmedStoreChecksum,
-                    this.tentativeStoreChecksum
+                    this.confirmedStoreChecksum,
+                    this.tentativeStoreChecksum,
+                    this.pendingPKDelete,
+                    this.aadAppliedRoleAssignmentId,
+                    this.collectionUniqueIndexReIndexProgress,
+                    this.collectionUniqueKeysUnderReIndex
                 });
             }
         }

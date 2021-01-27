@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private bool disposed = false;
 
-        public LoadBalancingChannel(Uri serverUri, ChannelProperties channelProperties)
+        public LoadBalancingChannel(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
             this.serverUri = serverUri;
 
@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     channelProperties.RequestTimerPool,
                     channelProperties.RequestTimeout,
                     channelProperties.OpenTimeout,
+                    channelProperties.LocalRegionOpenTimeout,
                     channelProperties.PortReuseMode,
                     channelProperties.UserPortPool,
                     MathUtils.CeilingMultiple(
@@ -62,14 +63,14 @@ namespace Microsoft.Azure.Documents.Rntbd
                 for (int i = 0; i < this.partitions.Length; i++)
                 {
                     this.partitions[i] = new LoadBalancingPartition(
-                        serverUri, partitionProperties);
+                        serverUri, partitionProperties, localRegionRequest);
                 }
             }
             else
             {
                 Debug.Assert(channelProperties.PartitionCount == 1);
                 this.singlePartition = new LoadBalancingPartition(
-                    serverUri, channelProperties);
+                    serverUri, channelProperties, localRegionRequest);
             }
         }
 

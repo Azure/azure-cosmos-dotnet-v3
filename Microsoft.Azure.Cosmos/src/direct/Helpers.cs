@@ -202,15 +202,20 @@ namespace Microsoft.Azure.Documents
                 return "Other";
             }
 
-            if (code >= 200 && code < 300) return "Success";
-            else if (code == 304) return "NotModified";
-            else if (code == 400) return "BadRequestError";
-            else if (code == 401) return "AuthorizationError";
-            else if (code == 408) return "ServerTimeoutError";
-            else if (code == 429) return "ClientThrottlingError";
-            else if (code > 400 && code < 500) return "ClientOtherError";
-            else if (code == 500) return "ServerOtherError";
-            else if (code == 503) return "ServiceBusyError";
+            return Helpers.GetStatusFromStatusCodeInt(code);
+        }
+
+        internal static string GetStatusFromStatusCodeInt(int statusCodeInt)
+        {
+            if (statusCodeInt >= 200 && statusCodeInt < 300) return "Success";
+            else if (statusCodeInt == 304) return "NotModified";
+            else if (statusCodeInt == 400) return "BadRequestError";
+            else if (statusCodeInt == 401) return "AuthorizationError";
+            else if (statusCodeInt == 408) return "ServerTimeoutError";
+            else if (statusCodeInt == 429) return "ClientThrottlingError";
+            else if (statusCodeInt > 400 && statusCodeInt < 500) return "ClientOtherError";
+            else if (statusCodeInt == 500) return "ServerOtherError";
+            else if (statusCodeInt == 503) return "ServiceBusyError";
             else return "Other";
         }
     }

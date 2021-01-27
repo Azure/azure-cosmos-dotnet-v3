@@ -106,11 +106,11 @@ namespace Microsoft.Azure.Documents
         private PartitionKeyDefinition partitionKey;
         private SchemaDiscoveryPolicy schemaDiscoveryPolicy;
         private UniqueKeyPolicy uniqueKeyPolicy;
+        private UniqueIndexReIndexContext uniqueIndexReIndexContext;
         private ConflictResolutionPolicy conflictResolutionPolicy;
         private ChangeFeedPolicy changeFeedPolicy;
         private CollectionBackupPolicy collectionBackupPolicy;
         private MaterializedViewDefinition materializedViewDefinition;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -188,6 +188,19 @@ namespace Microsoft.Azure.Documents
             {
                 this.materializedViewDefinition = value;
                 base.SetObject<MaterializedViewDefinition>(Constants.Properties.MaterializedViewDefinition, value);
+            }
+        }
+
+        [JsonProperty(PropertyName = Constants.Properties.UniqueIndexNameEncodingMode)]
+        internal byte UniqueIndexNameEncodingMode
+        {
+            get
+            {
+                return this.GetValue<byte>(Constants.Properties.UniqueIndexNameEncodingMode);
+            }
+            set
+            {
+                this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }
         }
 
@@ -442,6 +455,34 @@ namespace Microsoft.Azure.Documents
 
                 this.uniqueKeyPolicy = value;
                 base.SetObject<UniqueKeyPolicy>(Constants.Properties.UniqueKeyPolicy, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="UniqueIndexReIndexContext"/> that used for internal unique index reindex context purpose.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.UniqueIndexReIndexContext)]
+        internal UniqueIndexReIndexContext UniqueIndexReIndexContext
+        {
+            get
+            {
+                // Thread safe lazy initialization for case when collection is cached (and is basically readonly).
+                if (this.uniqueIndexReIndexContext == null)
+                {
+                    this.uniqueIndexReIndexContext = base.GetObject<UniqueIndexReIndexContext>(Constants.Properties.UniqueIndexReIndexContext) ?? new UniqueIndexReIndexContext();
+                }
+
+                return this.uniqueIndexReIndexContext;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexReIndexContext"));
+                }
+
+                this.uniqueIndexReIndexContext = value;
+                base.SetObject<UniqueIndexReIndexContext>(Constants.Properties.UniqueIndexReIndexContext, value);
             }
         }
 
@@ -780,6 +821,7 @@ namespace Microsoft.Azure.Documents
             this.PartitionKey.Validate();
             this.UniqueKeyPolicy.Validate();
             this.ConflictResolutionPolicy.Validate();
+            this.UniqueIndexReIndexContext.Validate();
         }
 
         internal override void OnSave()
@@ -825,6 +867,12 @@ namespace Microsoft.Azure.Documents
             if (this.geospatialConfig != null)
             {
                 base.SetObject(Constants.Properties.GeospatialConfig, this.geospatialConfig);
+            }
+
+            if (this.uniqueIndexReIndexContext != null)
+            {
+                this.uniqueIndexReIndexContext.OnSave();
+                base.SetObject(Constants.Properties.UniqueIndexReIndexContext, this.uniqueIndexReIndexContext);
             }
         }
     }

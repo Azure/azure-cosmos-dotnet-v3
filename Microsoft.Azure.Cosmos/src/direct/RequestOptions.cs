@@ -427,6 +427,19 @@ namespace Microsoft.Azure.Documents.Client
         public bool PopulatePartitionKeyRangeStatistics { get; set; }
 
         /// <summary>
+        ///  Gets or sets the <see cref="PopulateUniqueIndexReIndexProgress"/> for document collection read unique index reindex progres.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <see cref="PopulateUniqueIndexReIndexProgress"/> is used to enable/disable getting unique index reindex progres.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateUniqueIndexReIndexProgress"/>.
+        /// </example>
+        internal bool PopulateUniqueIndexReIndexProgress { get; set; }
+
+        /// <summary>
         /// Gets or sets the Remote storage enablement
         /// To be used along with Collection creation operation
         /// </summary>
@@ -515,6 +528,11 @@ namespace Microsoft.Azure.Documents.Client
         /// ForceSideBySideIndexMigration is used to force a side by side index migration on a collection replace
         /// </summary>
         internal bool ForceSideBySideIndexMigration { get; set; }
+
+        /// <summary>
+        /// Truncate the Collection
+        /// </summary>
+        internal bool CollectionTruncate { get; set; }
 
         /// <summary>
         /// Gets or sets shared offer throughput on a collection.

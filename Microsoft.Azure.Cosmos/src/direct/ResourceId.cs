@@ -51,6 +51,8 @@ namespace Microsoft.Azure.Documents
             this.Snapshot = 0;
             this.RoleAssignment = 0;
             this.RoleDefinition = 0;
+            this.SystemDocument = 0;
+            this.PartitionedSystemDocument = 0;
         }
 
         public uint Offer
@@ -98,7 +100,8 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return this.Database != 0 && this.DocumentCollection != 0
-                    && (this.Document == 0 && this.PartitionKeyRange == 0 && this.StoredProcedure == 0 && this.Trigger == 0 && this.UserDefinedFunction == 0);
+                    && (this.Document == 0 && this.PartitionKeyRange == 0 && this.StoredProcedure == 0 && this.Trigger == 0 && this.UserDefinedFunction == 0 
+                    && this.SystemDocument == 0 && this.PartitionedSystemDocument == 0);
             }
         }
 
@@ -107,7 +110,8 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return this.Database != 0 && this.DocumentCollection != 0 && this.PartitionKeyRange != 0
-                    && (this.Document == 0 && this.StoredProcedure == 0 && this.Trigger == 0 && this.UserDefinedFunction == 0);
+                    && (this.Document == 0 && this.StoredProcedure == 0 && this.Trigger == 0 && this.UserDefinedFunction == 0
+                     && this.SystemDocument == 0 && this.PartitionedSystemDocument == 0);
             }
         }
 
@@ -438,6 +442,66 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public ulong AuthPolicyElement
+        {
+            get;
+            private set;
+        }
+
+        public ResourceId AuthPolicyElementId
+        {
+            get
+            {
+                ResourceId rid = new ResourceId();
+                rid.AuthPolicyElement = this.AuthPolicyElement;
+                return rid;
+            }
+        }
+
+        public bool IsAuthPolicyElementId
+        {
+            get
+            {
+                return this.AuthPolicyElement != 0;
+            }
+        }
+
+        public UInt64 SystemDocument
+        {
+            get;
+            private set;
+        }
+
+        public ResourceId SystemDocumentId
+        {
+            get
+            {
+                ResourceId rid = new ResourceId();
+                rid.Database = this.Database;
+                rid.DocumentCollection = this.DocumentCollection;
+                rid.SystemDocument = this.SystemDocument;
+                return rid;
+            }
+        }
+
+        public UInt64 PartitionedSystemDocument
+        {
+            get;
+            private set;
+        }
+
+        public ResourceId PartitionedSystemDocumentId
+        {
+            get
+            {
+                ResourceId rid = new ResourceId();
+                rid.Database = this.Database;
+                rid.DocumentCollection = this.DocumentCollection;
+                rid.PartitionedSystemDocument = this.PartitionedSystemDocument;
+                return rid;
+            }
+        }
+
         public byte[] Value
         {
             get
@@ -451,13 +515,16 @@ namespace Microsoft.Azure.Documents
                     len += ResourceId.RbacResourceIdLength;
                 else if (this.RoleDefinition > 0)
                     len += ResourceId.RbacResourceIdLength;
+                else if (this.AuthPolicyElement > 0)
+                    len += ResourceId.RbacResourceIdLength;
                 else if (this.Database > 0)
                     len += 4;
                 if (this.DocumentCollection > 0 || this.User > 0 || this.UserDefinedType > 0 || this.ClientEncryptionKey > 0)
                     len += 4;
                 if (this.Document > 0 || this.Permission > 0 || this.StoredProcedure > 0 || this.Trigger > 0
                     || this.UserDefinedFunction > 0 || this.Conflict > 0 || this.PartitionKeyRange > 0 || this.Schema > 0
-                    || this.UserDefinedType > 0 || this.ClientEncryptionKey > 0)
+                    || this.UserDefinedType > 0 || this.ClientEncryptionKey > 0 || this.SystemDocument > 0
+                    || this.PartitionedSystemDocument > 0)
                     len += 8;
                 if (this.Attachment > 0)
                     len += 4;
@@ -470,6 +537,11 @@ namespace Microsoft.Azure.Documents
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.Database), 0, val, 0, 4);
                 else if (this.Snapshot > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.Snapshot), 0, val, 0, ResourceId.SnapshotIdLength);
+                else if (this.AuthPolicyElement > 0)
+                {
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.AuthPolicyElement), 0, val, 0, 4);
+                    ResourceId.BlockCopy(BitConverter.GetBytes(0x3000), 0, val, 4, 2);
+                }
                 else if (this.RoleAssignment > 0)
                 {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.RoleAssignment), 0, val, 0, 4);
@@ -499,6 +571,10 @@ namespace Microsoft.Azure.Documents
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.Permission), 0, val, 8, 8);
                 else if(this.Schema > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.Schema), 0, val, 8, 8);
+                else if (this.SystemDocument > 0)
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.SystemDocument), 0, val, 8, 8);
+                else if (this.PartitionedSystemDocument > 0)
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.PartitionedSystemDocument), 0, val, 8, 8);
                 else if (this.UserDefinedType > 0)
                 {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.UserDefinedType), 0, val, 8, 4);
@@ -560,6 +636,14 @@ namespace Microsoft.Azure.Documents
             return new ResourceId()
             {
                 RoleAssignment = roleAssignmentId
+            };
+        }
+
+        public static ResourceId NewAuthPolicyElementId(ulong authPolicyElementId)
+        {
+            return new ResourceId()
+            {
+                AuthPolicyElement = authPolicyElementId
             };
         }
 
@@ -640,6 +724,14 @@ namespace Microsoft.Azure.Documents
                     childResourceId.Document = childId;
                     return childResourceId;
 
+                case ResourceType.SystemDocument:
+                    childResourceId.SystemDocument = childId;
+                    return childResourceId;
+
+                case ResourceType.PartitionedSystemDocument:
+                    childResourceId.PartitionedSystemDocument = childId;
+                    return childResourceId;
+
                 default:
                     string errorMessage = string.Format(CultureInfo.InvariantCulture, "ResourceType '{0}'  not a child of Collection.", resourceType);
                     DefaultTrace.TraceError(errorMessage);
@@ -705,6 +797,14 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.Document:
                     subCollRes[7] = (byte)CollectionChildResourceType.Document << 4;
+                    break;
+
+                case ResourceType.SystemDocument:
+                    subCollRes[7] = (byte)CollectionChildResourceType.SystemDocument << 4;
+                    break;
+
+                case ResourceType.PartitionedSystemDocument:
+                    subCollRes[7] = (byte)CollectionChildResourceType.PartitionedSystemDocument << 4;
                     break;
 
                 default:
@@ -790,10 +890,14 @@ namespace Microsoft.Azure.Documents
                             rid.RoleAssignment = rbacResourceId;
                             break;
 
+                        case RbacResourceType.RbacResourceType_AuthPolicyElement:
+                            rid.AuthPolicyElement = rbacResourceId;
+                            break;
+
                         default:
                             return false;
                     }
-                    
+
                     return true;
                 }
 
@@ -849,6 +953,14 @@ namespace Microsoft.Azure.Documents
                             else if((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.Schema)
                             {
                                 rid.Schema = subCollectionResource;
+                            }
+                            else if ((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.SystemDocument)
+                            {
+                                rid.SystemDocument = subCollectionResource;
+                            }
+                            else if ((subCollRes[7] >> 4) == (byte)CollectionChildResourceType.PartitionedSystemDocument)
+                            {
+                                rid.PartitionedSystemDocument = subCollectionResource;
                             }
                             else
                             {
@@ -1080,6 +1192,8 @@ namespace Microsoft.Azure.Documents
             Conflict = 0x04,
             PartitionKeyRange = 0x05,
             Schema = 0x09,
+            PartitionedSystemDocument = 0x0A,
+            SystemDocument = 0x0D
         }
 
         private enum ExtendedDatabaseChildResourceType
@@ -1092,6 +1206,8 @@ namespace Microsoft.Azure.Documents
         {
             RbacResourceType_RoleDefinition = 0x00,
             RbacResourceType_RoleAssignment = 0x10,
+            RbacResourceType_InteropUser = 0x20,
+            RbacResourceType_AuthPolicyElement  = 0x30,
         }
     }
 }

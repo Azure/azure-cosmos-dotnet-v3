@@ -8,16 +8,26 @@ namespace Microsoft.Azure.Documents
     {
         /// <summary>
         /// Set the SystemDocumentType to PartitionKey
+        /// Partitioned SystemDocument
         /// </summary>
         PartitionKey,
-        /// <summary>
-        /// Set the SystemDocumentType as MaterializedViewLeaseDocument
-        /// </summary>
-        MaterializedViewLeaseDocument,
 
         /// <summary>
-        /// Set the SystemDocumentType as MaterializedViewLeaseStoreInitDocument
+        /// Set the SystemDocumentType as MaterializedViewLeaseDocument
+        /// Partitioned SystemDocument
         /// </summary>
-        MaterializedViewLeaseStoreInitDocument
+        MaterializedViewLeaseDocument,
+        
+        /// <summary>
+        /// Set the SystemDocumentType as MaterializedViewBuilderOwnershipDocument
+        /// NonPartitionedSystemDocument
+        /// </summary>
+        MaterializedViewBuilderOwnershipDocument,
+        
+        /// <summary>
+        /// Set the SystemDocumentType as MaterializedViewLeaseStoreInitDocument
+        /// PartitionedSystemDocument
+        /// </summary>
+        MaterializedViewLeaseStoreInitDocument,
     }
 }

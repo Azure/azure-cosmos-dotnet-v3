@@ -20,18 +20,34 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal sealed class TimerPool : IDisposable
     {
+        [ThreadStatic]
+        private static Random PooledTimerBucketSelector;
+
         private readonly Timer timer;
-        private readonly ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>> pooledTimersByTimeout;
+        private readonly ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>>[] pooledTimersByTimeout;
         private readonly TimeSpan minSupportedTimeout;
         private readonly object timerConcurrencyLock; // protects isRunning to reject concurrent timer callback. Irrelevant to subscriptionLock.
         private bool isRunning = false;
         private bool isDisposed = false;
 
-        public TimerPool(int minSupportedTimerDelayInSeconds)
+        public TimeSpan MinSupportedTimeout
+        {
+            get { return minSupportedTimeout; }
+        }
+
+        public TimerPool(int minSupportedTimerDelayInSeconds, int maxBucketsForPools = -1)
         {
             this.timerConcurrencyLock = new Object();
             this.minSupportedTimeout = TimeSpan.FromSeconds(minSupportedTimerDelayInSeconds > 0 ? minSupportedTimerDelayInSeconds : 1);
-            this.pooledTimersByTimeout = new ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>>();
+
+            maxBucketsForPools = maxBucketsForPools > 0 ? maxBucketsForPools : Environment.ProcessorCount;
+
+            this.pooledTimersByTimeout = new ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>>[maxBucketsForPools];
+            for (int i = 0; i < maxBucketsForPools; i++)
+            {
+                this.pooledTimersByTimeout[i] = new ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>>();
+            }
+
             TimerCallback timerDelegate = new TimerCallback(OnTimer);
             this.timer = new Timer(timerDelegate, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(minSupportedTimerDelayInSeconds));
             DefaultTrace.TraceInformation("TimerPool Created with minSupportedTimerDelayInSeconds = {0}", minSupportedTimerDelayInSeconds);
@@ -61,14 +77,18 @@ namespace Microsoft.Azure.Documents
         {
             DefaultTrace.TraceInformation("TimerPool Disposing");
 
-            foreach (KeyValuePair<int, ConcurrentQueue<PooledTimer>> kv in this.pooledTimersByTimeout)
+            foreach (ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>> timers in this.pooledTimersByTimeout)
             {
-                ConcurrentQueue<PooledTimer> pooledTimerQueue = kv.Value;
-                PooledTimer timer;
-                while (pooledTimerQueue.TryDequeue(out timer))
+                foreach (KeyValuePair<int, ConcurrentQueue<PooledTimer>> kv in timers)
                 {
-                    timer.CancelTimer();
+                    ConcurrentQueue<PooledTimer> pooledTimerQueue = kv.Value;
+                    PooledTimer timer;
+                    while (pooledTimerQueue.TryDequeue(out timer))
+                    {
+                        timer.CancelTimer();
+                    }
                 }
+
             }
 
             this.timer.Dispose();
@@ -94,50 +114,53 @@ namespace Microsoft.Azure.Documents
                 // timeout duration and fire timeouts
                 long currentTicks = DateTime.UtcNow.Ticks;
 
-                foreach(KeyValuePair<int, ConcurrentQueue<PooledTimer>> kv in this.pooledTimersByTimeout)
+                foreach (ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>> timerBucket in this.pooledTimersByTimeout)
                 {
-                    ConcurrentQueue<PooledTimer> pooledTimerQueue = kv.Value;
-                    int count = kv.Value.Count;
-                    long lastTicks = 0;
-
-                    for(int nIndex = 0; nIndex < count; nIndex++)
+                    foreach (KeyValuePair<int, ConcurrentQueue<PooledTimer>> kv in timerBucket)
                     {
-                        PooledTimer pooledTimer;
+                        ConcurrentQueue<PooledTimer> pooledTimerQueue = kv.Value;
+                        int count = kv.Value.Count;
+                        long lastTicks = 0;
 
-                        // We keeping peeking, firing timeouts, and dequeuing until reach hit the first
-                        // element whose timeout has not occcured.
-                        if(pooledTimerQueue.TryPeek(out pooledTimer))
+                        for (int nIndex = 0; nIndex < count; nIndex++)
                         {
-                            if(currentTicks >= pooledTimer.TimeoutTicks)
-                            {
-                                if(pooledTimer.TimeoutTicks < lastTicks)
-                                {
-                                    // Queue of timers should have expiry in increasing tick order
-                                    DefaultTrace.TraceCritical("LastTicks: {0}, PooledTimer.Ticks: {1}",
-                                        lastTicks,
-                                        pooledTimer.TimeoutTicks);
-                                }
+                            PooledTimer pooledTimer;
 
-                                pooledTimer.FireTimeout();
-                                lastTicks = pooledTimer.TimeoutTicks;
-                                PooledTimer timer;
-                                if(pooledTimerQueue.TryDequeue(out timer))
+                            // We keeping peeking, firing timeouts, and dequeuing until reach hit the first
+                            // element whose timeout has not occcured.
+                            if (pooledTimerQueue.TryPeek(out pooledTimer))
+                            {
+                                if (currentTicks >= pooledTimer.TimeoutTicks)
                                 {
-                                    // this is purely a correctness check
-                                    if (!ReferenceEquals(timer, pooledTimer))
+                                    if (pooledTimer.TimeoutTicks < lastTicks)
                                     {
-                                        // should never occur since there can only be 1 thread in this code at time.
-                                        DefaultTrace.TraceCritical(
-                                            "Timer objects peeked and dequeued are not equal");
-                                        pooledTimerQueue.Enqueue(timer);
+                                        // Queue of timers should have expiry in increasing tick order
+                                        DefaultTrace.TraceCritical("LastTicks: {0}, PooledTimer.Ticks: {1}",
+                                            lastTicks,
+                                            pooledTimer.TimeoutTicks);
+                                    }
+
+                                    pooledTimer.FireTimeout();
+                                    lastTicks = pooledTimer.TimeoutTicks;
+                                    PooledTimer timer;
+                                    if (pooledTimerQueue.TryDequeue(out timer))
+                                    {
+                                        // this is purely a correctness check
+                                        if (!ReferenceEquals(timer, pooledTimer))
+                                        {
+                                            // should never occur since there can only be 1 thread in this code at time.
+                                            DefaultTrace.TraceCritical(
+                                                "Timer objects peeked and dequeued are not equal");
+                                            pooledTimerQueue.Enqueue(timer);
+                                        }
                                     }
                                 }
-                            }
-                            else
-                            {
-                                // reached the element whose timeout has not yet expired,
-                                // break out and move to the next queue.
-                                break;
+                                else
+                                {
+                                    // reached the element whose timeout has not yet expired,
+                                    // break out and move to the next queue.
+                                    break;
+                                }
                             }
                         }
                     }
@@ -156,7 +179,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        internal ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>> PooledTimersByTimeout
+        internal ConcurrentDictionary<int, ConcurrentQueue<PooledTimer>>[] PooledTimersByTimeout
         {
             get
             {
@@ -176,6 +199,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// get a timer with timeout specified as a TimeSpan
+        /// </summary>
+        /// <param name="timeoutInSeconds"></param>
+        /// <returns></returns>
+        public PooledTimer GetPooledTimer(TimeSpan timeout)
+        {
+            this.ThrowIfDisposed();
+            return new PooledTimer(timeout, this);
+        }
+
+        /// <summary>
         /// Start the countdown for timeout
         /// </summary>
         /// <param name="pooledTimer"></param>
@@ -191,9 +225,16 @@ namespace Microsoft.Azure.Documents
                 pooledTimer.Timeout = this.minSupportedTimeout;
             }
 
-            if (!this.pooledTimersByTimeout.TryGetValue((int)pooledTimer.Timeout.TotalSeconds, out ConcurrentQueue<PooledTimer> timerQueue))
+            if (TimerPool.PooledTimerBucketSelector == null)
             {
-                timerQueue = this.pooledTimersByTimeout.GetOrAdd((int)pooledTimer.Timeout.TotalSeconds,
+                TimerPool.PooledTimerBucketSelector = new Random();
+            }
+
+            int bucketIndex = TimerPool.PooledTimerBucketSelector.Next(this.pooledTimersByTimeout.Length);
+
+            if (!this.pooledTimersByTimeout[bucketIndex].TryGetValue((int)pooledTimer.Timeout.TotalSeconds, out ConcurrentQueue<PooledTimer> timerQueue))
+            {
+                timerQueue = this.pooledTimersByTimeout[bucketIndex].GetOrAdd((int)pooledTimer.Timeout.TotalSeconds,
                     (_) => new ConcurrentQueue<PooledTimer>());
             }
 

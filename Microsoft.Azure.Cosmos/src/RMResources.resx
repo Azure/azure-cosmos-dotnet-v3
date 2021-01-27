@@ -465,8 +465,8 @@
   <data name="UnsupportedRegion" xml:space="preserve">
     <value>The requested region '{0}' is not supported.</value>
   </data>
-  <data name="UnsupportedSparkClusterRegion" xml:space="preserve">
-    <value>The requested region '{0}' is not supported for spark cluster creation.</value>
+  <data name="UnsupportedClusterRegion" xml:space="preserve">
+    <value>The requested region '{0}' is not supported for '{1}' cluster creation.</value>
   </data>
   <data name="ServiceWithResourceIdNotFound" xml:space="preserve">
     <value>Could not find service hosting DocumentCollection with ResourceId {0}</value>
@@ -1045,14 +1045,11 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="AadAuthActionNotSupported" xml:space="preserve">
     <value>The given request [{0} {1}] with ResourceType [{2}] cannot be authorized by AAD token in data plane.</value>
   </data>
-  <data name="AadAuthCouldNotParseAction" xml:space="preserve">
-    <value>Could not parse action from [{0}] request on [{1}].</value>
-  </data>
-  <data name="AadAuthDisabled" xml:space="preserve">
-    <value>AAD Authentication is disabled for this account. Please contact Azure Support [https://azure.microsoft.com/support] to enable it.</value>
-  </data>
-  <data name="AadAuthNotAvailable" xml:space="preserve">
+  <data name="AadAuthenticatorNotAvailable" xml:space="preserve">
     <value>Failed to validate AAD identity since the authenticator is unavailable.</value>
+  </data>
+  <data name="AadAuthorizerNotAvailable" xml:space="preserve">
+    <value>Failed to validate AAD identity since the authorizer is unavailable.</value>
   </data>
   <data name="AadAuthPublicKeysFailedToUpdate" xml:space="preserve">
     <value>Failed to update the AAD Public Keys with value {0}. Exception: {1}.</value>

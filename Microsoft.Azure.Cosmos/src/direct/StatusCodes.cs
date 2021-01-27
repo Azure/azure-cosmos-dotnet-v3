@@ -114,6 +114,8 @@ namespace Microsoft.Azure.Documents
         PrepareTimeLimitExceeded = 3207,
         ClientTcpChannelFull = 3208,
         BWTermCountLimitExceeded = 3209,
+        RUBudgetExceeded = 3200,
+        StoredProcedureConcurrency = 3084,
 
         // Key Vault Access Client Error Code
         AadClientCredentialsGrantFailure = 4000, // Indicated access to AAD failed to get a token
@@ -128,13 +130,12 @@ namespace Microsoft.Azure.Documents
         KeyVaultDNSNotResolved = 4009, // Key Vault DNS name could not be resolved, mostly due to customer enter incorrect KeyVault name.
         InvalidKeyVaultCertURI = 4010, // Indicate the Key Vault Cert URI is invalid.
         InvalidKeyVaultKeyAndCertURI = 4011, // Indicate the Key Vault Key and Cert URI is invalid.
-        
+
 
         // Keep in sync with Microsoft.Azure.Cosmos.ServiceFramework.Security.AadAuthentication.AadSubStatusCodes
         // 401 : Unauthorized Exception (User-side errors start with 50)
         MissingAuthHeader = 5000,
         InvalidAuthHeaderFormat = 5001,
-        AadAuthDisabled = 5002,
         AadTokenInvalidFormat = 5003,
         AadTokenInvalidSignature = 5004,
         AadTokenNotYetValid = 5005,
@@ -143,9 +144,20 @@ namespace Microsoft.Azure.Documents
         AadTokenInvalidAudience = 5008,
         AadTokenInvalidScope = 5009,
         FailedToGetAadToken = 5010,
+        AadTokenMissingObjectIdentifier = 5011,
 
         // 401 : Unauthorized Exception (CosmosDB-side errors start with 52)
         AadTokenInvalidSigningKey = 5200,
         AadTokenGroupExpansionError = 5201,
+
+        // 403 Forbidden. Blocked by RBAC authorization.
+        RbacOperationNotSupported = 5300,
+        RbacUnauthorizedMetadataRequest = 5301,
+        RbacUnauthorizedNameBasedDataRequest = 5302,
+        RbacUnauthorizedRidBasedDataRequest = 5303,
+        RbacRidCannotBeResolved = 5304,
+
+        // 403 Forbidden. (CosmosDB-side errors start with 54)
+        RbacRequestWasNotAuthorized = 5400,
     }
 }

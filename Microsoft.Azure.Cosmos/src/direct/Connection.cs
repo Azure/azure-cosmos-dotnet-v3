@@ -109,6 +109,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 "The server URI must not specify a path and query");
             this.serverUri = serverUri;
             this.hostNameCertificateOverride = hostNameCertificateOverride;
+            this.BufferProvider = new BufferProvider();
 
             if (receiveHangDetectionTime <= Connection.receiveHangGracePeriod)
             {
@@ -154,6 +155,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.name = string.Format(CultureInfo.InvariantCulture,
                 "<not connected> -> {0}", this.serverUri);
         }
+
+        public BufferProvider BufferProvider { get; }
 
         public Uri ServerUri { get { return this.serverUri; } }
 
@@ -247,15 +250,32 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public bool Disposed { get { return this.disposed; } }
 
-        public struct ResponseMetadata
+        public sealed class ResponseMetadata : IDisposable
         {
-            public byte[] Header;
-            public byte[] Metadata;
+            private bool disposed;
 
-            public ResponseMetadata(byte[] header, byte[] metadata)
+            private BufferProvider.DisposableBuffer header;
+            private BufferProvider.DisposableBuffer metadata;
+
+            public ResponseMetadata(BufferProvider.DisposableBuffer header, BufferProvider.DisposableBuffer metadata)
             {
-                this.Header = header;
-                this.Metadata = metadata;
+                this.header = header;
+                this.metadata = metadata;
+                this.disposed = false;
+            }
+
+            public ArraySegment<byte> Header => this.header.Buffer;
+            public ArraySegment<byte> Metadata => this.metadata.Buffer;
+
+            /// <inheritdoc />
+            public void Dispose()
+            {
+                if (!this.disposed)
+                {
+                    this.header.Dispose();
+                    this.metadata.Dispose();
+                    this.disposed = true;
+                }
             }
         }
 
@@ -267,7 +287,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         // This method is thread safe.
-        public async Task WriteRequestAsync(ChannelCommonArguments args, byte[] messagePayload)
+        public async Task WriteRequestAsync(ChannelCommonArguments args, ArraySegment<byte> messagePayload)
         {
             this.ThrowIfDisposed();
 
@@ -278,7 +298,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 args.SetTimeoutCode(TransportErrorCode.SendTimeout);
                 args.SetPayloadSent();
                 this.UpdateLastSendAttemptTime();
-                await this.stream.WriteAsync(messagePayload, 0, messagePayload.Length);
+                await this.stream.WriteAsync(messagePayload.Array, messagePayload.Offset, messagePayload.Count);
             }
             finally
             {
@@ -297,13 +317,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.ThrowIfDisposed();
 
             Trace.CorrelationManager.ActivityId = args.ActivityId;
-            byte[] header = await this.ReadPayloadAsync(
-                sizeof(UInt32) /* totalLength */ + sizeof(UInt32) /* status */ +
-                16 /* sizeof(Guid) */, "header", args);
+            int metadataHeaderLength = sizeof(UInt32) /* totalLength */ + sizeof(UInt32) /* status */ +
+                           16;
+            BufferProvider.DisposableBuffer header = this.BufferProvider.GetBuffer(metadataHeaderLength);
+            await this.ReadPayloadAsync(header.Buffer.Array,
+                metadataHeaderLength /* sizeof(Guid) */, "header", args);
 
-            UInt32 totalLength = BitConverter.ToUInt32(header, 0);
+            UInt32 totalLength = BitConverter.ToUInt32(header.Buffer.Array, 0);
             if (totalLength > Connection.ResponseLengthByteLimit)
             {
+                header.Dispose();
                 DefaultTrace.TraceCritical("RNTBD header length says {0} but expected at most {1} bytes. Connection: {2}",
                     totalLength, Connection.ResponseLengthByteLimit, this);
                 throw TransportExceptions.GetInternalServerErrorException(
@@ -314,21 +337,22 @@ namespace Microsoft.Azure.Documents.Rntbd
                         totalLength, this));
             }
 
-            if (totalLength < header.Length)
+            if (totalLength < metadataHeaderLength)
             {
                 DefaultTrace.TraceCritical(
                     "Invalid RNTBD header length {0} bytes. Expected at least {1} bytes. Connection: {2}",
-                    totalLength, header.Length, this);
+                    totalLength, metadataHeaderLength, this);
                 throw TransportExceptions.GetInternalServerErrorException(
                     this.serverUri,
                     string.Format(
                         CultureInfo.CurrentUICulture,
                         RMResources.ServerResponseInvalidHeaderLengthError,
-                        header.Length, totalLength, this));
+                        metadataHeaderLength, totalLength, this));
             }
 
-            int metadataLength = (int) totalLength - header.Length;
-            byte[] metadata = await this.ReadPayloadAsync(metadataLength, "metadata", args);
+            int metadataLength = (int)totalLength - metadataHeaderLength;
+            BufferProvider.DisposableBuffer metadata = this.BufferProvider.GetBuffer(metadataLength);
+            await this.ReadPayloadAsync(metadata.Buffer.Array, metadataLength, "metadata", args);
             return new ResponseMetadata(header, metadata);
         }
 
@@ -339,10 +363,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.ThrowIfDisposed();
 
             Trace.CorrelationManager.ActivityId = args.ActivityId;
-            byte[] bodyLengthHeader = await this.ReadPayloadAsync(sizeof(uint),
+            using BufferProvider.DisposableBuffer bodyLengthHeader = this.BufferProvider.GetBuffer(sizeof(uint));
+            await this.ReadPayloadAsync(bodyLengthHeader.Buffer.Array, sizeof(uint),
                 "body length header", args);
 
-            uint length = BitConverter.ToUInt32(bodyLengthHeader, 0);
+            uint length = BitConverter.ToUInt32(bodyLengthHeader.Buffer.Array, 0);
             // This check can also validate "length" against the expected total
             // response size.
             if (length > Connection.ResponseLengthByteLimit)
@@ -355,7 +380,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                         RMResources.ServerResponseBodyTooLargeError,
                         length, this));
             }
-            byte[] body = await this.ReadPayloadAsync((int) length, "body", args);
+
+            byte[] body = new byte[length];
+            await this.ReadPayloadAsync(body, (int)length, "body", args);
             return body;
         }
 
@@ -620,12 +647,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        private async Task<byte[]> ReadPayloadAsync(
+        private async Task ReadPayloadAsync(
+            byte[] payload,
             int length, string type, ChannelCommonArguments args)
         {
             Debug.Assert(length > 0);
             Debug.Assert(length <= Connection.ResponseLengthByteLimit);
-            byte[] payload = new byte[length];
             int bytesRead = 0;
             while (bytesRead < length)
             {
@@ -661,8 +688,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 bytesRead += read;
             }
             Debug.Assert(bytesRead == length);
-            Debug.Assert(length == payload.Length);
-            return payload;
+            Debug.Assert(length <= payload.Length);
         }
 
         private void SnapshotConnectionTimestamps(

@@ -113,12 +113,15 @@ namespace Microsoft.Azure.Documents
                 this.idleTimeout = RntbdConnection.DefaultIdleConnectionTimeout;
             }
 
+            this.BufferProvider = new BufferProvider();
             this.serverVersion = null;
             this.opened = DateTime.UtcNow;
             this.lastUsed = opened;
             this.userAgent = userAgent ?? new UserAgentContainer();
             this.timerPool = pool;
         }
+
+        protected BufferProvider BufferProvider { get; }
 
         public string PoolKey
         {
@@ -309,7 +312,7 @@ namespace Microsoft.Azure.Documents
             this.targetPhysicalAddress = physicalAddress;
 
             // build the request byte payload
-            byte[] requestPayload;
+            BufferProvider.DisposableBuffer requestPayload = default;
             int headerAndMetadataSize = 0;
             int bodySize = 0;
             try
@@ -318,6 +321,7 @@ namespace Microsoft.Azure.Documents
             }
             catch (Exception ex)
             {
+                requestPayload.Dispose();
                 DocumentClientException clientException = ex as DocumentClientException;
                 if (clientException != null)
                 {
@@ -333,159 +337,162 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            // Optimized version of Task.Delay for timeout scenarios
-            PooledTimer delayTaskTimer = this.timerPool.GetPooledTimer((int)this.requestTimeoutInSeconds);
-
-            //Starts the timer which returns a Task that you await on
-            Task delayTaskRequest = delayTaskTimer.StartTimerAsync();
-
-            DateTimeOffset requestStartTime = DateTimeOffset.Now;
-
-            Task[] awaitTasks = new Task[2];
-            awaitTasks[0] = delayTaskRequest;
-
-            // Any cancellation from here needs to become RequestTimeoutException or GoneException.
-            // For read requests, we throw GoneException to avoid transient timeouts due to BE down.
-            // For other requests, we throw RequestTimeoutException.
-            // Wrap any other exception that isn't ours (notably any SocketException or graceful connection closure) into 
-            // a ServiceUnavailableException. If the server returns a malformed response, then make an 
-            // InternalServerErrorException.
-            awaitTasks[1] = this.SendRequestAsyncInternal(requestPayload,
-                activityId);
-            Task completedTask = await Task.WhenAny(awaitTasks);
-            if (completedTask == awaitTasks[0])
+            using (requestPayload)
             {
-                DateTimeOffset requestEndTime = DateTimeOffset.Now;
+                // Optimized version of Task.Delay for timeout scenarios
+                PooledTimer delayTaskTimer = this.timerPool.GetPooledTimer((int)this.requestTimeoutInSeconds);
 
-                CleanupWorkTask(awaitTasks[1], activityId, requestStartTime);
-                DefaultTrace.TraceError("Throwing RequestTimeoutException while awaiting request send. Task start time {0}. Task end time {1}. Request message size: {2}", requestStartTime, requestEndTime, requestPayload.Length);
-                if (!awaitTasks[0].IsFaulted)
+                //Starts the timer which returns a Task that you await on
+                Task delayTaskRequest = delayTaskTimer.StartTimerAsync();
+
+                DateTimeOffset requestStartTime = DateTimeOffset.Now;
+
+                Task[] awaitTasks = new Task[2];
+                awaitTasks[0] = delayTaskRequest;
+
+                // Any cancellation from here needs to become RequestTimeoutException or GoneException.
+                // For read requests, we throw GoneException to avoid transient timeouts due to BE down.
+                // For other requests, we throw RequestTimeoutException.
+                // Wrap any other exception that isn't ours (notably any SocketException or graceful connection closure) into 
+                // a ServiceUnavailableException. If the server returns a malformed response, then make an 
+                // InternalServerErrorException.
+                awaitTasks[1] = this.SendRequestAsyncInternal(requestPayload.Buffer,
+                    activityId);
+                Task completedTask = await Task.WhenAny(awaitTasks);
+                if (completedTask == awaitTasks[0])
                 {
-                    if (request.IsReadOnlyRequest)
+                    DateTimeOffset requestEndTime = DateTimeOffset.Now;
+
+                    CleanupWorkTask(awaitTasks[1], activityId, requestStartTime);
+                    DefaultTrace.TraceError("Throwing RequestTimeoutException while awaiting request send. Task start time {0}. Task end time {1}. Request message size: {2}", requestStartTime, requestEndTime, requestPayload.Buffer.Count);
+                    if (!awaitTasks[0].IsFaulted)
                     {
-                        DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
-                        throw RntbdConnection.GetGoneException(physicalAddress, activityId);
+                        if (request.IsReadOnlyRequest)
+                        {
+                            DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
+                            throw RntbdConnection.GetGoneException(physicalAddress, activityId);
+                        }
+                        else
+                        {
+                            throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId);
+                        }
                     }
                     else
                     {
-                        throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId);
+                        if (request.IsReadOnlyRequest)
+                        {
+                            DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
+                            throw RntbdConnection.GetGoneException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        }
+                        else
+                        {
+                            throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        }
                     }
                 }
                 else
                 {
-                    if (request.IsReadOnlyRequest)
+                    if (completedTask.IsFaulted)
                     {
-                        DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
-                        throw RntbdConnection.GetGoneException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        // Cancels the timer as it's no longer needed
+                        delayTaskTimer.CancelTimer();
+
+                        if (completedTask.Exception.InnerException is DocumentClientException)
+                        {
+                            ((DocumentClientException)completedTask.Exception.InnerException)
+                                .Headers.Set(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+                            await completedTask;
+                        }
+                        else
+                        {
+                            throw RntbdConnection.GetServiceUnavailableException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        }
+                    }
+                }
+
+                DateTimeOffset requestSendDoneTime = DateTimeOffset.Now;
+
+                RntbdResponseState state = new RntbdResponseState();
+                Task<StoreResponse> responseTask = this.GetResponseAsync(activityId, request.IsReadOnlyRequest, state);
+                awaitTasks[1] = responseTask;
+
+                completedTask = await Task.WhenAny(awaitTasks);
+                if (completedTask == awaitTasks[0])
+                {
+                    DateTimeOffset requestEndTime = DateTimeOffset.Now;
+                    CleanupWorkTask(awaitTasks[1], activityId, requestStartTime);
+
+                    DefaultTrace.TraceError("Throwing RequestTimeoutException while awaiting response receive. " +
+                                            "Task start time {0}. Request Send End time: {1}. Request header size: {2}. Request body size: {3}. Request size: {4}. Task end time {5}. State {6}.",
+                        requestStartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+                        requestSendDoneTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+                        headerAndMetadataSize,
+                        bodySize,
+                        requestPayload.Buffer.Count,
+                        requestEndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture),
+                        state.ToString());
+
+                    if (!awaitTasks[0].IsFaulted)
+                    {
+                        if (request.IsReadOnlyRequest)
+                        {
+                            DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
+                            throw RntbdConnection.GetGoneException(physicalAddress, activityId);
+                        }
+                        else
+                        {
+                            throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId);
+                        }
                     }
                     else
                     {
-                        throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        if (request.IsReadOnlyRequest)
+                        {
+                            DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
+                            throw RntbdConnection.GetGoneException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        }
+                        else
+                        {
+                            throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        }
                     }
                 }
-            }
-            else
-            {
-                if (completedTask.IsFaulted)
+                else
                 {
                     // Cancels the timer as it's no longer needed
                     delayTaskTimer.CancelTimer();
 
-                    if (completedTask.Exception.InnerException is DocumentClientException)
+                    if (completedTask.IsFaulted)
                     {
-                        ((DocumentClientException)completedTask.Exception.InnerException)
-                            .Headers.Set(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
-                        await completedTask;
-                    }
-                    else
-                    {
-                        throw RntbdConnection.GetServiceUnavailableException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        if (completedTask.Exception.InnerException is DocumentClientException)
+                        {
+                            ((DocumentClientException)completedTask.Exception.InnerException)
+                                .Headers.Set(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+                            await completedTask;
+                        }
+                        else
+                        {
+
+                            throw RntbdConnection.GetServiceUnavailableException(physicalAddress, activityId, completedTask.Exception.InnerException);
+                        }
                     }
                 }
-            }
 
-            DateTimeOffset requestSendDoneTime = DateTimeOffset.Now;
-
-            RntbdResponseState state = new RntbdResponseState();
-            Task<StoreResponse> responseTask = this.GetResponseAsync(activityId, request.IsReadOnlyRequest, state);
-            awaitTasks[1] = responseTask;
-
-            completedTask = await Task.WhenAny(awaitTasks);
-            if (completedTask == awaitTasks[0])
-            {
-                DateTimeOffset requestEndTime = DateTimeOffset.Now;
-                CleanupWorkTask(awaitTasks[1], activityId, requestStartTime);
-
-                DefaultTrace.TraceError("Throwing RequestTimeoutException while awaiting response receive. " +
-                                        "Task start time {0}. Request Send End time: {1}. Request header size: {2}. Request body size: {3}. Request size: {4}. Task end time {5}. State {6}.",
-                    requestStartTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture), 
-                    requestSendDoneTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture), 
-                    headerAndMetadataSize, 
-                    bodySize, 
-                    requestPayload.Length,
-                    requestEndTime.ToString("o", System.Globalization.CultureInfo.InvariantCulture), 
-                    state.ToString());
-
-                if (!awaitTasks[0].IsFaulted)
+                // Note that if we reach this point, we already awaited responseTask successfully, so we can examine its Result safely
+                // (it will not incur a blocking wait)
+                if (responseTask.Result.Status >= 200
+                    && responseTask.Result.Status != 410 // 410 or Gone implies that the request was not sent to right replica, in such case, do not reuse 
+                    && responseTask.Result.Status != 401 // 401 or 403 implies that the connection was never authenticated, and as a result, BE could have terminated the connection, do not reuse
+                    && responseTask.Result.Status != 403)
                 {
-                    if (request.IsReadOnlyRequest)
-                    {
-                        DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
-                        throw RntbdConnection.GetGoneException(physicalAddress, activityId);
-                    }
-                    else
-                    {
-                        throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId);
-                    }
+                    // for everything else, the connection is safe for reuse
+                    this.hasIssuedSuccessfulRequest = true;
                 }
-                else
-                {
-                    if (request.IsReadOnlyRequest)
-                    {
-                        DefaultTrace.TraceVerbose("Converting RequestTimeout to GoneException for ReadOnlyRequest");
-                        throw RntbdConnection.GetGoneException(physicalAddress, activityId, completedTask.Exception.InnerException);
-                    }
-                    else
-                    {
-                        throw RntbdConnection.GetRequestTimeoutException(physicalAddress, activityId, completedTask.Exception.InnerException);
-                    }
-                }
+
+                this.lastUsed = DateTime.UtcNow;
+
+                return responseTask.Result;
             }
-            else
-            {
-                // Cancels the timer as it's no longer needed
-                delayTaskTimer.CancelTimer();
-
-                if (completedTask.IsFaulted)
-                {
-                    if (completedTask.Exception.InnerException is DocumentClientException)
-                    {
-                        ((DocumentClientException)completedTask.Exception.InnerException)
-                            .Headers.Set(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
-                        await completedTask;
-                    }
-                    else
-                    {
-
-                        throw RntbdConnection.GetServiceUnavailableException(physicalAddress, activityId, completedTask.Exception.InnerException);
-                    }
-                }
-            }
-
-            // Note that if we reach this point, we already awaited responseTask successfully, so we can examine its Result safely
-            // (it will not incur a blocking wait)
-            if(responseTask.Result.Status >= 200 
-                && responseTask.Result.Status != 410 // 410 or Gone implies that the request was not sent to right replica, in such case, do not reuse 
-                && responseTask.Result.Status != 401 // 401 or 403 implies that the connection was never authenticated, and as a result, BE could have terminated the connection, do not reuse
-                && responseTask.Result.Status != 403)
-            {
-                // for everything else, the connection is safe for reuse
-                this.hasIssuedSuccessfulRequest = true;
-            }
-
-            this.lastUsed = DateTime.UtcNow;
-
-            return responseTask.Result;
         }
 
         private void CleanupWorkTask(Task workTask, Guid activityId, DateTimeOffset requestStartTime)
@@ -653,65 +660,60 @@ namespace Microsoft.Azure.Documents
             StatusCodes status = (StatusCodes)BitConverter.ToUInt32(header, 4);
             byte[] responseActivityIdBytes = new byte[16];
             Buffer.BlockCopy(header, 8, responseActivityIdBytes, 0, 16);
+
             // Server should just be echoing back the ActivityId from the connection request, but retrieve it 
             // from the wire and use it from here on, to be absolutely certain we have the same ActivityId 
             // the server is using
             Guid responseActivityId = new Guid(responseActivityIdBytes);
+            RntbdConstants.ConnectionContextResponse response = null;
+            BytesDeserializer deserializer = new BytesDeserializer(metadata, metadata.Length);
+            response = new RntbdConstants.ConnectionContextResponse();
+            response.ParseFrom(ref deserializer);
 
-            using (MemoryStream readStream = new MemoryStream(metadata))
+            this.serverAgent = BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes);
+            this.serverVersion = BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes);
+
+            this.SetIdleTimers(response);
+
+            if ((UInt32)status < 200 || (UInt32)status >= 400)
             {
-                RntbdConstants.ConnectionContextResponse response = null;
-                using (BinaryReader reader = new BinaryReader(readStream))
+                byte[] errorResponse;
+                errorResponse = await this.ReadBody(true, responseActivityId, state);
+
+                using (MemoryStream errorReadStream = new MemoryStream(errorResponse))
                 {
-                    response = new RntbdConstants.ConnectionContextResponse();
-                    response.ParseFrom(reader);
-                }
+                    Error error = Resource.LoadFrom<Error>(errorReadStream);
 
-                this.serverAgent = BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes);
-                this.serverVersion = BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes);
+                    Trace.CorrelationManager.ActivityId = responseActivityId;
+                    DocumentClientException exception = new DocumentClientException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            error.ToString()),
+                        null,
+                        (HttpStatusCode)status,
+                        this.targetPhysicalAddress);
 
-                this.SetIdleTimers(response);
-
-                if ((UInt32)status < 200 || (UInt32)status >= 400)
-                {
-                    byte[] errorResponse;
-                    errorResponse = await this.ReadBody(true, responseActivityId, state);
-
-                    using (MemoryStream errorReadStream = new MemoryStream(errorResponse))
+                    if (response.clientVersion.isPresent)
                     {
-                        Error error = Resource.LoadFrom<Error>(errorReadStream);
-
-                        Trace.CorrelationManager.ActivityId = responseActivityId;
-                        DocumentClientException exception = new DocumentClientException(
-                            string.Format(CultureInfo.CurrentUICulture,
-                                RMResources.ExceptionMessage,
-                                error.ToString()),
-                            null,
-                            (HttpStatusCode)status,
-                            this.targetPhysicalAddress);
-
-                        if (response.clientVersion.isPresent)
-                        {
-                            exception.Headers.Add("RequiredClientVersion", BytesSerializer.GetStringFromBytes(response.clientVersion.value.valueBytes));
-                        }
-
-                        if (response.protocolVersion.isPresent)
-                        {
-                            exception.Headers.Add("RequiredProtocolVersion", response.protocolVersion.value.valueULong.ToString());
-                        }
-
-                        if (response.serverAgent.isPresent)
-                        {
-                            exception.Headers.Add("ServerAgent", BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes));
-                        }
-
-                        if (response.serverVersion.isPresent)
-                        {
-                            exception.Headers.Add(HttpConstants.HttpHeaders.ServerVersion, BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes));
-                        }
-
-                        throw exception;
+                        exception.Headers.Add("RequiredClientVersion", BytesSerializer.GetStringFromBytes(response.clientVersion.value.valueBytes));
                     }
+
+                    if (response.protocolVersion.isPresent)
+                    {
+                        exception.Headers.Add("RequiredProtocolVersion", response.protocolVersion.value.valueULong.ToString());
+                    }
+
+                    if (response.serverAgent.isPresent)
+                    {
+                        exception.Headers.Add("ServerAgent", BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes));
+                    }
+
+                    if (response.serverVersion.isPresent)
+                    {
+                        exception.Headers.Add(HttpConstants.HttpHeaders.ServerVersion, BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes));
+                    }
+
+                    throw exception;
                 }
             }
         }
@@ -742,13 +744,13 @@ namespace Microsoft.Azure.Documents
 
         #region Send Request
         private async Task SendRequestAsyncInternal(
-            byte[] requestPayload,
+            ArraySegment<byte> requestPayload,
             Guid activityId)
         {
             // Beyond this point, any IO exception has to be mapped to an indication that the request may have been sent (in particular, no GoneException)
             try
             {
-                await this.stream.WriteAsync(requestPayload, 0, requestPayload.Length);
+                await this.stream.WriteAsync(requestPayload.Array, requestPayload.Offset, requestPayload.Count);
             }
             catch (SocketException ex)
             {
@@ -775,7 +777,7 @@ namespace Microsoft.Azure.Documents
         /// if there is a bug in rntbd token serialization 
         /// </exception>
         /// <returns> byte array that is the request body to be sent over wire </returns>
-        protected virtual byte[] BuildRequest(
+        protected virtual BufferProvider.DisposableBuffer BuildRequest(
             DocumentServiceRequest request,
             string replicaPath,
             ResourceOperation resourceOperation,
@@ -784,7 +786,7 @@ namespace Microsoft.Azure.Documents
             Guid activityId)
         {
             return Rntbd.TransportSerialization.BuildRequest(request, replicaPath, resourceOperation,
-                activityId, out headerAndMetadataSize, out bodySize);
+                activityId, this.BufferProvider, out headerAndMetadataSize, out bodySize);
         }
         #endregion
 
@@ -811,14 +813,10 @@ namespace Microsoft.Azure.Documents
             Guid responseActivityId = new Guid(responseActivityIdBytes);
 
             RntbdConstants.Response response = null;
-            using (MemoryStream readStream = new MemoryStream(metadata))
-            {
-                using (BinaryReader reader = new BinaryReader(readStream, Encoding.UTF8))
-                {
-                    response = new RntbdConstants.Response();
-                    response.ParseFrom(reader);
-                }
-            }
+
+            BytesDeserializer deserializer = new BytesDeserializer(metadata, metadata.Length);
+            response = new RntbdConstants.Response();
+            response.ParseFrom(ref deserializer);
 
             MemoryStream bodyStream = null;
             if (response.payloadPresent.value.valueByte != (byte)0x00)

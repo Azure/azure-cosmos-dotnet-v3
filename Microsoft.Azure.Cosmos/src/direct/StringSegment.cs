@@ -108,6 +108,12 @@ namespace Microsoft.Azure.Documents
 
             return index;
         }
+
+        public StringSegment Trim(char[] trimChars)
+        {
+            return this.TrimStart(trimChars).TrimEnd(trimChars);
+        }
+
         public StringSegment TrimStart(char[] trimChars)
         {
             if (this.Length == 0)

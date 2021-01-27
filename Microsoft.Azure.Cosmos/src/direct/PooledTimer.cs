@@ -30,9 +30,15 @@ namespace Microsoft.Azure.Documents
         private readonly TaskCompletionSource<object> tcs;
         private readonly Object memberLock;
         private bool timerStarted = false;
+
         public PooledTimer(int timeout, TimerPool timerPool)
+            : this(TimeSpan.FromSeconds(timeout), timerPool)
         {
-            this.timeoutPeriod = TimeSpan.FromSeconds(timeout);
+        }
+
+        public PooledTimer(TimeSpan timeout, TimerPool timerPool)
+        {
+            this.timeoutPeriod = timeout;
             this.tcs = new TaskCompletionSource<object>();
             this.timerPool = timerPool;
             this.memberLock = new Object();
@@ -53,6 +59,14 @@ namespace Microsoft.Azure.Documents
         {
             get { return timeoutPeriod; }
             set { timeoutPeriod = value; }
+        }
+
+        /// <summary>
+        /// Min supported Timeout for any timer.
+        /// </summary>
+        public TimeSpan MinSupportedTimeout
+        {
+            get { return this.timerPool.MinSupportedTimeout; }
         }
 
         /// <summary>

@@ -21,11 +21,14 @@ namespace Microsoft.Azure.Documents
         public const string Operations_GetFederationConfigurations = "getfederationconfigurations";
         public const string Operations_GetConfiguration = "getconfiguration";
         public const string Operations_GetDatabaseAccountConfigurations = "getdatabaseaccountconfigurations";
+        public const string Operations_GetStorageServiceConfigurations = "getstorageserviceconfigurations";
         public const string Operations_GetStorageAccountKey = "getstorageaccountkey";
+        public const string Operations_GetStorageAccountSas = "getstorageaccountsas";
         public const string Operations_GetUnwrappedDek = "getunwrappeddek";
         public const string Operations_ReadReplicaFromMasterPartition = "readreplicafrommasterpartition";
         public const string Operations_ReadReplicaFromServerPartition = "readreplicafromserverpartition";
         public const string Operations_MasterInitiatedProgressCoordination = "masterinitiatedprogresscoordination";
+        public const string Operations_GetAadGroups = "getaadgroups";
 
         //databases namespace off of root-------------------
 
@@ -100,7 +103,7 @@ namespace Microsoft.Azure.Documents
         // /dbs/{id}/colls/{id}/functions/{id}
         public const string UserDefinedFunctionId = "udfId";
         public const string UserDefinedFunction_Root = UserDefinedFunctions_Root + "{" + UserDefinedFunctionId + "}";
-        
+
         // /dbs/{id}/colls/{id}/conflicts
         public const string ConflictsPathSegment = "conflicts";
         public const string Conflicts_Root = Collection_Root + "/" + ConflictsPathSegment + "/";
@@ -116,6 +119,14 @@ namespace Microsoft.Azure.Documents
         // /dbs/{id}/colls/{id}/partitionedsystemdocuments/{id}
         public const string PartitionedSystemDocumentId = "partitionedSystemDocumentId";
         public const string PartitionedSystemDocument_Root = PartitionedSystemDocuments_Root + "{" + PartitionedSystemDocumentId + "}";
+
+        // /dbs/{id}/colls/{id}/systemdocuments
+        public const string SystemDocumentsPathSegment = "systemdocuments";
+        public const string SystemDocuments_Root = Collection_Root + "/" + SystemDocumentsPathSegment + "/";
+
+        // /dbs/{id}/colls/{id}/systemdocuments/{id}
+        public const string SystemDocumentId = "systemDocumentId";
+        public const string SystemDocument_Root = SystemDocuments_Root + "{" + SystemDocumentId + "}";
 
         // /dbs/{id}/colls/{id}/docs
         public const string DocumentsPathSegment = "docs";
@@ -240,7 +251,7 @@ namespace Microsoft.Azure.Documents
         // partition key delete
         public const string PartitionKeyDeletePathSegment = "partitionkeydelete";
         public const string PartitionKeyDelete = Collection_Root + "/" + OperationsPathSegment + "/" + PartitionKeyDeletePathSegment;
-        
+
         // /roleAssignments
         public const string RoleAssignmentsPathSegment = "roleassignments";
         public const string RoleAssignments_Root = Root + "/" + RoleAssignmentsPathSegment + "/";
@@ -256,5 +267,25 @@ namespace Microsoft.Azure.Documents
         // /roleDefinitions/{id}
         public const string RoleDefinitionId = "roledefinitionId";
         public const string RoleDefinition_Root = RoleDefinitions_Root + "{" + RoleDefinitionId + "}";
+
+        // /dbs/{id}/colls/{id}/operations/collectiontruncate
+        public const string CollectionTruncatePathsegment = "collectiontruncate";
+        public const string CollectionTruncate = Collection_Root + "/" + OperationsPathSegment + "/" + CollectionTruncatePathsegment;
+
+        // /transactions
+        public const string TransactionsPathSegment = "transaction";
+        public const string Transactions_Root = Root + "/" + TransactionsPathSegment + "/";
+
+        // /transactions/{id}
+        public const string TransactionId = "transactionId";
+        public const string Transaction_Root = Transactions_Root + "{" + TransactionId + "}";
+
+        // /authpolicyelements
+        public const string AuthPolicyElementsPathSegment = "authpolicyelements";
+        public const string AuthPolicyElements_Root = Root + "/" + AuthPolicyElementsPathSegment + "/";
+
+        // /authpolicyelements/{id}
+        public const string AuthPolicyElementId = "authpolicyelementId";
+        public const string AuthPolicyElement_Root = AuthPolicyElements_Root + "{" + AuthPolicyElementId + "}";
     }
 }

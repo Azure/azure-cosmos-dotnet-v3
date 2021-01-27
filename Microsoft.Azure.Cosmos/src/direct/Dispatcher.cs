@@ -219,18 +219,32 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        public sealed class PrepareCallResult
+        public sealed class PrepareCallResult : IDisposable
         {
-            public PrepareCallResult(uint requestId, Uri uri, byte[] serializedRequest)
+            private bool disposed = false;
+            private BufferProvider.DisposableBuffer disposableBuffer;
+
+            public PrepareCallResult(uint requestId, Uri uri, BufferProvider.DisposableBuffer serializedRequest)
             {
                 this.RequestId = requestId;
                 this.Uri = uri;
-                this.SerializedRequest = serializedRequest;
+                this.disposableBuffer = serializedRequest;
             }
 
             public uint RequestId { get; private set; }
-            public byte[] SerializedRequest { get; set; }
+
+            public ArraySegment<byte> SerializedRequest => this.disposableBuffer.Buffer;
             public Uri Uri { get; private set; }
+
+            /// <inheritdoc />
+            public void Dispose()
+            {
+                if (!this.disposed)
+                {
+                    this.disposableBuffer.Dispose();
+                    this.disposed = true;
+                }
+            }
         }
 
         // PrepareCall assigns a request ID to the request, serializes it, and
@@ -252,15 +266,15 @@ namespace Microsoft.Azure.Documents.Rntbd
                     requestId.ToString(CultureInfo.InvariantCulture));
 
                 int headerSize, bodySize;
-                byte[] serializedRequest = TransportSerialization.BuildRequest(
+                BufferProvider.DisposableBuffer serializedRequest = TransportSerialization.BuildRequest(
                     request,
                     physicalAddress.PathAndQuery.TrimEnd(TransportSerialization.UrlTrim),
                     resourceOperation,
                     activityId,
+                    this.connection.BufferProvider,
                     out headerSize, out bodySize);
 
-                return new PrepareCallResult(requestId, physicalAddress,
-                    serializedRequest);
+                return new PrepareCallResult(requestId, physicalAddress, serializedRequest);
             }
         }
 
@@ -296,7 +310,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                         await this.connection.WriteRequestAsync(
                             args.CommonArguments,
                             args.PreparedCall.SerializedRequest);
-                        args.PreparedCall.SerializedRequest = null;
                     }
                     catch (Exception e)
                     {
@@ -589,86 +602,80 @@ namespace Microsoft.Azure.Documents.Rntbd
             byte[] contextMessage = TransportSerialization.BuildContextRequest(
                 args.CommonArguments.ActivityId, this.userAgent, args.CallerId);
 
-            await this.connection.WriteRequestAsync(args.CommonArguments, contextMessage);
+            await this.connection.WriteRequestAsync(args.CommonArguments, new ArraySegment<byte>(contextMessage, 0, contextMessage.Length));
 
             // Read the response.
-            Connection.ResponseMetadata responseMd =
+            using Connection.ResponseMetadata responseMd =
                 await this.connection.ReadResponseMetadataAsync(args.CommonArguments);
 
             // Full header and metadata are read now. Parse out more fields and handle them.
-            StatusCodes status = (StatusCodes) BitConverter.ToUInt32(responseMd.Header, 4);
+            StatusCodes status = (StatusCodes) BitConverter.ToUInt32(responseMd.Header.Array, 4);
             byte[] responseActivityIdBytes = new byte[16];
-            Buffer.BlockCopy(responseMd.Header, 8, responseActivityIdBytes, 0, 16);
+            Buffer.BlockCopy(responseMd.Header.Array, 8, responseActivityIdBytes, 0, 16);
             // Server should just be echoing back the ActivityId from the connection request, but retrieve it 
             // from the wire and use it from here on, to be absolutely certain we have the same ActivityId 
             // the server is using
             Guid activityId = new Guid(responseActivityIdBytes);
             Trace.CorrelationManager.ActivityId = activityId;
 
-            using (MemoryStream readStream = new MemoryStream(responseMd.Metadata))
+            BytesDeserializer deserializer = new BytesDeserializer(responseMd.Metadata.Array, responseMd.Metadata.Count);
+            RntbdConstants.ConnectionContextResponse response = new RntbdConstants.ConnectionContextResponse();
+            response.ParseFrom(ref deserializer);
+            string serverAgent = BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes);
+            string serverVersion = BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes);
+            Debug.Assert(this.serverProperties == null);
+            this.serverProperties = new ServerProperties(serverAgent, serverVersion);
+
+            if ((UInt32)status < 200 || (UInt32)status >= 400)
             {
-                RntbdConstants.ConnectionContextResponse response = null;
-                using (BinaryReader reader = new BinaryReader(readStream))
+                byte[] errorResponse;
+                Debug.Assert(args.CommonArguments.UserPayload == false);
+                errorResponse = await this.connection.ReadResponseBodyAsync(
+                    new ChannelCommonArguments(activityId,
+                        TransportErrorCode.TransportNegotiationTimeout,
+                        args.CommonArguments.UserPayload));
+
+                using (MemoryStream errorReadStream = new MemoryStream(errorResponse))
                 {
-                    response = new RntbdConstants.ConnectionContextResponse();
-                    response.ParseFrom(reader);
-                }
+                    Error error = Resource.LoadFrom<Error>(errorReadStream);
 
-                string serverAgent = BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes);
-                string serverVersion = BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes);
-                Debug.Assert(this.serverProperties == null);
-                this.serverProperties = new ServerProperties(serverAgent, serverVersion);
+                    DocumentClientException exception = new DocumentClientException(
+                        string.Format(CultureInfo.CurrentUICulture,
+                            RMResources.ExceptionMessage,
+                            error.ToString()),
+                        null,
+                        (HttpStatusCode)status,
+                        this.connection.ServerUri);
 
-                if ((UInt32) status < 200 || (UInt32) status >= 400)
-                {
-                    byte[] errorResponse;
-                    Debug.Assert(args.CommonArguments.UserPayload == false);
-                    errorResponse = await this.connection.ReadResponseBodyAsync(
-                        new ChannelCommonArguments(activityId,
-                            TransportErrorCode.TransportNegotiationTimeout,
-                            args.CommonArguments.UserPayload));
-
-                    using (MemoryStream errorReadStream = new MemoryStream(errorResponse))
+                    if (response.clientVersion.isPresent)
                     {
-                        Error error = Resource.LoadFrom<Error>(errorReadStream);
-
-                        DocumentClientException exception = new DocumentClientException(
-                            string.Format(CultureInfo.CurrentUICulture,
-                                RMResources.ExceptionMessage,
-                                error.ToString()),
-                            null,
-                            (HttpStatusCode) status,
-                            this.connection.ServerUri);
-
-                        if (response.clientVersion.isPresent)
-                        {
-                            exception.Headers.Add("RequiredClientVersion",
-                                BytesSerializer.GetStringFromBytes(response.clientVersion.value.valueBytes));
-                        }
-
-                        if (response.protocolVersion.isPresent)
-                        {
-                            exception.Headers.Add("RequiredProtocolVersion",
-                                response.protocolVersion.value.valueULong.ToString());
-                        }
-
-                        if (response.serverAgent.isPresent)
-                        {
-                            exception.Headers.Add("ServerAgent",
-                                BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes));
-                        }
-
-                        if (response.serverVersion.isPresent)
-                        {
-                            exception.Headers.Add(
-                                HttpConstants.HttpHeaders.ServerVersion,
-                                BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes));
-                        }
-
-                        throw exception;
+                        exception.Headers.Add("RequiredClientVersion",
+                            BytesSerializer.GetStringFromBytes(response.clientVersion.value.valueBytes));
                     }
+
+                    if (response.protocolVersion.isPresent)
+                    {
+                        exception.Headers.Add("RequiredProtocolVersion",
+                            response.protocolVersion.value.valueULong.ToString());
+                    }
+
+                    if (response.serverAgent.isPresent)
+                    {
+                        exception.Headers.Add("ServerAgent",
+                            BytesSerializer.GetStringFromBytes(response.serverAgent.value.valueBytes));
+                    }
+
+                    if (response.serverVersion.isPresent)
+                    {
+                        exception.Headers.Add(
+                            HttpConstants.HttpHeaders.ServerVersion,
+                            BytesSerializer.GetStringFromBytes(response.serverVersion.value.valueBytes));
+                    }
+
+                    throw exception;
                 }
             }
+
             args.OpenTimeline.RecordRntbdHandshakeFinishTime();
         }
 
@@ -678,26 +685,23 @@ namespace Microsoft.Azure.Documents.Rntbd
             ChannelCommonArguments args = new ChannelCommonArguments(
                 Guid.Empty, TransportErrorCode.ReceiveTimeout, true);
             ResponsePool.EntityOwner response = default;
+            Connection.ResponseMetadata responseMd = null;
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     args.ActivityId = Guid.Empty;
                     response = ResponsePool.Instance.Get();
-                    Connection.ResponseMetadata responseMd =
-                        await this.connection.ReadResponseMetadataAsync(args);
-                    byte[] metadata = responseMd.Metadata;
+                    responseMd = await this.connection.ReadResponseMetadataAsync(args);
+                    ArraySegment<byte> metadata = responseMd.Metadata;
 
                     TransportSerialization.RntbdHeader header =
-                        TransportSerialization.DecodeRntbdHeader(responseMd.Header);
+                        TransportSerialization.DecodeRntbdHeader(responseMd.Header.Array);
 
                     args.ActivityId = header.ActivityId;
-                    using (MemoryStream readStream = new MemoryStream(metadata))
-                    using (BinaryReader reader = new BinaryReader(readStream, Encoding.UTF8))
-                    {
-                        Debug.Assert(response.Entity != null);
-                        response.Entity.ParseFrom(reader);
-                    }
+                    BytesDeserializer deserializer = new BytesDeserializer(metadata.Array, metadata.Count);
+                    Debug.Assert(response.Entity != null);
+                    response.Entity.ParseFrom(ref deserializer);
 
                     MemoryStream bodyStream = null;
                     if (response.Entity.payloadPresent.value.valueByte != (byte) 0x00)
@@ -706,23 +710,27 @@ namespace Microsoft.Azure.Documents.Rntbd
                         bodyStream = StreamExtension.CreateExportableMemoryStream(body);
                     }
 
-                    this.DispatchRntbdResponse(response, header, bodyStream);
+                    this.DispatchRntbdResponse(responseMd, response, header, bodyStream);
+                    responseMd = null;
                 }
                 this.DispatchCancellation();
             }
             catch (OperationCanceledException)
             {
                 response.Dispose();
+                responseMd?.Dispose();
                 this.DispatchCancellation();
             }
             catch (ObjectDisposedException)
             {
                 response.Dispose();
+                responseMd?.Dispose();
                 this.DispatchCancellation();
             }
             catch (Exception e)
             {
                 response.Dispose();
+                responseMd?.Dispose();
                 this.DispatchChannelFailureException(e);
             }
 
@@ -749,6 +757,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         private void DispatchRntbdResponse(
+            Connection.ResponseMetadata responseMd,
             ResponsePool.EntityOwner rntbdResponse,
             TransportSerialization.RntbdHeader responseHeader,
             MemoryStream responseBody)
@@ -757,6 +766,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 (rntbdResponse.Entity.transportRequestID.GetTokenType() != RntbdTokenTypes.ULong))
             {
                 rntbdResponse.Dispose();
+                responseMd.Dispose();
                 throw TransportExceptions.GetInternalServerErrorException(
                     this.serverUri,
                     RMResources.ServerResponseTransportRequestIdMissingError);
@@ -767,10 +777,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 Debug.Assert(this.serverProperties != null);
                 Debug.Assert(this.serverProperties.Version != null);
-                call.SetResponse(rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
+                call.SetResponse(responseMd, rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
             }
             else
             {
+                responseMd.Dispose();
                 rntbdResponse.Dispose();
             }
         }
@@ -927,6 +938,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             public void SetResponse(
+                Connection.ResponseMetadata responseMd,
                 ResponsePool.EntityOwner rntbdResponse,
                 TransportSerialization.RntbdHeader responseHeader,
                 MemoryStream responseBody,
@@ -947,22 +959,25 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.RunAsynchronously(() =>
                     {
                         Trace.CorrelationManager.ActivityId = this.activityId;
-                        StoreResponse storeResponse = null;
                         try
                         {
-                            using (rntbdResponse)
-                            {
-                                storeResponse = TransportSerialization.MakeStoreResponse(
-                                    responseHeader.Status, responseHeader.ActivityId,
-                                    rntbdResponse.Entity, responseBody, serverVersion);
-                            }
+                            StoreResponse storeResponse = TransportSerialization.MakeStoreResponse(
+                                responseHeader.Status,
+                                responseHeader.ActivityId,
+                                rntbdResponse.Entity,
+                                responseBody,
+                                serverVersion);
+                            this.completion.SetResult(storeResponse);
                         }
                         catch (Exception e)
                         {
                             this.completion.SetException(e);
-                            return;
                         }
-                        this.completion.SetResult(storeResponse);
+                        finally
+                        {
+                            rntbdResponse.Dispose();
+                            responseMd.Dispose();
+                        }
                     });
             }
 

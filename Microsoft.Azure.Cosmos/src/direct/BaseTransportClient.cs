@@ -448,6 +448,49 @@ namespace Microsoft.Azure.Documents
         }
 #endregion
 
+#region SystemDocumentOperations Operations
+        internal Task<StoreResponse> ListSystemDocumentsAsync(Uri physicalAddress,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadSystemDocumentFeed,
+                request);
+        }
+
+        internal Task<StoreResponse> GetSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReadSystemDocument,
+                request);
+        }
+
+        internal Task<StoreResponse> CreateSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.CreateSystemDocument,
+                request);
+        }
+
+        internal Task<StoreResponse> ReplaceSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.ReplaceSystemDocument,
+                request);
+        }
+
+        internal Task<StoreResponse> DeleteSystemDocumentAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(
+                physicalAddress,
+                ResourceOperation.DeleteSystemDocument,
+                request);
+        }
+#endregion
+
 #region Conflict Operations
         public Task<StoreResponse> ListConflictsAsync(Uri physicalAddress,
             DocumentServiceRequest request)
