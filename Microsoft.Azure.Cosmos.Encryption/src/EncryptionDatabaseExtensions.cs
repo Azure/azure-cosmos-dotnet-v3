@@ -141,11 +141,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                newEncryptionKeyWrapMetadata.Name,
-                newEncryptionKeyWrapMetadata.Value,
+                clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
+                clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
                 encryptionKeyStoreProvider);
 
             byte[] unwrappedKey = keyEncryptionKey.DecryptEncryptionKey(clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+
+            keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
+                newEncryptionKeyWrapMetadata.Name,
+                newEncryptionKeyWrapMetadata.Value,
+                encryptionKeyStoreProvider);
 
             byte[] rewrappedKey = keyEncryptionKey.EncryptEncryptionKey(unwrappedKey);
 
