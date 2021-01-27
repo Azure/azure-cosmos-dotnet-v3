@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 CosmosDiagnosticsContext current = this.diagnosticsContext;
                 this.diagnosticsContext = CosmosDiagnosticsContext.Create(new RequestOptions());
+                current.GetOverallScope().Dispose();
                 return current;
             }
         }
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Query
             SqlQuerySpec querySpecForInit,
             QueryRequestOptions queryRequestOptions,
             string continuationToken,
-            PartitionKeyRangeIdentity partitionKeyRange,
+            FeedRange feedRange,
             bool isContinuationExpected,
             int pageSize,
             ITrace trace,
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 requestOptions: queryRequestOptions,
                 sqlQuerySpec: querySpecForInit,
                 continuationToken: continuationToken,
-                partitionKeyRange: partitionKeyRange,
+                feedRange: feedRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
                 queryPageDiagnostics: this.AddQueryPageDiagnostic,

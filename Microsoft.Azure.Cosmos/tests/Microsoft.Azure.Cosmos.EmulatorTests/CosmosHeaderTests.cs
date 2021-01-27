@@ -27,15 +27,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 database = await client.CreateDatabaseAsync(nameof(VerifyKnownHeaders) + Guid.NewGuid().ToString());
                 Container container = await database.CreateContainerAsync(
                 Guid.NewGuid().ToString(),
-                "/status");
+                "/pk");
 
                 ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
-                await container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
-                await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.status));
-                await container.UpsertItemAsync<ToDoActivity>(toDoActivity, new PartitionKey(toDoActivity.status));
+                await container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk));
+                await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk));
+                await container.UpsertItemAsync<ToDoActivity>(toDoActivity, new PartitionKey(toDoActivity.pk));
                 toDoActivity.cost = 8923498;
-                await container.ReplaceItemAsync<ToDoActivity>(toDoActivity, toDoActivity.id, new PartitionKey(toDoActivity.status));
-                await container.DeleteItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.status));
+                await container.ReplaceItemAsync<ToDoActivity>(toDoActivity, toDoActivity.id, new PartitionKey(toDoActivity.pk));
+                await container.DeleteItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk));
             }
             finally
             {

@@ -5,13 +5,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Security.Policy;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// This represents the core diagnostics object used in the SDK.
@@ -22,12 +18,13 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosDiagnosticsContextCore : CosmosDiagnosticsContext
     {
         private static readonly string DefaultUserAgentString;
+        internal static int Capacity = 5120;
         private readonly CosmosDiagnosticScope overallScope;
 
         /// <summary>
         /// Detailed view of all the operations.
         /// </summary>
-        private List<CosmosDiagnosticsInternal> ContextList { get; }
+        private BoundedList<CosmosDiagnosticsInternal> ContextList { get; }
 
         private int totalResponseCount = 0;
         private int failedResponseCount = 0;
@@ -53,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.UserAgent = userAgentString ?? throw new ArgumentNullException(nameof(userAgentString));
             this.OperationName = operationName ?? throw new ArgumentNullException(nameof(operationName));
             this.StartUtc = DateTime.UtcNow;
-            this.ContextList = new List<CosmosDiagnosticsInternal>();
+            this.ContextList = new BoundedList<CosmosDiagnosticsInternal>(Capacity);
             this.Diagnostics = new CosmosDiagnosticsCore(this);
             this.overallScope = new CosmosDiagnosticScope("Overall");
         }
@@ -105,14 +102,16 @@ namespace Microsoft.Azure.Cosmos
         {
             CosmosDiagnosticScope scope = new CosmosDiagnosticScope(name);
 
-            this.ContextList.Add(scope);
+            this.AddToContextList(scope);
+
             return scope;
         }
 
         internal override IDisposable CreateRequestHandlerScopeScope(RequestHandler requestHandler)
         {
             RequestHandlerScope requestHandlerScope = new RequestHandlerScope(requestHandler);
-            this.ContextList.Add(requestHandlerScope);
+            this.AddToContextList(requestHandlerScope);
+
             return requestHandlerScope;
         }
 
@@ -123,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(processInfo));
             }
 
-            this.ContextList.Add(processInfo);
+            this.AddToContextList(processInfo);
         }
 
         internal override void AddDiagnosticsInternal(PointOperationStatistics pointOperationStatistics)
@@ -134,33 +133,32 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.AddResponseCount((int)pointOperationStatistics.StatusCode);
-
-            this.ContextList.Add(pointOperationStatistics);
+            this.AddToContextList(pointOperationStatistics);
         }
 
         internal override void AddDiagnosticsInternal(StoreResponseStatistics storeResponseStatistics)
         {
-            if (storeResponseStatistics.StoreResult != null)
+            if (storeResponseStatistics.StoreResultStatistics != null)
             {
-                this.AddResponseCount((int)storeResponseStatistics.StoreResult.StatusCode);
+                this.AddResponseCount((int)storeResponseStatistics.StoreResultStatistics.StatusCode);
             }
 
-            this.ContextList.Add(storeResponseStatistics);
+            this.AddToContextList(storeResponseStatistics);
         }
 
         internal override void AddDiagnosticsInternal(AddressResolutionStatistics addressResolutionStatistics)
         {
-            this.ContextList.Add(addressResolutionStatistics);
+            this.AddToContextList(addressResolutionStatistics);
         }
 
         internal override void AddDiagnosticsInternal(CosmosClientSideRequestStatistics clientSideRequestStatistics)
         {
-            this.ContextList.Add(clientSideRequestStatistics);
+            this.AddToContextList(clientSideRequestStatistics);
         }
 
         internal override void AddDiagnosticsInternal(FeedRangeStatistics feedRangeStatistics)
         {
-            this.ContextList.Add(feedRangeStatistics);
+            this.AddToContextList(feedRangeStatistics);
         }
 
         internal override void AddDiagnosticsInternal(QueryPageDiagnostics queryPageDiagnostics)
@@ -175,14 +173,14 @@ namespace Microsoft.Azure.Cosmos
                 this.AddSummaryInfo(queryPageDiagnostics.DiagnosticsContext);
             }
 
-            this.ContextList.Add(queryPageDiagnostics);
+            this.AddToContextList(queryPageDiagnostics);
         }
 
         internal override void AddDiagnosticsInternal(CosmosDiagnosticsContext newContext)
         {
             this.AddSummaryInfo(newContext);
 
-            this.ContextList.AddRange(newContext);
+            this.AddToContextList(newContext);
         }
 
         public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
@@ -200,9 +198,20 @@ namespace Microsoft.Azure.Cosmos
             // Using a for loop with a yield prevents Issue #1467 which causes
             // ThrowInvalidOperationException if a new diagnostics is getting added
             // while the enumerator is being used.
-            for (int i = 0; i < this.ContextList.Count; i++)
+            lock (this.ContextList)
             {
-                yield return this.ContextList[i];
+                foreach (CosmosDiagnosticsInternal context in this.ContextList)
+                {
+                    yield return context;
+                }
+            }
+        }
+
+        private void AddToContextList(CosmosDiagnosticsInternal cosmosDiagnosticsInternal)
+        {
+            lock (this.ContextList)
+            {
+                this.ContextList.Add(cosmosDiagnosticsInternal);
             }
         }
 
@@ -211,12 +220,12 @@ namespace Microsoft.Azure.Cosmos
             this.totalResponseCount++;
             if (statusCode < 200 || statusCode > 299)
             {
-                this.failedResponseCount++;
+                Interlocked.Increment(ref this.failedResponseCount);
             }
 
             if (statusCode == (int)StatusCodes.TooManyRequests || statusCode == (int)StatusCodes.RetryWith)
             {
-                this.retriableResponseCount++;
+                Interlocked.Increment(ref this.retriableResponseCount);
             }
         }
 

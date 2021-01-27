@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -51,6 +51,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
+            mockContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
+            Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
+            mockContainer.Setup(c => c.ClientContext).Returns(context.Object);
+            context.Setup(c => c.DocumentClient).Returns(new ClientWithSplitDetection());
+
 
             CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                 new[]
@@ -71,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -98,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -133,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -160,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -195,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -222,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -256,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<OperationType>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<ContainerInternal>(),
-                    It.IsAny<Cosmos.PartitionKey?>(),
+                    It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
                     It.IsAny<CosmosDiagnosticsContext>(),
@@ -448,6 +453,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             public string Status { get; set; }
 
             public bool Updated { get; set; }
+        }
+
+        private class ClientWithSplitDetection : MockDocumentClient
+        {
+            private readonly Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
+
+            public ClientWithSplitDetection()
+            {
+                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null);
+                this.partitionKeyRangeCache.Setup(
+                        m => m.TryGetOverlappingRangesAsync(
+                            It.IsAny<string>(),
+                            It.IsAny<Documents.Routing.Range<string>>(),
+                            It.Is<bool>(b => b == true) // Mocking only the refresh, if it doesn't get called, the test fails
+                        )
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
+            }
+
+            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
+            {
+                return Task.FromResult(this.partitionKeyRangeCache.Object);
+            }
+
         }
     }
 }

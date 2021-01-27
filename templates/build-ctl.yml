@@ -1,0 +1,25 @@
+# File: templates/build-test.yml
+
+parameters:
+  BuildConfiguration: ''
+  VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+jobs:
+- job:
+  displayName: Build CTL project
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - task: DotNetCoreCLI@2
+    displayName: Build CTL project
+    condition: succeeded()
+    inputs:
+      command: build  
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Samples/Tools/CTL/CosmosCTL.sln
+      versioningScheme: OFF

@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(jObject["DiagnosticVersion"].ToString()); 
             JToken summary = jObject["Summary"];
             Assert.IsNotNull(summary["UserAgent"].ToString());
+            Assert.IsNotNull(summary["Operation"].ToString());
             Assert.IsTrue(summary["UserAgent"].ToString().Contains("cosmos-netstandard-sdk"));
             Assert.IsNotNull(summary["StartUtc"].ToString());
             Assert.IsNotNull(summary["TotalElapsedTimeInMs"].ToString());
@@ -184,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static void ValidateStoreResponseStatistics(StoreResponseStatistics stats, DateTime startTimeUtc)
         {
-            Assert.IsNotNull(stats.StoreResult);
+            Assert.IsNotNull(stats.StoreResultStatistics);
             Assert.IsNotNull(stats.LocationEndpoint);
             Assert.IsTrue(startTimeUtc < stats.RequestResponseTime);
             Assert.IsTrue(stats.RequestResponseTime < DateTime.UtcNow);
@@ -378,12 +379,17 @@ namespace Microsoft.Azure.Cosmos
 
             public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
             {
-                Assert.IsFalse(this.isContextVisited, "Point operations should only have a single context");
-                this.isContextVisited = true;
                 this.StartTimeUtc = cosmosDiagnosticsContext.StartUtc;
                 this.TotalElapsedTime = cosmosDiagnosticsContext.GetRunningElapsedTime();
 
-                DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
+                // Only the first context needs to be validated. Inner contexts that were appended only
+                // require the content to validated.
+                if (!this.isContextVisited)
+                {
+                    DiagnosticValidator.ValidateCosmosDiagnosticsContext(cosmosDiagnosticsContext);
+                }
+
+                this.isContextVisited = true;
 
                 foreach (CosmosDiagnosticsInternal diagnosticsInternal in cosmosDiagnosticsContext)
                 {

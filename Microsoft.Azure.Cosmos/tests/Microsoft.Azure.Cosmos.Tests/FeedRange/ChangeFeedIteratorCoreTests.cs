@@ -30,6 +30,18 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             new ChangeFeedIteratorCore(
                 documentContainer: null,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning());
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public void ChangeFeedIteratorCore_Null_Mode()
+        {
+            new ChangeFeedIteratorCore(
+                documentContainer: Mock.Of<IDocumentContainer>(),
+                changeFeedMode: null,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
         }
@@ -42,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             new ChangeFeedIteratorCore(
                 Mock.Of<IDocumentContainer>(),
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions()
                 {
                     PageSizeHint = maxItemCount
@@ -54,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 Mock.Of<IDocumentContainer>(),
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
@@ -67,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
@@ -92,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
@@ -116,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
@@ -156,10 +173,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning());
 
-            Random random = new Random();
+            int seed = new Random().Next();
+            Random random = new Random(seed);
 
             int count = 0;
             while (changeFeedIteratorCore.HasMoreResults)
@@ -172,12 +191,13 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
                 count += GetChanges(responseMessage.Content).Count;
 
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 FeedRangeInternal randomRange = ranges[random.Next(ranges.Count)];
                 await documentContainer.SplitAsync(randomRange, cancellationToken: default);
             }
 
-            Assert.AreEqual(numItems, count);
+            Assert.AreEqual(numItems, count, seed);
         }
 
         private static CosmosArray GetChanges(Stream stream)
@@ -224,6 +244,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)

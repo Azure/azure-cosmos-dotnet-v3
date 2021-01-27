@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -199,6 +201,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
+            double totalRequestCharge = 0;
             ContainerCore container = (ContainerCore)this.GetContainer(containerProperties.Id);
             using (ResponseMessage readResponse = await container.ReadContainerStreamAsync(
                 diagnosticsContext: diagnosticsContext,
@@ -206,11 +209,14 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken))
             {
+                totalRequestCharge = readResponse.Headers.RequestCharge;
+
                 if (readResponse.StatusCode != HttpStatusCode.NotFound)
                 {
                     ContainerResponse retrivedContainerResponse = this.ClientContext.ResponseFactory.CreateContainerResponse(
                         container,
                         readResponse);
+
                     if (containerProperties.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
                     {
                         if (!retrivedContainerResponse.Resource.PartitionKeyPath.Equals(containerProperties.PartitionKeyPath))
@@ -255,6 +261,9 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken))
             {
+                totalRequestCharge += createResponse.Headers.RequestCharge;
+                createResponse.Headers.RequestCharge = totalRequestCharge;
+
                 if (createResponse.StatusCode != HttpStatusCode.Conflict)
                 {
                     return this.ClientContext.ResponseFactory.CreateContainerResponse(container, createResponse);
@@ -269,6 +278,9 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken))
             {
+                totalRequestCharge += readResponseAfterCreate.Headers.RequestCharge;
+                readResponseAfterCreate.Headers.RequestCharge = totalRequestCharge;
+
                 return this.ClientContext.ResponseFactory.CreateContainerResponse(container, readResponseAfterCreate);
             }
         }
@@ -715,6 +727,92 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
         }
 
+#if PREVIEW
+        public override
+#else
+        internal virtual
+#endif
+            ClientEncryptionKey GetClientEncryptionKey(string id)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            return new ClientEncryptionKeyInlineCore(
+                    this.ClientContext,
+                    this,
+                    id);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal virtual
+#endif
+            FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
+                QueryDefinition queryDefinition,
+                string continuationToken = null,
+                QueryRequestOptions requestOptions = null)
+        {
+            if (!(this.GetClientEncryptionKeyQueryStreamIterator(
+                    queryDefinition: queryDefinition,
+                    continuationToken: continuationToken,
+                    requestOptions: requestOptions) is FeedIteratorInternal cekStreamIterator))
+            {
+                throw new InvalidOperationException($"Expected FeedIteratorInternal.");
+            }
+
+            return new FeedIteratorCore<ClientEncryptionKeyProperties>(
+                cekStreamIterator,
+                (responseMessage) =>
+                {
+                    FeedResponse<ClientEncryptionKeyProperties> results = this.ClientContext.ResponseFactory.CreateQueryFeedResponse<ClientEncryptionKeyProperties>(responseMessage, ResourceType.ClientEncryptionKey);
+                    return results;
+                });
+        }
+
+        private FeedIterator GetClientEncryptionKeyQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorCore(
+                clientContext: this.ClientContext,
+                resourceLink: this.LinkUri,
+                resourceType: ResourceType.ClientEncryptionKey,
+                queryDefinition: queryDefinition,
+                continuationToken: continuationToken,
+                options: requestOptions);
+        }
+
+#if PREVIEW
+        public
+#else
+        internal virtual
+#endif
+            async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+                CosmosDiagnosticsContext diagnosticsContext,
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(clientEncryptionKeyProperties);
+            ResponseMessage responseMessage = await this.CreateClientEncryptionKeyStreamAsync(
+                diagnosticsContext: diagnosticsContext,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                cancellationToken: cancellationToken);
+
+            ClientEncryptionKeyResponse cekResponse = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(
+                this.GetClientEncryptionKey(clientEncryptionKeyProperties.Id),
+                responseMessage);
+
+            Debug.Assert(cekResponse.Resource != null);
+
+            return cekResponse;
+        }
+
         private void ValidateContainerProperties(ContainerProperties containerProperties)
         {
             containerProperties.ValidateRequiredProperties();
@@ -734,7 +832,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
-               partitionKey: null,
+               feedRange: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
@@ -756,7 +854,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.Collection,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
-               partitionKey: null,
+               feedRange: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputHeader(throughput),
@@ -777,7 +875,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.User,
                operationType: OperationType.Create,
                cosmosContainerCore: null,
-               partitionKey: null,
+               feedRange: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: null,
@@ -798,7 +896,7 @@ namespace Microsoft.Azure.Cosmos
                resourceType: ResourceType.User,
                operationType: OperationType.Upsert,
                cosmosContainerCore: null,
-               partitionKey: null,
+               feedRange: null,
                streamPayload: streamPayload,
                requestOptions: requestOptions,
                requestEnricher: null,
@@ -811,6 +909,31 @@ namespace Microsoft.Azure.Cosmos
         {
             DatabaseResponse databaseResponse = await this.ReadAsync(cancellationToken: cancellationToken);
             return databaseResponse?.Resource?.ResourceId;
+        }
+
+        private Task<ResponseMessage> CreateClientEncryptionKeyStreamAsync(
+            CosmosDiagnosticsContext diagnosticsContext,
+            Stream streamPayload,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (streamPayload == null)
+            {
+                throw new ArgumentNullException(nameof(streamPayload));
+            }
+
+            return this.ClientContext.ProcessResourceOperationStreamAsync(
+                resourceUri: this.LinkUri,
+                resourceType: ResourceType.ClientEncryptionKey,
+                operationType: OperationType.Create,
+                cosmosContainerCore: null,
+                feedRange: null,
+                streamPayload: streamPayload,
+                requestOptions: requestOptions,
+                requestEnricher: null,
+                diagnosticsContext: diagnosticsContext,
+                trace: NoOpTrace.Singleton,
+                cancellationToken: cancellationToken);
         }
 
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
@@ -828,7 +951,7 @@ namespace Microsoft.Azure.Cosmos
               resourceType: resourceType,
               operationType: operationType,
               cosmosContainerCore: null,
-              partitionKey: null,
+              feedRange: null,
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,

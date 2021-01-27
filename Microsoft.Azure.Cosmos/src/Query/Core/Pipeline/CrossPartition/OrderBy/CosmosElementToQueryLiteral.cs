@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public void Visit(CosmosString cosmosString)
         {
-            this.stringBuilder.Append(JsonConvert.SerializeObject(cosmosString.Value, DefaultJsonSerializationSettings.Value));
+            this.stringBuilder.Append(JsonConvert.SerializeObject(cosmosString.Value.ToString(), DefaultJsonSerializationSettings.Value));
         }
 
         private sealed class CosmosNumberToQueryLiteral : ICosmosNumberVisitor

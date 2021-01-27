@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems: 0);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
@@ -47,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems: 1);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
@@ -98,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
@@ -136,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
@@ -209,6 +214,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
                 enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                     documentContainer,
+                    ChangeFeedMode.Incremental,
                     new ChangeFeedRequestOptions(),
                     enumerator.Current.Result.State,
                     cancellationToken: default);
@@ -276,6 +282,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)

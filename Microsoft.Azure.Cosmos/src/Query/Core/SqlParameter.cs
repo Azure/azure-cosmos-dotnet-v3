@@ -79,7 +79,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 return true;
             }
 
-            return this.Name == other.Name && this.Value == other.Value;
+            return this.Name == other.Name
+                && other.Value == null ? this.Value == null : other.Value.Equals(this.Value);
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -227,10 +228,16 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             const bool useMultipleWriteLocations = true;
             bool enableEndpointDiscovery = true;
 
+            ReadOnlyCollection<string> preferredList = new List<string>() {
+                "location2",
+                "location1"
+            }.AsReadOnly();
+
             this.Initialize(
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: preferredList);
 
             await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, enableEndpointDiscovery, new RetryOptions());
@@ -248,21 +255,21 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             if (retryCount == 0)
                             {
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 1)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
+                                // Second request must go to the next preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[1]];
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 2)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
+                                // Third request must go to first preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else
@@ -296,10 +303,17 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             const bool useMultipleWriteLocations = true;
             bool enableEndpointDiscovery = true;
 
+            ReadOnlyCollection<string> preferredList = new List<string>() {
+                "location3",
+                "location2",
+                "location1"
+            }.AsReadOnly();
+
             this.Initialize(
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: false);
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: preferredList);
 
             await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, enableEndpointDiscovery, new RetryOptions());
@@ -317,27 +331,25 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             if (retryCount == 0)
                             {
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[0]];
-
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 1)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
-
+                                // Second request must go to the next preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[1]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 2)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
+                                // Third request must go to the next preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[2]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else if (retryCount == 3)
                             {
-                                // Second request must go to first write endpoint
-                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[2]];
+                                // Fourth request must go to first preferred location
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
                             else
@@ -523,6 +535,99 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
+        [TestMethod]
+        public async Task ValidateRetryOnHttpExceptionAsync()
+        {
+            await this.ValidateRetryOnHttpExceptionAsync(enableMultipleWriteLocations: false, isReadRequest: false);
+            await this.ValidateRetryOnHttpExceptionAsync(enableMultipleWriteLocations: false, isReadRequest: true);
+            await this.ValidateRetryOnHttpExceptionAsync(enableMultipleWriteLocations: true, isReadRequest: false);
+            await this.ValidateRetryOnHttpExceptionAsync(enableMultipleWriteLocations: true, isReadRequest: true);
+        }
+
+        private async Task ValidateRetryOnHttpExceptionAsync(bool enableMultipleWriteLocations, bool isReadRequest)
+        {
+            ReadOnlyCollection<string> preferredList = new List<string>() {
+                "location2",
+                "location1"
+            }.AsReadOnly();
+
+            this.Initialize(
+                useMultipleWriteLocations: enableMultipleWriteLocations,
+                enableEndpointDiscovery: true,
+                isPreferredLocationsListEmpty: false,
+                preferedRegionListOverride: preferredList,
+                enforceSingleMasterSingleWriteLocation: true);
+
+            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, true, new RetryOptions());
+
+            using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
+            {
+                int retryCount = 0;
+
+                try
+                {
+                    await BackoffRetryUtility<bool>.ExecuteAsync(
+                        () =>
+                        {
+                            retryCount++;
+                            retryPolicy.OnBeforeSendRequest(request);
+
+                            if (retryCount == 1)
+                            {
+                                Uri expectedEndpoint = null;
+                                if (enableMultipleWriteLocations
+                                    || isReadRequest)
+                                {
+                                    // MultiMaster or Single Master Read can use preferred locations for first request
+                                    expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[0]];
+                                }
+                                else
+                                {
+                                    // Single Master Write always goes to the only write region
+                                    expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
+                                }
+
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+
+                                HttpRequestException httpException = new HttpRequestException();
+                                throw httpException;
+                            }
+                            else if (retryCount == 2)
+                            {
+                                Uri expectedEndpoint = null;
+                                if (enableMultipleWriteLocations
+                                    || isReadRequest)
+                                {
+                                    // Next request must go to next preferred endpoint
+                                    expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[1]];
+                                }
+                                else
+                                {
+                                    // Single Master Write does not have anywhere else to go
+                                    expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[0].Endpoint);
+                                }
+
+                                Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
+
+                                return Task.FromResult(true);
+                            }
+                            else
+                            {
+                                Assert.Fail();
+                            }
+
+                            return Task.FromResult(true);
+                        },
+                        retryPolicy);
+                }
+                catch (ForbiddenException)
+                {
+                    Assert.Fail();
+                }
+            }
+        }
+
         [DataTestMethod]
         [DataRow(true, false, false, false, DisplayName = "Read request - Single master - no preferred locations - should NOT retry")]
         [DataRow(false, false, false, false, DisplayName = "Write request - Single master - no preferred locations - should NOT retry")]
@@ -540,10 +645,17 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         {
             const bool enableEndpointDiscovery = true;
 
+            ReadOnlyCollection<string> preferredList = new List<string>() {
+                "location2",
+                "location1"
+            }.AsReadOnly();
+
             this.Initialize(
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPreferredLocationsListEmpty: !usesPreferredLocations);
+                isPreferredLocationsListEmpty: !usesPreferredLocations,
+                preferedRegionListOverride: preferredList,
+                enforceSingleMasterSingleWriteLocation: true);
 
             await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = new ClientRetryPolicy(this.endpointManager, enableEndpointDiscovery, new RetryOptions());
@@ -561,22 +673,12 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
                             if (retryCount == 1)
                             {
-                                Uri expectedEndpoint = null;
-                                if (usesPreferredLocations)
+                                if (!usesPreferredLocations)
                                 {
-                                    expectedEndpoint = LocationCacheTests.EndpointByLocation[this.preferredLocations[1]];
+                                    Assert.Fail("Should not be retrying if preferredlocations is not being used");
                                 }
-                                else
-                                {
-                                    if (isReadRequest)
-                                    {
-                                        expectedEndpoint = new Uri(this.databaseAccount.ReadLocationsInternal[1].Endpoint);
-                                    }
-                                    else
-                                    {
-                                        expectedEndpoint = new Uri(this.databaseAccount.WriteLocationsInternal[1].Endpoint);
-                                    }
-                                }
+
+                                Uri expectedEndpoint = LocationCacheTests.EndpointByLocation[preferredList[1]];
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
                             }
@@ -608,8 +710,28 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
         }
 
-        private static AccountProperties CreateDatabaseAccount(bool useMultipleWriteLocations)
+        private static AccountProperties CreateDatabaseAccount(
+            bool useMultipleWriteLocations,
+            bool enforceSingleMasterSingleWriteLocation)
         {
+            Collection<AccountRegion> writeLocations = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
+                };
+
+            if (!useMultipleWriteLocations
+                && enforceSingleMasterSingleWriteLocation)
+            {
+                // Some pre-existing tests depend on the account having multiple write locations even on single master setup
+                // Newer tests can correctly define a single master account (single write region) without breaking existing tests
+                writeLocations = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } }
+                };
+            }
+
             AccountProperties databaseAccount = new AccountProperties()
             {
                 EnableMultipleWriteLocations = useMultipleWriteLocations,
@@ -619,12 +741,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                     { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
                     { new AccountRegion() { Name = "location4", Endpoint = LocationCacheTests.Location4Endpoint.ToString() } },
                 },
-                WriteLocationsInternal = new Collection<AccountRegion>()
-                {
-                    { new AccountRegion() { Name = "location1", Endpoint = LocationCacheTests.Location1Endpoint.ToString() } },
-                    { new AccountRegion() { Name = "location2", Endpoint = LocationCacheTests.Location2Endpoint.ToString() } },
-                    { new AccountRegion() { Name = "location3", Endpoint = LocationCacheTests.Location3Endpoint.ToString() } },
-                }
+                WriteLocationsInternal = writeLocations
             };
 
             return databaseAccount;
@@ -633,16 +750,28 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private void Initialize(
             bool useMultipleWriteLocations,
             bool enableEndpointDiscovery,
-            bool isPreferredLocationsListEmpty)
+            bool isPreferredLocationsListEmpty,
+            bool enforceSingleMasterSingleWriteLocation = false, // Some tests depend on the Initialize to create an account with multiple write locations, even when not multi master
+            ReadOnlyCollection<string> preferedRegionListOverride = null)
         {
-            this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(useMultipleWriteLocations);
+            this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(
+                useMultipleWriteLocations,
+                enforceSingleMasterSingleWriteLocation);
 
-            this.preferredLocations = isPreferredLocationsListEmpty ? new List<string>().AsReadOnly() : new List<string>()
+            if (isPreferredLocationsListEmpty)
             {
-                "location1",
-                "location2",
-                "location3"
-            }.AsReadOnly();
+                this.preferredLocations = new List<string>().AsReadOnly();
+            }
+            else
+            {
+                // Allow for override at the test method level if needed
+                this.preferredLocations = preferedRegionListOverride != null ? preferedRegionListOverride : new List<string>()
+                {
+                    "location1",
+                    "location2",
+                    "location3"
+                }.AsReadOnly();
+            }
 
             this.cache = new LocationCache(
                 this.preferredLocations,

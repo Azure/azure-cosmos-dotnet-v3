@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -31,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 ChangeFeedState.Beginning(),
                 ranges[0],
                 pageSize: 10,
+                changeFeedMode: ChangeFeedMode.Incremental,
+                jsonSerializationFormat: null,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -51,6 +54,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Beginning(),
                     ranges[0],
                     pageSize: int.MaxValue,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -65,6 +70,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     resumeState,
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -86,6 +93,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Time(now),
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -114,6 +123,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Time(now),
                     ranges[0],
                     pageSize: int.MaxValue,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -134,6 +145,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Now(),
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -167,6 +180,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     resumeState,
                     ranges[0],
                     pageSize: 10,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -197,6 +212,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 ChangeFeedState.Beginning(),
                 new FeedRangePartitionKey(new Cosmos.PartitionKey(0)),
                 pageSize: int.MaxValue,
+                changeFeedMode: ChangeFeedMode.Incremental,
+                jsonSerializationFormat: null,
                 NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -240,6 +257,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                             isMinInclusive: true,
                             isMaxInclusive: false)),
                     pageSize: int.MaxValue,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -259,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             long numRecords = (await documentContainer.ReadFeedAsync(
                 feedRange: range,
-                readFeedState: default,
+                readFeedState: ReadFeedState.Beginning(),
                 pageSize: int.MaxValue,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default,
@@ -275,13 +294,14 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
                 feedRange: ranges[0],
-                readFeedState: default,
+                readFeedState: ReadFeedState.Beginning(),
                 pageSize: int.MaxValue,
                 queryRequestOptions: default,
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default)).GetRecords().Count;
 
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
+            await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             List<FeedRangeEpk> children = await documentContainer.GetChildRangeAsync(ranges[0], trace: NoOpTrace.Singleton, cancellationToken: default);
 
@@ -292,6 +312,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     ChangeFeedState.Beginning(),
                     child,
                     pageSize: 1000,
+                    changeFeedMode: ChangeFeedMode.Incremental,
+                    jsonSerializationFormat: null,
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -341,6 +363,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 {
                     await documentContainer.SplitAsync(range, cancellationToken: default);
                 }
+
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
             }
 
             for (int i = 0; i < numItems; i++)

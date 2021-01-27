@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract void Visit(SqlObjectProperty sqlObject);
         public abstract void Visit(SqlOffsetLimitClause sqlObject);
         public abstract void Visit(SqlOffsetSpec sqlObject);
-        public abstract void Visit(SqlOrderbyClause sqlObject);
+        public abstract void Visit(SqlOrderByClause sqlObject);
         public abstract void Visit(SqlOrderByItem sqlObject);
         public abstract void Visit(SqlParameter sqlObject);
         public abstract void Visit(SqlParameterRefScalarExpression sqlObject);
