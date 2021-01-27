@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             databaseIterator.ReadNextAsync().GetAwaiter().GetResult();
                         }
 
-                        Container container = database.CreateContainerAsync(Guid.NewGuid().ToString(), "/status").GetAwaiter().GetResult();
-                        container = database.CreateContainerIfNotExistsAsync(container.Id, "/status").GetAwaiter().GetResult();
+                        Container container = database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk").GetAwaiter().GetResult();
+                        container = database.CreateContainerIfNotExistsAsync(container.Id, "/pk").GetAwaiter().GetResult();
 
                         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
                         ItemResponse<ToDoActivity> response = container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         double cost = container.GetItemLinqQueryable<ToDoActivity>(
                             allowSynchronousQueryExecution: true).Select(x => x.cost).Sum();
 
-                        ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
+                        ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(deleteResponse);
                     }
                 }, state: null);

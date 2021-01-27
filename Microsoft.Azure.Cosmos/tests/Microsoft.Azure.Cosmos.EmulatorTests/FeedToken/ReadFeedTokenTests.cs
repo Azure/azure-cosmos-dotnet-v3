@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -275,12 +275,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.LargerContainer.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead));
+                await this.LargerContainer.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead));
             }
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.LargerContainer.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+                await this.LargerContainer.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: otherPK));
             }
 
             ContainerInternal itemsCore = this.LargerContainer;
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         totalCount += response.Count;
                         foreach (ToDoActivity toDoActivity in response)
                         {
-                            Assert.AreEqual(pkToRead, toDoActivity.status);
+                            Assert.AreEqual(pkToRead, toDoActivity.pk);
                         }
                     }
                 }
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     totalCount += response.Count;
                     foreach (ToDoActivity toDoActivity in response)
                     {
-                        Assert.AreEqual(pkToRead, toDoActivity.status);
+                        Assert.AreEqual(pkToRead, toDoActivity.pk);
                     }
 
                     continuationToken = responseMessage.ContinuationToken;
@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
                 for (int j = 0; j < perPKItemCount; j++)
                 {
-                    ToDoActivity temp = this.CreateRandomToDoActivity(pk);
+                    ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity(pk: pk);
 
                     createdList.Add(temp);
 
@@ -582,38 +582,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             return createdList;
         }
 
-        private ToDoActivity CreateRandomToDoActivity(string pk = null)
-        {
-            if (string.IsNullOrEmpty(pk))
-            {
-                pk = "TBD" + Guid.NewGuid().ToString();
-            }
-
-            return new ToDoActivity()
-            {
-                id = Guid.NewGuid().ToString(),
-                description = "CreateRandomToDoActivity",
-                status = pk,
-                taskNum = 42,
-                cost = double.MaxValue
-            };
-        }
-
         // Copy of Friends
         public enum BinaryScanDirection : byte
         {
             Invalid = 0x00,
             Forward = 0x01,
             Reverse = 0x02,
-        }
-
-        public class ToDoActivity
-        {
-            public string id { get; set; }
-            public int taskNum { get; set; }
-            public double cost { get; set; }
-            public string description { get; set; }
-            public string status { get; set; }
         }
     }
 }
