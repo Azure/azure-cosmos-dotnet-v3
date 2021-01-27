@@ -655,7 +655,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             NumberLinqItem parametrizedLinqItem = new NumberLinqItem
             {
                 id = id,
-                status = pk,
+                pk = pk,
                 stringValue = stringValue,
                 sbyteValue = sbyteValue,
                 byteValue = byteValue,
@@ -762,7 +762,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private class NumberLinqItem
         {
             public string id;
-            public string status;
+            public string pk;
             public string stringValue;
             public sbyte sbyteValue;
             public byte byteValue;

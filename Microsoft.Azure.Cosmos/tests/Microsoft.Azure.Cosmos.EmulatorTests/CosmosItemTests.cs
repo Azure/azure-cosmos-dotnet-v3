@@ -1089,7 +1089,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> findItems = await ToDoActivity.CreateRandomItems(this.Container, pkCount: 1, perPKItemCount: 10, randomPartitionKey: false);
 
             string findPkValue = findItems.First().pk;
-            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t where t.status = @pkValue").WithParameter("@pkValue", findPkValue);
+            QueryDefinition sql = new QueryDefinition("SELECT * FROM toDoActivity t where t.pk = @pkValue").WithParameter("@pkValue", findPkValue);
 
 
             double totalRequstCharge = 0;
@@ -1145,7 +1145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // BadReqeust bcoz collection is regular and not binary 
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
 
-            await this.Container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), status = "test" });
+            await this.Container.CreateItemAsync<dynamic>(new { id = Guid.NewGuid().ToString(), pk = "test" });
             epk = new PartitionKey("test")
                            .InternalKey
                            .GetEffectivePartitionKeyString(this.containerSettings.PartitionKey);
@@ -1300,7 +1300,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity toDoActivity = deleteList.First();
             QueryDefinition sql = new QueryDefinition(
-                "select * from toDoActivity t where t.status = @pk")
+                "select * from toDoActivity t where t.pk = @pk")
                 .WithParameter("@pk", toDoActivity.pk);
 
             // Test max size at 1
@@ -1826,7 +1826,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Quering items on fixed container with non-none PK.
                 using (FeedIterator<dynamic> feedIterator = fixedContainer.GetItemQueryIterator<dynamic>(
                     sql,
-                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, PartitionKey = new Cosmos.PartitionKey(itemWithPK.status) }))
+                    requestOptions: new QueryRequestOptions() { MaxItemCount = 10, PartitionKey = new Cosmos.PartitionKey(itemWithPK.partitionKey) }))
                 {
                     while (feedIterator.HasMoreResults)
                     {
@@ -1845,7 +1845,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //Deleting item from fixed container with non-none PK.
                 ItemResponse<ToDoActivityAfterMigration> deleteResponseWithPk = await fixedContainer.DeleteItemAsync<ToDoActivityAfterMigration>(
-                 partitionKey: new Cosmos.PartitionKey(itemWithPK.status),
+                 partitionKey: new Cosmos.PartitionKey(itemWithPK.partitionKey),
                  id: itemWithPK.id);
 
                 Assert.IsNull(deleteResponseWithPk.Resource);
@@ -1910,7 +1910,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         // Re-Insert into container with a partition key
                         ToDoActivityAfterMigration itemWithPK = new ToDoActivityAfterMigration
-                        { id = activity.id, cost = activity.cost, description = activity.description, status = "TestPK", taskNum = activity.taskNum };
+                        { id = activity.id, cost = activity.cost, description = activity.description, partitionKey = "TestPK", taskNum = activity.taskNum };
                         ItemResponse<ToDoActivityAfterMigration> createResponseWithPk = await fixedContainer.CreateItemAsync<ToDoActivityAfterMigration>(
                          item: itemWithPK);
                         Assert.AreEqual(HttpStatusCode.Created, createResponseWithPk.StatusCode);
@@ -2385,7 +2385,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             public double cost { get; set; }
             public string description { get; set; }
             [JsonProperty(PropertyName = "_partitionKey")]
-            public string status { get; set; }
+            public string partitionKey { get; set; }
         }
 
         private ToDoActivityAfterMigration CreateRandomToDoActivityAfterMigration(string pk = null, string id = null)
@@ -2402,7 +2402,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 id = id,
                 description = "CreateRandomToDoActivity",
-                status = pk,
+                partitionKey = pk,
                 taskNum = 42,
                 cost = double.MaxValue
             };
