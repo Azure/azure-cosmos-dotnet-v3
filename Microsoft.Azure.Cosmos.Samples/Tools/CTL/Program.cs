@@ -11,6 +11,7 @@ namespace CosmosCTL
     using System.Threading.Tasks;
     using App.Metrics;
     using App.Metrics.Formatters.Json;
+    using App.Metrics.Gauge;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
@@ -33,7 +34,8 @@ namespace CosmosCTL
 
                 using CosmosClient client = config.CreateCosmosClient();
 
-                using (logger.BeginScope(config.WorkloadType))
+                string loggingContextIdentifier = $"{config.WorkloadType}{config.LogginContext}";
+                using (logger.BeginScope(loggingContextIdentifier))
                 {
                     IMetricsRoot metrics = ConfigureReporting(config, logger);
 
@@ -53,16 +55,70 @@ namespace CosmosCTL
                         cosmosClient: client,
                         logger: logger,
                         metrics: metrics,
+                        loggingContextIdentifier: loggingContextIdentifier,
                         cancellationToken: cancellationTokenSource.Token),
 
                         Task.Run(async () =>
-                        {
+                        { 
+                            // Measure CPU/memory
+                            Process process = Process.GetCurrentProcess();
+                            
+                            GaugeOptions processPhysicalMemoryGauge = new GaugeOptions
+                            {
+                                Name = "Process Working Set",
+                                MeasurementUnit = Unit.Bytes,
+                                Context = loggingContextIdentifier
+                            };
+
+                            GaugeOptions totalCpuGauge = new GaugeOptions
+                            {
+                                Name = "Total CPU",
+                                MeasurementUnit = Unit.Percent,
+                                Context = loggingContextIdentifier
+                            };
+
+                            GaugeOptions priviledgedCpuGauge = new GaugeOptions
+                            {
+                                Name = "Priviledged CPU",
+                                MeasurementUnit = Unit.Percent,
+                                Context = loggingContextIdentifier
+                            };
+
+                            GaugeOptions userCpuGauge = new GaugeOptions
+                            {
+                                Name = "User CPU",
+                                MeasurementUnit = Unit.Percent,
+                                Context = loggingContextIdentifier
+                            };
+
+                            DateTime lastTimeStamp = process.StartTime;
+                            TimeSpan lastTotalProcessorTime = TimeSpan.Zero;
+                            TimeSpan lastUserProcessorTime = TimeSpan.Zero;
+                            TimeSpan lastPrivilegedProcessorTime = TimeSpan.Zero;
+
                             while (!cancellationTokenSource.Token.IsCancellationRequested)
                             {
                                 await Task.Delay(TimeSpan.FromSeconds(config.ReportingIntervalInSeconds));
+                                process.Refresh();
+
+                                double totalCpuTimeUsed = process.TotalProcessorTime.TotalMilliseconds - lastTotalProcessorTime.TotalMilliseconds;
+                                double privilegedCpuTimeUsed = process.PrivilegedProcessorTime.TotalMilliseconds - lastPrivilegedProcessorTime.TotalMilliseconds;
+                                double userCpuTimeUsed = process.UserProcessorTime.TotalMilliseconds - lastUserProcessorTime.TotalMilliseconds;
+
+                                lastTotalProcessorTime = process.TotalProcessorTime;
+                                lastPrivilegedProcessorTime = process.PrivilegedProcessorTime;
+                                lastUserProcessorTime = process.UserProcessorTime;
+
+                                double cpuTimeElapsed = (DateTime.UtcNow - lastTimeStamp).TotalMilliseconds * Environment.ProcessorCount;
+                                lastTimeStamp = DateTime.UtcNow;
+
+                                metrics.Measure.Gauge.SetValue(totalCpuGauge, totalCpuTimeUsed * 100 / cpuTimeElapsed);
+                                metrics.Measure.Gauge.SetValue(priviledgedCpuGauge, privilegedCpuTimeUsed * 100 / cpuTimeElapsed);
+                                metrics.Measure.Gauge.SetValue(userCpuGauge, userCpuTimeUsed * 100 / cpuTimeElapsed);
+                                metrics.Measure.Gauge.SetValue(processPhysicalMemoryGauge, process.WorkingSet64);
+
                                 await Task.WhenAll(metrics.ReportRunner.RunAllAsync());
                             }
-
                         })
                     };
 

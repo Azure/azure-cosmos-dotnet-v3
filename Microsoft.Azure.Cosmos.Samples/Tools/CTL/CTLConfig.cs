@@ -81,6 +81,9 @@ namespace CosmosCTL
         [Option("ctl_graphite_port", Required = false, HelpText = "Graphite port to report metrics")]
         public string GraphitePort { get; set; }
 
+        [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
+        public string LogginContext { get; set; } = string.Empty;
+
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
 

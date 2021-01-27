@@ -13,6 +13,9 @@ namespace CosmosCTL
 
     internal interface ICTLScenario
     {
+        /// <summary>
+        /// Initialization tasks that will not be measured nor produce metrics.
+        /// Such as container creation if needed.
         public Task InitializeAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
@@ -23,6 +26,7 @@ namespace CosmosCTL
             CosmosClient cosmosClient,
             ILogger logger,
             IMetrics metrics,
+            string loggingContextIdentifier,
             CancellationToken cancellationToken);
     }
 }

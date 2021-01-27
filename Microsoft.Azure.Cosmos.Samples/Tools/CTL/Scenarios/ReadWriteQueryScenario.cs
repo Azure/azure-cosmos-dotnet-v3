@@ -62,11 +62,19 @@ namespace CosmosCTL
             CosmosClient cosmosClient,
             ILogger logger, 
             IMetrics metrics,
+            string loggingContextIdentifier,
             CancellationToken cancellationToken)
         {
             try
             {
-                await this.ExecuteOperationsAsync(config, logger, metrics, this.initializationResult, this.readWriteQueryPercentage, cancellationToken);
+                await this.ExecuteOperationsAsync(
+                    config, 
+                    logger, 
+                    metrics, 
+                    loggingContextIdentifier, 
+                    this.initializationResult, 
+                    this.readWriteQueryPercentage, 
+                    cancellationToken);
             }
             catch (Exception unhandledException)
             {
@@ -92,17 +100,18 @@ namespace CosmosCTL
             CTLConfig config,
             ILogger logger,
             IMetrics metrics,
+            string loggingContextIdentifier,
             InitializationResult initializationResult,
             ReadWriteQueryPercentage readWriteQueryPercentage,
             CancellationToken cancellationToken)
         {
             logger.LogInformation("Initializing counters and metrics.");
-            CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
-            CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
-            CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
-            CounterOptions writeFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
-            CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
-            CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = nameof(WorkloadType.ReadWriteQuery) };
+            CounterOptions readSuccessMeter = new CounterOptions { Name = "#Read Successful Operations", Context = loggingContextIdentifier };
+            CounterOptions readFailureMeter = new CounterOptions { Name = "#Read Unsuccessful Operations", Context = loggingContextIdentifier };
+            CounterOptions writeSuccessMeter = new CounterOptions { Name = "#Write Successful Operations", Context = loggingContextIdentifier };
+            CounterOptions writeFailureMeter = new CounterOptions { Name = "#Write Unsuccessful Operations", Context = loggingContextIdentifier };
+            CounterOptions querySuccessMeter = new CounterOptions { Name = "#Query Successful Operations", Context = loggingContextIdentifier };
+            CounterOptions queryFailureMeter = new CounterOptions { Name = "#Query Unsuccessful Operations", Context = loggingContextIdentifier };
 
             TimerOptions readLatencyTimer = new TimerOptions
             {
@@ -110,7 +119,7 @@ namespace CosmosCTL
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
-                Context = nameof(WorkloadType.ReadWriteQuery),
+                Context = loggingContextIdentifier,
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
@@ -120,7 +129,7 @@ namespace CosmosCTL
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
-                Context = nameof(WorkloadType.ReadWriteQuery),
+                Context = loggingContextIdentifier,
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
@@ -130,7 +139,7 @@ namespace CosmosCTL
                 MeasurementUnit = Unit.Requests,
                 DurationUnit = TimeUnit.Milliseconds,
                 RateUnit = TimeUnit.Seconds,
-                Context = nameof(WorkloadType.ReadWriteQuery),
+                Context = loggingContextIdentifier,
                 Reservoir = () => new App.Metrics.ReservoirSampling.Uniform.DefaultAlgorithmRReservoir()
             };
 
