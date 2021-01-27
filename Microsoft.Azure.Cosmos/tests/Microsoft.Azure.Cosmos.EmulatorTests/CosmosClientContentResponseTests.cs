@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(itemResponse);
             Assert.IsNotNull(itemResponse.Resource);
 
-            itemResponse = await this.containerWithFlag.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status));
+            itemResponse = await this.containerWithFlag.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
             item.cost = 424242.42;
             
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             itemResponse = await this.containerWithFlag.ReplaceItemAsync<ToDoActivity>(
                 item,
                 item.id,
-                new PartitionKey(item.status));
+                new PartitionKey(item.pk));
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
             Assert.IsNotNull(itemResponse.Resource);
 
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             itemResponse = await containerInternal.PatchItemAsync<ToDoActivity>(
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 patchOperations: patch);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
             Assert.IsNotNull(itemResponse.Resource);
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
 
             // Ensuring the Reads are returning the Resource
-            ItemResponse<ToDoActivity> readResponse = await this.containerWithFlag.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status));
+            ItemResponse<ToDoActivity> readResponse = await this.containerWithFlag.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
             Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
             Assert.IsNotNull(itemResponse);
             Assert.IsNotNull(itemResponse.Resource);
