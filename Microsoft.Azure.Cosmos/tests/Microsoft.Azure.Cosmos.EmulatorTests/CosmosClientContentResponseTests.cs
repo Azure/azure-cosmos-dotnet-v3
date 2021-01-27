@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.containerWithFlag = await this.databaseWithFlag.CreateContainerAsync(
                      id: "ClientItemNoResponseTest",
-                     partitionKeyPath: "/status");
+                     partitionKeyPath: "/pk");
 
             this.cosmosClientWithoutFlag = this.CreateCosmosClientWithContentResponse(false);
             this.databaseWithoutFlag = await this.cosmosClientWithoutFlag.CreateDatabaseAsync(
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.containerWithoutFlag = await this.databaseWithoutFlag.CreateContainerAsync(
                      id: "ClientItemNoResponseTest",
-                     partitionKeyPath: "/status");
+                     partitionKeyPath: "/pk");
         }
 
         [TestCleanup]
