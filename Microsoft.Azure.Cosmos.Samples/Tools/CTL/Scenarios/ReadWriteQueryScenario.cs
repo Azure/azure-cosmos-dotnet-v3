@@ -386,7 +386,7 @@ namespace CosmosCTL
 
             for (int i = 1; i <= collectionCount; i++)
             {
-                string containerName = $"{config.Collection}_{i}";
+                string containerName = collectionCount == 1? config.Collection : $"{config.Collection}_{i}";
                 Container container;
                 try
                 {
