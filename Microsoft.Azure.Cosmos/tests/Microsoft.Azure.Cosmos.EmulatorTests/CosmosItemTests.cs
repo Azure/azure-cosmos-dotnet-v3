@@ -707,7 +707,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id = "ItemCustomSerialzierTest1",
                 cost = (double?)null,
                 totalCost = 98.2789,
-                status = "MyCustomStatus",
+                pk = "MyCustomStatus",
                 taskNum = 4909,
                 createdDateTime = createDateTime,
                 statusCode = HttpStatusCode.Accepted,
@@ -720,7 +720,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id = "ItemCustomSerialzierTest2",
                 cost = (double?)null,
                 totalCost = 98.2789,
-                status = "MyCustomStatus",
+                pk = "MyCustomStatus",
                 taskNum = 4909,
                 createdDateTime = createDateTime,
                 statusCode = HttpStatusCode.Accepted,
@@ -735,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
             {
-                new QueryDefinition("select * from t where t.pk = @pk" ).WithParameter("@pk", testItem1.status),
+                new QueryDefinition("select * from t where t.pk = @pk" ).WithParameter("@pk", testItem1.pk),
                 new QueryDefinition("select * from t where t.cost = @cost" ).WithParameter("@cost", testItem1.cost),
                 new QueryDefinition("select * from t where t.taskNum = @taskNum" ).WithParameter("@taskNum", testItem1.taskNum),
                 new QueryDefinition("select * from t where t.totalCost = @totalCost" ).WithParameter("@totalCost", testItem1.totalCost),
@@ -744,7 +744,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new QueryDefinition("select * from t where t.itemIds = @itemIds" ).WithParameter("@itemIds", testItem1.itemIds),
                 new QueryDefinition("select * from t where t.dictionary = @dictionary" ).WithParameter("@dictionary", testItem1.dictionary),
                 new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
-                    .WithParameter("@pk", testItem1.status)
+                    .WithParameter("@pk", testItem1.pk)
                     .WithParameter("@cost", testItem1.cost),
             };
 
