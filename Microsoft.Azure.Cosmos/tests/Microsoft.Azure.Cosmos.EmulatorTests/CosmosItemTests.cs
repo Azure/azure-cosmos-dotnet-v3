@@ -647,19 +647,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             dynamic testItem1 = new
             {
                 id = "item1",
-                status = pKString
+                pk = pKString
             };
 
             dynamic testItem2 = new
             {
                 id = "item2",
-                status = pKString
+                pk = pKString
             };
 
             dynamic testItem3 = new
             {
                 id = "item3",
-                status = pKString2
+                pk = pKString2
             };
 
             ContainerInternal containerInternal = (ContainerInternal)this.Container;
