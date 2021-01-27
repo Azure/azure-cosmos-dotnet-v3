@@ -18,6 +18,11 @@ namespace Microsoft.Azure.Cosmos
 
         struct PatchSpec
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PatchSpec"/> struct.
+        /// </summary>
+        /// <param name="patchOperations"></param>
+        /// <param name="patchRequestOptions"></param>
         public PatchSpec(
             IReadOnlyList<PatchOperation> patchOperations,
             PatchRequestOptions patchRequestOptions = null)
