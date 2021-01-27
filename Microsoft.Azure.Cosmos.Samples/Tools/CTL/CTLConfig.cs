@@ -29,6 +29,9 @@ namespace CosmosCTL
         [Option("ctl_collection", Required = false, HelpText = "Collection name")]
         public string Collection { get; set; } = "CTLCollection";
 
+        [Option("ctl_collection_pk", Required = false, HelpText = "Collection partition key")]
+        public string CollectionPartitionKey { get; set; } = "pk";
+
         [Option("ctl_operation", Required = false, HelpText = "Workload type")]
         public WorkloadType WorkloadType { get; set; } = WorkloadType.ReadWriteQuery;
 

@@ -19,8 +19,6 @@ namespace CosmosCTL
 
     internal class ReadWriteQueryScenario : ICTLScenario
     {
-        private static readonly string DefaultPartitionKey = "pk";
-        private static readonly string DefaultPartitionKeyPath = $"/{DefaultPartitionKey}";
         private static readonly int DefaultDocumentFieldCount = 5;
         private static readonly int DefaultDataFieldSize = 20;
         private static readonly string DataFieldValue = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, DefaultDataFieldSize);
@@ -58,9 +56,9 @@ namespace CosmosCTL
         }
 
         public async Task RunAsync(
-            CTLConfig config, 
+            CTLConfig config,
             CosmosClient cosmosClient,
-            ILogger logger, 
+            ILogger logger,
             IMetrics metrics,
             string loggingContextIdentifier,
             CancellationToken cancellationToken)
@@ -68,12 +66,12 @@ namespace CosmosCTL
             try
             {
                 await this.ExecuteOperationsAsync(
-                    config, 
-                    logger, 
-                    metrics, 
-                    loggingContextIdentifier, 
-                    this.initializationResult, 
-                    this.readWriteQueryPercentage, 
+                    config,
+                    logger,
+                    metrics,
+                    loggingContextIdentifier,
+                    this.initializationResult,
+                    this.readWriteQueryPercentage,
                     cancellationToken);
             }
             catch (Exception unhandledException)
@@ -159,6 +157,7 @@ namespace CosmosCTL
                         createTimerContext: () => metrics.Measure.Timer.Time(readLatencyTimer),
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateReadOperation(
                             operation: i,
+                            partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
                             createdDocumentsPerContainer: this.createdDocuments)),
                         onSuccess: () => metrics.Measure.Counter.Increment(readSuccessMeter),
@@ -178,6 +177,7 @@ namespace CosmosCTL
                         createTimerContext: () => metrics.Measure.Timer.Time(writeLatencyTimer),
                         resultProducer: new SingleExecutionResultProducer<ItemResponse<Dictionary<string, string>>>(() => this.CreateWriteOperation(
                             operation: i,
+                            partitionKeyAttributeName: config.CollectionPartitionKey,
                             containers: initializationResult.Containers,
                             isContentResponseOnWriteEnabled: config.IsContentResponseOnWriteEnabled)),
                         onSuccess: () => metrics.Measure.Counter.Increment(writeSuccessMeter),
@@ -218,22 +218,24 @@ namespace CosmosCTL
 
         private Task<ItemResponse<Dictionary<string, string>>> CreateReadOperation(
             long operation,
+            string partitionKeyAttributeName,
             IReadOnlyList<Container> containers,
             IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> createdDocumentsPerContainer)
         {
             Container container = containers[(int)operation % containers.Count];
             IReadOnlyList<Dictionary<string, string>> documents = createdDocumentsPerContainer[container.Id];
             Dictionary<string, string> document = documents[this.random.Next(documents.Count)];
-            return container.ReadItemAsync<Dictionary<string, string>>(document["id"], new PartitionKey(document[DefaultPartitionKey]));
+            return container.ReadItemAsync<Dictionary<string, string>>(document["id"], new PartitionKey(document[partitionKeyAttributeName]));
         }
 
         private Task<ItemResponse<Dictionary<string, string>>> CreateWriteOperation(
             long operation,
+            string partitionKeyAttributeName,
             IReadOnlyList<Container> containers,
             bool isContentResponseOnWriteEnabled)
         {
             Container container = containers[(int)operation % containers.Count];
-            Dictionary<string, string> document = GenerateDocument();
+            Dictionary<string, string> document = GenerateDocument(partitionKeyAttributeName);
             ItemRequestOptions itemRequestOptions = new ItemRequestOptions
             {
                 EnableContentResponseOnWrite = isContentResponseOnWriteEnabled
@@ -249,7 +251,7 @@ namespace CosmosCTL
             Container container = containers[(int)operation % containers.Count];
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { MaxItemCount = 10 };
             return container.GetItemQueryIterator<Dictionary<string, string>>(
-                queryText: "Select top 100 * from c order by c._ts", 
+                queryText: "Select top 100 * from c order by c._ts",
                 requestOptions: queryRequestOptions);
         }
 
@@ -290,8 +292,8 @@ namespace CosmosCTL
                 long successes = 0;
                 long failures = 0;
                 ConcurrentBag<Dictionary<string, string>> createdDocumentsInContainer = new ConcurrentBag<Dictionary<string, string>>();
-                IEnumerable<Dictionary<string, string>> documentsToCreate = GenerateDocuments(config.Operations);
-                await Utils.ForEachAsync(documentsToCreate, (Dictionary<string, string> doc) 
+                IEnumerable<Dictionary<string, string>> documentsToCreate = GenerateDocuments(config.Operations, config.CollectionPartitionKey);
+                await Utils.ForEachAsync(documentsToCreate, (Dictionary<string, string> doc)
                     => container.CreateItemAsync(doc).ContinueWith(task =>
                     {
                         if (task.IsCompletedSuccessfully)
@@ -327,23 +329,25 @@ namespace CosmosCTL
             return createdDocuments;
         }
 
-        private static IEnumerable<Dictionary<string, string>> GenerateDocuments(long documentsToCreate)
+        private static IEnumerable<Dictionary<string, string>> GenerateDocuments(
+            long documentsToCreate,
+            string partitionKeyPropertyName)
         {
             List<Dictionary<string, string>> createdDocuments = new List<Dictionary<string, string>>((int)documentsToCreate);
             for (long i = 0; i < documentsToCreate; i++)
             {
-                createdDocuments.Add(GenerateDocument());
+                createdDocuments.Add(GenerateDocument(partitionKeyPropertyName));
             }
 
             return createdDocuments;
         }
 
-        private static Dictionary<string, string> GenerateDocument()
+        private static Dictionary<string, string> GenerateDocument(string partitionKeyPropertyName)
         {
             Dictionary<string, string> document = new Dictionary<string, string>();
             string newGuid = Guid.NewGuid().ToString();
             document["id"] = newGuid;
-            document[DefaultPartitionKey] = newGuid;
+            document[partitionKeyPropertyName] = newGuid;
             for (int j = 0; j < DefaultDocumentFieldCount; j++)
             {
                 document["dataField" + j] = DataFieldValue;
@@ -386,7 +390,7 @@ namespace CosmosCTL
 
             for (int i = 1; i <= collectionCount; i++)
             {
-                string containerName = collectionCount == 1? config.Collection : $"{config.Collection}_{i}";
+                string containerName = collectionCount == 1 ? config.Collection : $"{config.Collection}_{i}";
                 Container container;
                 try
                 {
@@ -394,7 +398,7 @@ namespace CosmosCTL
                 }
                 catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
                 {
-                    container = await database.CreateContainerAsync(containerName, ReadWriteQueryScenario.DefaultPartitionKeyPath);
+                    container = await database.CreateContainerAsync(containerName, $"/{config.CollectionPartitionKey}");
                     createdContainers.Add(containerName);
                 }
 
