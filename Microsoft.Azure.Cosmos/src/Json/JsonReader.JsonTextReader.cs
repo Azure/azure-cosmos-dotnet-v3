@@ -287,16 +287,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <inheritdoc />
             public override UtfAnyString GetStringValue()
             {
-                if (this.TryGetBufferedStringValue(out Utf8Memory memory))
-                {
-                    return Utf8String.UnsafeFromUtf8BytesNoValidation(memory.Memory);
-                }
-
-                ReadOnlyMemory<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
-                    this.token.Start,
-                    this.token.End);
-
-                return JsonTextParser.GetStringValue(Utf8Memory.UnsafeCreateNoValidation(stringToken));
+                return this.GetUtf8StringValue();
             }
 
             /// <inheritdoc />
@@ -307,7 +298,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     return Utf8String.UnsafeFromUtf8BytesNoValidation(memory.Memory);
                 }
 
-                return Utf8String.TranscodeUtf16(this.GetStringValue());
+                ReadOnlyMemory<byte> stringToken = this.jsonTextBuffer.GetBufferedRawJsonToken(
+                    this.token.Start,
+                    this.token.End);
+
+                return JsonTextParser.GetStringValue(Utf8Memory.UnsafeCreateNoValidation(stringToken));
             }
 
             /// <inheritdoc />
