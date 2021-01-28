@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// Encryption Supported CosmosClient
+    /// CosmosClient with Encryption support.
     /// </summary>
     internal sealed class EncryptionCosmosClient : CosmosClient
     {
@@ -18,17 +18,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private readonly AsyncCache<string, ClientEncryptionPolicy> clientEncryptionPolicyCacheByContainerId;
 
-        private readonly AsyncCache<string, CachedClientEncryptionProperties> clientEncryptionKeyPropertiesCacheByKeyId;
-
-        private readonly TimeSpan clientEncryptionKeyPropertiesCacheTimeToLive;
+        private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
 
         public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.clientEncryptionPolicyCacheByContainerId = new AsyncCache<string, ClientEncryptionPolicy>();
-            this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, CachedClientEncryptionProperties>();
-            this.clientEncryptionKeyPropertiesCacheTimeToLive = TimeSpan.FromMinutes(Constants.CekPropertiesDefaultTTLInMinutes);
+            this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
         }
 
         internal EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
@@ -63,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                  forceRefresh: shouldForceRefresh);
         }
 
-        internal async Task<CachedClientEncryptionProperties> GetClientEncryptionKeyPropertiesAsync(
+        internal async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
             string clientEncryptionKeyId,
             Container container,
             CancellationToken cancellationToken = default,
@@ -87,29 +84,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        internal async Task<CachedClientEncryptionProperties> FetchClientEncryptionKeyPropertiesAsync(
+        internal async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
             Container container,
             string clientEncryptionKeyId,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties;
             ClientEncryptionKey clientEncryptionKey = container.Database.GetClientEncryptionKey(clientEncryptionKeyId);
             try
             {
-                clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
+                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
             }
             catch (CosmosException ex)
             {
                 throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
-
-            CachedClientEncryptionProperties cachedClientEncryptionProperties = new CachedClientEncryptionProperties(
-                clientEncryptionKeyProperties,
-                DateTime.UtcNow + this.clientEncryptionKeyPropertiesCacheTimeToLive);
-
-            return cachedClientEncryptionProperties;
         }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
