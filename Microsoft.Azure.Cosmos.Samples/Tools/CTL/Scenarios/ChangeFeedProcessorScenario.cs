@@ -98,11 +98,13 @@ namespace CosmosCTL
                     FeedResponse<LeaseSchema> response = await leaseIterator.ReadNextAsync();
                     foreach (LeaseSchema lease in response)
                     {
-                        logger.LogInformation($"Lease for range {lease.LeaseToken}");
-                        ranges.Add(lease.FeedRange.EffectiveRange);
+                        if (lease.LeaseToken != null)
+                        {
+                            logger.LogInformation($"Lease for range {lease.LeaseToken}");
+                            ranges.Add(lease.FeedRange.EffectiveRange);
+                            leaseTotal++;
+                        }
                     }
-
-                    leaseTotal += response.Count;
                 }
 
                 string previousMin = "";
