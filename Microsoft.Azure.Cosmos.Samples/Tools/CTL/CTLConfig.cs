@@ -50,7 +50,7 @@ namespace CosmosCTL
         [Option("ctl_number_of_operations", Required = false, HelpText = "Number of documents to insert")]
         public long Operations { get; set; } = -1;
 
-        [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time.")]
+        [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time in PT format, for example, PT10H.")]
         public string RunningTimeDuration
         {
             get => this.RunningTimeDurationAsTimespan.ToString();
@@ -61,7 +61,7 @@ namespace CosmosCTL
         [Option("ctl_number_Of_collection", Required = false, HelpText = "Number of collections to use")]
         public int CollectionCount { get; set; } = 4;
 
-        [Option("ctl_diagnostics_threshold_duration", Required = false, HelpText = "Threshold to log diagnostics")]
+        [Option("ctl_diagnostics_threshold_duration", Required = false, HelpText = "Threshold to log diagnostics in PT format, for example, PT60S.")]
         public string DiagnosticsThresholdDuration
         {
             get => this.DiagnosticsThresholdDurationAsTimespan.ToString();

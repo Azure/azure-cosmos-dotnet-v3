@@ -169,6 +169,7 @@ namespace CosmosCTL
             return workloadType switch
             {
                 WorkloadType.ReadWriteQuery => new ReadWriteQueryScenario(),
+                WorkloadType.ChangeFeedProcessor => new ChangeFeedProcessorScenario(),
                 _ => throw new NotImplementedException($"No mapping for {workloadType}"),
             };
         }
