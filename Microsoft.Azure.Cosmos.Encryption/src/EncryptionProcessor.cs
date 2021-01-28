@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.Data.Encryption.Cryptography.Serializers;
     using Newtonsoft.Json;
@@ -84,28 +86,48 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (string clientEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
             {
-                CachedClientEncryptionProperties cachedClientEncryptionProperties = await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                         clientEncryptionKeyId: clientEncryptionKeyId,
                         container: this.Container,
                         cancellationToken: cancellationToken,
                         shouldForceRefresh: false);
 
-                ClientEncryptionKeyProperties clientEncryptionKeyProperties = cachedClientEncryptionProperties.ClientEncryptionKeyProperties;
+                ProtectedDataEncryptionKey protectedDataEncryptionKey = null;
 
-                KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-                        clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-                        this.EncryptionKeyStoreProvider);
+                try
+                {
+                    // we pull out the Encrypted Client Encryption Key and Build the Protected Data Encryption key
+                    // Here a request is sent out to unwrap using the Master Key configured via the Key Encryption Key.
+                    protectedDataEncryptionKey = this.EncryptionSettings.BuildProtectedDataEncryptionKey(
+                        clientEncryptionKeyProperties,
+                        this.EncryptionKeyStoreProvider,
+                        clientEncryptionKeyId);
+                }
+                catch (RequestFailedException ex)
+                {
+                    // The access to master key was revoked. Try to fetch the latest ClientEncryptionKeyProperties from the backend.
+                    // This will succeed provided the user has rewraped the Client Encryption Key with right set of meta data.
+                    // This is based on the AKV provider implementaion so we expect a RequestFailedException in case other providers are used in unwrap implementation.
+                    if (ex.Status == (int)HttpStatusCode.Forbidden)
+                    {
+                        clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                        clientEncryptionKeyId: clientEncryptionKeyId,
+                        container: this.Container,
+                        cancellationToken: cancellationToken,
+                        shouldForceRefresh: true);
 
-                ProtectedDataEncryptionKey protectedDataEncryptionKey = new ProtectedDataEncryptionKey(
-                           clientEncryptionKeyId,
-                           keyEncryptionKey,
-                           clientEncryptionKeyProperties.WrappedDataEncryptionKey);
+                        // just bail out if this fails.
+                        protectedDataEncryptionKey = this.EncryptionSettings.BuildProtectedDataEncryptionKey(
+                        clientEncryptionKeyProperties,
+                        this.EncryptionKeyStoreProvider,
+                        clientEncryptionKeyId);
+                    }
+                }
 
                 settingsByDekId[clientEncryptionKeyId] = new EncryptionSettings
                 {
-                    // the cached Encryption Setting will have the same TTL as the corresponding Cached Client Encryption Key.
-                    EncryptionSettingTimeToLive = cachedClientEncryptionProperties.ClientEncryptionKeyPropertiesExpiryUtc,
+                    // we cache the setting for performance reason.
+                    EncryptionSettingTimeToLive = DateTime.UtcNow + TimeSpan.FromMinutes(Constants.CachedEncryptionSettingsDefaultTTLInMinutes),
                     ClientEncryptionKeyId = clientEncryptionKeyId,
                     DataEncryptionKey = protectedDataEncryptionKey,
                 };

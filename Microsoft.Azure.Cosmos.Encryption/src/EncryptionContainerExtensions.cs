@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
                     {
-                        CachedClientEncryptionProperties cachedClientEncryptionProperties = await encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                        ClientEncryptionKeyProperties clientEncryptionKeyProperties = await encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                                 clientEncryptionKeyId: clientEncryptionKeyId,
                                 container: container,
                                 cancellationToken: cancellationToken,
