@@ -113,12 +113,19 @@ namespace Microsoft.Azure.Cosmos
 
         private CosmosSerializer GetSerializer<T>()
         {
+            Type inputType = typeof(T);
+            if (inputType == typeof(PatchSpec))
+            {
+                return PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
+                cosmosSerializer: new CosmosJsonDotNetSerializer(),
+                propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+            }
+
             if (this.customSerializer == null)
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }
 
-            Type inputType = typeof(T);
             if (inputType == typeof(AccountProperties) ||
                 inputType == typeof(DatabaseProperties) ||
                 inputType == typeof(ContainerProperties) ||
@@ -133,10 +140,6 @@ namespace Microsoft.Azure.Cosmos
                 inputType == typeof(PartitionedQueryExecutionInfo))
             {
                 return CosmosSerializerCore.propertiesSerializer;
-            }
-            else if (inputType == typeof(PatchSpec))
-            {
-                return this.patchOperationSerializer;
             }
 
             if (inputType == typeof(SqlQuerySpec))
