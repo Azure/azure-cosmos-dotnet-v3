@@ -40,7 +40,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 innerState,
                 cancellationToken);
 
-            return new ChangeFeedCrossFeedRangeAsyncEnumerator(innerEnumerator);
+            return new ChangeFeedCrossFeedRangeAsyncEnumerator(
+                innerEnumerator, 
+                this.changeFeedRequestOptions?.JsonSerializationFormatOptions);
         }
     }
 }

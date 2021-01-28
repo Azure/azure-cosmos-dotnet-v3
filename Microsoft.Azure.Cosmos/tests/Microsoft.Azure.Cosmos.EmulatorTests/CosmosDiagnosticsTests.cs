@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ItemResponse<ToDoActivity> readResponse = await this.Container.ReadItemAsync<ToDoActivity>(
                 id: testItem.id,
-                partitionKey: new PartitionKey(testItem.status),
+                partitionKey: new PartitionKey(testItem.pk),
                 requestOptions);
 
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> replaceResponse = await this.Container.ReplaceItemAsync<ToDoActivity>(
                 item: testItem,
                 id: testItem.id,
-                partitionKey: new PartitionKey(testItem.status),
+                partitionKey: new PartitionKey(testItem.pk),
                 requestOptions: requestOptions);
 
             Assert.AreEqual(replaceResponse.Resource.description, "NewDescription");
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             ItemResponse<ToDoActivity> patchResponse = await containerInternal.PatchItemAsync<ToDoActivity>(
                 id: testItem.id,
-                partitionKey: new PartitionKey(testItem.status),
+                partitionKey: new PartitionKey(testItem.pk),
                 patchOperations: patch,
                 requestOptions: patchRequestOptions);
 
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 disableDiagnostics);
 
             ItemResponse<ToDoActivity> deleteResponse = await this.Container.DeleteItemAsync<ToDoActivity>(
-                partitionKey: new Cosmos.PartitionKey(testItem.status),
+                partitionKey: new Cosmos.PartitionKey(testItem.pk),
                 id: testItem.id,
                 requestOptions: requestOptions);
 
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //Checking point operation diagnostics on stream operations
             ResponseMessage createStreamResponse = await this.Container.CreateItemStreamAsync(
-                partitionKey: new PartitionKey(testItem.status),
+                partitionKey: new PartitionKey(testItem.pk),
                 streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                 requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ResponseMessage readStreamResponse = await this.Container.ReadItemStreamAsync(
                 id: testItem.id,
-                partitionKey: new PartitionKey(testItem.status),
+                partitionKey: new PartitionKey(testItem.pk),
                 requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 readStreamResponse.Diagnostics,
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ResponseMessage replaceStreamResponse = await this.Container.ReplaceItemStreamAsync(
                streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                id: testItem.id,
-               partitionKey: new PartitionKey(testItem.status),
+               partitionKey: new PartitionKey(testItem.pk),
                requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 replaceStreamResponse.Diagnostics,
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ResponseMessage patchStreamResponse = await containerInternal.PatchItemStreamAsync(
                id: testItem.id,
-               partitionKey: new PartitionKey(testItem.status),
+               partitionKey: new PartitionKey(testItem.pk),
                patchOperations: patch,
                requestOptions: patchRequestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ResponseMessage deleteStreamResponse = await this.Container.DeleteItemStreamAsync(
                id: testItem.id,
-               partitionKey: new PartitionKey(testItem.status),
+               partitionKey: new PartitionKey(testItem.pk),
                requestOptions: requestOptions);
             CosmosDiagnosticsTests.VerifyPointDiagnostics(
                 deleteStreamResponse.Diagnostics,
@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Ensure diagnostics are set even on failed operations
             testItem.description = new string('x', Microsoft.Azure.Documents.Constants.MaxResourceSizeInBytes + 1);
             ResponseMessage createTooBigStreamResponse = await this.Container.CreateItemStreamAsync(
-                partitionKey: new PartitionKey(testItem.status),
+                partitionKey: new PartitionKey(testItem.pk),
                 streamPayload: TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem),
                 requestOptions: requestOptions);
             Assert.IsFalse(createTooBigStreamResponse.IsSuccessStatusCode);
@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
 
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
-                createItemsTasks.Add(container.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.status)));
+                createItemsTasks.Add(container.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.pk)));
             }
 
             await Task.WhenAll(createItemsTasks);
@@ -495,7 +495,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
 
                 ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
-                createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.status)));
+                createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.pk)));
             }
 
             await Task.WhenAll(createItemsTasks);

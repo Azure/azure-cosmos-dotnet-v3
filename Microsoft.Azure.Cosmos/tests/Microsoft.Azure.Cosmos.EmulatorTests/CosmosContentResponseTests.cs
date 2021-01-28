@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.container = await this.database.CreateContainerAsync(
                      id: "ItemNoResponseTest",
-                     partitionKeyPath: "/status");
+                     partitionKeyPath: "/pk");
             this.containerInternal = (ContainerInternal)this.container;
         }
 
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
             ValidateWrite(itemResponse);
 
-            itemResponse = await this.container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), requestOptions: requestOptions);
+            itemResponse = await this.container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk), requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
             ValidateRead(itemResponse);
 
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             itemResponse = await this.container.ReplaceItemAsync<ToDoActivity>(
                 item,
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
             ValidateWrite(itemResponse);
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             itemResponse = await this.containerInternal.PatchItemAsync<ToDoActivity>(
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 patchOperations: patch,
                 requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             itemResponse = await this.container.DeleteItemAsync<ToDoActivity>(
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 requestOptions: requestOptions);
             Assert.AreEqual(HttpStatusCode.NoContent, itemResponse.StatusCode);
             this.ValidateItemNoContentResponse(itemResponse);
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             using (ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
                 TestCommon.SerializerCore.ToStream(item),
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 requestOptions: requestOptions))
             {
                 Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using (ResponseMessage responseMessage = await this.container.ReadItemStreamAsync(
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 requestOptions: requestOptions))
             {
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             item.cost = 424242.42;
             using (ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
                 TestCommon.SerializerCore.ToStream(item),
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 requestOptions: requestOptions))
             {
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
                 TestCommon.SerializerCore.ToStream(item),
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 requestOptions: requestOptions))
             {
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
             using (ResponseMessage responseMessage = await this.containerInternal.PatchItemStreamAsync(
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 patchOperations: patch,
                 requestOptions: requestOptions))
             {
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using (ResponseMessage responseMessage = await this.container.DeleteItemStreamAsync(
                 item.id,
-                new PartitionKey(item.status),
+                new PartitionKey(item.pk),
                 requestOptions: requestOptions))
             {
                 Assert.AreEqual(HttpStatusCode.NoContent, responseMessage.StatusCode);
@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (ToDoActivity item in items)
             {
-                bulkOperations.Add(bulkContainerInternal.PatchItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), patch, requestOptions: patchRequestOptions));
+                bulkOperations.Add(bulkContainerInternal.PatchItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk), patch, requestOptions: patchRequestOptions));
             }
 
             foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             bulkOperations = new List<Task<ItemResponse<ToDoActivity>>>();
             foreach (ToDoActivity item in items)
             {
-                bulkOperations.Add(bulkContainer.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.status), requestOptions: requestOptions));
+                bulkOperations.Add(bulkContainer.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk), requestOptions: requestOptions));
             }
 
             foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)

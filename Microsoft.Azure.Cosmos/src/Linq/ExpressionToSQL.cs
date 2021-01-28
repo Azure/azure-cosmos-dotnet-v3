@@ -1128,25 +1128,25 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case LinqMethods.OrderBy:
                     {
-                        SqlOrderbyClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
+                        SqlOrderByClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
                         context.currentQuery = context.currentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
                 case LinqMethods.OrderByDescending:
                     {
-                        SqlOrderbyClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
+                        SqlOrderByClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
                         context.currentQuery = context.currentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
                 case LinqMethods.ThenBy:
                     {
-                        SqlOrderbyClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
+                        SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, false, context);
                         context.currentQuery = context.currentQuery.UpdateOrderByClause(thenBy, context);
                         break;
                     }
                 case LinqMethods.ThenByDescending:
                     {
-                        SqlOrderbyClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
+                        SqlOrderByClause thenBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
                         context.currentQuery = context.currentQuery.UpdateOrderByClause(thenBy, context);
                         break;
                     }
@@ -1602,7 +1602,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return collection;
         }
 
-        private static SqlOrderbyClause VisitOrderBy(ReadOnlyCollection<Expression> arguments, bool isDescending, TranslationContext context)
+        private static SqlOrderByClause VisitOrderBy(ReadOnlyCollection<Expression> arguments, bool isDescending, TranslationContext context)
         {
             if (arguments.Count != 2)
             {
@@ -1612,7 +1612,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
             SqlOrderByItem orderByItem = SqlOrderByItem.Create(sqlfunc, isDescending);
-            SqlOrderbyClause orderby = SqlOrderbyClause.Create(new SqlOrderByItem[] { orderByItem });
+            SqlOrderByClause orderby = SqlOrderByClause.Create(new SqlOrderByItem[] { orderByItem });
             return orderby;
         }
 

@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Mock<CosmosSerializer> mockJsonSerializer = new Mock<CosmosSerializer>();
 
             //The item object will be serialized with the custom json serializer.
-            ToDoActivity testItem = this.CreateRandomToDoActivity();
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             mockJsonSerializer.Setup(x => x.ToStream<ToDoActivity>(It.IsAny<ToDoActivity>()))
                 .Callback(() => toStreamCount++)
                 .Returns(TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem));
@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(1, toStreamCount);
             Assert.AreEqual(1, fromStreamCount);
 
-            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.status));
+            await mockContainer.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
         }
 
         /// <summary>
@@ -179,46 +179,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity document = new ToDoActivity()
             {
                 id = Guid.NewGuid().ToString(),
-                description = default(string),
-                status = "TBD",
+                description = default,
+                pk = "TBD",
                 taskNum = 42,
                 cost = double.MaxValue
             };
 
             await this.container.UpsertItemAsync(document);
 
-            ResponseMessage cosmosResponseMessage = await this.container.ReadItemStreamAsync(document.id, new PartitionKey(document.status));
+            ResponseMessage cosmosResponseMessage = await this.container.ReadItemStreamAsync(document.id, new PartitionKey(document.pk));
             StreamReader reader = new StreamReader(cosmosResponseMessage.Content);
             string text = reader.ReadToEnd();
 
             Assert.IsTrue(text.IndexOf(nameof(document.description)) > -1, "Stored item doesn't contains null attributes");
-        }
-
-        private ToDoActivity CreateRandomToDoActivity(string pk = null)
-        {
-            if (string.IsNullOrEmpty(pk))
-            {
-                pk = "TBD" + Guid.NewGuid().ToString();
-            }
-
-            return new ToDoActivity()
-            {
-                id = Guid.NewGuid().ToString(),
-                description = "CreateRandomToDoActivity",
-                status = pk,
-                taskNum = 42,
-                cost = double.MaxValue
-            };
-        }
-
-        public class ToDoActivity
-        {
-            [JsonProperty(PropertyName = "id")]
-            public string id { get; set; }
-            public int taskNum { get; set; }
-            public double cost { get; set; }
-            public string description { get; set; }
-            public string status { get; set; }
         }
     }
 }

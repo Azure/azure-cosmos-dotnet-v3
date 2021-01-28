@@ -6,14 +6,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.VisualStudio.TestPlatform.ObjectModel;
     using PageList = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.CosmosElements.CosmosElement>>;
 
     [TestClass]

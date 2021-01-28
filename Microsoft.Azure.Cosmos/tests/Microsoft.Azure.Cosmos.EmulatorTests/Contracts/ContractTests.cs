@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         [TestMethod]
         public async Task ItemStreamContractVerifier()
         {
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             Container container = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         public async Task ChangeFeed_FeedRange_FromV0Token()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
-               new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/status"),
+               new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"),
                throughput: 20000,
                cancellationToken: this.cancellationToken);
 
@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         public async Task Query_FeedRange_FromV2SDK()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
-               new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/status"),
+               new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"),
                throughput: 20000,
                cancellationToken: this.cancellationToken);
 

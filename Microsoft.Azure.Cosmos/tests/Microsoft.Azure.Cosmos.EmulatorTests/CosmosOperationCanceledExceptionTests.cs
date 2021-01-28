@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await container.CreateItemAsync<ToDoActivity>(
                     toDoActivity,
-                    new Cosmos.PartitionKey(toDoActivity.status),
+                    new Cosmos.PartitionKey(toDoActivity.pk),
                     cancellationToken: cancellationToken);
 
                 Assert.Fail("Should have thrown");

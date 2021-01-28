@@ -502,18 +502,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 SqlQuery sqlQuery = monadicParse.Result;
-                if ((sqlQuery.OrderbyClause != null) && (continuationToken != null))
+                if ((sqlQuery.OrderByClause != null) && (continuationToken != null))
                 {
                     // This is a hack.
                     // If the query is an ORDER BY query then we need to seek to the resume term.
                     // Since I don't want to port over the proper logic from the backend I will just inject a filter.
                     // For now I am only handling the single order by item case
-                    if (sqlQuery.OrderbyClause.OrderbyItems.Length != 1)
+                    if (sqlQuery.OrderByClause.OrderByItems.Length != 1)
                     {
                         throw new NotImplementedException("Can only support a single order by column");
                     }
 
-                    SqlOrderByItem orderByItem = sqlQuery.OrderbyClause.OrderbyItems[0];
+                    SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
                     CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
                     SqlBinaryScalarExpression resumeFilter = SqlBinaryScalarExpression.Create(
                         orderByItem.IsDescending ? SqlBinaryScalarOperatorKind.LessThan : SqlBinaryScalarOperatorKind.GreaterThan,
@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         sqlQuery.FromClause,
                         modifiedWhereClause,
                         sqlQuery.GroupByClause,
-                        sqlQuery.OrderbyClause,
+                        sqlQuery.OrderByClause,
                         sqlQuery.OffsetLimitClause);
 
                     // We still need to handle duplicate values and break the tie with the rid
@@ -546,7 +546,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 string continuationResourceId;
                 int continuationSkipCount;
 
-                if ((sqlQuery.OrderbyClause == null) && (continuationToken != null))
+                if ((sqlQuery.OrderByClause == null) && (continuationToken != null))
                 {
                     CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
                     continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
@@ -614,9 +614,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         { "skipCount", CosmosNumber64.Create(currentSkipCount) },
                     };
 
-                    if (sqlQuery.OrderbyClause != null)
+                    if (sqlQuery.OrderByClause != null)
                     {
-                        SqlOrderByItem orderByItem = sqlQuery.OrderbyClause.OrderbyItems[0];
+                        SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
                         string propertyName = ((SqlPropertyRefScalarExpression)orderByItem.Expression).Identifier.Value;
                         queryStateDictionary["orderByItem"] = ((CosmosObject)lastDocument["payload"])[propertyName];
                     }
@@ -648,6 +648,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FeedRangeInternal feedRange,
             int pageSize,
             ChangeFeedMode changeFeedMode,
+            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {
