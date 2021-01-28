@@ -50,6 +50,8 @@ namespace CosmosBenchmark
                     throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
                 }
 
+                string diagnostics = itemResponse.Diagnostics.ToString();
+
                 return new OperationResult()
                 {
                     DatabseName = databsaeName,
