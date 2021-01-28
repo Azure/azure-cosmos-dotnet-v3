@@ -50,7 +50,7 @@ namespace CosmosBenchmark
                     throw new Exception($"ReadItem failed with {itemResponse.StatusCode}");
                 }
 
-                string test = itemResponse.Diagnostics.ToString();
+               // string test = itemResponse.Diagnostics.ToString();
 
                 return new OperationResult()
                 {
