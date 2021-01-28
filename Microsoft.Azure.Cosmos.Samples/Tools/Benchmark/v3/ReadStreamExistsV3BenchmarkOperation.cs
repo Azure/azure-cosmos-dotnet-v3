@@ -47,8 +47,10 @@ namespace CosmosBenchmark
             {
                 if (itemResponse.StatusCode != HttpStatusCode.OK)
                 {
-                    throw new Exception($"ReadItem failed wth {itemResponse.StatusCode}");
+                    throw new Exception($"ReadItem failed with {itemResponse.StatusCode}");
                 }
+
+                string test = itemResponse.Diagnostics.ToString();
 
                 return new OperationResult()
                 {
