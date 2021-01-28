@@ -267,6 +267,13 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
+                if (this.RequestOptions?.Properties != null &&
+                   this.RequestOptions.Properties.TryGetValue("x-ms-cosmos-default-replica-index", out object defaultReplicaIndexHeader) &&
+                   int.TryParse(defaultReplicaIndexHeader.ToString(), out int defaultReplicaIndex))
+                {
+                    serviceRequest.DefaultReplicaIndex = (uint)defaultReplicaIndex;
+                }
+
                 serviceRequest.RequestContext.ClientRequestStatistics = new CosmosClientSideRequestStatistics(this.DiagnosticsContext);
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
