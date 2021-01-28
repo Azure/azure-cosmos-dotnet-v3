@@ -37,10 +37,16 @@ namespace Microsoft.Azure.Cosmos
         public static ChangeFeedMode Incremental => ChangeFeedModeIncremental.Instance;
 
         /// <summary>
-        /// Creates a <see cref="ChangeFeedMode"/> to receive notifications for creations, updates, and delete operations.
+        /// Creates a <see cref="ChangeFeedMode"/> to receive notifications for creations, deletes, as well as all intermediary snapshots for updates.
         /// </summary>
         /// <remarks>
-        /// A container with a change feed policy configured is required. The delete operations will be included only within the configured retention period.
+        /// A container with a <see cref="ChangeFeedPolicy"/> configured is required. The delete operations will be included only within the configured retention period.
+        /// When enabling full fidelity mode you will only be able to process change feed events within the retention window configured in the change feed policy of the container.
+        /// If you attempt to process a change feed after more than the retention window an error(Status Code 400) will be returned because the events for intermediary
+        /// updates and deletes have vanished.
+        /// It would still be possible to process changes using <see cref="ChangeFeedMode.Incremental"/> mode even when configuring a full fidelity change feed policy 
+        /// with retention window on the container and when using Incremental mode it doesn't matter whether your are out of the retention window or not -
+        /// but no events for deletes or intermediary updates would be included.
         /// </remarks>
         /// <returns>A <see cref="ChangeFeedMode"/>  to receive notifications for insertions, updates, and delete operations.</returns>
         public static ChangeFeedMode FullFidelity => ChangeFeedModeFullFidelity.Instance;
