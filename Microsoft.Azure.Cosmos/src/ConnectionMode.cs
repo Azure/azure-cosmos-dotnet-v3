@@ -7,16 +7,16 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the connection mode to be used by the client when connecting to the Azure Cosmos DB service.
     /// </summary>
     /// <remarks>
-    /// Direct and Gateway connectivity modes are supported. Gateway is the default. 
+    /// Direct and Gateway connectivity modes are supported. Direct is the default. 
     /// </remarks>
     /// <example>
     /// <code language="c#">
     /// <![CDATA[
-    /// DocumentClient client = new DocumentClient(endpointUri, masterKey, new ConnectionPolicy { ConnectionMode = ConnectionMode.Direct });
+    /// CosmosClient client = new CosmosClient(connectionString, new CosmosClientOptions { ConnectionMode = ConnectionMode.Gateway });
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso cref="ConnectionPolicy"/>
+    /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/sql-sdk-connection-modes"/>
     public enum ConnectionMode
     {
         /// <summary>
