@@ -4,8 +4,6 @@
 namespace CosmosBenchmark
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
 
     internal struct Summary
     {
@@ -25,9 +23,8 @@ namespace CosmosBenchmark
 
         public double Rps()
         {
-            long total = this.successfulOpsCount + this.failedOpsCount;
             return Math.Round(
-                    Math.Min(total / this.elapsedMs * Summary.MsPerSecond, total),
+                    Math.Min(this.successfulOpsCount / this.elapsedMs * Summary.MsPerSecond, this.successfulOpsCount),
                     2);
         }
 
