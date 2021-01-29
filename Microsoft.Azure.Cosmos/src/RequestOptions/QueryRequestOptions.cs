@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
             base.PopulateRequestOptions(request);
         }
 
-        internal QueryRequestOptions Clone()
+        internal virtual QueryRequestOptions Clone()
         {
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions
             {
