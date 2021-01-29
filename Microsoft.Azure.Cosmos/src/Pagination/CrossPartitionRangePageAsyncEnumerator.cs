@@ -143,7 +143,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (IsSplitException(exception))
                     {
                         // Handle split
-
                         List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                             currentPaginator.FeedRangeState.FeedRange,
                             childTrace,
@@ -173,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                         foreach (FeedRangeInternal childRange in childRanges)
                         {
                             PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
-                                new FeedRangeState<TState>(currentPaginator.FeedRangeState.FeedRange, currentPaginator.FeedRangeState.State));
+                                new FeedRangeState<TState>(childRange, currentPaginator.FeedRangeState.State));
                             enumerators.Enqueue(childPaginator);
                         }
 
