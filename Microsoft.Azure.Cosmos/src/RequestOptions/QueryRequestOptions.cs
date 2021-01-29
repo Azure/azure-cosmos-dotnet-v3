@@ -235,30 +235,6 @@ namespace Microsoft.Azure.Cosmos
             base.PopulateRequestOptions(request);
         }
 
-        internal virtual QueryRequestOptions Clone()
-        {
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
-            {
-                IfMatchEtag = this.IfMatchEtag,
-                IfNoneMatchEtag = this.IfNoneMatchEtag,
-                MaxItemCount = this.MaxItemCount,
-                ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
-                EnableScanInQuery = this.EnableScanInQuery,
-                EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
-                MaxBufferedItemCount = this.MaxBufferedItemCount,
-                SessionToken = this.SessionToken,
-                ConsistencyLevel = this.ConsistencyLevel,
-                MaxConcurrency = this.MaxConcurrency,
-                PartitionKey = this.PartitionKey,
-                CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
-                Properties = this.Properties,
-                IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting,
-                CosmosElementContinuationToken = this.CosmosElementContinuationToken,
-            };
-
-            return queryRequestOptions;
-        }
-
         internal static void FillContinuationToken(
             RequestMessage request,
             string continuationToken)
