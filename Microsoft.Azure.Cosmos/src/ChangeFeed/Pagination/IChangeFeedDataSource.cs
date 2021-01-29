@@ -15,9 +15,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         Task<ChangeFeedPage> ChangeFeedAsync(
             ChangeFeedState state,
             FeedRangeInternal feedRange,
-            int pageSize,
+            ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedMode changeFeedMode,
-            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken);
     }

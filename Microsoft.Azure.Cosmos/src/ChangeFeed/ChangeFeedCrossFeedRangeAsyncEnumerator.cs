@@ -15,14 +15,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerator : IAsyncEnumerator<TryCatch<ChangeFeedPage>>
     {
         private readonly CrossPartitionChangeFeedAsyncEnumerator enumerator;
-        private readonly JsonSerializationFormatOptions jsonSerializationFormatOptions;
+        private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
 
         public ChangeFeedCrossFeedRangeAsyncEnumerator(
             CrossPartitionChangeFeedAsyncEnumerator enumerator,
-            JsonSerializationFormatOptions jsonSerializationFormatOptions)
+            ChangeFeedRequestOptions changeFeedRequestOptions)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
-            this.jsonSerializationFormatOptions = jsonSerializationFormatOptions;
+            this.changeFeedRequestOptions = changeFeedRequestOptions;
         }
 
         public TryCatch<ChangeFeedPage> Current { get; private set; }
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 Pagination.ChangeFeedSuccessPage successPage => ChangeFeedPage.CreatePageWithChanges(
                     RestFeedResponseParser.ParseRestFeedResponse(
                         successPage.Content,
-                        this.jsonSerializationFormatOptions),
+                        this.changeFeedRequestOptions?.JsonSerializationFormatOptions),
                     successPage.RequestCharge,
                     successPage.ActivityId,
                     state),

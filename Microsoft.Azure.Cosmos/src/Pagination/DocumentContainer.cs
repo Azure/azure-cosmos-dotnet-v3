@@ -197,17 +197,15 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public Task<ChangeFeedPage> ChangeFeedAsync(
             ChangeFeedState state,
             FeedRangeInternal feedRange,
-            int pageSize,
+            ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedMode changeFeedMode,
-            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken) => TryCatch<ChangeFeedPage>.UnsafeGetResultAsync(
                 this.MonadicChangeFeedAsync(
                     state,
                     feedRange,
-                    pageSize,
+                    changeFeedRequestOptions,
                     changeFeedMode,
-                    jsonSerializationFormat,
                     trace,
                     cancellationToken), 
                 cancellationToken);
@@ -215,16 +213,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             ChangeFeedState state,
             FeedRangeInternal feedRange,
-            int pageSize,
+            ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedMode changeFeedMode,
-            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicChangeFeedAsync(
                 state,
                 feedRange,
-                pageSize,
+                changeFeedRequestOptions,
                 changeFeedMode,
-                jsonSerializationFormat,
                 trace,
                 cancellationToken);
 

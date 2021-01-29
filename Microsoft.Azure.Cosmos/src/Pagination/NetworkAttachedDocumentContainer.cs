@@ -277,9 +277,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             ChangeFeedState state,
             FeedRangeInternal feedRange,
-            int pageSize,
+            ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedMode changeFeedMode,
-            JsonSerializationFormat? jsonSerializationFormat,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -295,13 +294,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     state.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
 
-                    request.Headers.PageSize = pageSize.ToString();
+                    request.Headers.PageSize = changeFeedRequestOptions.PageSizeHint.GetValueOrDefault(int.MaxValue).ToString();
 
                     changeFeedMode.Accept(request);
 
-                    if (jsonSerializationFormat.HasValue)
+                    if (changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat != null)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = jsonSerializationFormat.Value.ToContentSerializationFormatString();
+                        request.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat] =
+                            changeFeedRequestOptions.JsonSerializationFormatOptions.JsonSerializationFormat.ToContentSerializationFormatString();
+                    }
+
+                    foreach (KeyValuePair<string, object> kvp in changeFeedRequestOptions.Properties)
+                    {
+                        request.Headers[kvp.Key] = kvp.Value.ToString();
                     }
                 },
                 feedRange: feedRange,
