@@ -266,7 +266,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
-              
                 serviceRequest.RequestContext.ClientRequestStatistics = new CosmosClientSideRequestStatistics(this.DiagnosticsContext);
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
