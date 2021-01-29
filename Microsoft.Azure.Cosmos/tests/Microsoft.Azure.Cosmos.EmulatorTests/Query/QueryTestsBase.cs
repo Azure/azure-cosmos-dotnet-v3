@@ -544,7 +544,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             CosmosElement continuationToken = null;
             do
             {
-                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                QueryRequestOptions computeRequestOptions = queryRequestOptions;
                 computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 
