@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithHttpClientFactory(() => new HttpClient(httpClientHandler))))
             {
                 Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
-                ContainerInternal container = (ContainerInternal)await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/status");
+                ContainerInternal container = (ContainerInternal)await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
 
                 Container gatewayQueryPlanContainer = new ContainerInlineCore(
                     client.ClientContext,
