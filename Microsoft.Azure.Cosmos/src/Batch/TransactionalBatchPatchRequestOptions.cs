@@ -31,6 +31,12 @@ namespace Microsoft.Azure.Cosmos
         /// the condition has to be withing the scope of the document which is supposed to be patched in the particular request.
         /// If the condition is satisfied the patch transaction will take place otherwise it will be retured with precondition failed.
         /// </remarks>
+        /// <sample>
+        /// PatchRequestOptions requestOptions = new PatchRequestOptions()
+        ///    {
+        ///        FilterPredicate = "from c where c.taskNum = 3"
+        ///    };
+        /// </sample>
         public string FilterPredicate { get; set; }
     }
 }

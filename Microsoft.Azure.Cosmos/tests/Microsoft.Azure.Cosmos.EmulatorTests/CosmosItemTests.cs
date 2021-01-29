@@ -1682,7 +1682,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             }
 
-            List<PatchOperation> patchOperationsUpdateNumTask12 = new List<PatchOperation>()
+            List<PatchOperation> patchOperationsUpdateTaskNum12 = new List<PatchOperation>()
             {
                 PatchOperation.Replace("/taskNum", 12)
             };
@@ -1693,7 +1693,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             TransactionalBatchInternal transactionalBatchInternalFalse = (TransactionalBatchInternal)containerInternal.CreateTransactionalBatch(new Cosmos.PartitionKey(testItem.pk));
-            transactionalBatchInternalFalse.PatchItem(id: testItem.id, patchOperationsUpdateNumTask12, requestOptionsFalse);
+            transactionalBatchInternalFalse.PatchItem(id: testItem.id, patchOperationsUpdateTaskNum12, requestOptionsFalse);
             using (TransactionalBatchResponse batchResponse = await transactionalBatchInternalFalse.ExecuteAsync())
             {
                 Assert.IsNotNull(batchResponse);
@@ -1710,7 +1710,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(8, itemResponsemid.Resource.taskNum);
             }
 
-            List<PatchOperation> patchOperationsUpdateNumTask14 = new List<PatchOperation>()
+            List<PatchOperation> patchOperationsUpdateTaskNum14 = new List<PatchOperation>()
             {
                 PatchOperation.Increment("/taskNum", 6)
             };
@@ -1721,7 +1721,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             TransactionalBatchInternal transactionalBatchInternalTrue = (TransactionalBatchInternal)containerInternal.CreateTransactionalBatch(new Cosmos.PartitionKey(testItem.pk));
-            transactionalBatchInternalTrue.PatchItem(id: testItem.id, patchOperationsUpdateNumTask14, requestOptionsTrue);
+            transactionalBatchInternalTrue.PatchItem(id: testItem.id, patchOperationsUpdateTaskNum14, requestOptionsTrue);
             using (TransactionalBatchResponse batchResponse = await transactionalBatchInternalTrue.ExecuteAsync())
             {
                 Assert.IsNotNull(batchResponse);
@@ -1760,7 +1760,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-
             List<PatchOperation> patchOperations = new List<PatchOperation>()
             {
                 PatchOperation.Add("/children/1/pk", "patched"),
@@ -1775,7 +1774,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             }
 
-            List<PatchOperation> patchOperationsUpdateNumTask12 = new List<PatchOperation>()
+            List<PatchOperation> patchOperationsUpdateTaskNum12 = new List<PatchOperation>()
             {
                 PatchOperation.Replace("/taskNum", 12)
             };
@@ -1786,7 +1785,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             // Patch that fails due to condition not met.
-            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id, patchOperations: patchOperationsUpdateNumTask12, requestOptions: requestOptionsFalse))
+            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id, patchOperations: patchOperationsUpdateTaskNum12, requestOptions: requestOptionsFalse))
             {
                 Assert.IsNotNull(response);
                 Assert.AreEqual(HttpStatusCode.PreconditionFailed, response.StatusCode);
@@ -1802,7 +1801,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(8, itemResponsemid.Resource.taskNum);
             }
 
-            List<PatchOperation> patchOperationsUpdateNumTask14 = new List<PatchOperation>()
+            List<PatchOperation> patchOperationsUpdateTaskNum14 = new List<PatchOperation>()
             {
                 PatchOperation.Increment("/taskNum", 6)
             };
@@ -1813,7 +1812,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             // Patch
-            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id, patchOperations: patchOperationsUpdateNumTask14, requestOptions: requestOptionsTrue))
+            using (ResponseMessage response = await containerInternal.PatchItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id, patchOperations: patchOperationsUpdateTaskNum14, requestOptions: requestOptionsTrue))
             {
                 Assert.IsNotNull(response);
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);

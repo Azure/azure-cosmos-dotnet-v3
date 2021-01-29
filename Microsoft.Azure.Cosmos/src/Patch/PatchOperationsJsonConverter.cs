@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!(value is PatchSpec patchSpec)) 
             {
-                throw new ArgumentOutOfRangeException("Value Argument is not PatchSpec.");
+                throw new ArgumentOutOfRangeException("nameof(value) should be of type PatchSpec.");
             }
 
             IReadOnlyList<PatchOperation> patchOperations = patchSpec.PatchOperations;
