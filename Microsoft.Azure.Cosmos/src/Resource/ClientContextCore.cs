@@ -192,7 +192,9 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task)
         {
-            using (ITrace trace = Tracing.Trace.GetRootTrace(operationName))
+            bool disableDiagnostics = requestOptions != null && requestOptions.DisablePointOperationDiagnostics;
+
+            using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName))
             {
                 if (SynchronizationContext.Current == null)
                 {

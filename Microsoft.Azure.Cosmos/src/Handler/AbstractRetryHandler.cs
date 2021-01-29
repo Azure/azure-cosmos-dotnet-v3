@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     return await RetryHandler.ExecuteHttpRequestAsync(
                         callbackMethod: (trace) =>
                         {
-                            using (ITrace childTrace = trace.StartChild("Abstract Retry Handler"))
+                            using (ITrace childTrace = trace.StartChild("Callback Method"))
                             {
                                 request.Trace = childTrace;
                                 return base.SendAsync(request, cancellationToken);
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         },
                         callShouldRetry: (cosmosResponseMessage, trace, token) =>
                         {
-                            using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
+                            using (ITrace shouldRetryTrace = trace.StartChild("Call Should Retry"))
                             {
                                 request.Trace = shouldRetryTrace;
                                 return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         },
                         callShouldRetryException: (exception, trace, token) =>
                         {
-                            using (ITrace shouldRetryTrace = trace.StartChild("Should Retry Check"))
+                            using (ITrace shouldRetryTrace = trace.StartChild("Call Should Retry Exception"))
                             {
                                 request.Trace = shouldRetryTrace;
                                 return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);

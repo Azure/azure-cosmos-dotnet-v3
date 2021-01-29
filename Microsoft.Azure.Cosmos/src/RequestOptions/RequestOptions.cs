@@ -54,6 +54,8 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         internal virtual ConsistencyLevel? BaseConsistencyLevel { get; set; }
 
+        internal bool DisablePointOperationDiagnostics { get; set; }
+
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
