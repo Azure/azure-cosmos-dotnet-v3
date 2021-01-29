@@ -13,33 +13,31 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public CosmosTraceDiagnostics(ITrace trace)
         {
-            this.Value = trace ?? throw new ArgumentNullException(nameof(trace));
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
+            ITrace rootTrace = trace;
+            while (rootTrace.Parent != null)
+            {
+                rootTrace = rootTrace.Parent;
+            }
+
+            this.Value = rootTrace;
         }
 
         public ITrace Value { get; }
 
         public override string ToString()
         {
-            // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
-            ITrace rootTrace = this.Value;
-            while (rootTrace.Parent != null)
-            {
-                rootTrace = rootTrace.Parent;
-            }
-
-            return $"User Agent: {userAgent} {Environment.NewLine}{TraceWriter.TraceToText(rootTrace)}";
+            return $"User Agent: {userAgent} {Environment.NewLine}{TraceWriter.TraceToText(this.Value)}";
         }
 
         public override TimeSpan GetClientElapsedTime()
         {
-            // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
-            ITrace rootTrace = this.Value;
-            while (rootTrace.Parent != null)
-            {
-                rootTrace = rootTrace.Parent;
-            }
-
-            return rootTrace.Duration;
+            return this.Value.Duration;
         }
     }
 }
