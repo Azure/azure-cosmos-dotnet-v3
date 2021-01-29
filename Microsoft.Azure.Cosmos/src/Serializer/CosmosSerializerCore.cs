@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
             if (inputType == typeof(PatchSpec))
             {
                 return PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
-                cosmosSerializer: new CosmosJsonDotNetSerializer(),
+                cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
                 propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
             }
 
