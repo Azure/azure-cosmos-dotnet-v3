@@ -252,6 +252,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Remove("/cost")
             };
 
+            TransactionalBatchPatchRequestOptions requestOptionsPatch = new TransactionalBatchPatchRequestOptions()
+            {
+                EnableContentResponseOnWrite = false
+            };
+
             noResponseItemCount = 0;
             for (int i = 0; i < 10; i++)
             {
@@ -262,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 item2.id = item.id;
                 batch.ReplaceItem<ToDoActivity>(item2.id, item2, requestOptions);
                 noResponseItemCount++;
-                batchCore.PatchItem(item2.id, patch, requestOptions);
+                batchCore.PatchItem(item2.id, patch, requestOptionsPatch);
                 noResponseItemCount++;
             }
 

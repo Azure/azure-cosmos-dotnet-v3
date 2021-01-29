@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Cosmos Patch request options
+    /// Cosmos Batch Patch request options
     /// </summary>
 #if INTERNAL
     public
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     internal
 #endif
 
-    class PatchRequestOptions : ItemRequestOptions
+    class TransactionalBatchPatchRequestOptions : TransactionalBatchItemRequestOptions
     {
         /// <summary>
         /// Gets or sets condition to be checked before the patch operations in the Azure Cosmos DB service.
