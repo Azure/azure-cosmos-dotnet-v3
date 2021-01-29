@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     }
 
                     SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
-                    CosmosObject parsedContinuationToken = (CosmosObject)feedRangeState.State.Value;
+                    CosmosObject parsedContinuationToken = CosmosObject.Parse(((CosmosString)feedRangeState.State.Value).Value);
                     SqlBinaryScalarExpression resumeFilter = SqlBinaryScalarExpression.Create(
                         orderByItem.IsDescending ? SqlBinaryScalarOperatorKind.LessThan : SqlBinaryScalarOperatorKind.GreaterThan,
                         orderByItem.Expression,
@@ -548,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 if ((sqlQuery.OrderByClause == null) && (feedRangeState.State != null))
                 {
-                    CosmosObject parsedContinuationToken = (CosmosObject)feedRangeState.State.Value;
+                    CosmosObject parsedContinuationToken = CosmosObject.Parse(((CosmosString)feedRangeState.State.Value).Value);
                     continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
                     continuationSkipCount = (int)Number64.ToLong(((CosmosNumber64)parsedContinuationToken["skipCount"]).Value);
 
@@ -623,7 +623,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                     CosmosObject queryStateValue = CosmosObject.Create(queryStateDictionary);
 
-                    queryState = new QueryState(queryStateValue);
+                    queryState = new QueryState(CosmosString.Create(queryStateValue.ToString()));
                 }
                 else
                 {

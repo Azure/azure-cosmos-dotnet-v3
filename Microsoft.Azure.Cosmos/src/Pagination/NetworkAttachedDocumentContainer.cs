@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     ReadFeedState state = responseMessage.Headers.ContinuationToken != null ? ReadFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ContinuationToken)) : null;
                     Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                         responseMessage.Headers.CosmosMessageHeaders,
-                        ReadFeedPaginationOptions.BannedHeaders);
+                        ReadFeedPage.BannedHeaders);
 
                     ReadFeedPage readFeedPage = new ReadFeedPage(
                         responseMessage.Content,
@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
             Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
                 responseMessage.Headers.CosmosMessageHeaders, 
-                ChangeFeedPaginationOptions.BannedHeaders);
+                ChangeFeedPage.BannedHeaders);
 
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;
             if (responseMessage.StatusCode == HttpStatusCode.OK)

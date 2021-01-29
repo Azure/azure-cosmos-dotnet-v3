@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private static readonly ImmutableDictionary<string, string> EmptyDictionary = new Dictionary<string, string>().ToImmutableDictionary();
 
         protected Page(
-            double requestCharge, 
+            double requestCharge,
             string activityId,
             IReadOnlyDictionary<string, string> additionalHeaders,
             TState state)
         {
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
-            this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
+            this.ActivityId = activityId;
             this.State = state;
 
             if (additionalHeaders != null)

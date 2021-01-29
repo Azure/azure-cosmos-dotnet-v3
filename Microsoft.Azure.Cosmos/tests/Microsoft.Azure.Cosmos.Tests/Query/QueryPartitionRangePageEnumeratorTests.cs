@@ -6,8 +6,6 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
@@ -100,7 +98,7 @@
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                             feedRangeState: feedRangeState,
                             partitionKey: null,
-                            queryPaginationOptions: null,
+                            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                             cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -141,7 +139,7 @@
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: feedRangeState,
                         partitionKey: null,
-                        queryPaginationOptions: null,
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default));
             }
 
@@ -158,7 +156,7 @@
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                     feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                     partitionKey: null,
-                    queryPaginationOptions: null,
+                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     cancellationToken: default);
             }
         }
