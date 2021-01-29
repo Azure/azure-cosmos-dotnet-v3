@@ -177,12 +177,16 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task ReBatchAsync(
             ItemBatchOperation operation,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
-            operation.Context.ReRouteOperation(resolvedPartitionKeyRangeId);
-            BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
-            streamer.Add(operation);
+            using (ITrace retryTrace = trace.StartChild("Batch Retry Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            {
+                string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, cancellationToken).ConfigureAwait(false);
+                operation.Context.ReRouteOperation(resolvedPartitionKeyRangeId);
+                BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
+                streamer.Add(operation);
+            }
         }
 
         private async Task<string> ResolvePartitionKeyRangeIdAsync(
@@ -243,8 +247,8 @@ namespace Microsoft.Azure.Cosmos
                         cancellationToken).ConfigureAwait(false);
 
                     return new PartitionKeyRangeBatchExecutionResult(
-                        serverRequest.PartitionKeyRangeId, 
-                        serverRequest.Operations, 
+                        serverRequest.PartitionKeyRangeId,
+                        serverRequest.Operations,
                         serverResponse);
                 }
             }
