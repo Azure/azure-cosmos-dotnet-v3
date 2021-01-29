@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void TestApplySessionForMasterOperation()
+        public async Task TestApplySessionForMasterOperation()
         {
             List<ResourceType> resourceTypes = new List<ResourceType>()
             {
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
 
                     dsr.Headers.Add(HttpConstants.HttpHeaders.SessionToken, Guid.NewGuid().ToString());
 
-                    GatewayStoreModel.ApplySessionToken(
+                    await GatewayStoreModel.ApplySessionTokenAsync(
                         dsr,
                         ConsistencyLevel.Session,
                         new Mock<ISessionContainer>().Object);
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos
 
             dsrQueryPlan.Headers.Add(HttpConstants.HttpHeaders.SessionToken, Guid.NewGuid().ToString());
 
-            GatewayStoreModel.ApplySessionToken(
+            await GatewayStoreModel.ApplySessionTokenAsync(
                 dsrQueryPlan,
                 ConsistencyLevel.Session,
                 new Mock<ISessionContainer>().Object);
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public void TestApplySessionForDataOperation()
+        public async Task TestApplySessionForDataOperation()
         {
             List<ResourceType> resourceTypes = new List<ResourceType>()
             {
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
                     string dsrSessionToken = Guid.NewGuid().ToString();
                     dsr.Headers.Add(HttpConstants.HttpHeaders.SessionToken, dsrSessionToken);
 
-                    GatewayStoreModel.ApplySessionToken(
+                    await GatewayStoreModel.ApplySessionTokenAsync(
                         dsr,
                         ConsistencyLevel.Session,
                         new Mock<ISessionContainer>().Object);
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos
                     Mock<ISessionContainer> sMock = new Mock<ISessionContainer>();
                     sMock.Setup(x => x.ResolveGlobalSessionToken(dsrNoSessionToken)).Returns(dsrSessionToken);
 
-                    GatewayStoreModel.ApplySessionToken(
+                    await GatewayStoreModel.ApplySessionTokenAsync(
                         dsrNoSessionToken,
                         ConsistencyLevel.Session,
                         sMock.Object);
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos
             string sessionToken = Guid.NewGuid().ToString();
             dsrSprocExecute.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
 
-            GatewayStoreModel.ApplySessionToken(
+            await GatewayStoreModel.ApplySessionTokenAsync(
                 dsrSprocExecute,
                 ConsistencyLevel.Session,
                 new Mock<ISessionContainer>().Object);

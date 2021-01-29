@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -27,6 +28,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
+
+        // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
+        internal ClientCollectionCache ClientCollectionCache { get; set; }
+        internal PartitionKeyRangeCache PartitionKeyRangeCache { get; set; }
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -49,10 +54,12 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
-            GatewayStoreModel.ApplySessionToken(
+            await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
                 this.defaultConsistencyLevel,
-                this.sessionContainer);
+                this.sessionContainer,
+                this.PartitionKeyRangeCache,
+                this.ClientCollectionCache);
 
             DocumentServiceResponse response;
             try
@@ -143,6 +150,12 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
 
+        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache, ClientCollectionCache clientCollectionCache)
+        {
+            this.ClientCollectionCache = clientCollectionCache;
+            this.PartitionKeyRangeCache = partitionKeyRangeCache;
+        }
+
         public void Dispose()
         {
             this.Dispose(true);
@@ -193,10 +206,12 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static void ApplySessionToken(
+        internal static async Task ApplySessionTokenAsync(
             DocumentServiceRequest request,
             ConsistencyLevel defaultConsistencyLevel,
-            ISessionContainer sessionContainer)
+            ISessionContainer sessionContainer,
+            PartitionKeyRangeCache partitionKeyRangeCache = null,
+            ClientCollectionCache clientCollectionCache = null)
         {
             if (request.Headers == null)
             {
@@ -227,18 +242,102 @@ namespace Microsoft.Azure.Cosmos
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency)
+            if (!sessionConsistency || !request.IsReadOnlyRequest)
             {
                 return; // Only apply the session token in case of session consistency
             }
 
-            //Apply the ambient session.
-            string sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
+            string sessionToken = null;
+            if (clientCollectionCache != null && partitionKeyRangeCache != null)
+            {
+                sessionToken = await ResolveSessionTokenAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache);
+            }
+
+            if (string.IsNullOrEmpty(sessionToken))
+            {
+                sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
+            }
 
             if (!string.IsNullOrEmpty(sessionToken))
             {
                 request.Headers[HttpConstants.HttpHeaders.SessionToken] = sessionToken;
             }
+        }
+
+        internal static async Task<string> ResolveSessionTokenAsync(DocumentServiceRequest request, ISessionContainer sessionContainer, PartitionKeyRangeCache partitionKeyRangeCache, ClientCollectionCache clientCollectionCache)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            PartitionKeyRange partitionKeyRange = null;
+            if (request.ResourceType.IsPartitioned())
+            {
+                partitionKeyRange = await ResolvePartitionKeyRangeAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache, false);
+            }
+
+            ISessionToken localSessionToken = null;
+            if (partitionKeyRange != null)
+            {
+                localSessionToken = sessionContainer.ResolvePartitionLocalSessionToken(request, partitionKeyRange.Id);
+            }
+
+            return localSessionToken.ConvertToString();
+        }
+
+        private static async Task<PartitionKeyRange> ResolvePartitionKeyRangeAsync(DocumentServiceRequest request, 
+                                                                        ISessionContainer sessionContainer, 
+                                                                        PartitionKeyRangeCache partitionKeyRangeCache, 
+                                                                        ClientCollectionCache clientCollectionCache, 
+                                                                        bool refreshCache)
+        {
+            if (refreshCache)
+            {
+                request.ForceMasterRefresh = true;
+                request.ForceNameCacheRefresh = true;
+            }
+
+            PartitionKeyRange partitonKeyRange = null;
+            ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+
+            if (request.Headers[HttpConstants.HttpHeaders.PartitionKey] != null)
+            {
+                CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(collectionRid: collection.ResourceId,
+                                                                                                        previousValue: null,
+                                                                                                        request: request,
+                                                                                                        cancellationToken: CancellationToken.None);
+
+                if (refreshCache && collectionRoutingMap != null)
+                {
+                    collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(collectionRid: collection.ResourceId,
+                                                                                        previousValue: collectionRoutingMap,
+                                                                                        request: request,
+                                                                                        cancellationToken: CancellationToken.None);
+                }
+
+                partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(request, request.Headers[HttpConstants.HttpHeaders.PartitionKey], false, collection, collectionRoutingMap);
+            }
+            else if (request.PartitionKeyRangeIdentity != null)
+            {
+                PartitionKeyRangeIdentity partitionKeyRangeId = request.PartitionKeyRangeIdentity;
+                partitonKeyRange = await partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(collection.ResourceId, 
+                                                                                                 partitionKeyRangeId.ToString(), 
+                                                                                                 refreshCache);
+            }
+
+            if (partitonKeyRange == null)
+            {
+                if (refreshCache)
+                {
+                    return null;
+                }
+
+                // need to refresh cache. Maybe split happened.
+                return await ResolvePartitionKeyRangeAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache, true);
+            }
+
+            return partitonKeyRange;
         }
 
         // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync
