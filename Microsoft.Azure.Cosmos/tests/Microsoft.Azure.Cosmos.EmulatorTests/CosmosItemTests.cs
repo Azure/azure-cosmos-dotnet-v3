@@ -1653,6 +1653,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore]
         [TestMethod]
         public async Task BatchPatchConditionTest()
         {
@@ -1744,6 +1745,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore]
         [TestMethod]
         public async Task PatchConditionTest()
         {
