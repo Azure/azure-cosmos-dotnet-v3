@@ -29,5 +29,17 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             return $"User Agent: {userAgent} {Environment.NewLine}{TraceWriter.TraceToText(rootTrace)}";
         }
+
+        public override TimeSpan GetClientElapsedTime()
+        {
+            // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
+            ITrace rootTrace = this.Value;
+            while (rootTrace.Parent != null)
+            {
+                rootTrace = rootTrace.Parent;
+            }
+
+            return rootTrace.Duration;
+        }
     }
 }

@@ -184,7 +184,10 @@ namespace Microsoft.Azure.Cosmos
             if (toDispatch != null)
             {
                 // Discarded for Fire & Forget
-                _ = toDispatch.DispatchAsync(this.partitionMetric, NoOpTrace.Singleton, this.cancellationTokenSource.Token);
+                using (ITrace trace = Trace.GetRootTrace("Batch Async Streamer Root Trace"))
+                {
+                    _ = toDispatch.DispatchAsync(this.partitionMetric, trace, this.cancellationTokenSource.Token);
+                }
             }
 
             this.ResetTimer();

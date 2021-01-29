@@ -890,6 +890,7 @@
                     ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
                     traces.Add(trace);
                 }
+
                 ITrace joinedTrace = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 

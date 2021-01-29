@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                   operations: operations,
                   serializer: null)
         {
-            this.CreateAndPopulateResults(operations);
+            this.CreateAndPopulateResults(operations, trace);
         }
 
         /// <summary>
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos
                             }
                         }
 
-                        response.CreateAndPopulateResults(serverRequest.Operations, retryAfterMilliseconds);
+                        response.CreateAndPopulateResults(serverRequest.Operations, trace, retryAfterMilliseconds);
                     }
 
                     return response;
@@ -302,17 +302,20 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void CreateAndPopulateResults(IReadOnlyList<ItemBatchOperation> operations, int retryAfterMilliseconds = 0)
+        private void CreateAndPopulateResults(IReadOnlyList<ItemBatchOperation> operations, ITrace trace, int retryAfterMilliseconds = 0)
         {
             this.results = new List<TransactionalBatchOperationResult>();
             for (int i = 0; i < operations.Count; i++)
             {
-                this.results.Add(
-                    new TransactionalBatchOperationResult(this.StatusCode)
-                    {
-                        SubStatusCode = this.SubStatusCode,
-                        RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
-                    });
+                TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(this.StatusCode)
+                {
+                    SubStatusCode = this.SubStatusCode,
+                    RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
+                };
+
+                result.Trace = trace;
+
+                this.results.Add(result);
             }
         }
 
@@ -337,6 +340,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return r;
                     }
+
+                    operationResult.Trace = trace;
 
                     results.Add(operationResult);
                     return r;
