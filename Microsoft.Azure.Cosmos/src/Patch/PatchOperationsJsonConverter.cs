@@ -46,7 +46,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException("Value Argument is not PatchSpec.");
             }
 
-            //PatchSpec patchSpec = (PatchSpec)value;
             IReadOnlyList<PatchOperation> patchOperations = (IReadOnlyList<PatchOperation>)patchSpec.PatchOperations;
 
             writer.WriteStartObject();

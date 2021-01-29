@@ -7,16 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using Newtonsoft.Json;
+
     /// <summary>
     /// Details of Patch operation that is to be applied to the referred Cosmos item.
     /// </summary>
-#if INTERNAL
-    public
-#else
-    internal
-#endif
-
-        struct PatchSpec
+    internal struct PatchSpec
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PatchSpec"/> struct.
