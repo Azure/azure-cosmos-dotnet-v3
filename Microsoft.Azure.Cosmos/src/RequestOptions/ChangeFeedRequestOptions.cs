@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Globalization;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
 

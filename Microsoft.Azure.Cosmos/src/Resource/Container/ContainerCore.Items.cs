@@ -782,7 +782,8 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                new CosmosDiagnosticsContextCore());
+                new CosmosDiagnosticsContextCore(),
+                queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             ReadFeedPaginationOptions.PaginationDirection? direction = null;
