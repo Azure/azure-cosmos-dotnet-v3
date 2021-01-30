@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ClientOfficialVersion>3.16.0</ClientOfficialVersion>
     <ClientPreviewVersion>3.15.2</ClientPreviewVersion>
-    <DirectVersion>3.15.4</DirectVersion>
+    <DirectVersion>3.17.0</DirectVersion>
     <EncryptionVersion>1.0.0-preview9</EncryptionVersion>
     <HybridRowVersion>1.1.0-preview1</HybridRowVersion>
     <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
