@@ -153,10 +153,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 innerException: monadicChangeFeedCrossFeedRangeState.Exception));
                     }
 
-                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
-                    foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
+                    Dictionary<string, string> additionalHeaders;
+                    if (changeFeedRequestOptions?.Properties != null)
                     {
-                        additionalHeaders[keyValuePair.Key] = keyValuePair.Value.ToString();
+                        additionalHeaders = new Dictionary<string, string>();
+                        foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
+                        {
+                            if (keyValuePair.Value is string stringValue)
+                            {
+                                additionalHeaders[keyValuePair.Key] = stringValue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        additionalHeaders = null;
                     }
 
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
@@ -164,8 +175,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
                         new ChangeFeedPaginationOptions(
                             changeFeedMode,
-                            changeFeedRequestOptions.PageSizeHint,
-                            changeFeedRequestOptions.JsonSerializationFormatOptions?.JsonSerializationFormat,
+                            changeFeedRequestOptions?.PageSizeHint,
+                            changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
                             additionalHeaders),
                         cancellationToken: default);
 

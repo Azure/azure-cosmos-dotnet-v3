@@ -180,14 +180,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                    cosmosContainerCore: this.container,
                    requestEnricher: request =>
                    {
+                       // We don't set page size here, since it's already set by the query request options.
                        if (feedRangeState.State is ReadFeedContinuationState readFeedContinuationState)
                        {
                            request.Headers.ContinuationToken = ((CosmosString)readFeedContinuationState.ContinuationToken).Value;
-                       }
-
-                       if (readFeedPaginationOptions.PageSizeHint.HasValue)
-                       {
-                           request.Headers.PageSize = readFeedPaginationOptions.PageSizeHint.Value.ToString();
                        }
 
                        if (readFeedPaginationOptions.JsonSerializationFormat.HasValue)

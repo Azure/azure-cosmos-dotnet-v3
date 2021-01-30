@@ -609,7 +609,10 @@ namespace Microsoft.Azure.Cosmos
                 additionalHeaders = new Dictionary<string, string>();
                 foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
                 {
-                    additionalHeaders[keyValuePair.Key] = keyValuePair.Value.ToString();
+                    if (keyValuePair.Value is string stringValue)
+                    {
+                        additionalHeaders[keyValuePair.Key] = stringValue;
+                    }
                 }
             }
             else
