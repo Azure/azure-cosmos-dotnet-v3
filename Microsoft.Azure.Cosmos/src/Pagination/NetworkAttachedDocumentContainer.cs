@@ -334,32 +334,35 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 trace: trace,
                 cancellationToken: cancellationToken);
 
-            double requestCharge = responseMessage.Headers.RequestCharge;
-            string activityId = responseMessage.Headers.ActivityId;
-            ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
-            Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
-                responseMessage.Headers.CosmosMessageHeaders, 
-                ChangeFeedPage.BannedHeaders);
-
             TryCatch<ChangeFeedPage> monadicChangeFeedPage;
-            if (responseMessage.StatusCode == HttpStatusCode.OK)
+            bool pageHasResult = (responseMessage.StatusCode == HttpStatusCode.OK) || (responseMessage.StatusCode == HttpStatusCode.NotModified);
+            if (pageHasResult)
             {
-                ChangeFeedPage changeFeedPage = new ChangeFeedSuccessPage(
-                    responseMessage.Content,
-                    requestCharge,
-                    activityId,
-                    additionalHeaders,
-                    state);
+                double requestCharge = responseMessage.Headers.RequestCharge;
+                string activityId = responseMessage.Headers.ActivityId;
+                ChangeFeedState state = ChangeFeedState.Continuation(CosmosString.Create(responseMessage.Headers.ETag));
+                Dictionary<string, string> additionalHeaders = GetAdditionalHeaders(
+                    responseMessage.Headers.CosmosMessageHeaders,
+                    ChangeFeedPage.BannedHeaders);
 
-                monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
-            }
-            else if (responseMessage.StatusCode == HttpStatusCode.NotModified)
-            {
-                ChangeFeedPage changeFeedPage = new ChangeFeedNotModifiedPage(
-                    requestCharge,
-                    activityId,
-                    additionalHeaders,
-                    state);
+                ChangeFeedPage changeFeedPage;
+                if (responseMessage.StatusCode == HttpStatusCode.OK)
+                {
+                    changeFeedPage = new ChangeFeedSuccessPage(
+                        responseMessage.Content,
+                        requestCharge,
+                        activityId,
+                        additionalHeaders,
+                        state);
+                }
+                else
+                {
+                    changeFeedPage = new ChangeFeedNotModifiedPage(
+                        requestCharge,
+                        activityId,
+                        additionalHeaders,
+                        state);
+                }
 
                 monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromResult(changeFeedPage);
             }

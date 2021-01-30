@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 return this.queryDataSource
                     .MonadicQueryAsync(
                         sqlQuerySpec: this.SqlQuerySpec,
-                        feedRangeState: this.FeedRangeState,
+                        feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),
                         queryPaginationOptions: this.queryPaginationOptions,
                         trace: trace,
                         cancellationToken)

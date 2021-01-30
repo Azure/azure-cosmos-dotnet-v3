@@ -787,14 +787,14 @@ namespace Microsoft.Azure.Cosmos
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             ReadFeedPaginationOptions.PaginationDirection? direction = null;
-            if ((queryRequestOptions.Properties != null) && queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
+            if ((queryRequestOptions?.Properties != null) && queryRequestOptions.Properties.TryGetValue(HttpConstants.HttpHeaders.EnumerationDirection, out object enumerationDirection))
             {
                 direction = (byte)enumerationDirection == (byte)RntbdConstants.RntdbEnumerationDirection.Reverse ? ReadFeedPaginationOptions.PaginationDirection.Reverse : ReadFeedPaginationOptions.PaginationDirection.Forward;
             }
 
             ReadFeedPaginationOptions readFeedPaginationOptions = new ReadFeedPaginationOptions(
                 direction,
-                pageSizeHint: queryRequestOptions.MaxItemCount ?? int.MaxValue);
+                pageSizeHint: queryRequestOptions?.MaxItemCount);
 
             return new ReadFeedCrossFeedRangeAsyncEnumerable(
                 documentContainer,
