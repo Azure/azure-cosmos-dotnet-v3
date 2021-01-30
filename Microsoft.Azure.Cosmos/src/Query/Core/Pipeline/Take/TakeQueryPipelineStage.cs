@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     {
         private int takeCount;
 
-        private bool returnedFinalPage;
+        private bool ReturnedFinalPage => this.takeCount <= 0;
 
         protected TakeQueryPipelineStage(
             IQueryPipelineStage source,
@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             : base(source, cancellationToken)
         {
             this.takeCount = takeCount;
-            this.returnedFinalPage = this.takeCount <= 0;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(

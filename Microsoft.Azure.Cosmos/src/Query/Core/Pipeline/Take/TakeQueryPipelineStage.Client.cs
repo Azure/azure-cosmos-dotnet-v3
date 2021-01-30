@@ -184,10 +184,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                if (this.returnedFinalPage || !await this.inputStage.MoveNextAsync(trace))
+                if (this.ReturnedFinalPage || !await this.inputStage.MoveNextAsync(trace))
                 {
                     this.Current = default;
-                    this.returnedFinalPage = true;
+                    this.takeCount = 0;
                     return false;
                 }
 
@@ -202,7 +202,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 List<CosmosElement> takedDocuments = sourcePage.Documents.Take(this.takeCount).ToList();
                 this.takeCount -= takedDocuments.Count;
-                this.returnedFinalPage = this.takeCount <= 0;
 
                 QueryState state;
                 if ((sourcePage.State != null) && (sourcePage.DisallowContinuationTokenMessage == null))
