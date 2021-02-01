@@ -56,7 +56,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             // Adds the NoContent header if not already added based on Client Level flag
-            if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(request.RequestOptions, this.client.ClientOptions, request.OperationType, request.ResourceType))
+            if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(request.RequestOptions, 
+                                                                        this.client.ClientOptions, 
+                                                                        request.OperationType, 
+                                                                        request.ResourceType))
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
             }
@@ -407,11 +410,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (itemRequestOptions.EnableContentResponseOnWrite.HasValue)
                 {
-                    return IsItemNoRepsonseSet(itemRequestOptions.EnableContentResponseOnWrite.Value, operationType);
+                    return RequestInvokerHandler.IsItemNoRepsonseSet(itemRequestOptions.EnableContentResponseOnWrite.Value, operationType);
                 }
                 else
                 {
-                    return IsClientNoResponseSet(clientOptions, operationType);
+                    return RequestInvokerHandler.IsClientNoResponseSet(clientOptions, operationType);
                 }
             }
 
@@ -419,11 +422,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 if (batchRequestOptions.EnableContentResponseOnWrite.HasValue)
                 {
-                    return IsItemNoRepsonseSet(batchRequestOptions.EnableContentResponseOnWrite.Value, operationType);
+                    return RequestInvokerHandler.IsItemNoRepsonseSet(batchRequestOptions.EnableContentResponseOnWrite.Value, operationType);
                 }
                 else
                 {
-                    return IsClientNoResponseSet(clientOptions, operationType);
+                    return RequestInvokerHandler.IsClientNoResponseSet(clientOptions, operationType);
                 }
             }
 
