@@ -456,7 +456,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
         /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
-        public CosmosClientBuilder WithContentResponseOnWriteEnabled(bool contentResponseOnWriteEnabled)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithContentResponseOnWriteEnabled(bool contentResponseOnWriteEnabled)
         {
             this.clientOptions.EnableContentResponseOnWrite = contentResponseOnWriteEnabled;
             return this;

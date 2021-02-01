@@ -277,7 +277,12 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="CosmosClientBuilder.WithContentResponseOnWriteEnabled(bool)"/>
         /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
         /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
-        public bool? EnableContentResponseOnWrite { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
