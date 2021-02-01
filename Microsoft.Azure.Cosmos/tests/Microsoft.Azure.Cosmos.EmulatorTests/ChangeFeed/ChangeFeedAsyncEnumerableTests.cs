@@ -343,13 +343,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        [TestMethod]
-        [Ignore]
-        public async Task TestAdditionalResponseHeadersAsync()
-        {
-            // TODO Wire up additional headers on ChangeFeedPage and ReadFeedPage.
-        }
-
         private static async Task<(int, ChangeFeedCrossFeedRangeState)> PartialDrainAsync(IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable)
         {
             ChangeFeedCrossFeedRangeState state = default;
