@@ -440,7 +440,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     requestCharge: 42,
                     activityId: Guid.NewGuid().ToString(),
                     CosmosDiagnosticsContext.Create(default),
-                    additionalHeaders: null,
+                    additionalHeaders: new Dictionary<string, string>()
+                    {
+                        { "test-header", "test-value" }
+                    },
                     continuationState);
 
                 return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));

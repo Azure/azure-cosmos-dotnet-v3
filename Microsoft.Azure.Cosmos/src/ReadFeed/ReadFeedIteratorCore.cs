@@ -298,15 +298,21 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             }
 
             Pagination.ReadFeedPage page = crossFeedRangePage.Page;
+            Headers headers = new Headers()
+            {
+                RequestCharge = page.RequestCharge,
+                ActivityId = page.ActivityId,
+                ContinuationToken = continuationToken,
+            };
+            foreach (KeyValuePair<string, string> kvp in page.AdditionalHeaders)
+            {
+                headers[kvp.Key] = kvp.Value;
+            }
+
             return new ResponseMessage(
                 statusCode: System.Net.HttpStatusCode.OK,
                 requestMessage: default,
-                headers: new Headers()
-                {
-                    RequestCharge = page.RequestCharge,
-                    ActivityId = page.ActivityId,
-                    ContinuationToken = continuationToken,
-                },
+                headers: headers,
                 cosmosException: default,
                 diagnostics: page.Diagnostics)
             {

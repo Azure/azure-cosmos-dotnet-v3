@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [SDK.EmulatorTests.TestClass]
@@ -318,6 +319,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     }
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task TestCustomRequestOptionsAsync()
+        {
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions()
+                {
+                     Properties = new Dictionary<string, object>()
+                     {
+                         { HttpConstants.HttpHeaders.SessionToken, "AnInvalidSessionToken" }
+                     }
+                });
+
+            await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
+            {
+                Assert.IsTrue(monadicPage.Failed);
+                Assert.AreEqual(((CosmosException)monadicPage.InnerMostException).StatusCode, System.Net.HttpStatusCode.BadRequest);
+                break;
+            }
+        }
+
+        [TestMethod]
+        [Ignore]
+        public async Task TestAdditionalResponseHeadersAsync()
+        {
+            // TODO Wire up additional headers on ChangeFeedPage and ReadFeedPage.
         }
 
         private static async Task<(int, ChangeFeedCrossFeedRangeState)> PartialDrainAsync(IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable)

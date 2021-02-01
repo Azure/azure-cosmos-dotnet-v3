@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -143,6 +144,25 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             }
 
             Assert.AreEqual(numItems, count);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_ResponseHeaders()
+        {
+            int numItems = 100;
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(numItems);
+            FeedIterator iterator = CreateReadFeedIterator(
+                documentContainer,
+                continuationToken: null,
+                pageSize: 10);
+
+            while (iterator.HasMoreResults)
+            {
+                ResponseMessage message = await iterator.ReadNextAsync();
+                CosmosArray documents = GetDocuments(message.Content);
+
+                Assert.IsTrue(message.Headers.AllKeys().Contains("test-header"));
+            }
         }
 
         private static CosmosArray GetDocuments(Stream stream)
