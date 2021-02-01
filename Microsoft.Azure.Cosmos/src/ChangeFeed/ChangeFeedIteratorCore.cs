@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
@@ -26,12 +25,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public ChangeFeedIteratorCore(
             IDocumentContainer documentContainer,
-            ChangeFeedRequestOptions changeFeedRequestOptions,
+            ChangeFeedMode changeFeedMode,
+            ChangeFeedRequestOptions changeFeedRequestOptions,            
             ChangeFeedStartFrom changeFeedStartFrom)
         {
             if (changeFeedStartFrom == null)
             {
                 throw new ArgumentNullException(nameof(changeFeedStartFrom));
+            }
+
+            if (changeFeedMode == null)
+            {
+                throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
@@ -150,6 +155,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,
+                        changeFeedMode,
                         changeFeedRequestOptions,
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
                         cancellationToken: default);

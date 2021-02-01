@@ -8,7 +8,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
 
-    internal abstract class ChangeFeedState : State
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif 
+        abstract class ChangeFeedState : State
     {
         public abstract void Accept<TInput>(IChangeFeedStateVisitor<TInput> visitor, TInput input);
 

@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections;
     using System.Collections.Immutable;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     internal static partial class JsonBinaryEncoding
@@ -184,6 +186,89 @@ namespace Microsoft.Azure.Cosmos.Json
             return Utf8Span.UnsafeFromUtf8BytesNoValidation(destinationBuffer).ToString();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Utf8Span GetUtf8SpanValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken)
+        {
+            return Utf8Span.UnsafeFromUtf8BytesNoValidation(GetUtf8MemoryValue(buffer, stringToken).Span);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Utf8String GetUtf8StringValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken)
+        {
+            return Utf8String.UnsafeFromUtf8BytesNoValidation(GetUtf8MemoryValue(buffer, stringToken));
+        }
+
+        public static bool TryGetBufferedStringValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken,
+            out Utf8Memory value)
+        {
+            if (stringToken.IsEmpty)
+            {
+                value = default;
+                return false;
+            }
+
+            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
+                buffer,
+                stringToken,
+                out value))
+            {
+                return true;
+            }
+
+            if (JsonBinaryEncoding.TryGetEncodedStringValue(
+                stringToken.Span,
+                out UtfAllString encodedStringValue))
+            {
+                value = encodedStringValue.Utf8EscapedString;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static bool TryGetDictionaryEncodedStringValue(
+            ReadOnlySpan<byte> stringToken,
+            out UtfAllString value) => TryGetEncodedStringValue(
+                stringToken,
+                out value);
+
+        private static ReadOnlyMemory<byte> GetUtf8MemoryValue(
+            ReadOnlyMemory<byte> buffer,
+            ReadOnlyMemory<byte> stringToken)
+        {
+            byte typeMarker = stringToken.Span[0];
+
+            if (IsBufferedStringCandidate[typeMarker])
+            {
+                if (!TryGetBufferedStringValue(
+                    buffer,
+                    stringToken,
+                    out Utf8Memory bufferedStringValue))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return bufferedStringValue.Memory;
+            }
+
+            if (JsonBinaryEncoding.TypeMarker.IsCompressedString(typeMarker) || JsonBinaryEncoding.TypeMarker.IsGuidString(typeMarker))
+            {
+                DecodeString(stringToken.Span, Span<byte>.Empty, out int valueLength);
+                Memory<byte> bytes = new byte[valueLength];
+                DecodeString(stringToken.Span, bytes.Span, out valueLength);
+                return bytes;
+            }
+
+            throw new JsonInvalidTokenException();
+        }
+
         private static void GetStringValue(
             ReadOnlyMemory<byte> buffer,
             ReadOnlyMemory<byte> stringToken,
@@ -227,43 +312,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 throw new JsonInvalidTokenException();
             }
         }
-
-        public static bool TryGetBufferedStringValue(
-            ReadOnlyMemory<byte> buffer,
-            ReadOnlyMemory<byte> stringToken,
-            out Utf8Memory value)
-        {
-            if (stringToken.IsEmpty)
-            {
-                value = default;
-                return false;
-            }
-
-            if (JsonBinaryEncoding.TryGetBufferedLengthPrefixedString(
-                buffer,
-                stringToken,
-                out value))
-            {
-                return true;
-            }
-
-            if (JsonBinaryEncoding.TryGetEncodedStringValue(
-                stringToken.Span,
-                out UtfAllString encodedStringValue))
-            {
-                value = encodedStringValue.Utf8EscapedString;
-                return true;
-            }
-
-            value = default;
-            return false;
-        }
-
-        public static bool TryGetDictionaryEncodedStringValue(
-            ReadOnlySpan<byte> stringToken,
-            out UtfAllString value) => TryGetEncodedStringValue(
-                stringToken,
-                out value);
 
         /// <summary>
         /// Try Get Encoded String Value
@@ -647,6 +695,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
+            int firstSetBit = 128;
+            int lastSetBit = 0;
+            int charCount = 0;
             BitArray valueCharSet = new BitArray(length: 128);
             // Create a bit-set with all the ASCII character of the string value
             for (int index = 0; index < stringValue.Length; index++)
@@ -660,33 +711,18 @@ namespace Microsoft.Azure.Cosmos.Json
                     return false;
                 }
 
+                if (!valueCharSet[charValue])
+                {
+                    charCount++;
+
+                    firstSetBit = Math.Min(charValue, firstSetBit);
+                    lastSetBit = Math.Max(charValue, lastSetBit);
+                }
+
                 valueCharSet.Set(charValue, true);
             }
 
-            int firstSetBit = 0;
-            for (; (firstSetBit < valueCharSet.Length) && !valueCharSet[firstSetBit]; firstSetBit++)
-            {
-            }
-
-            int lastSetBit = valueCharSet.Length - 1;
-            for (; (lastSetBit > 0) && !valueCharSet[lastSetBit]; lastSetBit--)
-            {
-            }
-
-            int charCount = 0;
-            int firstBitSet = int.MaxValue;
-            int lastBitSet = int.MinValue;
-            for (int i = 0; i < valueCharSet.Length; i++)
-            {
-                if (valueCharSet[i])
-                {
-                    charCount++;
-                    firstBitSet = Math.Min(firstBitSet, i);
-                    lastBitSet = Math.Max(lastBitSet, i);
-                }
-            }
-
-            int charRange = lastSetBit - firstSetBit + 1;
+            int charRange = (lastSetBit - firstSetBit) + 1;
 
             // Attempt to encode the string as 4-bit packed values over a defined character set
             if ((stringValue.Length <= 0xFF) && (charCount <= 16) && (stringValue.Length >= Min4BitCharSetStringLength))

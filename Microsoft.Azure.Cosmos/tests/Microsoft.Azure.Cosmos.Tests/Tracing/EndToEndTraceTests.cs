@@ -115,6 +115,7 @@
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems);
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer,
+                ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions()
                 { 
                     PageSizeHint = int.MaxValue

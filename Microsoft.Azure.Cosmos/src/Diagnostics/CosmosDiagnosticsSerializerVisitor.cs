@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     {
         private const string DiagnosticsVersion = "2";
         private readonly JsonWriter jsonWriter;
+        private bool rootDiagnosticContextVisited = false;
 
         public CosmosDiagnosticsSerializerVisitor(TextWriter textWriter)
         {
@@ -63,6 +64,19 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override void Visit(CosmosDiagnosticsContext cosmosDiagnosticsContext)
         {
+            // Nested diagnostics should not include the summary
+            if (this.rootDiagnosticContextVisited)
+            {
+                foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in cosmosDiagnosticsContext)
+                {
+                    cosmosDiagnosticsInternal.Accept(this);
+                }
+
+                return;
+            }
+
+            this.rootDiagnosticContextVisited = true;
+
             this.jsonWriter.WriteStartObject();
 
             this.jsonWriter.WritePropertyName("DiagnosticVersion");
@@ -92,6 +106,9 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
             this.jsonWriter.WritePropertyName("FailedRequestCount");
             this.jsonWriter.WriteValue(cosmosDiagnosticsContext.GetFailedResponseCount());
+
+            this.jsonWriter.WritePropertyName("Operation");
+            this.jsonWriter.WriteValue(cosmosDiagnosticsContext.OperationName);
 
             this.jsonWriter.WriteEndObject();
 
@@ -227,13 +244,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             this.jsonWriter.WritePropertyName("LocationEndpoint");
             this.jsonWriter.WriteValue(storeResponseStatistics.LocationEndpoint);
 
-            if (storeResponseStatistics.StoreResult != null)
+            if (storeResponseStatistics.StoreResultStatistics != null)
             {
                 this.jsonWriter.WritePropertyName("ActivityId");
-                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ActivityId);
-
+                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResultStatistics.ActivityId);
                 this.jsonWriter.WritePropertyName("StoreResult");
-                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResult.ToString());
+                this.jsonWriter.WriteValue(storeResponseStatistics.StoreResultStatistics.ToString());
             }
 
             this.jsonWriter.WriteEndObject();

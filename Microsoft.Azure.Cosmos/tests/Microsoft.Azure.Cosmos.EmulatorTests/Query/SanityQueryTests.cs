@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Linq;
     using System.Net;
     using System.Runtime.CompilerServices;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -202,6 +204,58 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        public async Task StoreResponseStatisticsMemoryLeak()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryText: "SELECT * FROM c",
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 10,
+                    }))
+                {
+                    WeakReference weakReference = await CreateWeakReferenceToResponseContent(feedIterator);
+
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    await Task.Delay(500 /*ms*/);
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+
+                    Assert.IsFalse(weakReference.IsAlive);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<WeakReference> CreateWeakReferenceToResponseContent(
+            FeedIterator feedIterator)
+        {
+            WeakReference weakResponseContent;
+            using (ResponseMessage response = await feedIterator.ReadNextAsync())
+            {
+                Assert.IsNotNull(response.Content);
+                weakResponseContent = new WeakReference(response.Content, true);
+            }
+
+            return weakResponseContent;
+        }
+
+        [TestMethod]
         public async Task TestNonDeterministicQueryResultsAsync()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
@@ -237,9 +291,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 bool hasOrderBy)
                             {
                                 List<CosmosObject> queryResults = await queryFunc(container, query, queryRequestOptions);
-                                HashSet<string> expectedIds = new HashSet<string>(inputDocuments
+                                HashSet<UtfAnyString> expectedIds = new HashSet<UtfAnyString>(inputDocuments
                                     .Select(document => ((CosmosString)document["id"]).Value));
-                                HashSet<string> actualIds = new HashSet<string>(queryResults
+                                HashSet<UtfAnyString> actualIds = new HashSet<UtfAnyString>(queryResults
                                     .Select(queryResult => ((CosmosString)queryResult["id"]).Value));
                                 Assert.IsTrue(
                                     expectedIds.SetEquals(actualIds),
@@ -920,6 +974,85 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     Console.WriteLine(traceString);
 
                     //Assert.AreEqual(numChildren, trace.Children.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestCancellationTokenAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 10,
+                        MaxItemCount = 10,
+                        ReturnResultsInDeterministicOrder = true,
+                    };
+
+                    // See if cancellation token is honored for first request
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        cancellationTokenSource.Cancel();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+
+                    // See if cancellation token is honored for second request
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        cancellationTokenSource.Cancel();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(default);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+
+                    // See if cancellation token is honored mid draining
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+                        cancellationTokenSource.Cancel();
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
                 }
             }
         }

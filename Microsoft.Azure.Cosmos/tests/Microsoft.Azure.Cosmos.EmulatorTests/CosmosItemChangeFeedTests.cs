@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -181,10 +181,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string corruptedTokenSerialized = JsonConvert.SerializeObject(corruptedTokens);
 
             ContainerInternal itemsCore = this.Container;
-            FeedIterator setIteratorNew =
+            using FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
-            ResponseMessage responseMessage = await setIteratorNew.ReadNextAsync(this.cancellationToken);
+            using ResponseMessage responseMessage = await setIteratorNew.ReadNextAsync(this.cancellationToken);
 
             Assert.Fail("Should have thrown.");
         }
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
+            using FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
             {
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 StandByFeedIteratorRequestOptions requestOptions = new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue };
 
-                FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
+                using FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<CompositeContinuationToken> previousToken = null;
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
-            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
+            using FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
             while (true)
             {
                 using (ResponseMessage responseMessage =
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 id = Guid.NewGuid().ToString(),
                 description = "CreateRandomToDoActivity",
-                status = pk,
+                pk = pk,
                 taskNum = 42,
                 cost = double.MaxValue
             };
@@ -475,15 +475,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 return Task.FromResult(new ResponseMessage(System.Net.HttpStatusCode.NotModified));
             }
-        }
-
-        public class ToDoActivity
-        {
-            public string id { get; set; }
-            public int taskNum { get; set; }
-            public double cost { get; set; }
-            public string description { get; set; }
-            public string status { get; set; }
         }
     }
 }

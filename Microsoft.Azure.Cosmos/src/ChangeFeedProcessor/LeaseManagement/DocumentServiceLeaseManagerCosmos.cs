@@ -5,31 +5,43 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// <see cref="DocumentServiceLeaseManager"/> implementation that uses Azure Cosmos DB service
     /// </summary>
     internal sealed class DocumentServiceLeaseManagerCosmos : DocumentServiceLeaseManager
     {
-        private readonly Container leaseContainer;
+        private readonly ContainerInternal monitoredContainer;
+        private readonly ContainerInternal leaseContainer;
         private readonly DocumentServiceLeaseUpdater leaseUpdater;
         private readonly DocumentServiceLeaseStoreManagerOptions options;
         private readonly RequestOptionsFactory requestOptionsFactory;
+        private readonly AsyncLazy<TryCatch<string>> lazyContainerRid;
+        private PartitionKeyRangeCache partitionKeyRangeCache;
 
         public DocumentServiceLeaseManagerCosmos(
-            Container leaseContainer,
+            ContainerInternal monitoredContainer,
+            ContainerInternal leaseContainer,
             DocumentServiceLeaseUpdater leaseUpdater,
             DocumentServiceLeaseStoreManagerOptions options,
             RequestOptionsFactory requestOptionsFactory)
         {
+            this.monitoredContainer = monitoredContainer;
             this.leaseContainer = leaseContainer;
             this.leaseUpdater = leaseUpdater;
             this.options = options;
             this.requestOptionsFactory = requestOptionsFactory;
+            this.lazyContainerRid = new AsyncLazy<TryCatch<string>>(valueFactory: (trace, innerCancellationToken) => this.TryInitializeContainerRIdAsync(innerCancellationToken));
         }
 
         public override async Task<DocumentServiceLease> AcquireAsync(DocumentServiceLease lease)
@@ -40,6 +52,31 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
 
             string oldOwner = lease.Owner;
+
+            // We need to add the range information to any older leases
+            // This would not happen with new created leases but we need to be back compat
+            if (lease.FeedRange == null)
+            {
+                if (!this.lazyContainerRid.ValueInitialized)
+                {
+                    TryCatch<string> tryInitializeContainerRId = await this.lazyContainerRid.GetValueAsync(NoOpTrace.Singleton, default);
+                    if (!tryInitializeContainerRId.Succeeded)
+                    {
+                        throw tryInitializeContainerRId.Exception.InnerException;
+                    }
+
+                    this.partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                }
+
+                PartitionKeyRange partitionKeyRange = await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
+                    this.lazyContainerRid.Result.Result, 
+                    lease.CurrentLeaseToken);
+
+                if (partitionKeyRange != null)
+                {
+                    lease.FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange());
+                }
+            }
 
             return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,
@@ -58,30 +95,48 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }).ConfigureAwait(false);
         }
 
-        public override async Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(string leaseToken, string continuationToken)
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            PartitionKeyRange partitionKeyRange, 
+            string continuationToken)
         {
-            if (leaseToken == null)
-                throw new ArgumentNullException(nameof(leaseToken));
+            if (partitionKeyRange == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRange));
+            }
 
+            string leaseToken = partitionKeyRange.Id;
             string leaseDocId = this.GetDocumentId(leaseToken);
             DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
             {
                 LeaseId = leaseDocId,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
+                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
             };
 
-            bool created = await this.leaseContainer.TryCreateItemAsync<DocumentServiceLeaseCore>(
-                this.requestOptionsFactory.GetPartitionKey(documentServiceLease.Id),
-                documentServiceLease).ConfigureAwait(false) != null;
-            if (created)
+            return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
+        }
+
+        public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
+            FeedRangeEpk feedRange,
+            string continuationToken)
+        {
+            if (feedRange == null)
             {
-                DefaultTrace.TraceInformation("Created lease with lease token {0}.", leaseToken);
-                return documentServiceLease;
+                throw new ArgumentNullException(nameof(feedRange));
             }
 
-            DefaultTrace.TraceInformation("Some other host created lease for {0}.", leaseToken);
-            return null;
+            string leaseToken = $"{feedRange.Range.Min}-{feedRange.Range.Max}";
+            string leaseDocId = this.GetDocumentId(leaseToken);
+            DocumentServiceLeaseCoreEpk documentServiceLease = new DocumentServiceLeaseCoreEpk
+            {
+                LeaseId = leaseDocId,
+                LeaseToken = leaseToken,
+                ContinuationToken = continuationToken,
+                FeedRange = feedRange
+            };
+
+            return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
         public override async Task ReleaseAsync(DocumentServiceLease lease)
@@ -89,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             if (lease == null)
                 throw new ArgumentNullException(nameof(lease));
 
-            DocumentServiceLeaseCore refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            DocumentServiceLease refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             if (refreshedLease == null)
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to release lease. The lease is gone already.", lease.CurrentLeaseToken);
@@ -131,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
             // Get fresh lease. The assumption here is that checkpointing is done with higher frequency than lease renewal so almost
             // certainly the lease was updated in between.
-            DocumentServiceLeaseCore refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
+            DocumentServiceLease refreshedLease = await this.TryGetLeaseAsync(lease).ConfigureAwait(false);
             if (refreshedLease == null)
             {
                 DefaultTrace.TraceInformation("Lease with token {0} failed to renew lease. The lease is gone already.", lease.CurrentLeaseToken);
@@ -179,14 +234,42 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 }).ConfigureAwait(false);
         }
 
-        private async Task<DocumentServiceLeaseCore> TryGetLeaseAsync(DocumentServiceLease lease)
+        private async Task<DocumentServiceLease> TryCreateDocumentServiceLeaseAsync(DocumentServiceLease documentServiceLease)
         {
-            return await this.leaseContainer.TryGetItemAsync<DocumentServiceLeaseCore>(this.requestOptionsFactory.GetPartitionKey(lease.Id), lease.Id).ConfigureAwait(false);
+            bool created = await this.leaseContainer.TryCreateItemAsync<DocumentServiceLease>(
+                this.requestOptionsFactory.GetPartitionKey(documentServiceLease.Id),
+                documentServiceLease).ConfigureAwait(false) != null;
+            if (created)
+            {
+                DefaultTrace.TraceInformation("Created lease with lease token {0}.", documentServiceLease.CurrentLeaseToken);
+                return documentServiceLease;
+            }
+
+            DefaultTrace.TraceInformation("Some other host created lease for {0}.", documentServiceLease.CurrentLeaseToken);
+            return null;
+        }
+
+        private async Task<DocumentServiceLease> TryGetLeaseAsync(DocumentServiceLease lease)
+        {
+            return await this.leaseContainer.TryGetItemAsync<DocumentServiceLease>(this.requestOptionsFactory.GetPartitionKey(lease.Id), lease.Id).ConfigureAwait(false);
         }
 
         private string GetDocumentId(string partitionId)
         {
             return this.options.GetPartitionLeasePrefix() + partitionId;
+        }
+
+        private async Task<TryCatch<string>> TryInitializeContainerRIdAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                string containerRId = await this.monitoredContainer.GetCachedRIDAsync(forceRefresh: false, cancellationToken: cancellationToken);
+                return TryCatch<string>.FromResult(containerRId);
+            }
+            catch (CosmosException cosmosException)
+            {
+                return TryCatch<string>.FromException(cosmosException);
+            }
         }
     }
 }

@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 CosmosDiagnosticsContext current = this.diagnosticsContext;
                 this.diagnosticsContext = CosmosDiagnosticsContext.Create(new RequestOptions());
+                current.GetOverallScope().Dispose();
                 return current;
             }
         }

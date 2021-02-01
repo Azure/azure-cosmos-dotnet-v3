@@ -5,15 +5,21 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Runtime.InteropServices.ComTypes;
     using System.Text;
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -21,6 +27,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class CosmosDiagnosticsUnitTests
     {
+        [TestCleanup]
+        public void Cleanup()
+        {
+            typeof(CosmosDiagnosticsContextCore).TypeInitializer.Invoke(null, null);
+        }
+
         [TestMethod]
         public void ValidateActivityScope()
         {
@@ -42,9 +54,47 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateTransportHandlerLogging()
+        {
+            DocumentClientException dce = new DocumentClientException(
+                "test",
+                null,
+                new StoreResponseNameValueCollection(),
+                HttpStatusCode.Gone,
+                SubStatusCodes.PartitionKeyRangeGone,
+                new Uri("htts://localhost.com"));
+
+            CosmosDiagnosticsContext diagnosticsContext = new CosmosDiagnosticsContextCore();
+
+            RequestMessage requestMessage = new RequestMessage(
+                        HttpMethod.Get,
+                        "/dbs/test/colls/abc/docs/123",
+                        diagnosticsContext,
+                        Microsoft.Azure.Cosmos.Tracing.NoOpTrace.Singleton);
+
+            ResponseMessage response = dce.ToCosmosResponseMessage(requestMessage);
+
+            Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode);
+            Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, response.Headers.SubStatusCode);
+
+            bool visited = false;
+            foreach (CosmosDiagnosticsInternal cosmosDiagnosticsInternal in diagnosticsContext)
+            {
+                if (cosmosDiagnosticsInternal is PointOperationStatistics operationStatistics)
+                {
+                    visited = true;
+                    Assert.AreEqual(operationStatistics.StatusCode, HttpStatusCode.Gone);
+                    Assert.AreEqual(operationStatistics.SubStatusCode, SubStatusCodes.PartitionKeyRangeGone);
+                }
+            }
+
+            Assert.IsTrue(visited, "PointOperationStatistics was not found in the diagnostics.");
+        }
+
+        [TestMethod]
         public async Task ValidateActivityId()
         {
-           using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
+            using CosmosClient cosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             CosmosClientContext clientContext = ClientContextCore.Create(
               cosmosClient,
               new MockDocumentClient(),
@@ -157,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string result = cosmosDiagnostics.ToString();
 
-            string regex = @"\{""DiagnosticVersion"":""2"",""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTimeInMs"":.+,""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
+            string regex = @"\{""DiagnosticVersion"":""2"",""Summary"":\{""StartUtc"":"".+Z"",""TotalElapsedTimeInMs"":.+,""UserAgent"":""MyCustomUserAgentString"",""TotalRequestCount"":2,""FailedRequestCount"":1,""Operation"":""ValidateDiagnosticsContext""\},""Context"":\[\{""Id"":""ValidateScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""692ab2f2-41ba-486b-aad7-8c7c6c52379f"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":429,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\},\{""Id"":""SuccessScope"",""ElapsedTimeInMs"":.+\},\{""Id"":""PointOperationStatistics"",""ActivityId"":""de09baab-71a4-4897-a163-470711c93ed3"",""ResponseTimeUtc"":"".+Z"",""StatusCode"":200,""SubStatusCode"":0,""RequestCharge"":42.0,""RequestUri"":""http://MockUri.com"",""RequestSessionToken"":null,""ResponseSessionToken"":null\}\]\}";
             Assert.IsTrue(Regex.IsMatch(result, regex), $"regex: {regex} result: {result}");
 
             JToken jToken = JToken.Parse(result);
@@ -180,10 +230,31 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (cosmosDiagnostics.GetOverallScope())
             {
+                bool insertIntoDiagnostics1 = true;
+                bool isInsertDiagnostics = false;
+                // Start a background thread and ensure that no exception occurs even if items are getting added to the context
+                // when 2 contexts are appended.
+                Task.Run(() =>
+                {
+                    isInsertDiagnostics = true;
+                    CosmosSystemInfo cosmosSystemInfo = new CosmosSystemInfo(
+                        cpuLoadHistory: new Documents.Rntbd.CpuLoadHistory(new List<Documents.Rntbd.CpuLoad>().AsReadOnly(), TimeSpan.FromSeconds(1)));
+                    while (insertIntoDiagnostics1)
+                    {
+                        Task.Delay(TimeSpan.FromMilliseconds(1)).Wait();
+                        cosmosDiagnostics.AddDiagnosticsInternal(cosmosSystemInfo);
+                    }
+                });
+
+                while (!isInsertDiagnostics)
+                {
+                    Task.Delay(TimeSpan.FromMilliseconds(5)).Wait();
+                }
+
                 // Test all the different operations on diagnostics context
                 using (cosmosDiagnostics.CreateScope("ValidateScope"))
                 {
-                    Thread.Sleep(TimeSpan.FromSeconds(2));
+                    Thread.Sleep(TimeSpan.FromMilliseconds(3));
                 }
 
                 cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
@@ -193,16 +264,85 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 using (cosmosDiagnostics.CreateScope("CosmosDiagnostics2Scope"))
                 {
-                    Thread.Sleep(TimeSpan.FromMilliseconds(100));
+                    Thread.Sleep(TimeSpan.FromMilliseconds(3));
                 }
 
                 cosmosDiagnostics2.AddDiagnosticsInternal(cosmosDiagnostics);
+
+                // Stop the background inserts
+                insertIntoDiagnostics1 = false;
             }
 
             string diagnostics = cosmosDiagnostics2.ToString();
             Assert.IsTrue(diagnostics.Contains("MyCustomUserAgentString"));
             Assert.IsTrue(diagnostics.Contains("ValidateScope"));
             Assert.IsTrue(diagnostics.Contains("CosmosDiagnostics2Scope"));
+        }
+
+        [TestMethod]
+        [DataRow(10, 100000, 1000001, DisplayName = "Unbounded")]
+        [DataRow(10, 100000, 5120, DisplayName = "Bounded")]
+        public void ValidateDiagnosticsAppendContextConcurrentCalls(int threadCount, int itemCountPerThread, int expectedCount)
+        {
+            CosmosDiagnosticsContextCore.Capacity = expectedCount;
+
+            ConcurrentStack<Exception> concurrentStack = new ConcurrentStack<Exception>();
+            CosmosDiagnosticsContext cosmosDiagnostics = new CosmosDiagnosticsContextCore(
+             nameof(ValidateDiagnosticsAppendContext),
+             "MyCustomUserAgentString");
+            using (cosmosDiagnostics.GetOverallScope())
+            {
+                // Test all the different operations on diagnostics context
+                using (cosmosDiagnostics.CreateScope("ValidateScope"))
+                {
+                    Thread.Sleep(TimeSpan.FromSeconds(2));
+                }
+
+                List<Thread> threads = new List<Thread>(threadCount);
+                for (int i = 0; i < threadCount; i++)
+                {
+                    Thread thread = new Thread(() =>
+                        this.AddDiagnosticsInBackgroundLoop(
+                            itemCountPerThread,
+                            cosmosDiagnostics,
+                            concurrentStack));
+                    thread.Start();
+                    threads.Add(thread);
+                }
+
+                foreach (Thread thread in threads)
+                {
+                    thread.Join();
+                }
+            }
+
+            Assert.AreEqual(0, concurrentStack.Count, $"Exceptions count: {concurrentStack.Count} Exceptions: {string.Join(';', concurrentStack)}");
+            int count = cosmosDiagnostics.Count();
+            Assert.AreEqual(expectedCount, count);
+        }
+
+        private void AddDiagnosticsInBackgroundLoop(
+            int count,
+            CosmosDiagnosticsContext cosmosDiagnostics,
+            ConcurrentStack<Exception> concurrentStack)
+        {
+            CosmosDiagnosticsContext cosmosDiagnostics2 = new CosmosDiagnosticsContextCore(
+                    nameof(ValidateDiagnosticsAppendContext),
+                    "MyCustomUserAgentString");
+            Random random = new Random();
+            cosmosDiagnostics2.GetOverallScope().Dispose();
+
+            for (int i = 0; i < count; i++)
+            {
+                try
+                {
+                    cosmosDiagnostics.AddDiagnosticsInternal(cosmosDiagnostics2);
+                }
+                catch (Exception e)
+                {
+                    concurrentStack.Append(e);
+                }
+            }
         }
 
         [TestMethod]

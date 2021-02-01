@@ -4596,6 +4596,11 @@
           "Attributes": [],
           "MethodInfo": "System.String EastUS2EUAP;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String EastUSSLV": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String EastUSSLV;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String FranceCentral": {
           "Type": "Field",
           "Attributes": [],

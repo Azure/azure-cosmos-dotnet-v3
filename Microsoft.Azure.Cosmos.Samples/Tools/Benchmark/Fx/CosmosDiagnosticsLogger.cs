@@ -19,7 +19,7 @@ namespace CosmosBenchmark
         private readonly static ConcurrentQueue<CosmosDiagnostics> CosmosDiagnosticsToLog = new ConcurrentQueue<CosmosDiagnostics>();
         private static readonly int MaxSize = 2;
         private static readonly TimeSpan minimumDelayBetweenDiagnostics = TimeSpan.FromSeconds(10);
-        private static readonly Stopwatch stopwatch = new Stopwatch();
+        private static readonly Stopwatch stopwatch = Stopwatch.StartNew();
         private static readonly Object UpdateLock = new Object();
         private static TimeSpan maxTimeSpan = TimeSpan.Zero;
 

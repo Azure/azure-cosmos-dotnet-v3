@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
@@ -316,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override string GetStringValue()
+            public override UtfAnyString GetStringValue()
             {
                 if (!(
                     (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
@@ -325,7 +326,22 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new JsonInvalidTokenException();
                 }
 
-                return JsonBinaryEncoding.GetStringValue(
+                return JsonBinaryEncoding.GetUtf8StringValue(
+                    this.rootBuffer,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+            }
+
+            /// <inheritdoc />
+            public override Utf8String GetUtf8StringValue()
+            {
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.GetUtf8StringValue(
                     this.rootBuffer,
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
@@ -489,6 +505,21 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+            }
+
+            /// <inheritdoc />
+            public Utf8Span GetUtf8SpanValue()
+            {
+                if (!(
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
+                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
+                {
+                    throw new JsonInvalidTokenException();
+                }
+
+                return JsonBinaryEncoding.GetUtf8SpanValue(
+                    this.rootBuffer,
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
 
             private static JsonTokenType GetJsonTokenType(byte typeMarker)

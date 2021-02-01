@@ -133,6 +133,22 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        public override ClientEncryptionKeyResponse CreateClientEncryptionKeyResponse(
+            ClientEncryptionKey clientEncryptionKey,
+            ResponseMessage responseMessage)
+        {
+            return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
+            {
+                ClientEncryptionKeyProperties cekProperties = this.ToObjectpublic<ClientEncryptionKeyProperties>(cosmosResponseMessage);
+                return new ClientEncryptionKeyResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    cekProperties,
+                    clientEncryptionKey,
+                    cosmosResponseMessage.Diagnostics);
+            });
+        }
+
         public override DatabaseResponse CreateDatabaseResponse(
             Database database,
             ResponseMessage responseMessage)
