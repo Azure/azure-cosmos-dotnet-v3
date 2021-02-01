@@ -279,7 +279,14 @@ namespace Microsoft.Azure.Cosmos
                         ConsistencyLevel.Session,
                         sMock.Object);
 
-                    Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                    if (dsrNoSessionToken.IsReadOnlyRequest)
+                    {
+                        Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                    }
+                    else
+                    {
+                        Assert.IsNull(dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                    }
                 }
             }
 

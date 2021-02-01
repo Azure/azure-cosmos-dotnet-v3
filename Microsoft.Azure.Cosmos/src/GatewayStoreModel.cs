@@ -264,11 +264,29 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static async Task<string> ResolveSessionTokenAsync(DocumentServiceRequest request, ISessionContainer sessionContainer, PartitionKeyRangeCache partitionKeyRangeCache, ClientCollectionCache clientCollectionCache)
+        internal static async Task<string> ResolveSessionTokenAsync(DocumentServiceRequest request, 
+                                                                    ISessionContainer sessionContainer, 
+                                                                    PartitionKeyRangeCache partitionKeyRangeCache, 
+                                                                    ClientCollectionCache clientCollectionCache)
         {
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
+            }
+
+            if (sessionContainer == null)
+            {
+                throw new ArgumentNullException(nameof(sessionContainer));
+            }
+
+            if (partitionKeyRangeCache == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyRangeCache));
+            }
+
+            if (clientCollectionCache == null)
+            {
+                throw new ArgumentNullException(nameof(clientCollectionCache));
             }
 
             PartitionKeyRange partitionKeyRange = null;
@@ -277,13 +295,16 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyRange = await ResolvePartitionKeyRangeAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache, false);
             }
 
-            ISessionToken localSessionToken = null;
             if (partitionKeyRange != null)
             {
-                localSessionToken = sessionContainer.ResolvePartitionLocalSessionToken(request, partitionKeyRange.Id);
+                string localSessionToken = sessionContainer.ResolvePartitionLocalSessionToken(request, partitionKeyRange.Id).ConvertToString();
+                if (!string.IsNullOrEmpty(localSessionToken))
+                {
+                    return partitionKeyRange.Id + ":" + localSessionToken;
+                }
             }
 
-            return localSessionToken.ConvertToString();
+            return null;
         }
 
         private static async Task<PartitionKeyRange> ResolvePartitionKeyRangeAsync(DocumentServiceRequest request, 
@@ -301,7 +322,8 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRange partitonKeyRange = null;
             ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(request, CancellationToken.None);
 
-            if (request.Headers[HttpConstants.HttpHeaders.PartitionKey] != null)
+            string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
+            if (partitionKeyString != null)
             {
                 CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(collectionRid: collection.ResourceId,
                                                                                                         previousValue: null,
@@ -316,7 +338,7 @@ namespace Microsoft.Azure.Cosmos
                                                                                         cancellationToken: CancellationToken.None);
                 }
 
-                partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(request, request.Headers[HttpConstants.HttpHeaders.PartitionKey], false, collection, collectionRoutingMap);
+                partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(request, partitionKeyString, false, collection, collectionRoutingMap);
             }
             else if (request.PartitionKeyRangeIdentity != null)
             {
