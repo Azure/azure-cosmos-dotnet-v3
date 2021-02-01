@@ -322,6 +322,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         [TestMethod]
+        [Ignore]
         public async Task TestCustomRequestOptionsAsync()
         {
             IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
