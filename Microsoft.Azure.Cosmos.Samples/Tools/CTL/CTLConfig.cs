@@ -29,6 +29,9 @@ namespace CosmosCTL
         [Option("ctl_collection", Required = false, HelpText = "Collection name")]
         public string Collection { get; set; } = "CTLCollection";
 
+        [Option("ctl_collection_pk", Required = false, HelpText = "Collection partition key")]
+        public string CollectionPartitionKey { get; set; } = "pk";
+
         [Option("ctl_operation", Required = false, HelpText = "Workload type")]
         public WorkloadType WorkloadType { get; set; } = WorkloadType.ReadWriteQuery;
 
@@ -47,7 +50,7 @@ namespace CosmosCTL
         [Option("ctl_number_of_operations", Required = false, HelpText = "Number of documents to insert")]
         public long Operations { get; set; } = -1;
 
-        [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time.")]
+        [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time in PT format, for example, PT10H.")]
         public string RunningTimeDuration
         {
             get => this.RunningTimeDurationAsTimespan.ToString();
@@ -58,7 +61,7 @@ namespace CosmosCTL
         [Option("ctl_number_Of_collection", Required = false, HelpText = "Number of collections to use")]
         public int CollectionCount { get; set; } = 4;
 
-        [Option("ctl_diagnostics_threshold_duration", Required = false, HelpText = "Threshold to log diagnostics")]
+        [Option("ctl_diagnostics_threshold_duration", Required = false, HelpText = "Threshold to log diagnostics in PT format, for example, PT60S.")]
         public string DiagnosticsThresholdDuration
         {
             get => this.DiagnosticsThresholdDurationAsTimespan.ToString();
@@ -80,6 +83,9 @@ namespace CosmosCTL
 
         [Option("ctl_graphite_port", Required = false, HelpText = "Graphite port to report metrics")]
         public string GraphitePort { get; set; }
+
+        [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
+        public string LogginContext { get; set; } = string.Empty;
 
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
