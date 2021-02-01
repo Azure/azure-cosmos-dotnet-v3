@@ -50,22 +50,30 @@ namespace Microsoft.Azure.Cosmos
 
             writer.WriteStartObject();
 
-            if (patchSpec.PatchRequestOptions != null)
-            {
-                if (!string.IsNullOrWhiteSpace(patchSpec.PatchRequestOptions.FilterPredicate))
-                {
-                    writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
-                    writer.WriteValue(patchSpec.PatchRequestOptions.FilterPredicate);
-                }
-            }
-            else if (patchSpec.BatchPatchRequestOptions != null)
-            {
-                if (!string.IsNullOrWhiteSpace(patchSpec.BatchPatchRequestOptions.FilterPredicate))
-                {
-                    writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
-                    writer.WriteValue(patchSpec.BatchPatchRequestOptions.FilterPredicate);
-                }
-            }
+            patchSpec.RequestOptions.Match(
+                    (PatchRequestOptions patchRequestOptions) =>
+                    {
+                        if (patchRequestOptions != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(patchRequestOptions.FilterPredicate))
+                            {
+                                writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
+                                writer.WriteValue(patchRequestOptions.FilterPredicate);
+                            }
+                        }
+                        
+                    },
+                    (TransactionalBatchPatchRequestOptions transactionalBatchPatchRequestOptions) =>
+                    {
+                        if (transactionalBatchPatchRequestOptions != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(transactionalBatchPatchRequestOptions.FilterPredicate))
+                            {
+                                writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
+                                writer.WriteValue(transactionalBatchPatchRequestOptions.FilterPredicate);
+                            }
+                        }
+                    });
 
             writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Operations);
 

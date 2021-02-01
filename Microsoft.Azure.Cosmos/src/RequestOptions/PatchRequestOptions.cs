@@ -36,6 +36,6 @@ namespace Microsoft.Azure.Cosmos
         ///        FilterPredicate = "from c where c.taskNum = 3"
         ///    };
         /// </sample>
-    public string FilterPredicate { get; set; }
+        public string FilterPredicate { get; set; }
     }
 }

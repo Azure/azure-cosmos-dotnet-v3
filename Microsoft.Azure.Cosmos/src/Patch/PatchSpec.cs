@@ -6,34 +6,38 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Details of Patch operation that is to be applied to the referred Cosmos item.
     /// </summary>
-    internal struct PatchSpec
+    internal readonly struct PatchSpec
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PatchSpec"/> struct.
         /// </summary>
         /// <param name="patchOperations"></param>
-        /// <param name="patchRequestOptions"></param>
+        /// <param name="requestOptions"></param>
         public PatchSpec(
             IReadOnlyList<PatchOperation> patchOperations,
-            PatchRequestOptions patchRequestOptions = null)
+            Either<PatchRequestOptions, TransactionalBatchPatchRequestOptions> requestOptions)
         {
-            this.PatchOperations = patchOperations ?? throw new ArgumentNullException(nameof(patchOperations));
-            this.PatchRequestOptions = patchRequestOptions;
-            this.BatchPatchRequestOptions = null;
-        }
+            if (patchOperations != null)
+            {
+                List<PatchOperation> patchOperationsClone = new List<PatchOperation>(patchOperations.Count);
+                foreach (PatchOperation operation in patchOperations)
+                {
+                    patchOperationsClone.Add(operation);
+                }
+                this.PatchOperations = (IReadOnlyList<PatchOperation>)patchOperationsClone;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException("Patch Operations cannot be null.");
+            }
 
-        public PatchSpec(
-            IReadOnlyList<PatchOperation> patchOperations,
-            TransactionalBatchPatchRequestOptions batchPatchRequestOptions = null)
-        {
-            this.PatchOperations = patchOperations ?? throw new ArgumentNullException(nameof(patchOperations));
-            this.PatchRequestOptions = null;
-            this.BatchPatchRequestOptions = batchPatchRequestOptions;
+            this.RequestOptions = requestOptions;
         }
 
         /// <summary>
@@ -44,11 +48,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Cosmos item request options specific to patch.
         /// </summary>
-        public PatchRequestOptions PatchRequestOptions { get; }
-
-        /// <summary>
-        /// Cosmos item request options specific to batch patch.
-        /// </summary>
-        public TransactionalBatchPatchRequestOptions BatchPatchRequestOptions { get; }
+        public Either<PatchRequestOptions, TransactionalBatchPatchRequestOptions> RequestOptions { get; }
     }
 }
