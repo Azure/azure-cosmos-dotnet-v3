@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestOptions"></param>
         public PatchSpec(
             IReadOnlyList<PatchOperation> patchOperations,
-            Either<PatchRequestOptions, TransactionalBatchPatchRequestOptions> requestOptions)
+            Either<PatchItemRequestOptions, TransactionalBatchPatchItemRequestOptions> requestOptions)
         {
             if (patchOperations != null)
             {
@@ -48,6 +48,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Cosmos item request options specific to patch.
         /// </summary>
-        public Either<PatchRequestOptions, TransactionalBatchPatchRequestOptions> RequestOptions { get; }
+        public Either<PatchItemRequestOptions, TransactionalBatchPatchItemRequestOptions> RequestOptions { get; }
     }
 }

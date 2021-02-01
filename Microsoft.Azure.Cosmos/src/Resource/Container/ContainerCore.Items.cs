@@ -1050,7 +1050,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ITrace trace,
-            PatchRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             ResponseMessage responseMessage = await this.PatchItemStreamAsync(
@@ -1071,7 +1071,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ITrace trace,
-            PatchRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             if (diagnosticsContext == null)

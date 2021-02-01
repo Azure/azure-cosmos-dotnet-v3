@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task PointOperationDiagnostic(bool disableDiagnostics)
         {
             ItemRequestOptions requestOptions = new ItemRequestOptions();
-            PatchRequestOptions patchRequestOptions = new PatchRequestOptions();
+            PatchItemRequestOptions patchRequestOptions = new PatchItemRequestOptions();
             if (disableDiagnostics)
             {
                 requestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;

@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             writer.WriteStartObject();
 
             patchSpec.RequestOptions.Match(
-                    (PatchRequestOptions patchRequestOptions) =>
+                    (PatchItemRequestOptions patchRequestOptions) =>
                     {
                         if (patchRequestOptions != null)
                         {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                         }
                         
                     },
-                    (TransactionalBatchPatchRequestOptions transactionalBatchPatchRequestOptions) =>
+                    (TransactionalBatchPatchItemRequestOptions transactionalBatchPatchRequestOptions) =>
                     {
                         if (transactionalBatchPatchRequestOptions != null)
                         {

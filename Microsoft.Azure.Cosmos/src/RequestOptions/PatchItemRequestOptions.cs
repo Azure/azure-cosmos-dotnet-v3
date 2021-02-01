@@ -9,15 +9,14 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Cosmos Batch Patch request options
+    /// Cosmos Patch request options
     /// </summary>
 #if INTERNAL
     public
 #else
     internal
 #endif
-
-    class TransactionalBatchPatchRequestOptions : TransactionalBatchItemRequestOptions
+    sealed class PatchItemRequestOptions : ItemRequestOptions
     {
         /// <summary>
         /// Gets or sets condition to be checked before the patch operations in the Azure Cosmos DB service.
@@ -32,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
         /// If the condition is satisfied the patch transaction will take place otherwise it will be retured with precondition failed.
         /// </remarks>
         /// <sample>
-        /// PatchRequestOptions requestOptions = new PatchRequestOptions()
+        /// PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
         ///    {
         ///        FilterPredicate = "from c where c.taskNum = 3"
         ///    };

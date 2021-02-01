@@ -1507,7 +1507,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // precondition failure - 412 response
-            PatchRequestOptions requestOptions = new PatchRequestOptions()
+            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
             {
                 IfMatchEtag = Guid.NewGuid().ToString()
             };
@@ -1551,7 +1551,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             // without content response
-            PatchRequestOptions requestOptions = new PatchRequestOptions()
+            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
             {
                 EnableContentResponseOnWrite = false
             };
@@ -1603,7 +1603,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Replace("/taskNum", testItem.taskNum+1)
             };
 
-            PatchRequestOptions requestOptions = new PatchRequestOptions()
+            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
             {
                 FilterPredicate = "from root where root.x = 3"
             };
@@ -1688,7 +1688,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Replace("/taskNum", 12)
             };
 
-            TransactionalBatchPatchRequestOptions requestOptionsFalse = new TransactionalBatchPatchRequestOptions()
+            TransactionalBatchPatchItemRequestOptions requestOptionsFalse = new TransactionalBatchPatchItemRequestOptions()
             {
                 FilterPredicate = "from c where c.taskNum = 3"
             };
@@ -1716,7 +1716,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Increment("/taskNum", 6)
             };
 
-            TransactionalBatchPatchRequestOptions requestOptionsTrue = new TransactionalBatchPatchRequestOptions()
+            TransactionalBatchPatchItemRequestOptions requestOptionsTrue = new TransactionalBatchPatchItemRequestOptions()
             {
                 FilterPredicate = "from root where root.taskNum = 8"
             };
@@ -1781,7 +1781,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Replace("/taskNum", 12)
             };
 
-            PatchRequestOptions requestOptionsFalse = new PatchRequestOptions()
+            PatchItemRequestOptions requestOptionsFalse = new PatchItemRequestOptions()
             {
                 FilterPredicate = "from c where c.taskNum = 3"
             };
@@ -1808,7 +1808,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Increment("/taskNum", 6)
             };
 
-            PatchRequestOptions requestOptionsTrue = new PatchRequestOptions()
+            PatchItemRequestOptions requestOptionsTrue = new PatchItemRequestOptions()
             {
                 FilterPredicate = "from root where root.taskNum = 8"
             };
@@ -1889,7 +1889,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity testItem = (await ToDoActivity.CreateRandomItems(customSerializationContainer, 1, randomPartitionKey: true)).First();
 
-            PatchRequestOptions requestOptions = new PatchRequestOptions()
+            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
             {
                 EnableContentResponseOnWrite = false
             };

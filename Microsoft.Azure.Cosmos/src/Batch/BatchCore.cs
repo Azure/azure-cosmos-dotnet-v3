@@ -240,12 +240,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
         /// <param name="patchStream">A <see cref="Stream"/> containing the patch specification.</param>
-        /// <param name="requestOptions">(Optional) The options for the patch request. <see cref="TransactionalBatchPatchRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the patch request. <see cref="TransactionalBatchPatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
         public virtual TransactionalBatch PatchItemStream(
             string id,
             Stream patchStream,
-            TransactionalBatchPatchRequestOptions requestOptions = null)
+            TransactionalBatchPatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                 operationType: OperationType.Patch,
@@ -263,12 +263,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
         /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
-        /// <param name="requestOptions">(Optional) The options for the Patch request. <see cref="TransactionalBatchPatchRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the Patch request. <see cref="TransactionalBatchPatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
         public override TransactionalBatch PatchItem(
                 string id,
                 IReadOnlyList<PatchOperation> patchOperations,
-                TransactionalBatchPatchRequestOptions requestOptions = null)
+                TransactionalBatchPatchItemRequestOptions requestOptions = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
