@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
         /// the resource back over the network and serializing it on the client.
         /// </summary>
-        /// <param name="contentResponseOnWriteEnabled">a boolean indicating whether payload will be included in the response or not.</param>
+        /// <param name="contentResponseOnWrite">a boolean indicating whether payload will be included in the response or not.</param>
         /// <remarks>
         /// <para>
         /// This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions
@@ -456,14 +456,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
         /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
         /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithContentResponseOnWriteEnabled(bool contentResponseOnWriteEnabled)
+        public CosmosClientBuilder WithContentResponseOnWrite(bool contentResponseOnWrite)
         {
-            this.clientOptions.EnableContentResponseOnWrite = contentResponseOnWriteEnabled;
+            this.clientOptions.EnableContentResponseOnWrite = contentResponseOnWrite;
             return this;
         }
 

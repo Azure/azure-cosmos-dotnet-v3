@@ -274,15 +274,10 @@ namespace Microsoft.Azure.Cosmos
         /// <para>This is optimal for workloads where the returned resource is not used.</para>
         /// <para>This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions</para>
         /// </remarks>
-        /// <seealso cref="CosmosClientBuilder.WithContentResponseOnWriteEnabled(bool)"/>
+        /// <seealso cref="CosmosClientBuilder.WithContentResponseOnWrite(bool)"/>
         /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
         /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        bool? EnableContentResponseOnWrite { get; set; }
+        public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.

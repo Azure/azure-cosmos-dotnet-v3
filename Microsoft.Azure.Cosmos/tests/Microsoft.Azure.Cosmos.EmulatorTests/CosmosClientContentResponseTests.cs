@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task NoContentResponseBulkTest()
         {
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
-            cosmosClientBuilder = cosmosClientBuilder.WithBulkExecution(true).WithContentResponseOnWriteEnabled(false);
+            cosmosClientBuilder = cosmosClientBuilder.WithBulkExecution(true).WithContentResponseOnWrite(false);
             CosmosClient bulkClient = cosmosClientBuilder.Build();
             Container bulkContainer = bulkClient.GetContainer(this.databaseWithoutFlag.Id, this.containerWithoutFlag.Id);
 
@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient CreateCosmosClientWithContentResponse(bool flag = false)
         {
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
-            cosmosClientBuilder = cosmosClientBuilder.WithContentResponseOnWriteEnabled(flag);
+            cosmosClientBuilder = cosmosClientBuilder.WithContentResponseOnWrite(flag);
             return cosmosClientBuilder.Build();
         }
     }
