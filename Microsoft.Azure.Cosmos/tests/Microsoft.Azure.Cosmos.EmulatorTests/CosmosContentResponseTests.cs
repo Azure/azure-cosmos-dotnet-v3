@@ -61,20 +61,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.ValidateItemResponse);
         }
 
-        [TestMethod]
-        public async Task ItemReadNoResponseTest()
-        {
-            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
-            {
-                EnableContentResponseOnRead = false
-            };
-
-            await this.Validate(
-                requestOptions,
-                this.ValidateItemResponse,
-                this.ValidateItemNoContentResponse);
-        }
-
         private async Task Validate(
             PatchItemRequestOptions requestOptions,
             Action<ItemResponse<ToDoActivity>> ValidateWrite,
@@ -136,20 +122,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions,
                 this.ValidateItemStreamNoContentResponse,
                 this.ValidateItemStreamResponse);
-        }
-
-        [TestMethod]
-        public async Task ItemStreamReadNoResponseTest()
-        {
-            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
-            {
-                EnableContentResponseOnRead = false
-            };
-
-            await this.ValidateItemStream(
-                requestOptions,
-                this.ValidateItemStreamResponse,
-                this.ValidateItemStreamNoContentResponse);
         }
 
         private async Task ValidateItemStream(
