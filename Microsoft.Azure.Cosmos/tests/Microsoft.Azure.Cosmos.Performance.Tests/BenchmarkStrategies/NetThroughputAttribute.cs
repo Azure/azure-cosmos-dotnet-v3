@@ -7,10 +7,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.BenchmarkStrategies
     using System;
     using System.Collections.Generic;
     using BenchmarkDotNet.Configs;
-    using BenchmarkDotNet.Horology;
     using BenchmarkDotNet.Jobs;
     using BenchmarkDotNet.Toolchains;
     using BenchmarkDotNet.Toolchains.CsProj;
+    using Perfolizer.Horology;
 
     /// <summary>
     /// Attribute to run the benchmark on Throughput mode.
