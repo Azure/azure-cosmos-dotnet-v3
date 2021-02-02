@@ -271,22 +271,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
 
             Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
-            
-            dekProperties = MdeEncryptionTests.VerifyDekResponse(
+
+            dataEncryptionKeyProperties = MdeEncryptionTests.VerifyDekResponse(
                 dekResponse,
                 dekId);
 
-            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dekProperties.EncryptionAlgorithm);
+            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
 
             Assert.AreEqual(
                 MdeEncryptionTests.metadata2,
-                dekProperties.EncryptionKeyWrapMetadata);
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
             // Use different DEK provider to avoid (unintentional) cache impact
             CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
             await dekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
-            Assert.AreEqual(dekProperties, readProperties);
+            Assert.AreEqual(dataEncryptionKeyProperties, readProperties);
 
             // validate key
             testDoc = await MdeEncryptionTests.CreateItemAsync(MdeEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
