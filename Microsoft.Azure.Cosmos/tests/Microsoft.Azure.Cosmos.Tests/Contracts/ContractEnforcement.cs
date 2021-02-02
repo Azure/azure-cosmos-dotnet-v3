@@ -3,6 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -44,8 +45,8 @@
             [JsonIgnore]
             public Type Type { get; }
             public Dictionary<string, TypeTree> Subclasses { get; } = new Dictionary<string, TypeTree>();
-            public Dictionary<string, MemberMetadata> Members { get; } = new Dictionary<string, MemberMetadata>();
-            public Dictionary<string, TypeTree> NestedTypes { get; } = new Dictionary<string, TypeTree>();
+            public OrderedDictionary Members { get; } = new OrderedDictionary();
+            public OrderedDictionary NestedTypes { get; } = new OrderedDictionary();
 
             public TypeTree(Type type)
             {
