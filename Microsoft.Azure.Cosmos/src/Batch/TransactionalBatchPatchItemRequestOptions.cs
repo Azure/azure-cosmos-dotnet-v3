@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// Condition can only be a sql statement.
-        /// Creates a conditional SQL argument which is of format "FROM X where CONDITION",
-        /// the condition has to be withing the scope of the document which is supposed to be patched in the particular request.
-        /// If the condition is satisfied the patch transaction will take place otherwise it will be retured with precondition failed.
+        /// Creates a conditional SQL argument which is of format from-clause,
+        /// the condition has to be within the scope of the document which is supposed to be patched in the particular request.
+        /// If the condition is satisfied the patch transaction will take place otherwise it will be returned with precondition failed.
         /// </remarks>
         /// <sample>
         /// TransactionalBatchPatchItemRequestOptions requestOptions = new TransactionalBatchPatchItemRequestOptions()

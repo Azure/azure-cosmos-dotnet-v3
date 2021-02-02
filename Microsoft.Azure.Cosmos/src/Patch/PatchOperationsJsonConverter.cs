@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (patchRequestOptions != null)
                         {
-                            if (!string.IsNullOrWhiteSpace(patchRequestOptions.FilterPredicate))
+                            if (!String.IsNullOrWhiteSpace(patchRequestOptions.FilterPredicate))
                             {
                                 writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
                                 writer.WriteValue(patchRequestOptions.FilterPredicate);
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (transactionalBatchPatchRequestOptions != null)
                         {
-                            if (!string.IsNullOrWhiteSpace(transactionalBatchPatchRequestOptions.FilterPredicate))
+                            if (!String.IsNullOrWhiteSpace(transactionalBatchPatchRequestOptions.FilterPredicate))
                             {
                                 writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
                                 writer.WriteValue(transactionalBatchPatchRequestOptions.FilterPredicate);

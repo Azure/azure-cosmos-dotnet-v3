@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
-        private readonly CosmosSerializer patchOperationSerializer;
+        private CosmosSerializer patchOperationSerializer;
 
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
@@ -116,9 +116,13 @@ namespace Microsoft.Azure.Cosmos
             Type inputType = typeof(T);
             if (inputType == typeof(PatchSpec))
             {
-                return PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
-                    cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
-                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                if (this.patchOperationSerializer == null)
+                {
+                    this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
+                        cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
+                        propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+                }
+                return this.patchOperationSerializer;
             }
 
             if (this.customSerializer == null)
