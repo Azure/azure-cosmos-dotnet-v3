@@ -244,16 +244,17 @@ namespace Microsoft.Azure.Cosmos
 
             if (!sessionConsistency || !request.IsReadOnlyRequest)
             {
-                return; // Only apply the session token in case of session consistency
+                return; // Only apply the session token in case of session consistency and the request is read only
             }
 
             string sessionToken = null;
+            bool isSuccess = false;
             if (clientCollectionCache != null && partitionKeyRangeCache != null)
             {
-                sessionToken = await ResolveSessionTokenAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache);
+                (isSuccess, sessionToken) = await TryResolveSessionTokenAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache);
             }
 
-            if (string.IsNullOrEmpty(sessionToken))
+            if (!isSuccess)
             {
                 sessionToken = sessionContainer.ResolveGlobalSessionToken(request);
             }
@@ -264,7 +265,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static async Task<string> ResolveSessionTokenAsync(DocumentServiceRequest request, 
+        internal static async Task<Tuple<bool, string>> TryResolveSessionTokenAsync(DocumentServiceRequest request, 
                                                                     ISessionContainer sessionContainer, 
                                                                     PartitionKeyRangeCache partitionKeyRangeCache, 
                                                                     ClientCollectionCache clientCollectionCache)
@@ -290,28 +291,29 @@ namespace Microsoft.Azure.Cosmos
             }
 
             PartitionKeyRange partitionKeyRange = null;
+            bool isSuccess = false;
             if (request.ResourceType.IsPartitioned())
             {
-                partitionKeyRange = await ResolvePartitionKeyRangeAsync(request: request, 
+                (isSuccess, partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(request: request, 
                                                                         sessionContainer: sessionContainer, 
                                                                         partitionKeyRangeCache: partitionKeyRangeCache, 
                                                                         clientCollectionCache: clientCollectionCache, 
                                                                         refreshCache: false);
             }
 
-            if (partitionKeyRange != null)
+            if (isSuccess)
             {
                 string localSessionToken = sessionContainer.ResolvePartitionLocalSessionToken(request, partitionKeyRange.Id).ConvertToString();
                 if (!string.IsNullOrEmpty(localSessionToken))
                 {
-                    return partitionKeyRange.Id + ":" + localSessionToken;
+                    return new Tuple<bool, string>(true, partitionKeyRange.Id + ":" + localSessionToken);
                 }
             }
 
-            return null;
+            return new Tuple<bool, string>(false, null);
         }
 
-        private static async Task<PartitionKeyRange> ResolvePartitionKeyRangeAsync(DocumentServiceRequest request, 
+        private static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(DocumentServiceRequest request, 
                                                                                    ISessionContainer sessionContainer, 
                                                                                    PartitionKeyRangeCache partitionKeyRangeCache, 
                                                                                    ClientCollectionCache clientCollectionCache, 
@@ -360,14 +362,14 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (refreshCache)
                 {
-                    return null;
+                    return new Tuple<bool, PartitionKeyRange>(false, null);
                 }
 
                 // need to refresh cache. Maybe split happened.
-                return await ResolvePartitionKeyRangeAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache, true);
+                return await TryResolvePartitionKeyRangeAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache, true);
             }
 
-            return partitonKeyRange;
+            return new Tuple<bool, PartitionKeyRange>(true, partitonKeyRange);
         }
 
         // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync
