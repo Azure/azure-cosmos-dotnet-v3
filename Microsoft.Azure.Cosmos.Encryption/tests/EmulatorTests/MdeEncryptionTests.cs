@@ -15,13 +15,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Encryption.EmulatorTests.LegacyEncryptionTests;
-    using DataEncryptionKey = Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey;
+    using DataEncryptionKey = Custom.DataEncryptionKey;
 
     [TestClass]
     public class MdeEncryptionTests
@@ -236,6 +234,64 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await dekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
+        }
+
+        [TestMethod]
+        public async Task EncryptionRewrapLegacyDekToMdeWrap()
+        {
+            string dekId = "rewraplegacyDektoMde";
+            DataEncryptionKeyProperties dataEncryptionKeyProperties;
+
+            dataEncryptionKeyProperties = await MdeEncryptionTests.CreateLegacyDekAsync(MdeEncryptionTests.dualDekProvider, dekId);
+
+            Assert.AreEqual(
+                MdeEncryptionTests.metadata1.Value + MdeEncryptionTests.metadataUpdateSuffix,
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
+
+            // use it to create item with Legacy Algo and New Algo
+            TestDoc testDoc = TestDoc.Create(null);
+            ItemResponse<TestDoc> createResponse = await MdeEncryptionTests.encryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                MdeEncryptionTests.GetRequestOptions(dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
+            VerifyExpectedDocResponse(testDoc, createResponse);
+
+            await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            // validate key
+            testDoc = await MdeEncryptionTests.CreateItemAsync(MdeEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+                dekId,
+                MdeEncryptionTests.metadata2,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+            
+            dekProperties = MdeEncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dekProperties.EncryptionAlgorithm);
+
+            Assert.AreEqual(
+                MdeEncryptionTests.metadata2,
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
+            await dekProvider.InitializeAsync(MdeEncryptionTests.database, MdeEncryptionTests.keyContainer.Id);
+            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+
+            // validate key
+            testDoc = await MdeEncryptionTests.CreateItemAsync(MdeEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
         }
 
         [TestMethod]

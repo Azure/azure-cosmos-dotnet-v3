@@ -52,23 +52,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 DataEncryptionKeyId = MdeEncryptionProcessorTests.dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" }
-            };
+            };   
 
-            try
-            {
-                await EncryptionProcessor.EncryptAsync(
-                    testDoc.ToStream(),
-                    MdeEncryptionProcessorTests.mockEncryptor.Object,
-                    encryptionOptionsWithInvalidPathToEncrypt,
-                    new CosmosDiagnosticsContext(),
-                    CancellationToken.None);
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
+                   testDoc.ToStream(),
+                   MdeEncryptionProcessorTests.mockEncryptor.Object,
+                   encryptionOptionsWithInvalidPathToEncrypt,
+                   new CosmosDiagnosticsContext(),
+                   CancellationToken.None);
 
-                Assert.Fail("Invalid path to encrypt didn't result in exception.");
-            }
-            catch (ArgumentException ex)
-            {
-                Assert.AreEqual("PathsToEncrypt includes a path: '/Invalid' which was not found.", ex.Message);
-            }
+
+            JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
+
+            (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+               encryptedDoc,
+               MdeEncryptionProcessorTests.mockEncryptor.Object,
+               new CosmosDiagnosticsContext(),
+               CancellationToken.None);
+
+            Assert.AreEqual(testDoc.SensitiveStr, decryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
+            Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo));
+
+            Assert.IsNotNull(decryptionContext);
+            Assert.IsNotNull(decryptionContext.DecryptionInfoList);
+            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
+            Assert.AreEqual(MdeEncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
+
+            Assert.AreEqual(1, decryptionInfo.PathsDecrypted.Count);
+            Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
         }
 
         [TestMethod]
@@ -84,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             try
             {
-                await EncryptionProcessor.EncryptAsync(
+                Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                     testDoc.ToStream(),
                     MdeEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithDuplicatePathToEncrypt,

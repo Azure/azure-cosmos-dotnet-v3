@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         string propertyName = pathToEncrypt.Substring(1);
                         if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                         {
-                            throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                            continue;
                         }
 
                         if (propertyValue.Type == JTokenType.Null)
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         string propertyName = pathToEncrypt.Substring(1);
                         if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                         {
-                            throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                            continue;
                         }
 
                         toEncryptJObj.Add(propertyName, propertyValue.Value<JToken>());
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 string propertyName = path.Substring(1);
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
                 {
-                    throw new InvalidOperationException($"{nameof(encryptionProperties.EncryptedPaths)} includes a path: '{path}' which was not found.");
+                    continue;
                 }
 
                 byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
