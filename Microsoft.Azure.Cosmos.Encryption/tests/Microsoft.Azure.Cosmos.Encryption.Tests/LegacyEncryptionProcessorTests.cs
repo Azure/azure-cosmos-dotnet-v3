@@ -70,17 +70,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
 
-            Assert.AreEqual(testDoc.SensitiveStr, decryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
-            Assert.AreEqual(testDoc.SensitiveInt, decryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<int>());
-            Assert.IsNull(decryptedDoc.Property(Constants.EncryptedInfo));
-
-            Assert.IsNotNull(decryptionContext);
-            Assert.IsNotNull(decryptionContext.DecryptionInfoList);
-            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
-            Assert.AreEqual(LegacyEncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
-            Assert.AreEqual(1, decryptionInfo.PathsDecrypted.Count);
-            Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
-
+            LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
+                decryptedDoc,
+                testDoc,
+                1,
+                decryptionContext,
+                invalidPathsConfigured: true);
         }
 
         [TestMethod]
@@ -100,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
+                TestDoc.PathsToEncrypt.Count,
                 decryptionContext);
         }
 
@@ -119,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
+                TestDoc.PathsToEncrypt.Count,
                 decryptionContext);
         }
 
@@ -144,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
+                TestDoc.PathsToEncrypt.Count,
                 decryptionContext);
         }
 
@@ -199,7 +197,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private static void VerifyDecryptionSucceeded(
             JObject decryptedDoc,
             TestDoc expectedDoc,
-            DecryptionContext decryptionContext)
+            int pathCount,
+            DecryptionContext decryptionContext,
+            bool invalidPathsConfigured = false)
         {
             Assert.AreEqual(expectedDoc.SensitiveStr, decryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
             Assert.AreEqual(expectedDoc.SensitiveInt, decryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<int>());
@@ -209,8 +209,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(decryptionContext.DecryptionInfoList);
             DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
             Assert.AreEqual(LegacyEncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
-            Assert.AreEqual(TestDoc.PathsToEncrypt.Count, decryptionInfo.PathsDecrypted.Count);
-            Assert.IsFalse(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            Assert.AreEqual(pathCount, decryptionInfo.PathsDecrypted.Count);
+
+            if (!invalidPathsConfigured)
+            {
+                Assert.IsFalse(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
+            else
+            {
+                Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
         }
     }
 }
