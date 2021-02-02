@@ -261,15 +261,15 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime, Microsoft.Azure.Cosmos.FeedRange);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

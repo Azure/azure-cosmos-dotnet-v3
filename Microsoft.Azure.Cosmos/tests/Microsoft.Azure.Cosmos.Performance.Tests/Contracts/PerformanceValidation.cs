@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         private const string CurrentBenchmarkResultsFileName = "CurrentBenchmarkResults.json";
 
 #if DEBUG
-        private const string DirectoryPath = @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Debug\netcoreapp3.1\Contracts\";
+        private const string DirectoryPath = @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Debug\net5.0\Contracts\";
 #else
         private const string DirectoryPath =  @"\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Performance.Tests\bin\Release\netcoreapp3.1\Contracts\";
 #endif
