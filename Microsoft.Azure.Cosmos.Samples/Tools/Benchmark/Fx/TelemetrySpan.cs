@@ -53,7 +53,7 @@ namespace CosmosBenchmark
                     operationResult.DatabseName,
                     operationResult.ContainerName,
                     (int)this.stopwatch.ElapsedMilliseconds,
-                    operationResult.lazyDiagnostics);
+                    operationResult.LazyDiagnostics);
             }
         }
 

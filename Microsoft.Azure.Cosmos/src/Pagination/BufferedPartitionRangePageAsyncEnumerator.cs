@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class BufferedPartitionRangePageAsyncEnumerator<TPage, TState> : PartitionRangePageAsyncEnumerator<TPage, TState>, IPrefetcher
         where TPage : Page<TState>
@@ -24,9 +25,16 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public override ValueTask DisposeAsync() => this.enumerator.DisposeAsync();
 
-        protected override async Task<TryCatch<TPage>> GetNextPageAsync(CancellationToken cancellationToken)
+        protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            await this.PrefetchAsync(cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            await this.PrefetchAsync(trace, cancellationToken);
 
             // Serve from the buffered page first.
             TryCatch<TPage> returnValue = this.bufferedPage.Value;
@@ -34,17 +42,25 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return returnValue;
         }
 
-        public async ValueTask PrefetchAsync(CancellationToken cancellationToken)
+        public async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (this.bufferedPage.HasValue)
+            if (trace == null)
             {
-                return;
+                throw new ArgumentNullException(nameof(trace));
             }
 
-            await this.enumerator.MoveNextAsync();
-            this.bufferedPage = this.enumerator.Current;
+            using (ITrace prefetchTrace = trace.StartChild("Prefetch", TraceComponent.Pagination, TraceLevel.Info))
+            {
+                if (this.bufferedPage.HasValue)
+                {
+                    return;
+                }
+
+                await this.enumerator.MoveNextAsync(prefetchTrace);
+                this.bufferedPage = this.enumerator.Current;
+            }
         }
     }
 }

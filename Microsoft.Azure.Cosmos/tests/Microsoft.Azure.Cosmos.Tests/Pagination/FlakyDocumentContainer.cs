@@ -13,12 +13,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
 
     /// <summary>
     /// Implementation of <see cref="IMonadicDocumentContainer"/> that composes another <see cref="IMonadicDocumentContainer"/> and randomly adds in exceptions.
@@ -57,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         private static readonly string ContinuationForStartedButNoDocumentsReturned = "Started But Haven't Returned Any Documents Yet";
 
-        private static readonly ReadFeedState ReadFeedNotStartedState = new ReadFeedState(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
+        private static readonly ReadFeedState ReadFeedNotStartedState = ReadFeedState.Continuation(CosmosString.Create(ContinuationForStartedButNoDocumentsReturned));
 
         private readonly IMonadicDocumentContainer documentContainer;
 
@@ -105,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             FeedRangeInternal feedRange,
             QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if ((readFeedState != null) && readFeedState.Equals(ReadFeedNotStartedState))
@@ -136,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRange,
                 queryRequestOptions,
                 pageSize,
+                trace,
                 cancellationToken);
         }
 
@@ -144,6 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             string continuationToken,
             FeedRangeInternal feedRange,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (continuationToken == ContinuationForStartedButNoDocumentsReturned)
@@ -186,6 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 continuationToken,
                 feedRange,
                 pageSize,
+                trace,
                 cancellationToken);
         }
 
@@ -193,6 +199,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             ChangeFeedState state, 
             FeedRangeInternal feedRange, 
             int pageSize, 
+            ChangeFeedMode changeFeedMode,
+            JsonSerializationFormat? jsonSerializationFormat,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (this.ShouldReturn429())
@@ -215,6 +224,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 state,
                 feedRange,
                 pageSize,
+                changeFeedMode,
+                jsonSerializationFormat,
+                trace,
                 cancellationToken);
         }
 
@@ -224,18 +236,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRange,
                 cancellationToken);
 
+        public Task<TryCatch> MonadicMergeAsync(
+            FeedRangeInternal feedRange1,
+            FeedRangeInternal feedRange2,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicMergeAsync(
+                feedRange1,
+                feedRange2,
+                cancellationToken);
+
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
+            ITrace trace,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetChildRangeAsync(
                 feedRange,
+                trace,
                 cancellationToken);
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
+            ITrace trace,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
+                trace,
                 cancellationToken);
 
+        public Task<TryCatch> MonadicRefreshProviderAsync(
+            ITrace trace,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicRefreshProviderAsync(trace, cancellationToken);
+
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
-            CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(cancellationToken);
+            ITrace trace,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
 
         private bool ShouldReturn429() => (this.failureConfigs != null)
             && this.failureConfigs.Inject429s

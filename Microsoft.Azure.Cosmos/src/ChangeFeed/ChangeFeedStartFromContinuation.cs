@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// </summary>
         /// <param name="continuation">The continuation to resume from.</param>
         public ChangeFeedStartFromContinuation(string continuation)
-            : base()
+            : base(feedRange: null)
         {
             if (string.IsNullOrWhiteSpace(continuation))
             {

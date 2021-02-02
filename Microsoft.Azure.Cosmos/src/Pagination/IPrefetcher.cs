@@ -6,9 +6,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal interface IPrefetcher
     {
-        ValueTask PrefetchAsync(CancellationToken cancellationToken);
+        ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken);
     }
 }

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
             public const string Remove = "remove";
             public const string Replace = "replace";
             public const string Set = "set";
-            public const string Increment = "inc";
+            public const string Increment = "incr";
         }
 
         public static string ToEnumMemberString(this PatchOperationType patchOperationType)

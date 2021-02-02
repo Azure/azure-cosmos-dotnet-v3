@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
     using System.IO;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
     /// <summary>
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return double.Parse(numberString);
         }
 
-        public override string GetStringValue()
+        public override UtfAnyString GetStringValue()
         {
             return this.reader.Value.ToString();
         }

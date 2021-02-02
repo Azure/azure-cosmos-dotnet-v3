@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal interface IMonadicChangeFeedDataSource
     {
@@ -14,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             ChangeFeedState state,
             FeedRangeInternal feedRange,
             int pageSize,
+            ChangeFeedMode changeFeedMode,
+            JsonSerializationFormat? jsonSerializationFormat,
+            ITrace trace,
             CancellationToken cancellationToken);
     }
 }

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using System.Globalization;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -2076,18 +2077,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("brchon")]
         public void UnicodeEscapeTest()
         {
-            // unicode characters are utf-16 when unescaped by default
-            string unicodeEscapedString = @"""\u20AC""";
-            // This is the 2 byte escaped equivalent.
-            string expectedString = "\x20AC";
-
-            JsonToken[] expectedTokens =
             {
-                 JsonToken.String(expectedString),
-            };
+                // unicode characters are utf-16 when unescaped by default
+                string unicodeEscapedString = @"""\u20AC""";
+                // This is the 2 byte escaped equivalent.
+                string expectedString = "\x20AC";
 
-            this.VerifyReader(unicodeEscapedString, expectedTokens);
-            // Binary does not test this since you would just put the literal character if you wanted it.
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(expectedString),
+                };
+
+                this.VerifyReader(unicodeEscapedString, expectedTokens);
+                // Binary does not test this since you would just put the literal character if you wanted it.
+            }
+
+            {
+                // Surrogate pair testing
+                string unicodeEscapedString = @"""\uD801\uDC37""";
+                // This is the 2 byte escaped equivalent.
+                string expectedString = "𐐷";
+
+                JsonToken[] expectedTokens =
+                {
+                    JsonToken.String(expectedString),
+                };
+
+                this.VerifyReader(unicodeEscapedString, expectedTokens);
+                // Binary does not test this since you would just put the literal character if you wanted it.
+            }
         }
 
         [TestMethod]
@@ -3302,6 +3320,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             string actualString = jsonReader.GetStringValue();
             Assert.AreEqual(expectedString, actualString);
+            if (jsonReader is ITypedJsonReader typedJsonReader)
+            {
+                Utf8Span actualUtf8SpanValue = typedJsonReader.GetUtf8SpanValue();
+                Assert.AreEqual(expectedString, actualUtf8SpanValue.ToString());
+            }
         }
 
         private void VerifyNumber(IJsonReader jsonReader, Number64 expectedNumberValue)

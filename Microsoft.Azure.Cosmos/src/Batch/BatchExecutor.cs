@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class BatchExecutor
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos
                     OperationType.Batch,
                     this.batchOptions,
                     this.container,
-                    serverRequest.PartitionKey,
+                    serverRequest.PartitionKey.HasValue ? new FeedRangePartitionKey(serverRequest.PartitionKey.Value) : null,
                     serverRequestPayload,
                     requestMessage =>
                     {
@@ -101,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
                         requestMessage.Headers.Add(HttpConstants.HttpHeaders.IsBatchOrdered, bool.TrueString);
                     },
                     diagnosticsContext: this.diagnosticsContext,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken);
 
                 using (this.diagnosticsContext.CreateScope("TransactionalBatchResponse"))

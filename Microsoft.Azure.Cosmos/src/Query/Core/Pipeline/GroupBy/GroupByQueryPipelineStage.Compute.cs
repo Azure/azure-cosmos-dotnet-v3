@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract partial class GroupByQueryPipelineStage : QueryPipelineStageBase
     {
@@ -95,9 +96,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         pageSize));
             }
 
-            public override async ValueTask<bool> MoveNextAsync()
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (trace == null)
+                {
+                    throw new ArgumentNullException(nameof(trace));
+                }
 
                 if (this.returnedLastPage)
                 {
@@ -107,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 // Draining GROUP BY is broken down into two stages:
                 QueryPage queryPage;
-                if (await this.inputStage.MoveNextAsync())
+                if (await this.inputStage.MoveNextAsync(trace))
                 {
                     // Stage 1: 
                     // Drain the groupings fully from all continuation and all partitions

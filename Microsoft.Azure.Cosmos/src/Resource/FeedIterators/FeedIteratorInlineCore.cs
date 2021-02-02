@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
     {
@@ -39,7 +40,12 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(cancellationToken));
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+        }
+
+        public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        {
+            return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
         }
 
         protected override void Dispose(bool disposing)

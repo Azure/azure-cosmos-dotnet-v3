@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract class CosmosQueryClient
     {
@@ -21,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Task<ContainerQueryProperties> GetCachedContainerQueryPropertiesAsync(
             string containerLink,
             PartitionKey? partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -49,13 +51,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             Documents.ResourceType resourceType,
             Documents.OperationType operationType,
             Guid clientQueryCorrelationId,
+            FeedRange feedRange,
             QueryRequestOptions requestOptions,
             Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
-            Documents.PartitionKeyRangeIdentity partitionKeyRange,
             bool isContinuationExpected,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         public abstract Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
@@ -66,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
             CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         public abstract void ClearSessionTokenCache(string collectionFullName);
@@ -73,18 +77,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(
             string resourceLink,
             string collectionResourceId,
-            string effectivePartitionKeyString);
+            string effectivePartitionKeyString,
+            bool forceRefresh,
+            ITrace trace);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangeByFeedRangeAsync(
             string resourceLink,
             string collectionResourceId,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            FeedRangeInternal feedRangeInternal);
+            FeedRangeInternal feedRangeInternal,
+            bool forceRefresh,
+            ITrace trace);
 
         public abstract Task<List<Documents.PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(
             string resourceLink,
             string collectionResourceId,
-            List<Documents.Routing.Range<string>> providedRanges);
+            List<Documents.Routing.Range<string>> providedRanges,
+            bool forceRefresh,
+            ITrace trace);
 
         public abstract bool ByPassQueryParsing();
 

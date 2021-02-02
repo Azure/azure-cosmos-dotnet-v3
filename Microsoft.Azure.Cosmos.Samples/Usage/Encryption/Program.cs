@@ -8,7 +8,7 @@
     using Azure.Identity;
     using Cosmos.Samples.Shared;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Encryption;
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Configuration;
     using Newtonsoft.Json;

@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -59,16 +61,37 @@ namespace Microsoft.Azure.Cosmos
             return (T)(object)value;
         }
 
-        internal static ResponseMessage ToCosmosResponseMessage(this DocumentServiceResponse documentServiceResponse, RequestMessage requestMessage)
+        internal static ResponseMessage ToCosmosResponseMessage(
+            this DocumentServiceResponse documentServiceResponse, 
+            RequestMessage requestMessage,
+            RequestChargeTracker requestChargeTracker,
+            ITrace trace)
         {
             Debug.Assert(requestMessage != null, nameof(requestMessage));
             Headers headers = new Headers(documentServiceResponse.Headers);
+
+            if (documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics)
+            {
+                CosmosDiagnosticsTraceDatum clientSideRequestStatisticsTraceDatum = new CosmosDiagnosticsTraceDatum(cosmosClientSideRequestStatistics);
+                trace.AddDatum(nameof(CosmosClientSideRequestStatistics), clientSideRequestStatisticsTraceDatum);
+            }
+
+            if (requestChargeTracker != null && headers.RequestCharge < requestChargeTracker.TotalRequestCharge)
+            {
+                headers.RequestCharge = requestChargeTracker.TotalRequestCharge;
+                DefaultTrace.TraceWarning(
+                        "Header RequestCharge {0} is less than the RequestChargeTracker: {1}; URI {2}, OperationType: {3}",
+                        headers.RequestCharge,
+                        requestChargeTracker.TotalRequestCharge,
+                        requestMessage?.RequestUriString,
+                        requestMessage?.OperationType);
+            }
 
             // Only record point operation stats if ClientSideRequestStats did not record the response.
             if (!(documentServiceResponse.RequestStats is CosmosClientSideRequestStatistics clientSideRequestStatistics) ||
                 (clientSideRequestStatistics.ContactedReplicas.Count == 0 && clientSideRequestStatistics.FailedReplicas.Count == 0))
             {
-                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                     activityId: headers.ActivityId,
                     responseTimeUtc: DateTime.UtcNow,
                     statusCode: documentServiceResponse.StatusCode,
@@ -78,7 +101,11 @@ namespace Microsoft.Azure.Cosmos
                     method: requestMessage?.Method,
                     requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
-                    responseSessionToken: headers.Session));
+                    responseSessionToken: headers.Session);
+
+                requestMessage.DiagnosticsContext.AddDiagnosticsInternal(pointOperationStatistics);
+
+                trace.AddDatum(nameof(PointOperationStatistics), new CosmosDiagnosticsTraceDatum(pointOperationStatistics));
             }
 
             // If it's considered a failure create the corresponding CosmosException
@@ -129,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
             PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
                 activityId: cosmosException.Headers.ActivityId,
                 statusCode: cosmosException.StatusCode,
-                subStatusCode: (int)SubStatusCodes.Unknown,
+                subStatusCode: cosmosException.Headers.SubStatusCode,
                 responseTimeUtc: DateTime.UtcNow,
                 requestCharge: cosmosException.Headers.RequestCharge,
                 errorMessage: documentClientException.ToString(),

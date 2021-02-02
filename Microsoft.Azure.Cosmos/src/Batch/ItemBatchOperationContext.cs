@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ItemBatchOperationContext : IDisposable
     {
-        public string PartitionKeyRangeId { get; }
+        public string PartitionKeyRangeId { get; private set; }
 
         public BatchAsyncBatcher CurrentBatcher { get; set; }
 
@@ -72,6 +72,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.Dispose();
+        }
+
+        public void ReRouteOperation(string newPartitionKeyRangeId)
+        {
+            this.PartitionKeyRangeId = newPartitionKeyRangeId;
         }
 
         public void Dispose()

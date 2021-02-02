@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class QueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<QueryPage, QueryState>
     {
@@ -37,18 +37,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<QueryPage>> GetNextPageAsync(CancellationToken cancellationToken)
+        protected override Task<TryCatch<QueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Unfortunately we need to keep both the epk range and partition key for queries
-            // Since the continuation token format uses epk range even though we only need the partition key to route the request.
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             FeedRangeInternal feedRange = this.partitionKey.HasValue ? new FeedRangePartitionKey(this.partitionKey.Value) : this.Range;
             return this.queryDataSource.MonadicQueryAsync(
               sqlQuerySpec: this.sqlQuerySpec,
               continuationToken: this.State == null ? null : ((CosmosString)this.State.Value).Value,
               feedRange: feedRange,
               pageSize: this.pageSize,
+              trace: trace,
               cancellationToken);
         }
     }

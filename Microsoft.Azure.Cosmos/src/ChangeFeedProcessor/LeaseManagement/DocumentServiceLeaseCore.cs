@@ -8,6 +8,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System.Globalization;
     using Newtonsoft.Json;
 
+    /// <summary>
+    /// Lease implementation for PartitionKeyRange based leases.
+    /// </summary>
     [Serializable]
     internal sealed class DocumentServiceLeaseCore : DocumentServiceLease
     {
@@ -20,20 +23,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
         }
 
-        public DocumentServiceLeaseCore(DocumentServiceLeaseCore other)
-        {
-            this.LeaseId = other.LeaseId;
-            this.LeaseToken = other.LeaseToken;
-            this.Owner = other.Owner;
-            this.ContinuationToken = other.ContinuationToken;
-            this.ETag = other.ETag;
-            this.TS = other.TS;
-            this.ExplicitTimestamp = other.ExplicitTimestamp;
-            this.Properties = other.Properties;
-        }
-
         [JsonProperty("id")]
         public string LeaseId { get; set; }
+
+        [JsonProperty("version")]
+        public DocumentServiceLeaseVersion Version => DocumentServiceLeaseVersion.PartitionKeyRangeBasedLease;
 
         [JsonIgnore]
         public override string Id => this.LeaseId;
@@ -67,20 +61,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         [JsonIgnore]
         public override string CurrentLeaseToken => this.LeaseToken;
 
+        [JsonProperty("FeedRange", NullValueHandling = NullValueHandling.Ignore)]
+        public override FeedRangeInternal FeedRange { get; set; }
+
         [JsonProperty("Owner")]
         public override string Owner { get; set; }
 
-        /// <summary>
-        /// Gets or sets the current value for the offset in the stream.
-        /// </summary>
         [JsonProperty("ContinuationToken")]
         public override string ContinuationToken { get; set; }
 
         [JsonIgnore]
         public override DateTime Timestamp
         {
-            get { return this.ExplicitTimestamp ?? UnixStartTime.AddSeconds(this.TS); }
-            set { this.ExplicitTimestamp = value; }
+            get => this.ExplicitTimestamp ?? UnixStartTime.AddSeconds(this.TS);
+            set => this.ExplicitTimestamp = value;
         }
 
         [JsonIgnore]

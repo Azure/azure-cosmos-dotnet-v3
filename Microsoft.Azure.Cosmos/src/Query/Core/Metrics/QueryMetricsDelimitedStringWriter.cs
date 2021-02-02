@@ -47,6 +47,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         private const string KeyValueDelimiter = "=";
         private const string KeyValuePairDelimiter = ";";
+
+        // IndexUtilizationInfo
+        private const string KeyValuePairEmptyValue = "";
+        private const string IndexUtilizationInfo = "Index Utilization Information";
+        private const string UtilizedSingleIndexes = "Utilized Single Indexes";
+        private const string PotentialSingleIndexes = "Potential Single Indexes";
+        private const string UtilizedCompositeIndexes = "Utilized Composite Indexes";
+        private const string PotentialCompositeIndexes = "Potential Composite Indexes";
+        private const string FilterExpression = "Filter Expression";
+        private const string IndexExpression = "Index Spec";
+        private const string FilterExpressionPrecision = "FilterPreciseSet";
+        private const string IndexPlanFullFidelity = "IndexPreciseSet";
+        private const string IndexImpactScore = "Index Impact Score";
         #endregion
 
         private readonly StringBuilder stringBuilder;
@@ -300,7 +313,62 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected override void WriteIndexUtilizationInfo(IndexUtilizationInfo indexUtilizationInfo)
         {
-            // Do nothing
+            StringBuilder strBuilder = new StringBuilder();
+
+            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.UtilizedSingleIndexes)
+            {
+                WriteSingleIndexUtilizationEntity(strBuilder, indexUtilizationEntity);
+            }
+
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.UtilizedSingleIndexes, $"[{strBuilder}]");
+
+            strBuilder.Clear();
+
+            foreach (SingleIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.PotentialSingleIndexes)
+            {
+                WriteSingleIndexUtilizationEntity(strBuilder, indexUtilizationEntity);
+            }
+
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.PotentialSingleIndexes, $"[{strBuilder}]");
+
+            strBuilder.Clear();
+
+            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.UtilizedCompositeIndexes)
+            {
+                WriteCompositeIndexUtilizationEntity(strBuilder, indexUtilizationEntity);
+            }
+
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.UtilizedCompositeIndexes, $"[{strBuilder}]");
+
+            strBuilder.Clear();
+
+            foreach (CompositeIndexUtilizationEntity indexUtilizationEntity in indexUtilizationInfo.PotentialCompositeIndexes)
+            {
+                WriteCompositeIndexUtilizationEntity(strBuilder, indexUtilizationEntity);
+            }
+
+            this.AppendKeyValuePair(QueryMetricsDelimitedStringWriter.PotentialCompositeIndexes, $"[{strBuilder}]");
+
+            static void WriteSingleIndexUtilizationEntity(StringBuilder strBuilder, SingleIndexUtilizationEntity indexUtilizationEntity)
+            {
+                AppendKeyValuePairWithStrBuilder(strBuilder, QueryMetricsDelimitedStringWriter.FilterExpression, indexUtilizationEntity.FilterExpression);
+                AppendKeyValuePairWithStrBuilder(strBuilder, QueryMetricsDelimitedStringWriter.IndexExpression, indexUtilizationEntity.IndexDocumentExpression);
+                AppendKeyValuePairWithStrBuilder(strBuilder, QueryMetricsDelimitedStringWriter.IndexImpactScore, indexUtilizationEntity.IndexImpactScore);
+            }
+
+            static void WriteCompositeIndexUtilizationEntity(StringBuilder strBuilder, CompositeIndexUtilizationEntity indexUtilizationEntity)
+            {
+                AppendKeyValuePairWithStrBuilder(strBuilder, QueryMetricsDelimitedStringWriter.IndexExpression, String.Join(", ", indexUtilizationEntity.IndexDocumentExpressions));
+                AppendKeyValuePairWithStrBuilder(strBuilder, QueryMetricsDelimitedStringWriter.IndexImpactScore, indexUtilizationEntity.IndexImpactScore);
+            }
+
+            static void AppendKeyValuePairWithStrBuilder<T>(StringBuilder strBuilder, string keyName, T value)
+            {
+                strBuilder.Append(keyName);
+                strBuilder.Append(KeyValueDelimiter);
+                strBuilder.Append(value);
+                strBuilder.Append(KeyValuePairDelimiter);
+            }
         }
 
         protected override void WriteAfterIndexUtilizationInfo()

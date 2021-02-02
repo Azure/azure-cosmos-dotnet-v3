@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 closeReason = ChangeFeedObserverCloseReason.LeaseLost;
                 throw;
             }
-            catch (FeedSplitException)
+            catch (FeedRangeGoneException)
             {
                 closeReason = ChangeFeedObserverCloseReason.LeaseGone;
                 throw;

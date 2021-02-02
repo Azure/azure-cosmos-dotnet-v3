@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 {
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal interface IReadFeedDataSource : IMonadicReadFeedDataSource
     {
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             FeedRangeInternal feedRange,
             QueryRequestOptions queryRequestOptions,
             int pageSize,
+            ITrace trace,
             CancellationToken cancellationToken);
     }
 }

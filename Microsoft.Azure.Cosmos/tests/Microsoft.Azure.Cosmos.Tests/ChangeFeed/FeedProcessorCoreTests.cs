@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 mockCheckpointer.Object,
                 MockCosmosUtil.Serializer);
 
-            await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            await Assert.ThrowsExceptionAsync<FeedRangeGoneException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
 
         [DataRow(HttpStatusCode.NotFound, (int)Documents.SubStatusCodes.Unknown)]

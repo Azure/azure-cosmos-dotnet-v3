@@ -7,27 +7,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class AsyncLazy<T>
     {
-        private readonly Func<CancellationToken, Task<T>> valueFactory;
+        private readonly Func<ITrace, CancellationToken, Task<T>> valueFactory;
         private T value;
 
-        public AsyncLazy(Func<CancellationToken, Task<T>> valueFactory)
+        public AsyncLazy(Func<ITrace, CancellationToken, Task<T>> valueFactory)
         {
             this.valueFactory = valueFactory ?? throw new ArgumentNullException(nameof(valueFactory));
         }
 
         public bool ValueInitialized { get; private set; }
 
-        public async Task<T> GetValueAsync(CancellationToken cancellationToken)
+        public async Task<T> GetValueAsync(ITrace trace, CancellationToken cancellationToken)
         {
             // Note that this class is not thread safe.
             // if the valueFactory has side effects than this will have issues.
             cancellationToken.ThrowIfCancellationRequested();
             if (!this.ValueInitialized)
             {
-                this.value = await this.valueFactory(cancellationToken);
+                this.value = await this.valueFactory(trace, cancellationToken);
                 this.ValueInitialized = true;
             }
 

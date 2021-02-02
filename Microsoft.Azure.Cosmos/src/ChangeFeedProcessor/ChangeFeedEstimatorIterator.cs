@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json.Linq;
 
     internal sealed class ChangeFeedEstimatorIterator : FeedIterator<ChangeFeedProcessorState>
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ContainerInternal monitoredContainer;
         private readonly ContainerInternal leaseContainer;
         private readonly string processorName;
-        private readonly Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator;
+        private readonly Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator;
         private readonly ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions;
         private readonly AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>> lazyLeaseDocuments;
         private DocumentServiceLeaseContainer documentServiceLeaseContainer;
@@ -49,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                   monitoredContainer,
                   leaseContainer,
                   changeFeedEstimatorRequestOptions,
-                  (string partitionKeyRangeId, string continuationToken, bool startFromBeginning) => ResultSetIteratorUtils.BuildResultSetIterator(
-                          partitionKeyRangeId: partitionKeyRangeId,
+                  (DocumentServiceLease lease, string continuationToken, bool startFromBeginning) => ChangeFeedPartitionKeyResultSetIteratorCore.Create(
+                          lease: lease,
                           continuationToken: continuationToken,
                           maxItemCount: 1,
                           container: monitoredContainer,
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             DocumentServiceLeaseContainer documentServiceLeaseContainer,
-            Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator,
+            Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
             : this(
                   processorName: string.Empty,
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions,
-            Func<string, string, bool, FeedIterator> monitoredContainerFeedCreator)
+            Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator)
         {
             this.processorName = processorName ?? throw new ArgumentNullException(nameof(processorName));
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
@@ -95,7 +95,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentOutOfRangeException($"{nameof(this.changeFeedEstimatorRequestOptions.MaxItemCount)} value should be a positive integer.");
             }
 
-            this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(valueFactory: (innerCancellationToken) => this.TryInitializeLeaseDocumentsAsync(innerCancellationToken));
+            this.lazyLeaseDocuments = new AsyncLazy<TryCatch<IReadOnlyList<DocumentServiceLease>>>(
+                valueFactory: (trace, innerCancellationToken) => this.TryInitializeLeaseDocumentsAsync(innerCancellationToken));
             this.hasMoreResults = true;
 
             this.monitoredContainerFeedCreator = monitoredContainerFeedCreator;
@@ -117,7 +118,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                     using (diagnostics.CreateScope("InitializeLeaseDocuments"))
                     {
-                        TryCatch<IReadOnlyList<DocumentServiceLease>> tryInitializeLeaseDocuments = await this.lazyLeaseDocuments.GetValueAsync(cancellationToken).ConfigureAwait(false);
+                        TryCatch<IReadOnlyList<DocumentServiceLease>> tryInitializeLeaseDocuments = await this.lazyLeaseDocuments
+                            .GetValueAsync(
+                                NoOpTrace.Singleton, 
+                                cancellationToken)
+                            .ConfigureAwait(false);
                         if (!tryInitializeLeaseDocuments.Succeeded)
                         {
                             if (!(tryInitializeLeaseDocuments.Exception.InnerException is CosmosException cosmosException))
@@ -252,10 +257,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             DocumentServiceLease existingLease,
             CancellationToken cancellationToken)
         {
-            // Current lease schema maps Token to PKRangeId
-            string partitionKeyRangeId = existingLease.CurrentLeaseToken;
             using FeedIterator iterator = this.monitoredContainerFeedCreator(
-                partitionKeyRangeId,
+                existingLease,
                 existingLease.ContinuationToken,
                 string.IsNullOrEmpty(existingLease.ContinuationToken));
 
@@ -293,9 +296,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             if (this.documentServiceLeaseContainer == null)
             {
-                string monitoredContainerAndDatabaseRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
+                string monitoredContainerAndDatabaseRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync(cancellationToken);
                 string leasePrefix = this.monitoredContainer.GetLeasePrefix(this.processorName, monitoredContainerAndDatabaseRid);
                 DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(
+                    monitoredContainer: this.monitoredContainer,
                     leaseContainer: this.leaseContainer,
                     leaseContainerPrefix: leasePrefix,
                     instanceName: ChangeFeedEstimatorIterator.EstimatorDefaultHostName);
@@ -304,11 +308,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        private async Task<TryCatch<IReadOnlyList<DocumentServiceLease>>> TryInitializeLeaseDocumentsAsync(CancellationToken cancellationToken)
+        private async Task<TryCatch<IReadOnlyList<DocumentServiceLease>>> TryInitializeLeaseDocumentsAsync(
+            CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
-                IReadOnlyList<DocumentServiceLease> leases = await this.documentServiceLeaseContainer.GetAllLeasesAsync().ConfigureAwait(false);
+                IReadOnlyList<DocumentServiceLease> leases = await this.documentServiceLeaseContainer
+                    .GetAllLeasesAsync()
+                    .ConfigureAwait(false);
 
                 return TryCatch<IReadOnlyList<DocumentServiceLease>>.FromResult(leases);
             }

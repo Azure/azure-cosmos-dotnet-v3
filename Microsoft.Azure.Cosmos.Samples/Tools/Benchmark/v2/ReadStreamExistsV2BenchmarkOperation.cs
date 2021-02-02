@@ -57,7 +57,7 @@ namespace CosmosBenchmark
                 DatabseName = databsaeName,
                 ContainerName = containerName,
                 RuCharges = ruCharges,
-                lazyDiagnostics = () => itemResponse.RequestDiagnosticsString,
+                LazyDiagnostics = () => itemResponse.RequestDiagnosticsString,
             };
         }
 

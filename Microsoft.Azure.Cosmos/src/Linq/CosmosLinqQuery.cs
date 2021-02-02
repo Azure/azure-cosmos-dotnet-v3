@@ -16,10 +16,10 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
-    /// <summary> 
+    /// <summary>
     /// This is the entry point for LINQ query creation/execution, it generate query provider, implements IOrderedQueryable.
-    /// </summary> 
-    /// <seealso cref="CosmosLinqQueryProvider"/>  
+    /// </summary>
+    /// <seealso cref="CosmosLinqQueryProvider"/>
     internal sealed class CosmosLinqQuery<T> : IDocumentQuery<T>, IOrderedQueryable<T>
     {
         private readonly CosmosLinqQueryProvider queryProvider;
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions, parameters);
-            return new QueryDefinition(querySpec);
+            return QueryDefinition.CreateFromQuerySpec(querySpec);
         }
 
         public FeedIterator<T> ToFeedIterator()
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         diagnosticsContext.AddDiagnosticsInternal(diagnosticsCore.Context);
                     }
-                    
+
                 }
                 else
                 {

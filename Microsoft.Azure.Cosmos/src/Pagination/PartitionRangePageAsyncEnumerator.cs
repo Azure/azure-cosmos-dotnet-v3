@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Transactions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -37,24 +39,37 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         private bool HasMoreResults => !this.HasStarted || (this.State != default);
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
-            if (!this.HasMoreResults)
-            {
-                return false;
-            }
-
-            this.Current = await this.GetNextPageAsync(cancellationToken: this.cancellationToken);
-            if (this.Current.Succeeded)
-            {
-                this.State = this.Current.Result.State;
-                this.HasStarted = true;
-            }
-
-            return true;
+            return this.MoveNextAsync(NoOpTrace.Singleton);
         }
 
-        protected abstract Task<TryCatch<TPage>> GetNextPageAsync(CancellationToken cancellationToken);
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            using (ITrace childTrace = trace.StartChild(name: $"{this.Range} move next", TraceComponent.Pagination, TraceLevel.Info))
+            {
+                if (!this.HasMoreResults)
+                {
+                    return false;
+                }
+
+                this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken: this.cancellationToken);
+                if (this.Current.Succeeded)
+                {
+                    this.State = this.Current.Result.State;
+                    this.HasStarted = true;
+                }
+
+                return true;
+            }
+        }
+
+        protected abstract Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken);
 
         public abstract ValueTask DisposeAsync();
 

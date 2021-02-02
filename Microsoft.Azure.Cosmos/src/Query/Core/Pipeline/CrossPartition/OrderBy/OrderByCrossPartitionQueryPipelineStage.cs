@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Linq.Expressions;
     using System.Net;
     using System.Runtime.CompilerServices;
     using System.Text;
@@ -18,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using ResourceId = Documents.ResourceId;
 
@@ -64,6 +67,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             public const string EqualTo = "=";
             public const string GreaterThan = ">";
             public const string GreaterThanOrEqualTo = ">=";
+            public const string True = "true";
+            public const string False = "false";
         }
 
         private OrderByCrossPartitionQueryPipelineStage(
@@ -90,7 +95,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public ValueTask DisposeAsync() => default;
 
         private async ValueTask<bool> MoveNextAsync_Initialize_FromBeginningAsync(
-            OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator)
+            OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
+            ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
@@ -100,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             // We need to prime the page
-            if (!await uninitializedEnumerator.MoveNextAsync())
+            if (!await uninitializedEnumerator.MoveNextAsync(trace))
             {
                 // No more documents, so just return an empty page
                 this.Current = TryCatch<QueryPage>.FromResult(
@@ -119,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 if (IsSplitException(uninitializedEnumerator.Current.Exception))
                 {
-                    return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token: null);
+                    return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token: null, trace);
                 }
 
                 this.uninitializedEnumeratorsAndTokens.Enqueue((uninitializedEnumerator, token: null));
@@ -174,7 +180,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private async ValueTask<bool> MoveNextAsync_Initialize_FilterAsync(
             OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
-            OrderByContinuationToken token)
+            OrderByContinuationToken token,
+            ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
@@ -192,13 +199,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 uninitializedEnumerator,
                 this.sortOrders,
                 token,
+                trace,
                 cancellationToken: default);
 
             if (filterMonad.Failed)
             {
                 if (IsSplitException(filterMonad.Exception))
                 {
-                    return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token);
+                    return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token, trace);
                 }
 
                 this.Current = TryCatch<QueryPage>.FromException(filterMonad.Exception);
@@ -235,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 {
                     if (IsSplitException(filterMonad.Exception))
                     {
-                        return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token);
+                        return await this.MoveNextAsync_InitializeAsync_HandleSplitAsync(uninitializedEnumerator, token, trace);
                     }
                 }
 
@@ -274,13 +282,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private async ValueTask<bool> MoveNextAsync_InitializeAsync_HandleSplitAsync(
             OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator,
-            OrderByContinuationToken token)
+            OrderByContinuationToken token,
+            ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            IEnumerable<FeedRangeInternal> childRanges = await this.documentContainer.GetChildRangeAsync(
+            IReadOnlyList<FeedRangeEpk> childRanges = await this.documentContainer.GetChildRangeAsync(
                 uninitializedEnumerator.Range,
-                cancellationToken: this.cancellationToken);
+                trace,
+                this.cancellationToken);
+            if (childRanges.Count == 0)
+            {
+                throw new InvalidOperationException("Got back no children");
+            }
+
+            if (childRanges.Count == 1)
+            {
+                // We optimistically assumed that the cache is not stale.
+                // In the event that it is (where we only get back one child / the partition that we think got split)
+                // Then we need to refresh the cache
+                await this.documentContainer.RefreshProviderAsync(trace, this.cancellationToken);
+                childRanges = await this.documentContainer.GetChildRangeAsync(
+                    uninitializedEnumerator.Range,
+                    trace,
+                    this.cancellationToken);
+            }
+
+            if (childRanges.Count() <= 1)
+            {
+                throw new InvalidOperationException("Expected more than 1 child");
+            }
+
             foreach (FeedRangeInternal childRange in childRanges)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
@@ -298,27 +330,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             // Recursively retry
-            return await this.MoveNextAsync();
+            return await this.MoveNextAsync(trace);
         }
 
-        private async ValueTask<bool> MoveNextAsync_InitializeAsync()
+        private async ValueTask<bool> MoveNextAsync_InitializeAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
             await ParallelPrefetch.PrefetchInParallelAsync(
                 this.uninitializedEnumeratorsAndTokens.Select(value => value.enumerator),
                 this.maxConcurrency,
+                trace,
                 this.cancellationToken);
             (OrderByQueryPartitionRangePageAsyncEnumerator uninitializedEnumerator, OrderByContinuationToken token) = this.uninitializedEnumeratorsAndTokens.Dequeue();
             bool movedNext = token is null
-                ? await this.MoveNextAsync_Initialize_FromBeginningAsync(uninitializedEnumerator)
-                : await this.MoveNextAsync_Initialize_FilterAsync(uninitializedEnumerator, token);
+                ? await this.MoveNextAsync_Initialize_FromBeginningAsync(uninitializedEnumerator, trace)
+                : await this.MoveNextAsync_Initialize_FilterAsync(uninitializedEnumerator, token, trace);
             return movedNext;
         }
 
-        private ValueTask<bool> MoveNextAsync_DrainPageAsync()
+        private ValueTask<bool> MoveNextAsync_DrainPageAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
 
             OrderByQueryPartitionRangePageAsyncEnumerator currentEnumerator = default;
             OrderByQueryResult orderByQueryResult = default;
@@ -455,11 +493,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         ////  2) <i, j> always come before <i, k> where j < k
         public ValueTask<bool> MoveNextAsync()
         {
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
             this.cancellationToken.ThrowIfCancellationRequested();
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
 
             if (this.uninitializedEnumeratorsAndTokens.Count != 0)
             {
-                return this.MoveNextAsync_InitializeAsync();
+                return this.MoveNextAsync_InitializeAsync(trace);
             }
 
             if (this.enumerators.Count == 0)
@@ -484,7 +532,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 return new ValueTask<bool>(false);
             }
 
-            return this.MoveNextAsync_DrainPageAsync();
+            return this.MoveNextAsync_DrainPageAsync(trace);
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -570,7 +618,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
                 PartitionMapper.PartitionMapping<OrderByContinuationToken> partitionMapping = monadicGetOrderByContinuationTokenMapping.Result;
                 IReadOnlyList<CosmosElement> orderByItems = partitionMapping
-                    .TargetPartition
+                    .TargetMapping
                     .Values
                     .First()
                     .OrderByItems
@@ -594,9 +642,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 (string leftFilter, string targetFilter, string rightFilter) = OrderByCrossPartitionQueryPipelineStage.GetFormattedFilters(columnAndItems);
                 List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)> tokenMappingAndFilters = new List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)>()
                 {
-                    { (partitionMapping.PartitionsLeftOfTarget, leftFilter) },
-                    { (partitionMapping.TargetPartition, targetFilter) },
-                    { (partitionMapping.PartitionsRightOfTarget, rightFilter) },
+                    { (partitionMapping.MappingLeftOfTarget, leftFilter) },
+                    { (partitionMapping.TargetMapping, targetFilter) },
+                    { (partitionMapping.MappingRightOfTarget, rightFilter) },
                 };
 
                 enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
@@ -771,15 +819,46 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 (OrderByColumn orderByColumn, CosmosElement orderByItem) = columnAndItems.Span[0];
                 (string expression, SortOrder sortOrder) = (orderByColumn.Expression, orderByColumn.SortOrder);
 
-                StringBuilder sb = new StringBuilder();
-                CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
-                orderByItem.Accept(cosmosElementToQueryLiteral);
+                AppendToBuilders(builders, "( ");
 
-                string orderByItemToString = sb.ToString();
+                // We need to add the filter for within the same type.
+                if (orderByItem != default)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                    orderByItem.Accept(cosmosElementToQueryLiteral);
 
-                left.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan)} {orderByItemToString}");
-                target.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
-                right.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
+                    string orderByItemToString = sb.ToString();
+
+                    left.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan)} {orderByItemToString}");
+                    target.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
+                    right.Append($"{expression} {(sortOrder == SortOrder.Descending ? Expressions.LessThanOrEqualTo : Expressions.GreaterThanOrEqualTo)} {orderByItemToString}");
+                }
+                else
+                {
+                    // User is ordering by undefined, so we need to avoid a null reference exception.
+
+                    // What we really want is to support expression > undefined, 
+                    // but the engine evaluates to undefined instead of true or false,
+                    // so we work around this by using the IS_DEFINED() system function.
+
+                    ComparisionWithUndefinedFilters filters = new ComparisionWithUndefinedFilters(expression);
+                    left.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThan : filters.GreaterThan)}");
+                    target.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThanOrEqualTo : filters.GreaterThanOrEqualTo)}");
+                    right.Append($"{(sortOrder == SortOrder.Descending ? filters.LessThanOrEqualTo : filters.GreaterThanOrEqualTo)}");
+                }
+
+                // Now we need to include all the types that match the sort order.
+                ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
+                    ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
+                    : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                foreach (string isDefinedFunction in isDefinedFunctions.Span)
+                {
+                    AppendToBuilders(builders, " OR ");
+                    AppendToBuilders(builders, $"{isDefinedFunction}({expression})");
+                }
+
+                AppendToBuilders(builders, " )");
             }
             else
             {
@@ -827,37 +906,105 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         CosmosElement orderByItem = columnAndItemPrefix[index].orderByItem;
                         bool lastItem = index == prefixLength - 1;
 
-                        // Append Expression
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, expression);
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
+                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, "(");
 
-                        // Append binary operator
-                        if (lastItem)
+                        bool wasInequality;
+                        // We need to add the filter for within the same type.
+                        if (orderByItem == default)
                         {
-                            string inequality = sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan;
-                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, inequality);
-                            if (lastPrefix)
+                            ComparisionWithUndefinedFilters filters = new ComparisionWithUndefinedFilters(expression);
+
+                            // Refer to the logic from single order by for how we are handling order by undefined
+                            if (lastItem)
                             {
-                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, string.Empty, Expressions.EqualTo, Expressions.EqualTo);
+                                if (lastPrefix)
+                                {
+                                    if (sortOrder == SortOrder.Descending)
+                                    {
+                                        // <, <=, <=
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.LessThan, filters.LessThanOrEqualTo, filters.LessThanOrEqualTo);
+                                    }
+                                    else
+                                    {
+                                        // >, >=, >=
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.GreaterThan, filters.GreaterThanOrEqualTo, filters.GreaterThanOrEqualTo);
+                                    }
+                                }
+                                else
+                                {
+                                    if (sortOrder == SortOrder.Descending)
+                                    {
+                                        // <, <, <
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.LessThan, filters.LessThan, filters.LessThan);
+                                    }
+                                    else
+                                    {
+                                        // >, >, >
+                                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.GreaterThan, filters.GreaterThan, filters.GreaterThan);
+                                    }
+                                }
+
+                                wasInequality = true;
+                            }
+                            else
+                            {
+                                // =, =, =
+                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, filters.EqualTo);
+                                wasInequality = false;
                             }
                         }
                         else
                         {
-                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, Expressions.EqualTo);
+                            // Append Expression
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, expression);
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
+
+                            // Append Binary Operator
+                            if (lastItem)
+                            {
+                                string inequality = sortOrder == SortOrder.Descending ? Expressions.LessThan : Expressions.GreaterThan;
+                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, inequality);
+                                if (lastPrefix)
+                                {
+                                    OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, string.Empty, Expressions.EqualTo, Expressions.EqualTo);
+                                }
+
+                                wasInequality = true;
+                            }
+                            else
+                            {
+                                OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, Expressions.EqualTo);
+                                wasInequality = false;
+                            }
+
+                            // Append OrderBy Item
+                            StringBuilder sb = new StringBuilder();
+                            CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
+                            orderByItem.Accept(cosmosElementToQueryLiteral);
+                            string orderByItemToString = sb.ToString();
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, orderByItemToString);
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
                         }
 
-                        // Append SortOrder
-                        StringBuilder sb = new StringBuilder();
-                        CosmosElementToQueryLiteral cosmosElementToQueryLiteral = new CosmosElementToQueryLiteral(sb);
-                        orderByItem.Accept(cosmosElementToQueryLiteral);
-                        string orderByItemToString = sb.ToString();
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, orderByItemToString);
-                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " ");
+                        if (wasInequality)
+                        {
+                            // Now we need to include all the types that match the sort order.
+                            ReadOnlyMemory<string> isDefinedFunctions = orderByItem == default
+                                ? CosmosElementToIsSystemFunctionsVisitor.VisitUndefined(sortOrder == SortOrder.Ascending)
+                                : orderByItem.Accept(CosmosElementToIsSystemFunctionsVisitor.Singleton, sortOrder == SortOrder.Ascending);
+                            foreach (string isDefinedFunction in isDefinedFunctions.Span)
+                            {
+                                AppendToBuilders(builders, " OR ");
+                                AppendToBuilders(builders, $"{isDefinedFunction}({expression}) ");
+                            }
+                        }
+
+                        OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, ")");
 
                         if (!lastItem)
                         {
-                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, "AND ");
+                            OrderByCrossPartitionQueryPipelineStage.AppendToBuilders(builders, " AND ");
                         }
                     }
 
@@ -874,18 +1021,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             return (left.ToString(), TrueFilter, right.ToString());
         }
 
-        /// <summary>
-        /// When resuming an order by query we need to filter the document producers.
-        /// </summary>
-        /// <param name="enumerator">The producer to filter down.</param>
-        /// <param name="sortOrders">The sort orders.</param>
-        /// <param name="continuationToken">The continuation token.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task to await on.</returns>
         private static async Task<TryCatch<(bool doneFiltering, int itemsLeftToSkip, TryCatch<OrderByQueryPage> monadicQueryByPage)>> FilterNextAsync(
             OrderByQueryPartitionRangePageAsyncEnumerator enumerator,
             IReadOnlyList<SortOrder> sortOrders,
             OrderByContinuationToken continuationToken,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -906,7 +1046,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         $"Invalid Rid in the continuation token {continuationToken.ParallelContinuationToken.Token} for OrderBy~Context."));
             }
 
-            if (!await enumerator.MoveNextAsync())
+            if (!await enumerator.MoveNextAsync(trace))
             {
                 return TryCatch<(bool, int, TryCatch<OrderByQueryPage>)>.FromResult((true, 0, enumerator.Current));
             }
@@ -1019,6 +1159,117 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 enumeratorAndToken.Item1.SetCancellationToken(cancellationToken);
             }
+        }
+
+        private sealed class CosmosElementToIsSystemFunctionsVisitor : ICosmosElementVisitor<bool, ReadOnlyMemory<string>>
+        {
+            public static readonly CosmosElementToIsSystemFunctionsVisitor Singleton = new CosmosElementToIsSystemFunctionsVisitor();
+
+            private static class IsSystemFunctions
+            {
+                public const string Undefined = "not IS_DEFINED";
+                public const string Null = "IS_NULL";
+                public const string Boolean = "IS_BOOLEAN";
+                public const string Number = "IS_NUMBER";
+                public const string String = "IS_STRING";
+                public const string Array = "IS_ARRAY";
+                public const string Object = "IS_OBJECT";
+            }
+
+            private static readonly ReadOnlyMemory<string> SystemFunctionSortOrder = new string[]
+            {
+                IsSystemFunctions.Undefined,
+                IsSystemFunctions.Null,
+                IsSystemFunctions.Boolean,
+                IsSystemFunctions.Number,
+                IsSystemFunctions.String,
+                IsSystemFunctions.Array,
+                IsSystemFunctions.Object,
+            };
+
+            private static class SortOrder
+            {
+                public const int Undefined = 0;
+                public const int Null = 1;
+                public const int Boolean = 2;
+                public const int Number = 3;
+                public const int String = 4;
+                public const int Array = 5;
+                public const int Object = 6;
+            }
+
+            private CosmosElementToIsSystemFunctionsVisitor()
+            {
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosArray cosmosArray, bool isAscending)
+            {
+                return GetIsDefinedFunctions(SortOrder.Array, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosBinary cosmosBinary, bool isAscending)
+            {
+                throw new NotImplementedException();
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosBoolean cosmosBoolean, bool isAscending)
+            {
+                return GetIsDefinedFunctions(SortOrder.Boolean, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosGuid cosmosGuid, bool isAscending)
+            {
+                throw new NotImplementedException();
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosNull cosmosNull, bool isAscending)
+            {
+                return GetIsDefinedFunctions(SortOrder.Null, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosNumber cosmosNumber, bool isAscending)
+            {
+                return GetIsDefinedFunctions(SortOrder.Number, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosObject cosmosObject, bool isAscending)
+            {
+                return GetIsDefinedFunctions(SortOrder.Object, isAscending);
+            }
+
+            public ReadOnlyMemory<string> Visit(CosmosString cosmosString, bool isAscending)
+            {
+                return GetIsDefinedFunctions(SortOrder.String, isAscending);
+            }
+
+            public static ReadOnlyMemory<string> VisitUndefined(bool isAscending)
+            {
+                return isAscending ? SystemFunctionSortOrder.Slice(start: 1) : ReadOnlyMemory<string>.Empty;
+            }
+
+            private static ReadOnlyMemory<string> GetIsDefinedFunctions(int index, bool isAscending)
+            {
+                return isAscending ? SystemFunctionSortOrder.Slice(index + 1) : SystemFunctionSortOrder.Slice(start: 0, index);
+            }
+        }
+
+        private readonly struct ComparisionWithUndefinedFilters
+        {
+            public ComparisionWithUndefinedFilters(
+                string expression)
+            {
+                this.LessThan = "false";
+                this.LessThanOrEqualTo = $"NOT IS_DEFINED({expression})";
+                this.EqualTo = $"NOT IS_DEFINED({expression})";
+                this.GreaterThan = $"IS_DEFINED({expression})";
+                this.GreaterThanOrEqualTo = "true";
+            }
+
+            public string LessThan { get; }
+            public string LessThanOrEqualTo { get; }
+            public string EqualTo { get; }
+            public string GreaterThan { get; }
+            public string GreaterThanOrEqualTo { get; }
         }
     }
 }

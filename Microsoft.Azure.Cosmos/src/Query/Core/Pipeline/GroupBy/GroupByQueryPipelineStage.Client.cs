@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract partial class GroupByQueryPipelineStage : QueryPipelineStageBase
     {
@@ -61,9 +62,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync()
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (trace == null)
+                {
+                    throw new ArgumentNullException(nameof(trace));
+                }
 
                 if (this.returnedLastPage)
                 {
@@ -76,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 double requestCharge = 0.0;
                 long responseLengthInBytes = 0;
 
-                while (await this.inputStage.MoveNextAsync())
+                while (await this.inputStage.MoveNextAsync(trace))
                 {
                     this.cancellationToken.ThrowIfCancellationRequested();
 

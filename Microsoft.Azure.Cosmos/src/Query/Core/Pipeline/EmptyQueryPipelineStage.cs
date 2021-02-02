@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Reactive;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class EmptyQueryPipelineStage : IQueryPipelineStage
     {
@@ -25,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         public ValueTask DisposeAsync() => this.emptyAsyncEnumerator.DisposeAsync();
 
         public ValueTask<bool> MoveNextAsync() => this.emptyAsyncEnumerator.MoveNextAsync();
+
+        public ValueTask<bool> MoveNextAsync(ITrace trace) => this.emptyAsyncEnumerator.MoveNextAsync(trace);
 
         public void SetCancellationToken(CancellationToken cancellationToken)
         {

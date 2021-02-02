@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #nullable enable
 
     using System;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
 
 #if INTERNAL
@@ -19,19 +20,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         private sealed class EagerCosmosString : CosmosString
         {
-            public EagerCosmosString(string value)
+            public EagerCosmosString(UtfAnyString value)
             {
                 this.Value = value;
             }
 
-            public override string Value { get; }
-
-            public override bool TryGetBufferedValue(out Utf8Memory bufferedValue)
-            {
-                // Eager string only has the materialized value, so this method will always return false.
-                bufferedValue = default;
-                return false;
-            }
+            public override UtfAnyString Value { get; }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {

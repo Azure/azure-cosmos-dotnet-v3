@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The default constructor for the RequestHandler
         /// </summary>
-        public RequestHandler()
+        protected RequestHandler()
         {
             this.FullHandlerName = this.GetType().FullName;
         }

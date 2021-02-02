@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class NameCacheStaleRetryQueryPipelineStage : IQueryPipelineStage
     {
@@ -31,9 +32,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public ValueTask DisposeAsync() => this.currentQueryPipelineStage.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
-            if (!await this.currentQueryPipelineStage.MoveNextAsync())
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (!await this.currentQueryPipelineStage.MoveNextAsync(trace))
             {
                 return false;
             }

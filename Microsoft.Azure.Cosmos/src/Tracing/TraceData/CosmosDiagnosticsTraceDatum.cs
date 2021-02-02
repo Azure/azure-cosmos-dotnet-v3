@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using Microsoft.Azure.Cosmos.Diagnostics;
 
-    internal sealed class CosmosDiagnosticsTraceDatum : ITraceDatum
+    internal sealed class CosmosDiagnosticsTraceDatum : TraceDatum
     {
         public CosmosDiagnosticsInternal CosmosDiagnostics { get; }
 
@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.CosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
         }
 
-        public void Accept(ITraceDatumVisitor traceDatumVisitor)
+        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
         }

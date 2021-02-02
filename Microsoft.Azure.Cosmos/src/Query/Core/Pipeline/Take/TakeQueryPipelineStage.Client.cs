@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
     internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
@@ -174,13 +175,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync()
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
 
-                if (!await this.inputStage.MoveNextAsync())
+                if (trace == null)
+                {
+                    throw new ArgumentNullException(nameof(trace));
+                }
+
+                if (this.ReturnedFinalPage || !await this.inputStage.MoveNextAsync(trace))
                 {
                     this.Current = default;
+                    this.takeCount = 0;
                     return false;
                 }
 

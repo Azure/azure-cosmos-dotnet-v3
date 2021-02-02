@@ -1823,6 +1823,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             });
         }
 
+        [Ignore] // Ignore until backend index utilization is on by default and other query metrics test are completed
+        [TestMethod]
+        public async Task TestIndexUtilizationParsing()
+        {
+
+            Database database = await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
+
+            DocumentCollection collection;
+            RequestOptions options = new RequestOptions();
+            
+            collection = new DocumentCollection()
+            {
+                Id = Guid.NewGuid().ToString()
+            };
+
+            options.OfferThroughput = 10000;
+
+            collection = await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
+
+            int maxDocumentCount = 2000;
+            for (int i = 0; i < maxDocumentCount; i++)
+            {
+                QueryDocument doc = new QueryDocument()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    NumericField = i,
+                    StringField = i.ToString(CultureInfo.InvariantCulture),
+                };
+
+                await this.client.CreateDocumentAsync(collection, doc);
+            }
+
+            DocumentFeedResponse<dynamic> result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r.name = 'Julien' and r.age > 12", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
+            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
+            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); 
+
+            QueryMetrics queryMetrics = new QueryMetrics(
+                BackendMetrics.ParseFromDelimitedString(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics]),
+                IndexUtilizationInfo.CreateFromString(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization]),
+                ClientSideMetrics.Empty);
+            
+            // If these fields populate then the parsing is successful and correct.
+            Assert.AreEqual("/name/?", queryMetrics.IndexUtilizationInfo.UtilizedSingleIndexes[0].IndexDocumentExpression);
+            Assert.AreEqual(String.Join(", ", new object[] { "/name ASC", "/age ASC" }), String.Join(", ", queryMetrics.IndexUtilizationInfo.PotentialCompositeIndexes[0].IndexDocumentExpressions));
+            
+            await this.client.DeleteDatabaseAsync(database);
+        }
+
         [TestMethod]
         public async Task TestQueryMetricsNonZero()
         {
@@ -2228,9 +2276,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // simple validations - existence - yes & no
             DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected no metrics headers for query");
+            Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected no index utilization headers for query");
 
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
+            Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); // False for now
 
             this.ValidateQueryMetricsHeadersOverContinuations(collection, maxDocumentCount).Wait();
         }

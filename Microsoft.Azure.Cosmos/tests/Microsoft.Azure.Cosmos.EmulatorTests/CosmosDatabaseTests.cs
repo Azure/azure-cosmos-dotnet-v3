@@ -9,10 +9,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -212,15 +214,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CreateIfNotExists()
         {
-            DatabaseResponse createResponse = await this.CreateDatabaseHelper();
+            RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
+            RequestHandlerHelper requestHandlerHelper = new RequestHandlerHelper();
+
+            CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(requestChargeHandler, requestHandlerHelper));
+
+            // Create a new database
+            requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createResponse = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createResponse.RequestCharge);
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
-            createResponse = await this.CreateDatabaseHelper(createResponse.Resource.Id, databaseExists: true);
-            Assert.AreEqual(HttpStatusCode.OK, createResponse.StatusCode);
-            Assert.IsNotNull(createResponse.Diagnostics);
-            string diagnostics = createResponse.Diagnostics.ToString();
+            requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createExistingResponse = await client.CreateDatabaseIfNotExistsAsync(createResponse.Resource.Id);
+            Assert.AreEqual(HttpStatusCode.OK, createExistingResponse.StatusCode);
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createExistingResponse.RequestCharge);
+            Assert.IsNotNull(createExistingResponse.Diagnostics);
+            string diagnostics = createExistingResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StartUtc"));
+
+            bool conflictReturned = false;
+            requestHandlerHelper.CallBackOnResponse = (request, response) =>
+            {
+                if(request.OperationType == Documents.OperationType.Create &&
+                    request.ResourceType == Documents.ResourceType.Database)
+                {
+                    conflictReturned = true;
+                    // Simulate a race condition which results in a 409
+                    return CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.Conflict,
+                        subStatusCode: default,
+                        message: "Fake 409 conflict",
+                        stackTrace: string.Empty,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: response.Headers.RequestCharge,
+                        retryAfter: default,
+                        headers: response.Headers,
+                        diagnosticsContext: response.DiagnosticsContext,
+                        error: default,
+                        innerException: default).ToCosmosResponseMessage(request);
+                }
+
+                return response;
+            };
+
+            requestChargeHandler.TotalRequestCharges = 0;
+            DatabaseResponse createWithConflictResponse = await client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createWithConflictResponse.RequestCharge);
+            Assert.AreEqual(HttpStatusCode.OK, createWithConflictResponse.StatusCode);
+            Assert.IsTrue(conflictReturned);
+
+            await createResponse.Database.DeleteAsync();
+            await createWithConflictResponse.Database.DeleteAsync();
         }
 
         [TestMethod]
@@ -356,6 +402,168 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(0, databaseIds.Count);
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateReplaceCek()
+        {
+            DatabaseResponse response = await this.CreateDatabaseHelper();
+
+            string cekId = "anotherCek";
+            ClientEncryptionKeyProperties cekProperties = await CosmosDatabaseTests.CreateCekAsync((DatabaseInlineCore)response.Database, cekId);
+
+            Assert.IsNotNull(cekProperties);
+            Assert.IsNotNull(cekProperties.CreatedTime);
+            Assert.IsNotNull(cekProperties.LastModified);
+            Assert.IsNotNull(cekProperties.SelfLink);
+            Assert.IsNotNull(cekProperties.ResourceId);
+
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata("metadataName", "metadataValue"),
+                cekProperties.EncryptionKeyWrapMetadata);
+
+            // Use a different client instance to avoid (unintentional) cache impact
+            ClientEncryptionKeyProperties readProperties = await ((DatabaseInlineCore)this.cosmosClient.GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
+            Assert.AreEqual(cekProperties, readProperties);
+
+            // Replace
+            cekProperties = await CosmosDatabaseTests.ReplaceCekAsync((DatabaseInlineCore)response.Database, cekId);
+
+            Assert.IsNotNull(cekProperties);
+            Assert.IsNotNull(cekProperties.CreatedTime);
+            Assert.IsNotNull(cekProperties.LastModified);
+            Assert.IsNotNull(cekProperties.SelfLink);
+            Assert.IsNotNull(cekProperties.ResourceId);
+
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata("metadataName", "updatedMetadataValue"),
+                cekProperties.EncryptionKeyWrapMetadata);
+
+            // Use a different client instance to avoid (unintentional) cache impact
+            readProperties =
+                await ((DatabaseCore)(DatabaseInlineCore)this.cosmosClient.GetDatabase(response.Database.Id)).GetClientEncryptionKey(cekId).ReadAsync();
+            Assert.AreEqual(cekProperties, readProperties);
+
+            response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+        }
+
+        private static async Task<ClientEncryptionKeyProperties> CreateCekAsync(DatabaseInlineCore databaseCore, string cekId)
+        {
+            byte[] rawCek = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek);
+            }
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("metadataName", "metadataValue"));
+
+            ClientEncryptionKeyResponse cekResponse = await databaseCore.CreateClientEncryptionKeyAsync(cekProperties);
+
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+            Assert.IsTrue(cekResponse.RequestCharge > 0);
+            Assert.IsNotNull(cekResponse.ETag);
+
+            ClientEncryptionKeyProperties retrievedCekProperties = cekResponse.Resource;
+            Assert.IsTrue(rawCek.SequenceEqual(retrievedCekProperties.WrappedDataEncryptionKey));
+            EqualityComparer<EncryptionKeyWrapMetadata>.Default.Equals(cekResponse.Resource.EncryptionKeyWrapMetadata, retrievedCekProperties.EncryptionKeyWrapMetadata);
+            Assert.AreEqual(cekResponse.ETag, retrievedCekProperties.ETag);
+            Assert.AreEqual(cekId, retrievedCekProperties.Id);
+            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", retrievedCekProperties.EncryptionAlgorithm);
+            return retrievedCekProperties;
+        }
+
+        private static async Task<ClientEncryptionKeyProperties> ReplaceCekAsync(DatabaseCore databaseCore, string cekId)
+        {
+            ClientEncryptionKeyCore cek = (ClientEncryptionKeyInlineCore)databaseCore.GetClientEncryptionKey(cekId);
+
+            byte[] rawCek = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek);
+            }
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("metadataName", "updatedMetadataValue"));
+
+            ClientEncryptionKeyResponse cekResponse = await cek.ReplaceAsync(cekProperties);
+            Assert.AreEqual(HttpStatusCode.OK, cekResponse.StatusCode);
+            Assert.IsTrue(cekResponse.RequestCharge > 0);
+            Assert.IsNotNull(cekResponse.ETag);
+
+            ClientEncryptionKeyProperties retrievedCekProperties = cekResponse.Resource;
+            Assert.IsTrue(rawCek.SequenceEqual(retrievedCekProperties.WrappedDataEncryptionKey));
+            Assert.AreEqual(cekResponse.ETag, retrievedCekProperties.ETag);
+            Assert.AreEqual(cekId, retrievedCekProperties.Id);
+            Assert.AreEqual(cekProperties.EncryptionAlgorithm, retrievedCekProperties.EncryptionAlgorithm);
+            return retrievedCekProperties;
+        }
+
+        [TestMethod]
+        public async Task VerifyCekFeedIterator()
+        {
+            DatabaseResponse response = await this.CreateDatabaseHelper();
+
+            DatabaseInlineCore databaseCore = (DatabaseInlineCore)response.Database;
+
+            string cekId = "Cek1";
+
+            byte[] rawCek1 = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek1);
+            }
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek1, new EncryptionKeyWrapMetadata("metadataName", "metadataValue"));
+
+            ClientEncryptionKeyResponse cekResponse = await databaseCore.CreateClientEncryptionKeyAsync(cekProperties);
+
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+
+            cekId = "Cek2";
+
+            byte[] rawCek2 = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek2);
+            }
+
+            cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek2, new EncryptionKeyWrapMetadata("metadataName", "metadataValue"));
+
+            cekResponse = await databaseCore.CreateClientEncryptionKeyAsync(cekProperties);
+
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+
+            FeedIterator<ClientEncryptionKeyProperties> feedIteratorcep = databaseCore.GetClientEncryptionKeyQueryIterator(null);
+            Assert.IsTrue(feedIteratorcep.HasMoreResults);
+
+            FeedResponse<ClientEncryptionKeyProperties> feedResponse = null;
+
+            while (feedIteratorcep.HasMoreResults)
+            {
+                feedResponse = await feedIteratorcep.ReadNextAsync();
+            }
+
+            Assert.AreEqual(2, feedResponse.Count);
+            List<string> readDekIds = new List<string>();
+            List<string> expectedDekIds = new List<string> { "Cek1" , "Cek2" };
+
+            foreach (ClientEncryptionKeyProperties clientEncryptionKeyProperties in feedResponse.Resource)
+            {
+                readDekIds.Add(clientEncryptionKeyProperties.Id);
+                Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", clientEncryptionKeyProperties.EncryptionAlgorithm);
+                Assert.AreEqual(cekProperties.EncryptionKeyWrapMetadata.Name, clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name);
+                Assert.AreEqual(cekProperties.EncryptionKeyWrapMetadata.Value, clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value);
+            }
+
+            Assert.IsTrue(expectedDekIds.ToHashSet().SetEquals(readDekIds));
+            
+            response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
         }
 
         [TestMethod]

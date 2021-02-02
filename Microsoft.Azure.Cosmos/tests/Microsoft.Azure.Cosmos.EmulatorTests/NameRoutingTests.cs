@@ -1391,7 +1391,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Container container = await database.CreateContainerAsync(id: "coll1", partitionKeyPath: "/doesnotexist");
                     ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
 
-                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, partitionKey: new Cosmos.PartitionKey(toDoActivity.status));
+                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, partitionKey: new Cosmos.PartitionKey(toDoActivity.pk));
                     Assert.Fail("Create item should fail with wrong partition key value");
                 }
                 catch (CosmosException ce)

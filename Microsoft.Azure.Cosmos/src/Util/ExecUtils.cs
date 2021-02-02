@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal static class ExecUtils
@@ -30,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType,
                 requestOptions,
                 cosmosContainerCore: null,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: null,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType,
                 requestOptions,
                 cosmosContainerCore: null,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: null,
                 requestEnricher: null,
                 responseCreator: responseCreator,
@@ -77,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType,
                 requestOptions,
                 cosmosContainerCore: null,
-                partitionKey: null,
+                feedRange: null,
                 streamPayload: streamPayload,
                 requestEnricher: null,
                 responseCreator: responseCreator,
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
-            PartitionKey? partitionKey,
+            FeedRange feedRange,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: operationType,
                 requestOptions: requestOptions,
                 cosmosContainerCore: cosmosContainerCore,
-                partitionKey: partitionKey,
+                feedRange: feedRange,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 responseCreator: responseCreator,
@@ -127,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
-            PartitionKey? partitionKey,
+            FeedRange feedRange,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
             Func<ResponseMessage, T> responseCreator,
@@ -154,10 +155,11 @@ namespace Microsoft.Azure.Cosmos
                 operationType,
                 requestOptions,
                 cosmosContainerCore,
-                partitionKey,
+                feedRange,
                 streamPayload,
                 requestEnricher,
                 null,
+                NoOpTrace.Singleton,
                 cancellationToken);
 
             return responseCreator(response);

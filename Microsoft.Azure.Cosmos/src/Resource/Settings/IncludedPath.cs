@@ -11,7 +11,11 @@ namespace Microsoft.Azure.Cosmos
     /// <summary> 
     /// Specifies a path within a JSON document to be included in the Azure Cosmos DB service.
     /// </summary>
-    public sealed class IncludedPath
+    public
+#if !INTERNAL
+    sealed
+#endif
+    class IncludedPath
     {
         /// <summary>
         /// Gets or sets the path to be indexed in the Azure Cosmos DB service.

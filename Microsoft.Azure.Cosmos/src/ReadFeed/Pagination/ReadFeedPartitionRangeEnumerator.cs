@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ReadFeedPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
     {
@@ -37,11 +37,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.readFeedDataSource.MonadicReadFeedAsync(
+        protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken = default) => this.readFeedDataSource.MonadicReadFeedAsync(
             feedRange: this.Range,
             readFeedState: this.State,
             queryRequestOptions: this.queryRequestOptions,
             pageSize: this.pageSize,
+            trace: trace,
             cancellationToken: cancellationToken);
     }
 }
