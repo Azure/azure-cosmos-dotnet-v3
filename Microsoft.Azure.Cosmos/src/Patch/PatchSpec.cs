@@ -23,19 +23,17 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             Either<PatchItemRequestOptions, TransactionalBatchPatchItemRequestOptions> requestOptions)
         {
-            if (patchOperations != null)
-            {
-                List<PatchOperation> patchOperationsClone = new List<PatchOperation>(patchOperations.Count);
-                foreach (PatchOperation operation in patchOperations)
-                {
-                    patchOperationsClone.Add(operation);
-                }
-                this.PatchOperations = (IReadOnlyList<PatchOperation>)patchOperationsClone;
-            }
-            else
+            if (patchOperations == null)
             {
                 throw new ArgumentOutOfRangeException("Patch Operations cannot be null.");
             }
+
+            List<PatchOperation> patchOperationsClone = new List<PatchOperation>(patchOperations.Count);
+            foreach (PatchOperation operation in patchOperations)
+            {
+                patchOperationsClone.Add(operation);
+            }
+            this.PatchOperations = (IReadOnlyList<PatchOperation>)patchOperationsClone;
 
             this.RequestOptions = requestOptions;
         }
