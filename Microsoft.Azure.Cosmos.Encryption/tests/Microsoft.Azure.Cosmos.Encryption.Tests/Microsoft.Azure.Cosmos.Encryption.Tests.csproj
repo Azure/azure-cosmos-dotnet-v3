@@ -4,7 +4,7 @@
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Platform>AnyCPU</Platform>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Tests</RootNamespace>

@@ -6,14 +6,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
     using System;
     using System.Collections.Generic;
-    using System.Runtime.InteropServices.WindowsRuntime;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class MockQueryPipelineStage : QueryPipelineStageBase

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <AzureFunctionsVersion>v2</AzureFunctionsVersion>
     <AssemblyName>Cosmos.Samples.AzureFunctions</AssemblyName>
     <RootNamespace>Cosmos.Samples.AzureFunctions</RootNamespace>
