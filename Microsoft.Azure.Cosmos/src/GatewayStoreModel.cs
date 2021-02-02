@@ -30,8 +30,8 @@ namespace Microsoft.Azure.Cosmos
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        internal ClientCollectionCache ClientCollectionCache { get; set; }
-        internal PartitionKeyRangeCache PartitionKeyRangeCache { get; set; }
+        private ClientCollectionCache ClientCollectionCache { get; set; }
+        private PartitionKeyRangeCache PartitionKeyRangeCache { get; set; }
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -292,7 +292,11 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRange partitionKeyRange = null;
             if (request.ResourceType.IsPartitioned())
             {
-                partitionKeyRange = await ResolvePartitionKeyRangeAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache, false);
+                partitionKeyRange = await ResolvePartitionKeyRangeAsync(request: request, 
+                                                                        sessionContainer: sessionContainer, 
+                                                                        partitionKeyRangeCache: partitionKeyRangeCache, 
+                                                                        clientCollectionCache: clientCollectionCache, 
+                                                                        refreshCache: false);
             }
 
             if (partitionKeyRange != null)
@@ -308,10 +312,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static async Task<PartitionKeyRange> ResolvePartitionKeyRangeAsync(DocumentServiceRequest request, 
-                                                                        ISessionContainer sessionContainer, 
-                                                                        PartitionKeyRangeCache partitionKeyRangeCache, 
-                                                                        ClientCollectionCache clientCollectionCache, 
-                                                                        bool refreshCache)
+                                                                                   ISessionContainer sessionContainer, 
+                                                                                   PartitionKeyRangeCache partitionKeyRangeCache, 
+                                                                                   ClientCollectionCache clientCollectionCache, 
+                                                                                   bool refreshCache)
         {
             if (refreshCache)
             {
@@ -338,7 +342,11 @@ namespace Microsoft.Azure.Cosmos
                                                                                         cancellationToken: CancellationToken.None);
                 }
 
-                partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(request, partitionKeyString, false, collection, collectionRoutingMap);
+                partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(request: request, 
+                                                                                           partitionKeyString: partitionKeyString, 
+                                                                                           collectionCacheUptoDate: false, 
+                                                                                           collection: collection, 
+                                                                                           routingMap: collectionRoutingMap);
             }
             else if (request.PartitionKeyRangeIdentity != null)
             {
