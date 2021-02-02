@@ -544,7 +544,25 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             CosmosElement continuationToken = null;
             do
             {
-                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                QueryRequestOptions computeRequestOptions = new QueryRequestOptions
+                {
+                    IfMatchEtag = queryRequestOptions.IfMatchEtag,
+                    IfNoneMatchEtag = queryRequestOptions.IfNoneMatchEtag,
+                    MaxItemCount = queryRequestOptions.MaxItemCount,
+                    ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
+                    EnableScanInQuery = queryRequestOptions.EnableScanInQuery,
+                    EnableLowPrecisionOrderBy = queryRequestOptions.EnableLowPrecisionOrderBy,
+                    MaxBufferedItemCount = queryRequestOptions.MaxBufferedItemCount,
+                    SessionToken = queryRequestOptions.SessionToken,
+                    ConsistencyLevel = queryRequestOptions.ConsistencyLevel,
+                    MaxConcurrency = queryRequestOptions.MaxConcurrency,
+                    PartitionKey = queryRequestOptions.PartitionKey,
+                    CosmosSerializationFormatOptions = queryRequestOptions.CosmosSerializationFormatOptions,
+                    Properties = queryRequestOptions.Properties,
+                    IsEffectivePartitionKeyRouting = queryRequestOptions.IsEffectivePartitionKeyRouting,
+                    CosmosElementContinuationToken = queryRequestOptions.CosmosElementContinuationToken,
+                };
+
                 computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 
