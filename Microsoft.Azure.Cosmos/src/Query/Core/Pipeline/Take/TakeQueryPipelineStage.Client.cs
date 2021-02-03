@@ -185,9 +185,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                if (!await this.inputStage.MoveNextAsync(trace))
+                if (this.ReturnedFinalPage || !await this.inputStage.MoveNextAsync(trace))
                 {
                     this.Current = default;
+                    this.takeCount = 0;
                     return false;
                 }
 
