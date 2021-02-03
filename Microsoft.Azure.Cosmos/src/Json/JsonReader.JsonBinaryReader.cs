@@ -332,21 +332,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override Utf8String GetUtf8StringValue()
-            {
-                if (!(
-                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.String) ||
-                    (this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName)))
-                {
-                    throw new JsonInvalidTokenException();
-                }
-
-                return JsonBinaryEncoding.GetUtf8StringValue(
-                    this.rootBuffer,
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
-            }
-
-            /// <inheritdoc />
             public override bool TryGetBufferedStringValue(out Utf8Memory bufferedUtf8StringValue)
             {
                 if (!(
