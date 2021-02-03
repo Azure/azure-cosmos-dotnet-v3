@@ -157,13 +157,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     if (changeFeedRequestOptions?.Properties != null)
                     {
                         additionalHeaders = new Dictionary<string, string>();
+                        Dictionary<string, object> nonStringHeaders = new Dictionary<string, object>();
                         foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
                         {
                             if (keyValuePair.Value is string stringValue)
                             {
                                 additionalHeaders[keyValuePair.Key] = stringValue;
                             }
+                            else
+                            {
+                                nonStringHeaders[keyValuePair.Key] = keyValuePair.Value;
+                            }
                         }
+
+                        changeFeedRequestOptions.Properties = nonStringHeaders;
                     }
                     else
                     {
