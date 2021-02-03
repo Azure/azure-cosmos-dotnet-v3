@@ -193,7 +193,9 @@ namespace Microsoft.Azure.Cosmos
                     await GatewayStoreModel.ApplySessionTokenAsync(
                         dsr,
                         ConsistencyLevel.Session,
-                        new Mock<ISessionContainer>().Object);
+                        new Mock<ISessionContainer>().Object,
+                        partitionKeyRangeCache: null,
+                        clientCollectionCache: null);
 
                     Assert.IsNull(dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
                 }
@@ -214,7 +216,9 @@ namespace Microsoft.Azure.Cosmos
             await GatewayStoreModel.ApplySessionTokenAsync(
                 dsrQueryPlan,
                 ConsistencyLevel.Session,
-                new Mock<ISessionContainer>().Object);
+                new Mock<ISessionContainer>().Object,
+                partitionKeyRangeCache: null,
+                clientCollectionCache: null);
 
             Assert.IsNull(dsrQueryPlan.Headers[HttpConstants.HttpHeaders.SessionToken]);
         }
@@ -260,7 +264,9 @@ namespace Microsoft.Azure.Cosmos
                     await GatewayStoreModel.ApplySessionTokenAsync(
                         dsr,
                         ConsistencyLevel.Session,
-                        new Mock<ISessionContainer>().Object);
+                        new Mock<ISessionContainer>().Object,
+                        partitionKeyRangeCache: null,
+                        clientCollectionCache: null);
 
                     Assert.AreEqual(dsrSessionToken, dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
 
@@ -277,7 +283,9 @@ namespace Microsoft.Azure.Cosmos
                     await GatewayStoreModel.ApplySessionTokenAsync(
                         dsrNoSessionToken,
                         ConsistencyLevel.Session,
-                        sMock.Object);
+                        sMock.Object,
+                        partitionKeyRangeCache: null,
+                        clientCollectionCache: null);
 
                     if (dsrNoSessionToken.IsReadOnlyRequest)
                     {
@@ -307,7 +315,9 @@ namespace Microsoft.Azure.Cosmos
             await GatewayStoreModel.ApplySessionTokenAsync(
                 dsrSprocExecute,
                 ConsistencyLevel.Session,
-                new Mock<ISessionContainer>().Object);
+                new Mock<ISessionContainer>().Object,
+                partitionKeyRangeCache: null,
+                clientCollectionCache: null);
 
             Assert.AreEqual(sessionToken, dsrSprocExecute.Headers[HttpConstants.HttpHeaders.SessionToken]);
         }

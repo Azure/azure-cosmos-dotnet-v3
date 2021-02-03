@@ -543,7 +543,7 @@ namespace Microsoft.Azure.Cosmos
                     // due to parallel usage of V3 SDK and a possible storage or throughput split
                     // The current client might be legacy and not aware of this.
                     // In such case route the request to the first partition
-                    return TryResolveServerPartitionByPartitionKey(
+                    return AddressResolver.TryResolveServerPartitionByPartitionKey(
                                         request,
                                         "[]", // This corresponds to first partition
                                         collectionCacheIsUptoDate,

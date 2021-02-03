@@ -210,8 +210,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             ConsistencyLevel defaultConsistencyLevel,
             ISessionContainer sessionContainer,
-            PartitionKeyRangeCache partitionKeyRangeCache = null,
-            ClientCollectionCache clientCollectionCache = null)
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            ClientCollectionCache clientCollectionCache)
         {
             if (request.Headers == null)
             {
@@ -290,23 +290,21 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(clientCollectionCache));
             }
 
-            PartitionKeyRange partitionKeyRange = null;
-            bool isSuccess = false;
             if (request.ResourceType.IsPartitioned())
             {
-                (isSuccess, partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(request: request, 
+                (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(request: request, 
                                                                         sessionContainer: sessionContainer, 
                                                                         partitionKeyRangeCache: partitionKeyRangeCache, 
                                                                         clientCollectionCache: clientCollectionCache, 
                                                                         refreshCache: false);
-            }
 
-            if (isSuccess)
-            {
-                string localSessionToken = sessionContainer.ResolvePartitionLocalSessionToken(request, partitionKeyRange.Id).ConvertToString();
-                if (!string.IsNullOrEmpty(localSessionToken))
+                if (isSuccess)
                 {
-                    return new Tuple<bool, string>(true, partitionKeyRange.Id + ":" + localSessionToken);
+                    string localSessionToken = sessionContainer.ResolvePartitionLocalSessionToken(request, partitionKeyRange.Id).ConvertToString();
+                    if (!string.IsNullOrEmpty(localSessionToken))
+                    {
+                        return new Tuple<bool, string>(true, partitionKeyRange.Id + ":" + localSessionToken);
+                    }
                 }
             }
 
