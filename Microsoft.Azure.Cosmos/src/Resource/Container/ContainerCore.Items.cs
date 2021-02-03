@@ -600,7 +600,8 @@ namespace Microsoft.Azure.Cosmos
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
                 this.queryClient,
-                new CosmosDiagnosticsContextCore());
+                new CosmosDiagnosticsContextCore(),
+                changeFeedRequestOptions: changeFeedRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             Dictionary<string, string> additionalHeaders;

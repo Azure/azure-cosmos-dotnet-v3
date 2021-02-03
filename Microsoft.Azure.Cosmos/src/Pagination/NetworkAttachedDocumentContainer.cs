@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly ContainerInternal container;
         private readonly CosmosQueryClient cosmosQueryClient;
         private readonly QueryRequestOptions queryRequestOptions;
+        private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly CosmosDiagnosticsContext diagnosticsContext;
         private readonly string resourceLink;
         private readonly ResourceType resourceType;
@@ -38,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CosmosQueryClient cosmosQueryClient,
             CosmosDiagnosticsContext diagnosticsContext,
             QueryRequestOptions queryRequestOptions = null,
+            ChangeFeedRequestOptions changeFeedRequestOptions = null,
             string resourceLink = null,
             ResourceType resourceType = ResourceType.Document)
         {
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             this.cosmosQueryClient = cosmosQueryClient ?? throw new ArgumentNullException(nameof(cosmosQueryClient));
             this.diagnosticsContext = diagnosticsContext;
             this.queryRequestOptions = queryRequestOptions;
+            this.changeFeedRequestOptions = changeFeedRequestOptions;
             this.resourceLink = resourceLink ?? this.container.LinkUri;
             this.resourceType = resourceType;
         }
@@ -305,16 +308,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Document,
                 operationType: OperationType.ReadFeed,
-                requestOptions: default,
+                requestOptions: this.changeFeedRequestOptions,
                 cosmosContainerCore: this.container,
                 requestEnricher: (request) =>
                 {
-                    feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
+                    // We don't set page size here, since it's already set by the query request options.
 
-                    if (changeFeedPaginationOptions.PageSizeHint.HasValue)
-                    {
-                        request.Headers.PageSize = changeFeedPaginationOptions.PageSizeHint.Value.ToString();
-                    }
+                    feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
 
                     changeFeedPaginationOptions.Mode.Accept(request);
 
