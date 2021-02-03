@@ -66,17 +66,6 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(request != null);
 
             base.PopulateRequestOptions(request);
-
-            if (this.PageSizeHint.HasValue)
-            {
-                request.Headers.Add(
-                    HttpConstants.HttpHeaders.PageSize,
-                    this.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
-            }
-
-            request.Headers.Add(
-                HttpConstants.HttpHeaders.A_IM,
-                HttpConstants.A_IMHeaderValues.IncrementalFeed);
         }
 
         /// <summary>

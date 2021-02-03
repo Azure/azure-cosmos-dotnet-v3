@@ -312,7 +312,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 cosmosContainerCore: this.container,
                 requestEnricher: (request) =>
                 {
-                    // We don't set page size here, since it's already set by the query request options.
+                    if (changeFeedPaginationOptions.PageSizeHint.HasValue)
+                    {
+                        request.Headers[HttpConstants.HttpHeaders.PageSize] = changeFeedPaginationOptions.PageSizeHint.Value.ToString();
+                    }
 
                     feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
 
