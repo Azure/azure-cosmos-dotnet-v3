@@ -259,7 +259,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 httpMethod = HttpMethod.Get;
             }
-            else if (request.OperationType == OperationType.Replace)
+            else if ((request.OperationType == OperationType.Replace)
+                || (request.OperationType == OperationType.CollectionTruncate))
             {
                 httpMethod = HttpMethod.Put;
             }
