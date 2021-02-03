@@ -4,6 +4,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
@@ -11,6 +16,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public readonly struct PartitionKey : IEquatable<PartitionKey>
     {
+        private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
+
         private static readonly PartitionKeyInternal NullPartitionKeyInternal = new Documents.PartitionKey(null).InternalKey;
         private static readonly PartitionKeyInternal TruePartitionKeyInternal = new Documents.PartitionKey(true).InternalKey;
         private static readonly PartitionKeyInternal FalsePartitionKeyInternal = new Documents.PartitionKey(false).InternalKey;
@@ -212,6 +219,96 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey = default;
                 return false;
             }
+        }
+
+        internal static TryCatch<PartitionKey> CreateFromCosmosElementAndDefinition(
+            CosmosObject cosmosObject,
+            PartitionKeyDefinition partitionKeyDefinition)
+        {
+            if (cosmosObject == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosObject));
+            }
+
+            if (partitionKeyDefinition == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKeyDefinition));
+            }
+
+            if ((partitionKeyDefinition.Paths.Count > 1) && (partitionKeyDefinition.Kind != Documents.PartitionKind.MultiHash))
+            {
+                throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
+            }
+
+            PartitionKeyBuilder partitionKeyBuilder = new PartitionKeyBuilder();
+
+            // Grab the CosmosElement from each path
+            foreach (string path in partitionKeyDefinition.Paths)
+            {
+                // In the future use spans to avoid an allocation here
+                // For make the path a tokenized type.
+                string[] tokens = path.Split(PartitionKey.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
+
+                static bool TryGetPartitionKeyValueFromTokens(
+                    CosmosObject pathTraversalSoFar,
+                    ReadOnlySpan<string> tokens,
+                    out CosmosElement partitionKeyValue)
+                {
+                    // Note: this code is technically wrong, since a user could have a number index in the path.
+                    for (int i = 0; i < tokens.Length - 1; i++)
+                    {
+                        if (!pathTraversalSoFar.TryGetValue(tokens[i], out pathTraversalSoFar))
+                        {
+                            partitionKeyValue = default;
+                            return false;
+                        }
+                    }
+
+                    if (!pathTraversalSoFar.TryGetValue(tokens[tokens.Length - 1], out partitionKeyValue))
+                    {
+                        partitionKeyValue = default;
+                        return false;
+                    }
+
+                    return true;
+                }
+
+                if (!TryGetPartitionKeyValueFromTokens(cosmosObject, tokens, out CosmosElement partitionKeyValue))
+                {
+                    partitionKeyBuilder.AddNoneType();
+                }
+                else
+                {
+                    switch (partitionKeyValue)
+                    {
+                        case CosmosString cosmosString:
+                            partitionKeyBuilder.Add(cosmosString.Value);
+                            break;
+
+                        case CosmosNumber cosmosNumber:
+                            partitionKeyBuilder.Add(Number64.ToDouble(cosmosNumber.Value));
+                            break;
+
+                        case CosmosBoolean cosmosBoolean:
+                            partitionKeyBuilder.Add(cosmosBoolean.Value);
+                            break;
+
+                        case CosmosNull _:
+                            partitionKeyBuilder.AddNullValue();
+                            break;
+
+                        default:
+                            return TryCatch<PartitionKey>.FromException(
+                                new ArgumentException(
+                                   string.Format(
+                                       CultureInfo.InvariantCulture,
+                                       RMResources.UnsupportedPartitionKeyComponentValue,
+                                       cosmosObject)));
+                    }
+                }
+            }
+
+            return TryCatch<PartitionKey>.FromResult(partitionKeyBuilder.Build());
         }
 
         /// <summary>

@@ -46,9 +46,6 @@ namespace Microsoft.Azure.Cosmos
             bool forceRefresh = false,
             CancellationToken cancellationToken = default);
 
-        public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
-            CancellationToken cancellationToken = default);
-
         public abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
             CancellationToken cancellationToken);
 

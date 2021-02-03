@@ -1459,9 +1459,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(containerSettings.LastModified.HasValue);
 
             Assert.IsNotNull(containerSettings.PartitionKeyPath);
-            Assert.IsNotNull(containerSettings.PartitionKeyPathTokens);
-            Assert.AreEqual(1, containerSettings.PartitionKeyPathTokens[0].Count);
-            Assert.AreEqual("id", containerSettings.PartitionKeyPathTokens[0][0]);
 
             ContainerInternal containerCore = containerResponse.Container as ContainerInlineCore;
             Assert.IsNotNull(containerCore);

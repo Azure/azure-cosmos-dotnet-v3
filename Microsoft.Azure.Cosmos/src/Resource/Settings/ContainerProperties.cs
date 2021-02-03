@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
@@ -56,8 +55,6 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso cref="Microsoft.Azure.Cosmos.UniqueKeyPolicy"/>
     public class ContainerProperties
     {
-        private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
-
         [JsonProperty(PropertyName = Constants.Properties.ChangeFeedPolicy, NullValueHandling = NullValueHandling.Ignore)]
         private ChangeFeedPolicy changeFeedPolicyInternal;
 
@@ -77,7 +74,6 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
-        private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
 
         /// <summary>
@@ -621,49 +617,6 @@ namespace Microsoft.Azure.Cosmos
         internal string ResourceId { get; private set; }
 
         internal bool HasPartitionKey => this.PartitionKey != null;
-
-        internal IReadOnlyList<IReadOnlyList<string>> PartitionKeyPathTokens
-        {
-            get
-            {
-                if (this.partitionKeyPathTokens != null)
-                {
-                    return this.partitionKeyPathTokens;
-                }
-
-                if (this.PartitionKey == null)
-                {
-                    throw new ArgumentNullException(nameof(this.PartitionKey));
-                }
-
-                if (this.PartitionKey.Paths.Count > 1 && this.PartitionKey.Kind != Documents.PartitionKind.MultiHash)
-                {
-                    throw new NotImplementedException("PartitionKey extraction with composite partition keys not supported.");
-                }
-
-                if (this.PartitionKey.Kind != Documents.PartitionKind.MultiHash && this.PartitionKeyPath == null)
-                {
-                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
-                }
-
-#if INTERNAL || SUBPARTITIONING
-                if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
-                {
-                    throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
-                }
-#endif
-
-                List<IReadOnlyList<string>> partitionKeyPathTokensList = new List<IReadOnlyList<string>>();
-                foreach (string path in this.PartitionKey?.Paths)
-                {
-                    string[] splitPaths = path.Split(ContainerProperties.partitionKeyTokenDelimeter, StringSplitOptions.RemoveEmptyEntries);
-                    partitionKeyPathTokensList.Add(new List<string>(splitPaths));
-                }
-
-                this.partitionKeyPathTokens = partitionKeyPathTokensList;
-                return this.partitionKeyPathTokens;
-            }
-        }
 
         /// <summary>
         /// Throws an exception if an invalid id or partition key is set.

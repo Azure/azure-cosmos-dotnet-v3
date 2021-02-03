@@ -471,29 +471,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Used by typed API only. Exceptions are allowed.
-        /// </summary>
-        /// <param name="cancellationToken"></param>
-        /// <returns>Returns the partition key path</returns>
-        public override async Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default)
-        {
-            ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(
-                forceRefresh: false,
-                cancellationToken: cancellationToken);
-            if (containerProperties == null)
-            {
-                throw new ArgumentOutOfRangeException($"Container {this.LinkUri} not found");
-            }
-
-            if (containerProperties.PartitionKey?.Paths == null)
-            {
-                throw new ArgumentOutOfRangeException($"Partition key not defined for container {this.LinkUri}");
-            }
-
-            return containerProperties.PartitionKeyPathTokens;
-        }
-
-        /// <summary>
         /// Instantiates a new instance of the <see cref="PartitionKeyInternal"/> object.
         /// </summary>
         /// <remarks>
