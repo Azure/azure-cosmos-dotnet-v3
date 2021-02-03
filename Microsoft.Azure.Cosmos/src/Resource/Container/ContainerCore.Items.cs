@@ -605,8 +605,10 @@ namespace Microsoft.Azure.Cosmos
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             Dictionary<string, string> additionalHeaders;
+            
             if ((changeFeedRequestOptions?.Properties != null) && changeFeedRequestOptions.Properties.Any())
             {
+                Dictionary<string, object> additionalNonStringHeaders = new Dictionary<string, object>();
                 additionalHeaders = new Dictionary<string, string>();
                 foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
                 {
@@ -614,7 +616,13 @@ namespace Microsoft.Azure.Cosmos
                     {
                         additionalHeaders[keyValuePair.Key] = stringValue;
                     }
+                    else
+                    {
+                        additionalNonStringHeaders[keyValuePair.Key] = keyValuePair.Value;
+                    }
                 }
+
+                changeFeedRequestOptions.Properties = additionalNonStringHeaders;
             }
             else
             {
