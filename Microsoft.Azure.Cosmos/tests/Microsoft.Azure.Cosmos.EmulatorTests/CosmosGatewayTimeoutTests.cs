@@ -27,38 +27,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task GatewayStoreClientTimeout()
         {
-            using (CosmosClient client = TestCommon.CreateCosmosClient(useGateway: true))
+            // Cause http client to throw a TaskCanceledException to simulate a timeout
+            HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler())
             {
-                // Creates the store clients in the document client
-                await client.DocumentClient.EnsureValidClientAsync();
+                Timeout = TimeSpan.FromSeconds(1)
+            };
 
-                // Get the GatewayStoreModel
-                GatewayStoreModel gatewayStore;
-                using (DocumentServiceRequest serviceRequest = new DocumentServiceRequest(
-                                operationType: OperationType.Read,
-                                resourceIdOrFullName: null,
-                                resourceType: ResourceType.Database,
-                                body: null,
-                                headers: null,
-                                isNameBased: false,
-                                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
-                {
-                    serviceRequest.UseGatewayMode = true;
-                    gatewayStore = (GatewayStoreModel)client.DocumentClient.GetStoreProxy(serviceRequest);
-                }
-
-                DocumentClient documentClient = client.DocumentClient;
-                FieldInfo cosmosHttpClientProperty = client.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)cosmosHttpClientProperty.GetValue(documentClient);
-
-                // Set the http request timeout to 10 ms to cause a timeout exception
-                HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler());
-                FieldInfo httpClientProperty = cosmosHttpClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-                httpClientProperty.SetValue(cosmosHttpClient, httpClient);
-
-                FieldInfo gatewayRequestTimeoutProperty = typeof(CosmosHttpClient).GetField("GatewayRequestTimeout", BindingFlags.Public | BindingFlags.Static);
-                gatewayRequestTimeoutProperty.SetValue(cosmosHttpClient, TimeSpan.FromSeconds(1));
-
+            using (CosmosClient client = TestCommon.CreateCosmosClient(x => x.WithConnectionModeGateway().WithHttpClientFactory(() => httpClient)))
+            {
                 // Verify the failure has the required info
                 try
                 {
