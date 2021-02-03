@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemCreateNoResponseTest()
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
             {
                 EnableContentResponseOnWrite = false
             };
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task Validate(
-            ItemRequestOptions requestOptions,
+            PatchItemRequestOptions requestOptions,
             Action<ItemResponse<ToDoActivity>> ValidateWrite,
             Action<ItemResponse<ToDoActivity>> ValidateRead)
         {
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ItemStreamCreateNoResponseTest()
         {
-            ItemRequestOptions requestOptions = new ItemRequestOptions()
+            PatchItemRequestOptions requestOptions = new PatchItemRequestOptions()
             {
                 EnableContentResponseOnWrite = false
             };
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         private async Task ValidateItemStream(
-            ItemRequestOptions requestOptions,
+            PatchItemRequestOptions requestOptions,
             Action<ResponseMessage> ValidateWrite,
             Action<ResponseMessage> ValidateRead)
         {
@@ -224,6 +224,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PatchOperation.Remove("/cost")
             };
 
+            TransactionalBatchPatchItemRequestOptions requestOptionsPatch = new TransactionalBatchPatchItemRequestOptions()
+            {
+                EnableContentResponseOnWrite = false
+            };
+
             noResponseItemCount = 0;
             for (int i = 0; i < 10; i++)
             {
@@ -234,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 item2.id = item.id;
                 batch.ReplaceItem<ToDoActivity>(item2.id, item2, requestOptions);
                 noResponseItemCount++;
-                batchCore.PatchItem(item2.id, patch, requestOptions);
+                batchCore.PatchItem(item2.id, patch, requestOptionsPatch);
                 noResponseItemCount++;
             }
 
@@ -287,9 +292,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.ValidateItemNoContentResponse(itemResponse);
             }
 
+            PatchItemRequestOptions patchRequestOptions = new PatchItemRequestOptions()
+            {
+                EnableContentResponseOnWrite = false
+            };
+
             foreach (ToDoActivity item in items)
             {
-                bulkOperations.Add(bulkContainerInternal.PatchItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk), patch, requestOptions: requestOptions));
+                bulkOperations.Add(bulkContainerInternal.PatchItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk), patch, requestOptions: patchRequestOptions));
             }
 
             foreach (Task<ItemResponse<ToDoActivity>> result in bulkOperations)
