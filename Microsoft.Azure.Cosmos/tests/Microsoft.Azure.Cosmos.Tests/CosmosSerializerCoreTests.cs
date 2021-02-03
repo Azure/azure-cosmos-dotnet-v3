@@ -108,13 +108,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(0, toCount);
 
+            PatchItemRequestOptions patchRequestOptions = new PatchItemRequestOptions();
+
             // custom serializer is not used since operation type is Remove, which doesnt have "value" param to serialize
-            using (Stream stream = serializerCore.ToStream(patch)) { }
+            using (Stream stream = serializerCore.ToStream(new PatchSpec(patch, patchRequestOptions))) { }
             Assert.AreEqual(0, toCount);
 
             patch.Add(PatchOperation.Add("/addPath", "addValue"));
             // custom serializer is used since there is Add operation type also
-            using (Stream stream = serializerCore.ToStream(patch)) { }
+            using (Stream stream = serializerCore.ToStream(new PatchSpec(patch, patchRequestOptions))) { }
             Assert.AreEqual(1, toCount);
         }
 
