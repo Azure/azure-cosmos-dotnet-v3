@@ -659,7 +659,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ArgumentNullException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("Parameter name: Path"));
+                Assert.IsTrue(ex.Message.Contains("Parameter 'Path'"), ex.Message);
             }
 
             path1.Path = "/path";

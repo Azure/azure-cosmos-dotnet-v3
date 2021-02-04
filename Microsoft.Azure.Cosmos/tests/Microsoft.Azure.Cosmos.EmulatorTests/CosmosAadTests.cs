@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TokenCredentialCache tokenCredentialCache = ((AuthorizationTokenProviderTokenCredential)aadClient.AuthorizationTokenProvider).tokenCredentialCache;
 
             // The refresh interval changes slightly based on how fast machine calculate the interval based on the expire time.
-            Assert.IsTrue(15 <= tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes, "Default background refresh should be 25% of the token life which is defaulted to 1hr");
+            Assert.IsTrue(tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes <= 15, "Default background refresh should be 25% of the token life which is defaulted to 1hr");
             Assert.IsTrue(tokenCredentialCache.BackgroundTokenCredentialRefreshInterval.Value.TotalMinutes > 14.7 , "Default background refresh should be 25% of the token life which is defaulted to 1hr");
 
             Database aadDatabase = await aadClient.GetDatabase(databaseId).ReadAsync();
