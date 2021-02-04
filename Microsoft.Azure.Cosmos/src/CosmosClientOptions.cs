@@ -813,22 +813,27 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal UserAgentContainer BuildUserAgentContainer()
+        internal virtual UserAgentContainer BuildUserAgentContainer()
         {
             UserAgentContainer userAgent = new UserAgentContainer();
+            this.PopulateUserAgentContainerInfo(userAgent);
+
+            return userAgent;
+        }
+
+        internal void PopulateUserAgentContainerInfo(UserAgentContainer userAgentContainer)
+        {
             string features = this.GetUserAgentFeatures();
 
             if (!string.IsNullOrEmpty(features))
             {
-                userAgent.SetFeatures(features.ToString());
-            }
-            
-            if (!string.IsNullOrEmpty(this.ApplicationName))
-            {
-                userAgent.Suffix = this.ApplicationName;
+                userAgentContainer.SetFeatures(features.ToString());
             }
 
-            return userAgent;
+            if (!string.IsNullOrEmpty(this.ApplicationName))
+            {
+                userAgentContainer.Suffix = this.ApplicationName;
+            }
         }
 
         private string GetUserAgentFeatures()
