@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -87,10 +89,10 @@ namespace Microsoft.Azure.Cosmos
         ///     while (feedIterator.HasMoreResults)
         ///     {
         ///         // Stream iterator returns a response with status code
-        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///         {
         ///             // Handle failure scenario
-        ///             if(!response.IsSuccessStatusCode)
+        ///             if (!response.IsSuccessStatusCode)
         ///             {
         ///                 // Log the response.Diagnostics and handle the error
         ///             }
@@ -101,6 +103,45 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets the entire result set from the cosmos service
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Returns an Asynchronous enumerator around the content of the container</returns>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
+        ///               .WithParameter("@status", "Failure");
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        ///     queryDefinition))
+        /// {
+        ///     foreach async (var response in feedIterator.ReadAsync())
+        ///     {
+        ///         using (response)
+        ///         {
+        ///             // Handle failure scenario
+        ///             if (!response.IsSuccessStatusCode)
+        ///             {
+        ///                 // Log the response.Diagnostics and handle the error
+        ///             }
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+#pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
+        public async IAsyncEnumerable<ResponseMessage> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+#pragma warning restore VSTHRD200 // Because this rule doesn't know about IAsyncEnumerable<T> (yet)
+        {
+            while (this.HasMoreResults && !cancellationToken.IsCancellationRequested)
+            {
+                yield return await this.ReadNextAsync();
+            }
+        }
 
         /// <summary>
         /// Releases the unmanaged resources used by the FeedIterator and optionally
