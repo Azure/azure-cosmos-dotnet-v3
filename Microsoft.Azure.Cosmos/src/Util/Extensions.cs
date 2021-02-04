@@ -74,7 +74,9 @@ namespace Microsoft.Azure.Cosmos
                 StringBuilder stringBuilder = new StringBuilder();
                 documentServiceResponse.RequestStats.AppendToBuilder(stringBuilder);
 
-                requestMessage.Trace.AddDatum("Client Side Request Stats", stringBuilder.ToString());
+                string clientSideRequestStats = stringBuilder.ToString();
+
+                requestMessage.Trace.AddDatum("Client Side Request Stats", clientSideRequestStats);
             }
 
             if (requestChargeTracker != null && headers.RequestCharge < requestChargeTracker.TotalRequestCharge)

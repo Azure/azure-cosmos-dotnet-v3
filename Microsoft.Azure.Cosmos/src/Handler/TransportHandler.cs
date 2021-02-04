@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+            serviceRequest.RequestContext.ClientRequestStatistics = new ClientSideRequestStatistics();
 
             //TODO: extrace auth into a separate handler
             string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
