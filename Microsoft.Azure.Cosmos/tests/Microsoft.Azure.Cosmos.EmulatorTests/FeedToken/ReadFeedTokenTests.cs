@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -103,11 +102,35 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
-            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 } );
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
+                        totalCount += response.Count;
+                    }
+                }
+            }
+
+            Assert.AreEqual(batchSize, totalCount);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_ReadAllWithAsyncEnumerable()
+        {
+            int totalCount = 0;
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerInternal itemsCore = this.LargerContainer;
+            FeedIterator feedIterator = itemsCore.GetItemQueryStreamIterator(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            await foreach (ResponseMessage responseMessage in feedIterator.ReadAsync())
+            {
+                using (responseMessage)
                 {
                     if (responseMessage.IsSuccessStatusCode)
                     {
@@ -158,6 +181,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         totalCount += response.Count;
                     }
                 }
+            }
+
+            Assert.AreEqual(batchSize, totalCount);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_OfT_ReadAllWithAsyncEnumerator()
+        {
+            int totalCount = 0;
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerInternal itemsCore = this.LargerContainer;
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            await foreach (ToDoActivity responseMessage in feedIterator.ReadAsync())
+            {
+                totalCount++;
             }
 
             Assert.AreEqual(batchSize, totalCount);
@@ -310,8 +350,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             do
             {
                 feedIterator = itemsCore.GetItemQueryStreamIterator(
-                    requestOptions: new QueryRequestOptions() 
-                    { 
+                    requestOptions: new QueryRequestOptions()
+                    {
                         PartitionKey = new PartitionKey(pkToRead),
                         MaxItemCount = 1,
                     },
@@ -522,7 +562,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
             FeedIteratorInternal feedIterator = (FeedIteratorInternal)itemsCore.GetItemQueryStreamIterator(
-                queryDefinition: null, 
+                queryDefinition: null,
                 requestOptions: new QueryRequestOptions() { MaxItemCount = int.MaxValue });
             ITrace rootTrace;
             int childCount = 0;
