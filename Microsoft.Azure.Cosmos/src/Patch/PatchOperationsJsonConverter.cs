@@ -41,7 +41,41 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            IReadOnlyList<PatchOperation> patchOperations = (IReadOnlyList<PatchOperation>)value;
+            if (!(value is PatchSpec patchSpec)) 
+            {
+                throw new ArgumentOutOfRangeException("nameof(value) should be of type PatchSpec.");
+            }
+
+            IReadOnlyList<PatchOperation> patchOperations = patchSpec.PatchOperations;
+
+            writer.WriteStartObject();
+
+            patchSpec.RequestOptions.Match(
+                    (PatchItemRequestOptions patchRequestOptions) =>
+                    {
+                        if (patchRequestOptions != null)
+                        {
+                            if (!String.IsNullOrWhiteSpace(patchRequestOptions.FilterPredicate))
+                            {
+                                writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
+                                writer.WriteValue(patchRequestOptions.FilterPredicate);
+                            }
+                        }
+                        
+                    },
+                    (TransactionalBatchPatchItemRequestOptions transactionalBatchPatchRequestOptions) =>
+                    {
+                        if (transactionalBatchPatchRequestOptions != null)
+                        {
+                            if (!String.IsNullOrWhiteSpace(transactionalBatchPatchRequestOptions.FilterPredicate))
+                            {
+                                writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Condition);
+                                writer.WriteValue(transactionalBatchPatchRequestOptions.FilterPredicate);
+                            }
+                        }
+                    });
+
+            writer.WritePropertyName(PatchConstants.PatchSpecAttributes.Operations);
 
             writer.WriteStartArray();
 
@@ -63,6 +97,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             writer.WriteEndArray();
+
+            writer.WriteEndObject();
         }
 
         /// <summary>
