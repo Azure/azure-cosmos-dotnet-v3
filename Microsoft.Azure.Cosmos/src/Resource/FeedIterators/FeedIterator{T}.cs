@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -89,6 +91,47 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         public abstract Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets the entire result set from the cosmos service
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Returns an Asynchronous enumerator around the content of the container</returns>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
+        ///               .WithParameter("@status", "Failure");
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        ///     queryDefinition))
+        /// {
+        ///     foreach async (var item in feedIterator.ReadAsync())
+        ///     {
+        ///         Console.WriteLine(item);
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+#pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
+        public async IAsyncEnumerable<T> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+#pragma warning restore VSTHRD200 // Because this rule doesn't know about IAsyncEnumerable<T> (yet)
+        {
+            while (this.HasMoreResults && !cancellationToken.IsCancellationRequested)
+            {
+                FeedResponse<T> response = await this.ReadNextAsync();
+                foreach (T item in response)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    yield return item;
+                }
+            }
+        }
 
         /// <summary>
         /// Releases the unmanaged resources used by the FeedIterator and optionally
