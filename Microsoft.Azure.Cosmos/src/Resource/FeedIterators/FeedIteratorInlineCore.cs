@@ -38,20 +38,17 @@ namespace Microsoft.Azure.Cosmos
             return this.feedIteratorInternal.GetCosmosElementContinuationToken();
         }
 
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             using (ITrace trace = Trace.GetRootTrace("FeedIterator Read Next Async", TraceComponent.Unknown, TraceLevel.Info))
             {
-                return this.ReadNextAsync(trace, cancellationToken);
+                return await this.ReadNextAsync(trace, cancellationToken);
             }
         }
 
         public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
-            using (ITrace childTrace = trace.StartChild("Synchronization Context"))
-            {
-                return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(childTrace, cancellationToken));
-            }
+            return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
         }
 
         protected override void Dispose(bool disposing)

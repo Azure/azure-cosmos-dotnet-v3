@@ -156,11 +156,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A query response from cosmos service</returns>
-        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             using (ITrace trace = Trace.GetRootTrace("FeedIteratorCore ReadNextAsync", TraceComponent.Unknown, TraceLevel.Info))
             {
-                return this.ReadNextAsync(trace, cancellationToken);
+                return await this.ReadNextAsync(trace, cancellationToken);
             }
         }
 

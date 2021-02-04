@@ -77,8 +77,8 @@
                 FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
                     queryText: null);
 
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
                 {
                     while (feedIterator.HasMoreResults)
                     {
@@ -99,8 +99,8 @@
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container
                     .GetItemQueryIterator<JToken>(queryText: null);
 
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
                 {
                     while (feedIterator.HasMoreResults)
                     {
@@ -314,8 +314,8 @@
                 FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
                     queryText: "SELECT * FROM c");
 
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
                 {
                     while (feedIterator.HasMoreResults)
                     {
@@ -336,8 +336,8 @@
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
                     queryText: "SELECT * FROM c");
 
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
                 {
                     while (feedIterator.HasMoreResults)
                     {
@@ -954,6 +954,8 @@
             string text = TraceWriter.TraceToText(traceForBaselineTesting);
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
+            AssertTraceProperites(input.Trace);
+
             return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
         }
 
@@ -973,6 +975,29 @@
             }
 
             return convertedTrace;
+        }
+
+        private static void AssertTraceProperites(ITrace trace)
+        {
+            if (trace.Children.Count == 0)
+            {
+                // Base case
+                return;
+            }
+
+            // Trace stopwatch should be greater than the sum of all children's stop watches
+            TimeSpan rootTimeSpan = trace.Duration;
+            TimeSpan sumOfChildrenTimeSpan = TimeSpan.Zero;
+            foreach (ITrace child in trace.Children)
+            {
+                sumOfChildrenTimeSpan += child.Duration;
+                AssertTraceProperites(child);
+            }
+
+            if (rootTimeSpan < sumOfChildrenTimeSpan)
+            {
+                Assert.Fail();
+            }
         }
 
         private static int GetLineNumber([CallerLineNumber] int lineNumber = 0)

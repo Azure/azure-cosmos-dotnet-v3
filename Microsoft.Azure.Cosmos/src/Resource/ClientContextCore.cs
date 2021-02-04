@@ -187,23 +187,23 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<TResult> OperationHelperAsync<TResult>(
+        internal override async Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task)
         {
             bool disableDiagnostics = requestOptions != null && requestOptions.DisablePointOperationDiagnostics;
 
-            using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName))
+            using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
                 if (SynchronizationContext.Current == null)
                 {
-                    return this.RunWithDiagnosticsHelperAsync(
+                    return await this.RunWithDiagnosticsHelperAsync(
                         trace,
                         task);
                 }
 
-                return this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
+                return await this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
                     trace,
                     task);
             }
@@ -378,19 +378,16 @@ namespace Microsoft.Azure.Cosmos
         {
             Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
 
-            using (ITrace childTrace = trace.StartChild("Synchronization Context"))
+            // Used on NETFX applications with SynchronizationContext when doing locking calls
+            return Task.Run(() =>
             {
-                // Used on NETFX applications with SynchronizationContext when doing locking calls
-                return Task.Run(() =>
+                using (new ActivityScope(Guid.NewGuid()))
                 {
-                    using (new ActivityScope(Guid.NewGuid()))
-                    {
-                        return this.RunWithDiagnosticsHelperAsync<TResult>(
-                            childTrace,
-                            task);
-                    }
-                });
-            }
+                    return this.RunWithDiagnosticsHelperAsync<TResult>(
+                        trace,
+                        task);
+                }
+            });
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(

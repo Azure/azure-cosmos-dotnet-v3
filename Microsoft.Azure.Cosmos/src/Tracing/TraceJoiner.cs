@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public DateTime StartTime => DateTime.MinValue;
 
-            public TimeSpan Duration => TimeSpan.Zero;
+            public TimeSpan Duration => TimeSpan.MaxValue;
 
             public TraceLevel Level => TraceLevel.Info;
 

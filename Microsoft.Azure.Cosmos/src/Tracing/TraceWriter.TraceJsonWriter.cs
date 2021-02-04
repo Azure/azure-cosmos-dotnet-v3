@@ -179,11 +179,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ErrorMessage);
                 }
 
-                this.jsonWriter.WriteFieldName("RequestSessionToken");
-                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.RequestSessionToken);
+                if (pointOperationStatisticsTraceDatum.RequestSessionToken != null)
+                {
+                    this.jsonWriter.WriteFieldName("RequestSessionToken");
+                    this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.RequestSessionToken);
+                }
 
-                this.jsonWriter.WriteFieldName("ResponseSessionToken");
-                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ResponseSessionToken);
+                if (pointOperationStatisticsTraceDatum.ResponseSessionToken != null)
+                {
+                    this.jsonWriter.WriteFieldName("ResponseSessionToken");
+                    this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ResponseSessionToken);
+                }
 
                 this.jsonWriter.WriteObjectEnd();
             }

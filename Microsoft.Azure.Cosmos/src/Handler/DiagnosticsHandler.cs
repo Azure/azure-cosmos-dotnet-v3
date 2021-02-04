@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class DiagnosticsHandler : RequestHandler
     {
-        public override Task<ResponseMessage> SendAsync(
+        public override async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Trace = childTrace;
 
                 DiagnosticsHandlerHelper.Instance.RecordCpuDiagnostics(request);
-                return base.SendAsync(request, cancellationToken);
+                return await base.SendAsync(request, cancellationToken);
             }
         }
 

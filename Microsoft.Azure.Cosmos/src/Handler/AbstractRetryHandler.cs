@@ -29,28 +29,28 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 try
                 {
                     return await RetryHandler.ExecuteHttpRequestAsync(
-                        callbackMethod: (trace) =>
+                        callbackMethod: async (trace) =>
                         {
                             using (ITrace childTrace = trace.StartChild("Callback Method"))
                             {
                                 request.Trace = childTrace;
-                                return base.SendAsync(request, cancellationToken);
+                                return await base.SendAsync(request, cancellationToken);
                             }
                         },
-                        callShouldRetry: (cosmosResponseMessage, trace, token) =>
+                        callShouldRetry: async (cosmosResponseMessage, trace, token) =>
                         {
                             using (ITrace shouldRetryTrace = trace.StartChild("Call Should Retry"))
                             {
                                 request.Trace = shouldRetryTrace;
-                                return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+                                return await retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
                             }
                         },
-                        callShouldRetryException: (exception, trace, token) =>
+                        callShouldRetryException: async (exception, trace, token) =>
                         {
                             using (ITrace shouldRetryTrace = trace.StartChild("Call Should Retry Exception"))
                             {
                                 request.Trace = shouldRetryTrace;
-                                return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
+                                return await retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
                             }
                         },
                         trace: request.Trace,
