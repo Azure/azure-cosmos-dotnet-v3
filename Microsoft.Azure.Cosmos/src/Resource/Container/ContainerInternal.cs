@@ -118,29 +118,19 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentNullException(nameof(partitionKey));
         }
 
-        public abstract FeedIterator GetChangeFeedStreamIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        public abstract FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
 #if !INTERNAL
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
@@ -158,10 +148,12 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

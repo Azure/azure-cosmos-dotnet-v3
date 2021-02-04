@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.Layouts;
@@ -32,7 +34,8 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string id = null,
             Stream resourceStream = null,
-            TransactionalBatchItemRequestOptions requestOptions = null)
+            TransactionalBatchItemRequestOptions requestOptions = null,
+            CosmosClientContext cosmosClientContext = null)
         {
             this.OperationType = operationType;
             this.OperationIndex = operationIndex;
@@ -40,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
+            this.ClientContext = cosmosClientContext;
         }
 
         public ItemBatchOperation(
@@ -56,6 +60,7 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
+            this.ClientContext = containerCore.ClientContext;
         }
 
         public PartitionKey? PartitionKey { get; internal set; }
@@ -75,6 +80,8 @@ namespace Microsoft.Azure.Cosmos
         internal string PartitionKeyJson { get; set; }
 
         internal Documents.PartitionKey ParsedPartitionKey { get; set; }
+
+        private readonly CosmosClientContext ClientContext;
 
         internal Memory<byte> ResourceBody
         {
@@ -165,18 +172,6 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                if (ItemRequestOptions.ShouldSetNoContentHeader(
-                    options.EnableContentResponseOnWrite,
-                    options.EnableContentResponseOnRead,
-                    operation.OperationType))
-                {
-                    r = writer.WriteBool("minimalReturnPreference", true);
-                    if (r != Result.Success)
-                    {
-                        return r;
-                    }
-                }
-
                 if (options.IfMatchEtag != null)
                 {
                     r = writer.WriteString("ifMatch", options.IfMatchEtag);
@@ -245,6 +240,18 @@ namespace Microsoft.Azure.Cosmos
                             }
                         }
                     }
+                }
+            }
+
+            if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(operation.RequestOptions, 
+                operation.ClientContext?.ClientOptions, 
+                operation.OperationType, 
+                ResourceType.Document))
+            {
+                r = writer.WriteBool("minimalReturnPreference", true);
+                if (r != Result.Success)
+                {
+                    return r;
                 }
             }
 
@@ -367,8 +374,9 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             T resource,
             string id = null,
-            TransactionalBatchItemRequestOptions requestOptions = null)
-            : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions)
+            TransactionalBatchItemRequestOptions requestOptions = null,
+            CosmosClientContext cosmosClientContext = null)
+            : base(operationType, operationIndex, partitionKey: partitionKey, id: id, requestOptions: requestOptions, cosmosClientContext: cosmosClientContext)
         {
             this.Resource = resource;
         }

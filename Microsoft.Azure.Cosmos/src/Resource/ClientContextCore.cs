@@ -428,7 +428,8 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 id: itemId,
                 resourceStream: streamPayload,
-                requestOptions: batchItemRequestOptions);
+                requestOptions: batchItemRequestOptions,
+                cosmosClientContext: this);
 
             TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(
                 itemBatchOperation,

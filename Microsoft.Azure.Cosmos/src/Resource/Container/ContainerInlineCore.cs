@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 PartitionKey partitionKey,
                 IReadOnlyList<PatchOperation> patchOperations,
-                ItemRequestOptions requestOptions = null,
+                PatchItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos
                 string id,
                 PartitionKey partitionKey,
                 IReadOnlyList<PatchOperation> patchOperations,
-                ItemRequestOptions requestOptions = null,
+                PatchItemRequestOptions requestOptions = null,
                 CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
@@ -407,20 +407,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return base.GetChangeFeedIterator<T>(changeFeedStartFrom, changeFeedMode, changeFeedRequestOptions);
-        }
-
-        public override FeedIterator GetChangeFeedStreamIterator(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return base.GetChangeFeedStreamIterator(changeFeedStartFrom, changeFeedRequestOptions);
-        }
-
-        public override FeedIterator<T> GetChangeFeedIterator<T>(
-            ChangeFeedStartFrom changeFeedStartFrom,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null)
-        {
-            return base.GetChangeFeedIterator<T>(changeFeedStartFrom, changeFeedRequestOptions);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

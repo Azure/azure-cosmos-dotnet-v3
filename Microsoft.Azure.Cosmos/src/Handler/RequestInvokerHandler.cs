@@ -59,6 +59,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     promotedRequestOptions.PopulateRequestOptions(request);
                 }
 
+                // Adds the NoContent header if not already added based on Client Level flag
+                if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(
+                    request.RequestOptions,
+                    this.client.ClientOptions,
+                    request.OperationType,
+                    request.ResourceType))
+                {
+                    request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+                }
+
                 await this.ValidateAndSetConsistencyLevelAsync(request);
                 (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
                 if (isError)
@@ -294,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 return HttpMethod.Get;
             }
-            else if (operationType == OperationType.Replace)
+            else if ((operationType == OperationType.Replace) || (operationType == OperationType.CollectionTruncate))
             {
                 return HttpMethod.Put;
             }
@@ -370,6 +380,64 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             this.AccountConsistencyLevel));
                 }
             }
+        }
+
+        internal static bool ShouldSetNoContentResponseHeaders(RequestOptions requestOptions,
+            CosmosClientOptions clientOptions,
+            OperationType operationType,
+            ResourceType resourceType)
+        {
+            if (resourceType != ResourceType.Document)
+            {
+                return false;
+            }
+
+            if (requestOptions == null)
+            {
+                return RequestInvokerHandler.IsClientNoResponseSet(clientOptions, operationType);
+            }
+
+            if (requestOptions is ItemRequestOptions itemRequestOptions)
+            {
+                if (itemRequestOptions.EnableContentResponseOnWrite.HasValue)
+                {
+                    return RequestInvokerHandler.IsItemNoRepsonseSet(itemRequestOptions.EnableContentResponseOnWrite.Value, operationType);
+                }
+                else
+                {
+                    return RequestInvokerHandler.IsClientNoResponseSet(clientOptions, operationType);
+                }
+            }
+
+            if (requestOptions is TransactionalBatchItemRequestOptions batchRequestOptions)
+            {
+                if (batchRequestOptions.EnableContentResponseOnWrite.HasValue)
+                {
+                    return RequestInvokerHandler.IsItemNoRepsonseSet(batchRequestOptions.EnableContentResponseOnWrite.Value, operationType);
+                }
+                else
+                {
+                    return RequestInvokerHandler.IsClientNoResponseSet(clientOptions, operationType);
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsItemNoRepsonseSet(bool enableContentResponseOnWrite, OperationType operationType)
+        {
+            return !enableContentResponseOnWrite &&
+              (operationType == OperationType.Create ||
+              operationType == OperationType.Replace ||
+              operationType == OperationType.Upsert ||
+              operationType == OperationType.Patch);
+        }
+
+        private static bool IsClientNoResponseSet(CosmosClientOptions clientOptions, OperationType operationType)
+        {
+            return clientOptions != null
+                && clientOptions.EnableContentResponseOnWrite.HasValue
+                && RequestInvokerHandler.IsItemNoRepsonseSet(clientOptions.EnableContentResponseOnWrite.Value, operationType);
         }
     }
 }

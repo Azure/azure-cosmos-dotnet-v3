@@ -6367,7 +6367,7 @@ namespace Microsoft.Azure.Cosmos
                     return this.StoreModel;
                 }
             }
-            else if (operationType == OperationType.Replace)
+            else if ((operationType == OperationType.Replace) || (operationType == OperationType.CollectionTruncate))
             {
                 if (resourceType == ResourceType.Collection)
                 {
