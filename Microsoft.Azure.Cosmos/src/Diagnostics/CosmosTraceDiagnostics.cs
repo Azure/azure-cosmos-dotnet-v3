@@ -11,12 +11,14 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
     {
         private static readonly string userAgent = new UserAgentContainer().UserAgent;
 
-        public CosmosTraceDiagnostics(ITrace trace)
+        public CosmosTraceDiagnostics(ITrace trace, string userAgent = null)
         {
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
             }
+
+            this.UserAgent = userAgent ?? CosmosTraceDiagnostics.userAgent;
 
             // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
             ITrace rootTrace = trace;
@@ -30,9 +32,11 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public ITrace Value { get; }
 
+        public string UserAgent { get; }
+
         public override string ToString()
         {
-            return $"User Agent: {userAgent} {Environment.NewLine}{TraceWriter.TraceToText(this.Value)}";
+            return $"User Agent: {this.UserAgent} {Environment.NewLine}{TraceWriter.TraceToText(this.Value)}";
         }
 
         public override TimeSpan GetClientElapsedTime()
