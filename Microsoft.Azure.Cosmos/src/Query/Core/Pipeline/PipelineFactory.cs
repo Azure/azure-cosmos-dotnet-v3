@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
                     queryInfo.HasSelectValue,
-                    (queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeHint.GetValueOrDefault(int.MaxValue));
+                    (queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
             }
 
             if (queryInfo.HasOffset)

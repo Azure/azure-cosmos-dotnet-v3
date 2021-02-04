@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             // Try to form a page with as many items in the sorted order without having to do async work.
             List<OrderByQueryResult> results = new List<OrderByQueryResult>();
-            while (results.Count < this.queryPaginationOptions.PageSizeHint.GetValueOrDefault(int.MaxValue))
+            while (results.Count < this.queryPaginationOptions.PageSizeLimit.GetValueOrDefault(int.MaxValue))
             {
                 currentEnumerator = this.enumerators.Dequeue();
                 orderByQueryResult = new OrderByQueryResult(currentEnumerator.Current.Result.Enumerator.Current);

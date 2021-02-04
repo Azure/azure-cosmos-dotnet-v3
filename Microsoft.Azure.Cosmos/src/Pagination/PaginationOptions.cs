@@ -22,11 +22,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             .ToImmutableDictionary<string, string>();
 
         protected PaginationOptions(
-            int? pageSizeHint = null,
+            int? pageSizeLimit = null,
             JsonSerializationFormat? jsonSerializationFormat = null,
             Dictionary<string, string> additionalHeaders = null)
         {
-            this.PageSizeHint = pageSizeHint;
+            this.PageSizeLimit = pageSizeLimit;
             this.JsonSerializationFormat = jsonSerializationFormat;
             this.AdditionalHeaders = additionalHeaders != null ? additionalHeaders.ToImmutableDictionary<string, string>() : EmptyDictionary;
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
         }
 
-        public int? PageSizeHint { get; }
+        public int? PageSizeLimit { get; }
 
         public JsonSerializationFormat? JsonSerializationFormat { get; }
 

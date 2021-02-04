@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             return record.ResourceIdentifier.Document > rangeIdAndIndex.documentIndex;
                         }
                     })
-                    .Take(readFeedPaginationOptions.PageSizeHint.GetValueOrDefault(int.MaxValue))
+                    .Take(readFeedPaginationOptions.PageSizeLimit.GetValueOrDefault(int.MaxValue))
                     .ToList();
 
                 List<CosmosObject> documents = new List<CosmosObject>();
@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     continuationSkipCount = 0;
                 }
 
-                queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeHint.GetValueOrDefault(int.MaxValue));
+                queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
                 List<CosmosElement> queryPageResultList = queryPageResults.ToList();
                 QueryState queryState;
                 if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
@@ -686,7 +686,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<Change> filteredChanges = changes
                     .Where(change => IsRecordWithinFeedRange(change.Record, feedRangeState.FeedRange, this.partitionKeyDefinition))
                     .Where(change => feedRangeState.State.Accept(ChangeFeedPredicate.Singleton, change))
-                    .Take((changeFeedPaginationOptions ?? ChangeFeedPaginationOptions.Default).PageSizeHint.GetValueOrDefault(int.MaxValue))
+                    .Take((changeFeedPaginationOptions ?? ChangeFeedPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue))
                     .ToList();
 
                 if (filteredChanges.Count == 0)

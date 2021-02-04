@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 sqlQuerySpec,
                 feedRangeState.State == null ? null : ((CosmosString)feedRangeState.State.Value).Value,
                 isContinuationExpected: false,
-                queryPaginationOptions.PageSizeHint ?? int.MaxValue,
+                queryPaginationOptions.PageSizeLimit ?? int.MaxValue,
                 trace,
                 cancellationToken);
 
@@ -312,9 +312,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 cosmosContainerCore: this.container,
                 requestEnricher: (request) =>
                 {
-                    if (changeFeedPaginationOptions.PageSizeHint.HasValue)
+                    if (changeFeedPaginationOptions.PageSizeLimit.HasValue)
                     {
-                        request.Headers[HttpConstants.HttpHeaders.PageSize] = changeFeedPaginationOptions.PageSizeHint.Value.ToString();
+                        request.Headers[HttpConstants.HttpHeaders.PageSize] = changeFeedPaginationOptions.PageSizeLimit.Value.ToString();
                     }
 
                     feedRangeState.State.Accept(ChangeFeedStateRequestMessagePopulator.Singleton, request);
