@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using Microsoft.Azure.Cosmos.ChangeFeed;
-
     /// <summary>
     /// Used to estimate the pending work remaining to be read by a <see cref="ChangeFeedProcessor"/> deployment.
     /// </summary>
@@ -14,12 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/change-feed-processor"/>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/how-to-use-change-feed-estimator"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    abstract class ChangeFeedEstimator
+    public abstract class ChangeFeedEstimator
     {
         /// <summary>
         /// Gets the estimation per lease in the lease container.
