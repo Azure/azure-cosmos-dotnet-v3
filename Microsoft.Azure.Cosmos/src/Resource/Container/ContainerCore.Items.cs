@@ -1117,7 +1117,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ITrace trace,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             ResponseMessage responseMessage = await this.PatchItemStreamAsync(
@@ -1138,7 +1138,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             ITrace trace,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             if (diagnosticsContext == null)
@@ -1170,7 +1170,7 @@ namespace Microsoft.Azure.Cosmos
             Stream patchOperationsStream;
             using (diagnosticsContext.CreateScope("PatchOperationsSerialize"))
             {
-                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(patchOperations);
+                patchOperationsStream = this.ClientContext.SerializerCore.ToStream(new PatchSpec(patchOperations, requestOptions));
             }
 
             return this.ClientContext.ProcessResourceOperationStreamAsync(
