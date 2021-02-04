@@ -161,6 +161,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!string.IsNullOrEmpty(encryptionAlgorithm))
             {
+                if (string.Equals(dekProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+                    && string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+                {
+                    throw new InvalidOperationException($"Rewrap operation with EncryptionAlgorithm '{encryptionAlgorithm}' is not supported on Data Encryption Keys" +
+                        $" which are configured with '{CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized}'. ");
+                }
+
                 dekProperties.EncryptionAlgorithm = encryptionAlgorithm;
             }
 

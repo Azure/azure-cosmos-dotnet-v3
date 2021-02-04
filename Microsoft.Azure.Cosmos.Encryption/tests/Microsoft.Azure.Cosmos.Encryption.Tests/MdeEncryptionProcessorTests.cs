@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             try
             {
-                Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
+                await EncryptionProcessor.EncryptAsync(
                     testDoc.ToStream(),
                     MdeEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithDuplicatePathToEncrypt,
