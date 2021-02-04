@@ -1088,7 +1088,7 @@ namespace Microsoft.Azure.Cosmos
         ///     {
         ///         foreach(var item in await feedIterator.ReadNextAsync()){
         ///         {
-        ///             Console.WriteLine(item.cost); 
+        ///             Console.WriteLine(item.Price); 
         ///         }
         ///     }
         /// }
