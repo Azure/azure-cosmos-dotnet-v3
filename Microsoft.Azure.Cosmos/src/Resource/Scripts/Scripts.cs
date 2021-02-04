@@ -83,20 +83,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// using (FeedIterator<StoredProcedureProperties> iter = this.scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition))
+        /// using (FeedIterator<StoredProcedureProperties> feedIterator = scripts.GetStoredProcedureQueryIterator<StoredProcedureProperties>(queryDefinition))
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         // Stream iterator returns a response with status for errors
-        ///         using(ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         foreach (StoredProcedureProperties storedProcedure in await feedIterator.ReadNextAsync())
         ///         {
-        ///             // Handle failure scenario. 
-        ///             if(!response.IsSuccessStatusCode)
-        ///             {
-        ///                 // Log the response.Diagnostics and handle the error
-        ///             }
-        ///
-        ///             // Process the response.Content Stream
+        ///             Console.WriteLine(storedProcedure.Id);
         ///         }
         ///     }
         /// }
@@ -125,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// string queryText = "SELECT * FROM s where s.id like @testId";
         /// QueryDefinition queryDefinition = new QueryDefinition(queryText);
         /// queryDefinition.WithParameter("@testId", "testSprocId");
-        /// using (FeedIterator iter = this.scripts.GetStoredProcedureQueryStreamIterator(queryDefinition))
+        /// using (FeedIterator feedIterator = scripts.GetStoredProcedureQueryStreamIterator(queryDefinition))
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
@@ -169,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach (var properties in await feedIterator.ReadNextAsync())
+        ///         foreach (StoredProcedureProperties properties in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(properties.Id);
         ///         }

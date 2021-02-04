@@ -138,10 +138,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
 #if !PREVIEW
-        public abstract ChangeFeedEstimator GetChangeFeedEstimator(
-           string processorName,
-           Container leaseContainer);
-
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
