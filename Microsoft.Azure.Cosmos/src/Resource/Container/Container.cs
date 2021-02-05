@@ -690,7 +690,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -722,7 +722,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 #endif
 
@@ -1088,7 +1088,7 @@ namespace Microsoft.Azure.Cosmos
         ///     {
         ///         foreach(var item in await feedIterator.ReadNextAsync()){
         ///         {
-        ///             Console.WriteLine(item.cost); 
+        ///             Console.WriteLine(item.Price); 
         ///         }
         ///     }
         /// }
@@ -1149,7 +1149,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
-#if PREVIEW
+
         /// <summary>
         /// Gets a <see cref="ChangeFeedEstimator"/> for change feed monitoring.
         /// </summary>
@@ -1162,7 +1162,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedEstimator GetChangeFeedEstimator(
             string processorName,
             Container leaseContainer);
-#endif
 
         /// <summary>
         /// Initializes a new instance of <see cref="TransactionalBatch"/>

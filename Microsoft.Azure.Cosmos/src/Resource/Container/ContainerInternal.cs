@@ -121,14 +121,14 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         public abstract Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
@@ -138,10 +138,6 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
 #if !PREVIEW
-        public abstract ChangeFeedEstimator GetChangeFeedEstimator(
-           string processorName,
-           Container leaseContainer);
-
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
