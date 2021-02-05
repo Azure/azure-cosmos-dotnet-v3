@@ -72,7 +72,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                             }).ToList();
 
-                        FeedIterator feedIterator = container.GetItemLinqQueryable<ToDoActivity>()
+                        FeedIterator feedIterator = container
+                            .GetItemLinqQueryable<ToDoActivity>()
                             .ToStreamIterator();
 
                         while (feedIterator.HasMoreResults)
