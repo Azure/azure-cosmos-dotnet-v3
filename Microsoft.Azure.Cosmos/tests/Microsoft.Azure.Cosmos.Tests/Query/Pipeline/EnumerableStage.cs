@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
 
     internal sealed class EnumerableStage : IAsyncEnumerable<TryCatch<QueryPage>>
     {

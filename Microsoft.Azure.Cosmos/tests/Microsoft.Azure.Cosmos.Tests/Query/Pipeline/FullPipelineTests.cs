@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -351,7 +352,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result,
                 partitionKey: null,
                 GetQueryPlan(query),
-                pageSize: pageSize,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
                 requestCancellationToken: default,
                 requestContinuationToken: state);
