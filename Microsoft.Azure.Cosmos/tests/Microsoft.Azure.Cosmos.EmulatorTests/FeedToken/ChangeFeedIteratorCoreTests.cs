@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
 
     [SDK.EmulatorTests.TestClass]

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Tokens;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -367,7 +368,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             isMinInclusive: true,
                             isMaxInclusive: false)))
                     .ToList(),
-                pageSize: inputParameters.MaxItemCount,
+                queryPaginationOptions: new QueryPaginationOptions(
+                    pageSizeHint: inputParameters.MaxItemCount),
                 partitionKey: inputParameters.PartitionKey,
                 maxConcurrency: inputParameters.MaxConcurrency,
                 cancellationToken: cancellationToken,
@@ -424,7 +426,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     .ToList(),
                 partitionKey: inputParameters.PartitionKey,
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,
-                pageSize: (int)optimalPageSize,
+                queryPaginationOptions: new QueryPaginationOptions(
+                    pageSizeHint: (int)optimalPageSize),
                 maxConcurrency: inputParameters.MaxConcurrency,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken,
                 requestCancellationToken: cancellationToken);
