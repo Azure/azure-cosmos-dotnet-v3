@@ -16,11 +16,10 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -373,6 +372,15 @@ namespace Microsoft.Azure.Cosmos
                         queryState = default;
                     }
 
+                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+                    foreach (string key in cosmosResponseMessage.Headers)
+                    {
+                        if (!QueryPage.BannedHeaders.Contains(key))
+                        {
+                            additionalHeaders[key] = cosmosResponseMessage.Headers[key];
+                        }
+                    }
+
                     QueryPage response = new QueryPage(
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
@@ -380,6 +388,7 @@ namespace Microsoft.Azure.Cosmos
                         responseLengthBytes,
                         cosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
+                        additionalHeaders,
                         queryState);
 
                     return TryCatch<QueryPage>.FromResult(response);
