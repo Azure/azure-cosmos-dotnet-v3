@@ -106,7 +106,42 @@ namespace Microsoft.Azure.Cosmos
         /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
         ///     queryDefinition))
         /// {
-        ///     foreach async (var item in feedIterator.ReadAsync())
+        ///     await foreach (var response in feedIterator.ReadAsync())
+        ///     {
+        ///         foreach (var item in response)
+        ///         {
+        ///             Console.WriteLine(item);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+#pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
+        public async IAsyncEnumerable<FeedResponse<T>> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+#pragma warning restore VSTHRD200 // Because this rule doesn't know about IAsyncEnumerable<T> (yet)
+        {
+            while (this.HasMoreResults && !cancellationToken.IsCancellationRequested)
+            {
+                yield return await this.ReadNextAsync();
+            }
+        }
+
+        /// <summary>
+        /// Gets the entire result set from the cosmos service
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>Returns an Asynchronous enumerator around the content of the container</returns>
+        /// <example>
+        /// Example on how to fully drain the query results.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition queryDefinition = new QueryDefinition("select c.id From c where c.status = @status")
+        ///               .WithParameter("@status", "Failure");
+        /// using (FeedIterator<MyItem> feedIterator = this.Container.GetItemQueryIterator<MyItem>(
+        ///     queryDefinition))
+        /// {
+        ///     await foreach (var item in feedIterator.ReadItemsAsync())
         ///     {
         ///         Console.WriteLine(item);
         ///     }
@@ -115,12 +150,11 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
 #pragma warning disable VSTHRD200 // Use "Async" suffix for async methods
-        public async IAsyncEnumerable<T> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<T> ReadItemsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
 #pragma warning restore VSTHRD200 // Because this rule doesn't know about IAsyncEnumerable<T> (yet)
         {
-            while (this.HasMoreResults && !cancellationToken.IsCancellationRequested)
+            await foreach (FeedResponse<T> response in this.ReadAsync(cancellationToken))
             {
-                FeedResponse<T> response = await this.ReadNextAsync();
                 foreach (T item in response)
                 {
                     if (cancellationToken.IsCancellationRequested)

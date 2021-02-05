@@ -195,7 +195,27 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
-            await foreach (ToDoActivity responseMessage in feedIterator.ReadAsync())
+            await foreach (FeedResponse<ToDoActivity> responseMessage in feedIterator.ReadAsync())
+            {
+                if (responseMessage.StatusCode.IsSuccess())
+                {
+                    totalCount += responseMessage.Count;
+                }
+            }
+
+            Assert.AreEqual(batchSize, totalCount);
+        }
+
+        [TestMethod]
+        public async Task ReadFeedIteratorCore_OfT_ReadAllItemsWithAsyncEnumerator()
+        {
+            int totalCount = 0;
+            int batchSize = 1000;
+
+            await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
+            ContainerInternal itemsCore = this.LargerContainer;
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
+            await foreach (ToDoActivity responseMessage in feedIterator.ReadItemsAsync())
             {
                 totalCount++;
             }
