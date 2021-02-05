@@ -448,6 +448,58 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         /// <summary>
+        /// Test to verify that StartFromBeginning works as expected by inserting 25 items, reading them all, then taking the last continuationtoken, 
+        /// inserting another 25, and verifying that the iterator continues from the saved token and reads the second 25 for a total of 50 documents.
+        /// </summary>
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task ChangeFeedIteratorCore_OfT_ReadAll_WithAsyncEnumerator()
+        {
+            int totalCount = 0;
+            int firstRunTotal = 25;
+            int batchSize = 25;
+
+            ContainerInternal itemsCore = await this.InitializeContainerAsync();
+            await this.CreateRandomItems(itemsCore, batchSize, randomPartitionKey: true);
+
+            FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
+            string continuation = null;
+            try
+            {
+                await foreach (FeedResponse<ToDoActivity> feedResponse in feedIterator.ReadAsync(this.cancellationToken))
+                {
+                    totalCount += feedResponse.Count;
+                    continuation = feedResponse.ContinuationToken;
+                }
+            }
+            catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
+            {
+                continuation = cosmosException.Headers.ContinuationToken;
+            }
+
+            Assert.AreEqual(firstRunTotal, totalCount);
+
+            int expectedFinalCount = 50;
+
+            // Insert another batch of 25 and use the last FeedToken from the first cycle
+            await this.CreateRandomItems(itemsCore, batchSize, randomPartitionKey: true);
+            FeedIterator<ToDoActivity> setIteratorNew = itemsCore.GetChangeFeedIterator<ToDoActivity>(ChangeFeedStartFrom.ContinuationToken(continuation), ChangeFeedMode.Incremental);
+
+            try
+            {
+                await foreach (FeedResponse<ToDoActivity> feedResponse in setIteratorNew.ReadAsync(this.cancellationToken))
+                {
+                    totalCount += feedResponse.Count;
+                }
+            }
+            catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
+            {
+            }
+
+            Assert.AreEqual(expectedFinalCount, totalCount);
+        }
+
+        /// <summary>
         /// Test to verify that if we start with an empty collection and we insert items after the first empty iterations, they get picked up in other iterations.
         /// </summary>
         [TestMethod]
