@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             container.CreateItemAsync<ToDoActivity>(item: tempItem, cancellationToken: cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
                             Assert.Fail("Should have thrown a cancellation token");
 
-                        }catch(CosmosOperationCanceledException oe)
+                        }
+                        catch (CosmosOperationCanceledException oe)
                         {
                             string exception = oe.ToString();
                             Assert.IsTrue(exception.Contains("Synchronization Context"));

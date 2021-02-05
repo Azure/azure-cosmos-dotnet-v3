@@ -187,7 +187,17 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override async Task<TResult> OperationHelperAsync<TResult>(
+        internal override Task<TResult> OperationHelperAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<ITrace, Task<TResult>> task)
+        {
+            return SynchronizationContext.Current == null ?
+                this.OperationHelperWithRootTraceAsync(operationName, requestOptions, task) :
+                this.OperationHelperWithRootTraceWithSynchronizationContextAsync(operationName, requestOptions, task);
+        }
+
+        private async Task<TResult> OperationHelperWithRootTraceAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task)
@@ -196,17 +206,35 @@ namespace Microsoft.Azure.Cosmos
 
             using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
-                if (SynchronizationContext.Current == null)
+                return await this.RunWithDiagnosticsHelperAsync(
+                    trace,
+                    task);
+            }
+        }
+
+        private Task<TResult> OperationHelperWithRootTraceWithSynchronizationContextAsync<TResult>(
+            string operationName,
+            RequestOptions requestOptions,
+            Func<ITrace, Task<TResult>> task)
+        {
+            Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
+
+            string syncContextVirtualAddress = SynchronizationContext.Current.ToString();
+
+            // Used on NETFX applications with SynchronizationContext when doing locking calls
+            return Task.Run(async () =>
+            {
+                bool disableDiagnostics = requestOptions != null && requestOptions.DisablePointOperationDiagnostics;
+
+                using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, TraceComponent.Transport, Tracing.TraceLevel.Info))
                 {
+                    trace.AddDatum("Synchronization Context", syncContextVirtualAddress);
+
                     return await this.RunWithDiagnosticsHelperAsync(
                         trace,
                         task);
                 }
-
-                return await this.RunWithSynchronizationContextAndDiagnosticsHelperAsync(
-                    trace,
-                    task);
-            }
+            });
         }
 
         internal override Task<ResponseMessage> ProcessResourceOperationStreamAsync(
@@ -370,24 +398,6 @@ namespace Microsoft.Azure.Cosmos
 
                 this.isDisposed = true;
             }
-        }
-
-        private Task<TResult> RunWithSynchronizationContextAndDiagnosticsHelperAsync<TResult>(
-            ITrace trace,
-            Func<ITrace, Task<TResult>> task)
-        {
-            Debug.Assert(SynchronizationContext.Current != null, "This should only be used when a SynchronizationContext is specified");
-
-            // Used on NETFX applications with SynchronizationContext when doing locking calls
-            return Task.Run(() =>
-            {
-                using (new ActivityScope(Guid.NewGuid()))
-                {
-                    return this.RunWithDiagnosticsHelperAsync<TResult>(
-                        trace,
-                        task);
-                }
-            });
         }
 
         private async Task<TResult> RunWithDiagnosticsHelperAsync<TResult>(

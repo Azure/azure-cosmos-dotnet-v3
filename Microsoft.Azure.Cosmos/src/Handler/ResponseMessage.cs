@@ -206,6 +206,12 @@ namespace Microsoft.Azure.Cosmos
                     this.RequestMessage.Dispose();
                     this.RequestMessage = null;
                 }
+
+                if (this.Trace != null)
+                {
+                    this.Trace.Dispose();
+                    this.Trace = null;
+                }
             }
         }
 
