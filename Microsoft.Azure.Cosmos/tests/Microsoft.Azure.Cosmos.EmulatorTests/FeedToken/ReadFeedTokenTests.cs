@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         [TestMethod]
-        public async Task ReadFeedIteratorCore_OfT_ReadAllWithAsyncEnumerator()
+        public async Task ReadFeedIteratorCore_OfT_ReadAll_WithAsyncEnumerator()
         {
             int totalCount = 0;
             int batchSize = 1000;
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
-            await foreach (FeedResponse<ToDoActivity> responseMessage in feedIterator.ReadAsync())
+            await foreach (FeedResponse<ToDoActivity> responseMessage in feedIterator.ReadAsync(this.cancellationToken))
             {
                 if (responseMessage.StatusCode.IsSuccess())
                 {
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         [TestMethod]
-        public async Task ReadFeedIteratorCore_OfT_ReadAllItemsWithAsyncEnumerator()
+        public async Task ReadFeedIteratorCore_OfT_ReadAllItems_WithAsyncEnumerator()
         {
             int totalCount = 0;
             int batchSize = 1000;
@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             await this.CreateRandomItems(this.LargerContainer, batchSize, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetItemQueryIterator<ToDoActivity>(queryDefinition: null, requestOptions: new QueryRequestOptions() { MaxItemCount = 1 });
-            await foreach (ToDoActivity responseMessage in feedIterator.ReadItemsAsync())
+            await foreach (ToDoActivity responseMessage in feedIterator.ReadItemsAsync(this.cancellationToken))
             {
                 totalCount++;
             }

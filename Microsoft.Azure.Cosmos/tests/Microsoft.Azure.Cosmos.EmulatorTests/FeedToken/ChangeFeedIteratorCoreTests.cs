@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
             string continuation = null;
-            await foreach (ResponseMessage responseMessage in feedIterator.ReadAsync())
+            await foreach (ResponseMessage responseMessage in feedIterator.ReadAsync(this.cancellationToken))
             {
                 using (responseMessage)
                 {
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 ChangeFeedStartFrom.ContinuationToken(continuation),
                 ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
 
-            await foreach (ResponseMessage responseMessage in setIteratorNew.ReadAsync())
+            await foreach (ResponseMessage responseMessage in setIteratorNew.ReadAsync(this.cancellationToken))
             {
                 using (responseMessage)
                 {
