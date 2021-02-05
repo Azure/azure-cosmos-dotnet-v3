@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// inserting another 25, and verifying that the iterator continues from the saved token and reads the second 25 for a total of 50 documents.
         /// </summary>
         [TestMethod]
-        public async Task ChangeFeedIteratorCore_ReadAllWithAsyncEnumerable()
+        public async Task ChangeFeedIteratorCore_ReadAll_WithAsyncEnumerable()
         {
             int totalCount = 0;
             int firstRunTotal = 25;
