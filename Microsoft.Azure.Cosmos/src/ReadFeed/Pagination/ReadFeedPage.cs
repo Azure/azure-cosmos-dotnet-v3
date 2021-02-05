@@ -5,27 +5,34 @@
 namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.IO;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Documents;
 
     internal sealed class ReadFeedPage : Page<ReadFeedState>
     {
+        public static readonly ImmutableHashSet<string> BannedHeaders = new HashSet<string>()
+        {
+            HttpConstants.HttpHeaders.Continuation,
+            HttpConstants.HttpHeaders.ContinuationToken,
+        }.Concat(BannedHeadersBase).ToImmutableHashSet();
+
         public ReadFeedPage(
             Stream content,
             double requestCharge,
             string activityId,
+            IReadOnlyDictionary<string, string> additionalHeaders,
             ReadFeedState state)
-            : base(state)
+            : base(requestCharge, activityId, additionalHeaders, state)
         {
             this.Content = content ?? throw new ArgumentNullException(nameof(content));
-            this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
-            this.ActivityId = activityId;
         }
 
         public Stream Content { get; }
 
-        public double RequestCharge { get; }
-
-        public string ActivityId { get; }
+        protected override ImmutableHashSet<string> DerivedClassBannedHeaders => BannedHeaders;
     }
 }

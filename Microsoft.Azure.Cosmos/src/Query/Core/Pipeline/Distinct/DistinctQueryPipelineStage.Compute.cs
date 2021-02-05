@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
@@ -131,6 +132,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: ComputeDistinctQueryPipelineStage.UseTryGetContinuationTokenMessage,
+                    additionalHeaders: sourcePage.AdditionalHeaders,
                     state: queryState);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

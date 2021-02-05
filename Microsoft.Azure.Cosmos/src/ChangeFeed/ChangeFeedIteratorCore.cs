@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public ChangeFeedIteratorCore(
             IDocumentContainer documentContainer,
             ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions,            
+            ChangeFeedRequestOptions changeFeedRequestOptions,
             ChangeFeedStartFrom changeFeedStartFrom)
         {
             if (changeFeedStartFrom == null)
@@ -153,11 +153,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 innerException: monadicChangeFeedCrossFeedRangeState.Exception));
                     }
 
+                    Dictionary<string, string> additionalHeaders;
+                    if (changeFeedRequestOptions?.Properties != null)
+                    {
+                        additionalHeaders = new Dictionary<string, string>();
+                        Dictionary<string, object> nonStringHeaders = new Dictionary<string, object>();
+                        foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
+                        {
+                            if (keyValuePair.Value is string stringValue)
+                            {
+                                additionalHeaders[keyValuePair.Key] = stringValue;
+                            }
+                            else
+                            {
+                                nonStringHeaders[keyValuePair.Key] = keyValuePair.Value;
+                            }
+                        }
+
+                        changeFeedRequestOptions.Properties = nonStringHeaders;
+                    }
+                    else
+                    {
+                        additionalHeaders = null;
+                    }
+
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,
-                        changeFeedMode,
-                        changeFeedRequestOptions,
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
+                        new ChangeFeedPaginationOptions(
+                            changeFeedMode,
+                            changeFeedRequestOptions?.PageSizeHint,
+                            changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
+                            additionalHeaders),
                         cancellationToken: default);
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);

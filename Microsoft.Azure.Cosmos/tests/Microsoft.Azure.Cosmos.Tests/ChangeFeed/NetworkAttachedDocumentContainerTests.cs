@@ -59,11 +59,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 Mock.Of<CosmosQueryClient>());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
-                state: ChangeFeedState.Beginning(),
-                feedRange: new FeedRangePartitionKeyRange("0"),
-                pageSize: 10,
-                changeFeedMode: ChangeFeedMode.Incremental,
-                jsonSerializationFormat: null,
+                feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
+                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -120,11 +117,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 Mock.Of<CosmosQueryClient>());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
-                state: ChangeFeedState.Beginning(),
-                feedRange: new FeedRangePartitionKeyRange("0"),
-                pageSize: 10,
-                changeFeedMode: ChangeFeedMode.FullFidelity,
-                jsonSerializationFormat: null,
+                feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
+                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.FullFidelity, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 

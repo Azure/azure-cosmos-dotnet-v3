@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -315,12 +315,35 @@ namespace Microsoft.Azure.Cosmos
                         resourceType,
                         requestOptions.CosmosSerializationFormatOptions);
 
-                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo = cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString)
-                        ? JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString)
-                        : default;
-                    QueryState queryState = cosmosResponseMessage.Headers.ContinuationToken != null
-                        ? new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken))
-                        : default;
+                    CosmosQueryExecutionInfo cosmosQueryExecutionInfo;
+                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+                    {
+                        cosmosQueryExecutionInfo = JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString);
+                    }
+                    else
+                    {
+                        cosmosQueryExecutionInfo = default;
+                    }
+
+                    QueryState queryState;
+                    if (cosmosResponseMessage.Headers.ContinuationToken != null)
+                    {
+                        queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
+                    }
+                    else
+                    {
+                        queryState = default;
+                    }
+
+                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+                    foreach (string key in cosmosResponseMessage.Headers)
+                    {
+                        if (!QueryPage.BannedHeaders.Contains(key))
+                        {
+                            additionalHeaders[key] = cosmosResponseMessage.Headers[key];
+                        }
+                    }
+
                     QueryPage response = new QueryPage(
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
@@ -328,6 +351,7 @@ namespace Microsoft.Azure.Cosmos
                         responseLengthBytes,
                         cosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
+                        additionalHeaders,
                         queryState);
 
                     return TryCatch<QueryPage>.FromResult(response);

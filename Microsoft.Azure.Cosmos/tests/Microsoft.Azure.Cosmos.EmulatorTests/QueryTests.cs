@@ -96,17 +96,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
             }
 
-            // default page size, expect 100 documents
+            // Arbitrary count of elements up to int.MaxValue.
             DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
-            Assert.AreEqual(100, result.Count);
+            Assert.IsTrue(result.Count <= 200, $"{result.Count} elements returned. It is more than available on collection");
 
-            // dynamic page size (-1), expect all documents to be returned
+            // dynamic page size (-1), expect arbitrary count of elements up to int.MaxValue.
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = -1, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
-            Assert.AreEqual(200, result.Count);
+            Assert.IsTrue(result.Count <= 200, $"{result.Count} elements returned. It is more than available on collection");
 
             // page size 10
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
-            Assert.AreEqual(10, result.Count);
+            Assert.IsTrue(result.Count <= 10, $"{result.Count} elements returned. It is more than MaxItemCount = 10");
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
@@ -2217,12 +2217,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             feedOptions.ResponseContinuationTokenLimitInKb = 1;
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             string continuation = result.ResponseContinuation;
-            Assert.IsTrue(!continuation.Contains("#FPC") && !continuation.Contains("#FPP"));
+            Assert.IsTrue(
+                continuation.StartsWith("CGW") || (!continuation.Contains("#FPC") && !continuation.Contains("#FPP")),
+                $"{continuation} neither constructed by Compute nor proper BE token");
 
             feedOptions.ResponseContinuationTokenLimitInKb = 2;
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             continuation = result.ResponseContinuation;
-            Assert.IsTrue(continuation.Contains("#FPC") || continuation.Contains("#FPP"));
+            Assert.IsTrue(
+                continuation.StartsWith("CGW") || (continuation.Contains("#FPC") || continuation.Contains("#FPP")),
+                $"{continuation} neither constructed by Compute nor proper BE token");
         }
 
         private void TestQueryMetricsHeaders(Database database, bool partitionedCollection)

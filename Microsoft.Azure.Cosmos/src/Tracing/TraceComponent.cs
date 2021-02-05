@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Component is yet to be categorized.
         /// </summary>
-        Unknown
+        Unknown,
 
         /// <summary>
         /// Component that handles authorizing requests and managing auth tokens / credentials.
