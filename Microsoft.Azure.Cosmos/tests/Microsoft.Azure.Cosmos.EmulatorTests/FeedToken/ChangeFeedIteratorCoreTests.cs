@@ -651,6 +651,42 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         }
 
         /// <summary>
+        /// This test validates Incremental Change Feed by inserting and deleting documents and verifying nothing reported
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_DeleteAfterCreate()
+        {
+            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKey);
+            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                properties,
+                cancellationToken: this.cancellationToken);
+            ContainerInternal container = (ContainerInternal)response;
+            // Insert documents and then delete them
+            int totalDocuments = 50;
+            IList<ToDoActivity> createdItems = await this.CreateRandomItems(container, totalDocuments, randomPartitionKey: true);
+            foreach (ToDoActivity item in createdItems)
+            {
+                await container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
+            }
+            FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental);
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                try
+                {
+                    FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                    Assert.Fail("Should not return anything");
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
         /// This test validates Full Fidelity Change Feed by inserting and deleting documents and verifying all operations are present
         /// </summary>
         [TestMethod]
@@ -788,6 +824,39 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
             catch (OperationCanceledException)
             {
+            }
+        }
+
+        /// <summary>
+        /// This test validates error with Full Fidelity Change Feed and start from beginning.
+        /// </summary>
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_WithFullFidelityReadFromBeginning()
+        {
+            ContainerProperties properties = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: ChangeFeedIteratorCoreTests.PartitionKey);
+            properties.ChangeFeedPolicy.FullFidelityRetention = TimeSpan.FromMinutes(5);
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                properties,
+                cancellationToken: this.cancellationToken);
+            ContainerInternal container = (ContainerInternal)response;
+            int totalDocuments = 10;
+            await this.CreateRandomItems(container, totalDocuments, randomPartitionKey: true);
+
+            // FF does not work with StartFromBeginning currently, capture error
+            FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.FullFidelity);
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                try
+                {
+                    FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                }
+                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    Assert.IsTrue(cosmosException.Message.Contains("FullFidelity Change Feed must have valid If-None-Match header."));
+                    break;
+                }
             }
         }
 
