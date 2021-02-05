@@ -22,5 +22,4 @@
   "MockedItemBenchmark.ReadItemNotExists;[Type=OfTCustom]": 66846.0,
   "MockedItemBenchmark.UpdateItem;[Type=OfTCustom]": 54850.0,
   "MockedItemBenchmark.UpsertItem;[Type=OfTCustom]": 54402.0
-
 }
