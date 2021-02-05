@@ -50,6 +50,33 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         }
 
         [TestMethod]
+        public async Task ResponseHeadersAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 1;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                FeedIterator<JToken> itemQuery = container.GetItemQueryIterator<JToken>(
+                    queryText: "SELECT * FROM c",
+                    requestOptions: new QueryRequestOptions());
+                while (itemQuery.HasMoreResults)
+                {
+                    FeedResponse<JToken> page = await itemQuery.ReadNextAsync();
+                    Assert.IsTrue(page.Headers.AllKeys().Length > 1);
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task TestBasicCrossPartitionQueryAsync()
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;

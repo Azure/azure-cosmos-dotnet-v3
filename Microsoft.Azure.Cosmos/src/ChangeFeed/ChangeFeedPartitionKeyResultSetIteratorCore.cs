@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -106,6 +107,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     // Set time headers if any
                     ChangeFeedStartFromRequestOptionPopulator visitor = new ChangeFeedStartFromRequestOptionPopulator(requestMessage);
                     this.changeFeedStartFrom.Accept(visitor);
+
+                    if (this.changeFeedOptions.PageSizeHint.HasValue)
+                    {
+                        requestMessage.Headers.Add(
+                            HttpConstants.HttpHeaders.PageSize,
+                            this.changeFeedOptions.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
+                    }
+
+                    requestMessage.Headers.Add(
+                        HttpConstants.HttpHeaders.A_IM,
+                        HttpConstants.A_IMHeaderValues.IncrementalFeed);
                 },
                 feedRange: this.changeFeedStartFrom.FeedRange,
                 streamPayload: default,

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
@@ -231,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    additionalHeaders: sourcePage.AdditionalHeaders,
                     state: state);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
