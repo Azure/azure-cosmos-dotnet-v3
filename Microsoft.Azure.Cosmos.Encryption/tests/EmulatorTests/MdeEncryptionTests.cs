@@ -221,6 +221,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 if (ex is CosmosException cosmosException)
                     Assert.AreEqual(HttpStatusCode.Conflict, cosmosException.StatusCode);
             }
+
+            // creating key with invalid algorithm
+            try
+            {
+                ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
+                   cekId,
+                   "invalidalgo",
+                   metadata1);
+
+                Assert.Fail("Creating key with invalid encryption algorithm should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.AreEqual("Invalid Encryption Algorithm 'invalidalgo' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details. ", ex.Message);
+            }
+
         }
 
         [TestMethod]
@@ -674,6 +690,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionRestrictedProperties()
         {
+            // restricted path id
             ClientEncryptionIncludedPath restrictedPathId = new ClientEncryptionIncludedPath()
             {
                 Path = "/id",
@@ -683,23 +700,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { restrictedPathId };
-            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);           
-
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
-
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
-
             try
             {
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                Assert.Fail("Expected item creation with id specified to be encrypted to fail.");
+                ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);
             }
-            catch (InvalidOperationException ex)
+            catch (ArgumentException ex)
             {
-                Assert.AreEqual("Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath includes an invalid path: '/id'. ", ex.Message);
-            }
-
+                Assert.AreEqual("Invalid path '/id'.", ex.Message);
+            }          
+            
+            // restricted path PK
             ClientEncryptionIncludedPath restrictedPathPk = new ClientEncryptionIncludedPath()
             {
                 Path = "/PK",
@@ -708,13 +718,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
             };
 
-
             Collection<ClientEncryptionIncludedPath> pathsRestrictedPathPk = new Collection<ClientEncryptionIncludedPath> { restrictedPathPk };
             ClientEncryptionPolicy clientEncryptionPolicyPk = new ClientEncryptionPolicy(pathsRestrictedPathPk);
 
-            containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyPk };
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyPk };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainer.InitializeEncryptionAsync();
 
             try
@@ -726,6 +735,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
             }
 
+            // duplicate paths in policy.
             ClientEncryptionIncludedPath pathdup1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_StringFormat",
@@ -748,8 +758,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 ClientEncryptionPolicy clientEncryptionPolicyWithDupPaths = new ClientEncryptionPolicy(pathsWithDups);
-                containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithDupPaths };
-                encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("Client Encryption Policy Creation Should have Failed.");
             }
             catch (ArgumentException)
             {
@@ -901,6 +910,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
             await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
+
+            // Query on container with Custom Serializer.
+            QueryDefinition withEncryptedParameter = encryptionContainerWithCustomSerializer.CreateQueryDefinition(
+                   "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_StringFormat",
+                    doc1ToReplace.Sensitive_StringFormat,
+                    "/Sensitive_StringFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_IntFormat",
+                    doc1ToReplace.Sensitive_IntFormat,
+                    "/Sensitive_IntFormat");
+
+            TestDoc expectedDoc = new TestDoc(doc1ToReplaceCreateResponse);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                encryptionContainerWithCustomSerializer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
         }
 
         [TestMethod]
@@ -910,7 +939,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
-            Assert.AreEqual(3, unwrapcount);
+            Assert.AreEqual(2, unwrapcount);
         }
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             Container container,

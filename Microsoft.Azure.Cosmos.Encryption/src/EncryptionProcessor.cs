@@ -87,10 +87,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             foreach (string clientEncryptionKeyId in this.ClientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
             {
                 ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                        clientEncryptionKeyId: clientEncryptionKeyId,
-                        container: this.Container,
-                        cancellationToken: cancellationToken,
-                        shouldForceRefresh: false);
+                    clientEncryptionKeyId: clientEncryptionKeyId,
+                    container: this.Container,
+                    cancellationToken: cancellationToken,
+                    shouldForceRefresh: false);
 
                 ProtectedDataEncryptionKey protectedDataEncryptionKey = null;
 
@@ -111,16 +111,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     if (ex.Status == (int)HttpStatusCode.Forbidden)
                     {
                         clientEncryptionKeyProperties = await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                        clientEncryptionKeyId: clientEncryptionKeyId,
-                        container: this.Container,
-                        cancellationToken: cancellationToken,
-                        shouldForceRefresh: true);
+                            clientEncryptionKeyId: clientEncryptionKeyId,
+                            container: this.Container,
+                            cancellationToken: cancellationToken,
+                            shouldForceRefresh: true);
 
                         // just bail out if this fails.
                         protectedDataEncryptionKey = this.EncryptionSettings.BuildProtectedDataEncryptionKey(
-                        clientEncryptionKeyProperties,
-                        this.EncryptionKeyStoreProvider,
-                        clientEncryptionKeyId);
+                            clientEncryptionKeyProperties,
+                            this.EncryptionKeyStoreProvider,
+                            clientEncryptionKeyId);
                     }
                 }
 
@@ -582,14 +582,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-            SqlNvarcharSerializer sqlNvarcharSerializer = new SqlNvarcharSerializer(-1);
+            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             return propertyValue.Type switch
             {
                 JTokenType.Boolean => (TypeMarker.Boolean, sqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
                 JTokenType.Float => (TypeMarker.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
                 JTokenType.Integer => (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
-                JTokenType.String => (TypeMarker.String, sqlNvarcharSerializer.Serialize(propertyValue.ToObject<string>())),
+                JTokenType.String => (TypeMarker.String, sqlVarcharSerializer.Serialize(propertyValue.ToObject<string>())),
                 _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {propertyValue.Type}. "),
             };
         }
@@ -599,13 +599,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TypeMarker typeMarker)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
+            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             return typeMarker switch
             {
                 TypeMarker.Boolean => sqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
                 TypeMarker.Double => sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
                 TypeMarker.Long => sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
-                TypeMarker.String => sqlSerializerFactory.GetDefaultSerializer<string>().Deserialize(serializedBytes),
+                TypeMarker.String => sqlVarcharSerializer.Deserialize(serializedBytes),
                 _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {typeMarker}. "),
             };
         }
