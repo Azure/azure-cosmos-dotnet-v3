@@ -893,7 +893,7 @@ namespace Microsoft.Azure.Cosmos
         /// 2. This create the type feed iterator for users without queryText, retrieving all users.
         /// <code language="c#">
         /// <![CDATA[
-        /// using (FeedIterator<UserProperties> feedIterator = this.cosmosDatabase.GetUserQueryIterator<ContainerProperties>())
+        /// using (FeedIterator<UserProperties> feedIterator = this.cosmosDatabase.GetUserQueryIterator<UserProperties>())
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
