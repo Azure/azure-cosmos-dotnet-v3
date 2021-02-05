@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the entire result set from the cosmos service
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>Returns an Asynchronous enumerator around the content of the container</returns>
+        /// <returns>Returns an Asynchronous enumerator of the paged responses from the container</returns>
         /// <example>
         /// Example on how to fully drain the query results.
         /// <code language="c#">
@@ -108,9 +108,16 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     await foreach (var response in feedIterator.ReadAsync())
         ///     {
-        ///         foreach (var item in response)
+        ///         using (response)
         ///         {
-        ///             Console.WriteLine(item);
+        ///             // Handle failure scenario
+        ///             if (!response.StatusCode.IsSuccess())
+        ///             {
+        ///                 foreach (var item in response)
+        ///                 {
+        ///                     Console.WriteLine(item);
+        ///                 }
+        ///             }
         ///         }
         ///     }
         /// }
