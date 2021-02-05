@@ -653,6 +653,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// <summary>
         /// This test validates Incremental Change Feed by inserting and deleting documents and verifying nothing reported
         /// </summary>
+        [Ignore]
         [TestMethod]
         public async Task ChangeFeedIteratorCore_DeleteAfterCreate()
         {
@@ -669,21 +670,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             {
                 await container.DeleteItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
             }
-            FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
+            FeedIterator<ToDoActivityWithMetadata> changefeedIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental);
-            while (fullFidelityIterator.HasMoreResults)
-            {
-                try
-                {
-                    FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
-                    Assert.Fail("Should not return anything");
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
-                {
-                    break;
-                }
-            }
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => changefeedIterator.ReadNextAsync());
+            Assert.AreEqual(HttpStatusCode.NotModified, cosmosException.StatusCode, "Incremental Change Feed does not present intermediate results and should return nothing.");
         }
 
         /// <summary>
@@ -829,7 +820,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
         /// <summary>
         /// This test validates error with Full Fidelity Change Feed and start from beginning.
-        /// </summary>
+        /// </summary
+        [Ignore]
         [TestMethod]
         public async Task ChangeFeedIteratorCore_WithFullFidelityReadFromBeginning()
         {
@@ -846,18 +838,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             FeedIterator<ToDoActivityWithMetadata> fullFidelityIterator = container.GetChangeFeedIterator<ToDoActivityWithMetadata>(
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.FullFidelity);
-            while (fullFidelityIterator.HasMoreResults)
-            {
-                try
-                {
-                    FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.BadRequest)
-                {
-                    Assert.IsTrue(cosmosException.Message.Contains("FullFidelity Change Feed must have valid If-None-Match header."));
-                    break;
-                }
-            }
+
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => fullFidelityIterator.ReadNextAsync());
+            Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode, "Full Fidelity Change Feed does not work with StartFromBeginning currently.");
+            Assert.IsTrue(cosmosException.Message.Contains("FullFidelity Change Feed must have valid If-None-Match header."));
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
