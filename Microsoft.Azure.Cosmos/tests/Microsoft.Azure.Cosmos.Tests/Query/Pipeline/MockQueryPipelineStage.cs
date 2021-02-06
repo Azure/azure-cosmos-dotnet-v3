@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class MockQueryPipelineStage : QueryPipelineStageBase
@@ -57,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 responseLengthInBytes: default,
                 cosmosQueryExecutionInfo: default,
                 disallowContinuationTokenMessage: default,
+                additionalHeaders: default,
                 state: state);
             this.Current = TryCatch<QueryPage>.FromResult(page);
             return new ValueTask<bool>(true);

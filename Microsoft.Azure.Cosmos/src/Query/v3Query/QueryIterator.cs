@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -207,22 +208,29 @@ namespace Microsoft.Azure.Cosmos.Query
                         this.hasMoreResults = false;
                     }
 
+                    CosmosQueryResponseMessageHeaders headers = new CosmosQueryResponseMessageHeaders(
+                            tryGetQueryPage.Result.State?.Value.ToString(),
+                            tryGetQueryPage.Result.DisallowContinuationTokenMessage,
+                            this.cosmosQueryContext.ResourceTypeEnum,
+                            this.cosmosQueryContext.ContainerResourceId)
+                    {
+                        RequestCharge = tryGetQueryPage.Result.RequestCharge,
+                        ActivityId = tryGetQueryPage.Result.ActivityId,
+                        SubStatusCode = Documents.SubStatusCodes.Unknown
+                    };
+
+                    foreach (KeyValuePair<string, string> kvp in tryGetQueryPage.Result.AdditionalHeaders)
+                    {
+                        headers[kvp.Key] = kvp.Value;
+                    }
+
                     return QueryResponse.CreateSuccess(
                         result: tryGetQueryPage.Result.Documents,
                         count: tryGetQueryPage.Result.Documents.Count,
                         responseLengthBytes: tryGetQueryPage.Result.ResponseLengthInBytes,
                         diagnostics: diagnostics,
                         serializationOptions: this.cosmosSerializationFormatOptions,
-                        responseHeaders: new CosmosQueryResponseMessageHeaders(
-                            tryGetQueryPage.Result.State?.Value.ToString(),
-                            tryGetQueryPage.Result.DisallowContinuationTokenMessage,
-                            this.cosmosQueryContext.ResourceTypeEnum,
-                            this.cosmosQueryContext.ContainerResourceId)
-                        {
-                            RequestCharge = tryGetQueryPage.Result.RequestCharge,
-                            ActivityId = tryGetQueryPage.Result.ActivityId,
-                            SubStatusCode = Documents.SubStatusCodes.Unknown
-                        });
+                        responseHeaders: headers);
                 }
 
                 CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(tryGetQueryPage.Exception);

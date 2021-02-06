@@ -7,12 +7,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Request options for <see cref="ChangeFeedEstimator"/>.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class ChangeFeedEstimatorRequestOptions
+    public sealed class ChangeFeedEstimatorRequestOptions
     {
         /// <summary>
         /// Gets or sets the maximum number of estimations to return per page.
