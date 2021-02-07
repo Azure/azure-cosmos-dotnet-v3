@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="id">Unique identifier of the data encryption key.</param>
         /// <param name="newWrapMetadata">The metadata using which the data encryption key needs to now be wrapped.</param>
+        /// <param name="encryptionAlgorithm"> Encryption algorithm that will be used along with this data encryption key to encrypt/decrypt data.</param>
         /// <param name="requestOptions">(Optional) The options for the request.</param>
         /// <param name="cancellationToken">(Optional) Token representing request cancellation.</param>
         /// <returns>An awaitable response which wraps a <see cref="DataEncryptionKeyProperties"/> containing details of the data encryption key that was re-wrapped.</returns>
@@ -103,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public abstract Task<ItemResponse<DataEncryptionKeyProperties>> RewrapDataEncryptionKeyAsync(
             string id,
             EncryptionKeyWrapMetadata newWrapMetadata,
+            string encryptionAlgorithm = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default(CancellationToken));
 

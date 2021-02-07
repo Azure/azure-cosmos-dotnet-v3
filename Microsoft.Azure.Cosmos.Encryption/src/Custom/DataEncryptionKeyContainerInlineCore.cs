@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override Task<ItemResponse<DataEncryptionKeyProperties>> RewrapDataEncryptionKeyAsync(
            string id,
            EncryptionKeyWrapMetadata newWrapMetadata,
+           string encryptionAlgorithm = null,
            ItemRequestOptions requestOptions = null,
            CancellationToken cancellationToken = default)
         {
@@ -83,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             return TaskHelper.RunInlineIfNeededAsync(() =>
-                this.dataEncryptionKeyContainerCore.RewrapDataEncryptionKeyAsync(id, newWrapMetadata, requestOptions, cancellationToken));
+                this.dataEncryptionKeyContainerCore.RewrapDataEncryptionKeyAsync(id, newWrapMetadata, encryptionAlgorithm, requestOptions, cancellationToken));
         }
     }
 }
