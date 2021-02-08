@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(triggerResponse.Diagnostics);
             string diagnostics = triggerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
             triggerResponse = await this.scripts.ReadTriggerAsync(settings.Id);
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(triggerResponse.Diagnostics);
             diagnostics = triggerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
             TriggerProperties updatedSettings = triggerResponse.Resource;
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(replaceResponse.Diagnostics);
             diagnostics = replaceResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
 
             replaceResponse = await this.scripts.DeleteTriggerAsync(updatedSettings.Id);
             reqeustCharge = replaceResponse.RequestCharge;
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(replaceResponse.Diagnostics);
             diagnostics = replaceResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
         }
 
         [TestMethod]
