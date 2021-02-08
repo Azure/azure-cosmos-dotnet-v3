@@ -1922,10 +1922,25 @@
     "Microsoft.Azure.Cosmos.CosmosDiagnostics;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "System.ReadOnlyMemory`1[System.Byte] ToBinary()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.ReadOnlyMemory`1[System.Byte] ToBinary();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ToJsonString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToJsonString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String ToString()": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String ToString();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String ToTextString()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String ToTextString();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.TimeSpan GetClientElapsedTime()": {
           "Type": "Method",

@@ -951,12 +951,18 @@
         {
             ITrace traceForBaselineTesting = CreateTraceForBaslineTesting(input.Trace, parent: null);
 
-            string text = TraceWriter.TraceToText(traceForBaselineTesting);
-            string json = TraceWriter.TraceToJson(traceForBaselineTesting);
+            CosmosTraceDiagnostics cosmosTraceDiagnostics = new CosmosTraceDiagnostics(traceForBaselineTesting);
+
+            string text = cosmosTraceDiagnostics.ToTextString();
+            string json = cosmosTraceDiagnostics.ToJsonString();
+            string base64EncodedString = Convert.ToBase64String(cosmosTraceDiagnostics.ToBinary().Span);
 
             // AssertTraceProperites(input.Trace);
 
-            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
+            return new Output(
+                text,
+                JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented),
+                base64EncodedString);
         }
 
         private static TraceForBaselineTesting CreateTraceForBaslineTesting(ITrace trace, TraceForBaselineTesting parent)
@@ -1055,15 +1061,18 @@
 
         public sealed class Output : BaselineTestOutput
         {
-            public Output(string text, string json)
+            public Output(string text, string json, string base64EncodedBinary)
             {
                 this.Text = text ?? throw new ArgumentNullException(nameof(text));
                 this.Json = json ?? throw new ArgumentNullException(nameof(json));
+                this.Base64EncodedBinary = base64EncodedBinary ?? throw new ArgumentNullException(nameof(json));
             }
 
             public string Text { get; }
 
             public string Json { get; }
+
+            public string Base64EncodedBinary { get; }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {
@@ -1073,6 +1082,10 @@
 
                 xmlWriter.WriteStartElement(nameof(this.Json));
                 xmlWriter.WriteCData(this.Json);
+                xmlWriter.WriteEndElement();
+
+                xmlWriter.WriteStartElement(nameof(this.Base64EncodedBinary));
+                xmlWriter.WriteCData(this.Base64EncodedBinary);
                 xmlWriter.WriteEndElement();
             }
         }
