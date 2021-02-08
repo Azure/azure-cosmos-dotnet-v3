@@ -282,19 +282,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task QueryableExtentionFunctionsTest(bool disableDiagnostic)
+        public async Task QueryableExtentionFunctionsTest()
         {
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-            if (disableDiagnostic)
-            {
-                queryRequestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
-            };
-
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 requestOptions: queryRequestOptions);
 
@@ -803,12 +796,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-
-            bool disableDiagnostics = queryRequestOptions.DiagnosticContextFactory != null;
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(
-                diagnostics: response.Diagnostics,
-                isFirstPage: false,
-                disableDiagnostics: disableDiagnostics);
         }
     }
 }

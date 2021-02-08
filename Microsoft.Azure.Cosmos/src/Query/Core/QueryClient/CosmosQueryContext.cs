@@ -51,8 +51,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryClient
             this.CorrelatedActivityId = (correlatedActivityId == Guid.Empty) ? throw new ArgumentOutOfRangeException(nameof(correlatedActivityId)) : correlatedActivityId;
         }
 
-        internal abstract IDisposable CreateDiagnosticScope(string name);
-
         internal abstract Task<TryCatch<QueryPage>> ExecuteQueryAsync(
             SqlQuerySpec querySpecForInit,
             QueryRequestOptions queryRequestOptions,
