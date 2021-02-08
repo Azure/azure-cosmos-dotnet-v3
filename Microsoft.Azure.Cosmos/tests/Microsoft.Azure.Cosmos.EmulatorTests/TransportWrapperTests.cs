@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     message: "Exception",
                     innerException: transportException,
                     statusCode: System.Net.HttpStatusCode.Gone);
-                CosmosClientSideRequestStatistics requestStatistics = (CosmosClientSideRequestStatistics)request.RequestContext.ClientRequestStatistics;
+                IClientSideRequestStatistics requestStatistics = request.RequestContext.ClientRequestStatistics;
                 requestStatistics.RecordResponse(request, new StoreResult(
                     storeResponse: null,
                     exception: documentClientException,

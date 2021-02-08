@@ -157,12 +157,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test draining typed iterator
             using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
-                    queryDefinition: null,
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 1000,
-                    }))
+                queryDefinition: null,
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 1000,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
                 while (feedIterator.HasMoreResults)
@@ -177,12 +177,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test draining stream iterator
             using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-                    queryDefinition: null,
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 1000,
-                    }))
+                queryDefinition: null,
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 1000,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
                 while (feedIterator.HasMoreResults)
@@ -196,12 +196,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test single page typed iterator
             using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
-                    queryText: "SELECT * FROM c",
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 10,
-                    }))
+                queryText: "SELECT * FROM c",
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 10,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
                 FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
@@ -213,14 +213,29 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test single page stream iterator
             using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-                    queryText: "SELECT * FROM c",
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 10,
-                    }))
+                queryText: "SELECT * FROM c",
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 10,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
+                using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                {
+                    Assert.IsNotNull(response.Content);
+                }
+            }
+
+            // Dummy Operation
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                queryText: "SELECT * FROM c",
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 10,
+                }))
+            {
                 using (ResponseMessage response = await feedIterator.ReadNextAsync())
                 {
                     Assert.IsNotNull(response.Content);

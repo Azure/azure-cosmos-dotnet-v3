@@ -47,7 +47,6 @@
             SqlQuerySpec sqlQuerySpec,
             Cosmos.PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            CosmosDiagnosticsContext diagnosticsContext,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -59,7 +58,6 @@
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
-                diagnosticsContext,
                 trace,
                 cancellationToken);
         }
@@ -71,7 +69,6 @@
             Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
-            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             bool isContinuationExpected,
@@ -85,7 +82,6 @@
                 operationType: operationType,
                 clientQueryCorrelationId: clientQueryCorrelationId,
                 requestOptions: requestOptions,
-                queryPageDiagnostics: queryPageDiagnostics,
                 sqlQuerySpec: sqlQuerySpec,
                 continuationToken: continuationToken,
                 feedRange: feedRange,

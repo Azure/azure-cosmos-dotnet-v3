@@ -7,11 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Globalization;
     using System.Net;
-    using System.Net.Http;
     using System.Security;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            CosmosDiagnosticsContext diagnosticsContext)
+            ITrace trace)
         {
             // this is masterkey authZ
             headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
