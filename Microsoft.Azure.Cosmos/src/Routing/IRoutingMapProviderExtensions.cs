@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -28,9 +27,7 @@ namespace Microsoft.Azure.Cosmos
         {
             IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 collectionResourceId,
-                Range<string>.GetPointRange(effectivePartitionKey),
-                trace: NoOpTrace.Singleton,
-                forceRefresh: false);
+                Range<string>.GetPointRange(effectivePartitionKey));
 
             if (ranges == null)
             {
@@ -133,7 +130,6 @@ namespace Microsoft.Azure.Cosmos
                 IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     collectionResourceId,
                     queryRange,
-                    NoOpTrace.Singleton,
                     forceRefresh);
 
                 if (overlappingRanges == null)

@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Scenarios
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -646,11 +645,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
                 serializationOptions: null,
-                trace: NoOpTrace.Singleton,
                 responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,
-                    containerRid: GremlinScenarioTests.CreateRandomString(10)));
+                    containerRid: GremlinScenarioTests.CreateRandomString(10)),
+                diagnostics: new CosmosDiagnosticsContextCore());
             QueryResponse<CosmosElement> cosmosElementQueryResponse =
                 QueryResponse<CosmosElement>.CreateResponse<CosmosElement>(
                     queryResponse,
@@ -728,11 +727,11 @@ namespace Microsoft.Azure.Cosmos.Scenarios
                 count: 2,
                 responseLengthBytes: vertex1JsonWriterResult.Length + vertex2JsonWriterResult.Length,
                 serializationOptions: null,
-                trace: NoOpTrace.Singleton,
                 responseHeaders: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
                     sourceHeaders: null,
                     resourceType: ResourceType.Document,
-                    containerRid: GremlinScenarioTests.CreateRandomString(10)));
+                    containerRid: GremlinScenarioTests.CreateRandomString(10)),
+                diagnostics: new CosmosDiagnosticsContextCore());
             QueryResponse<dynamic> cosmosElementQueryResponse =
                 QueryResponse<dynamic>.CreateResponse<dynamic>(
                     queryResponse,

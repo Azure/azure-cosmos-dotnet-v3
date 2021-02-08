@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             string diagnostics = response.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             Assert.IsTrue(response.Database is DatabaseInlineCore);
 
             response = await response.Database.DeleteAsync(cancellationToken: this.cancellationToken);
@@ -89,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             diagnostics = response.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             Assert.IsTrue(response.Database is DatabaseInlineCore);
         }
 
@@ -233,7 +232,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(createExistingResponse.Diagnostics);
             string diagnostics = createExistingResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("CreateDatabaseIfNotExistsAsync"));
+            Assert.IsTrue(diagnostics.Contains("StartUtc"));
 
             bool conflictReturned = false;
             requestHandlerHelper.CallBackOnResponse = (request, response) =>
@@ -252,9 +251,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestCharge: response.Headers.RequestCharge,
                         retryAfter: default,
                         headers: response.Headers,
+                        diagnosticsContext: response.DiagnosticsContext,
                         error: default,
-                        innerException: default,
-                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
+                        innerException: default).ToCosmosResponseMessage(request);
                 }
 
                 return response;

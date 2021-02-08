@@ -11,10 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.RecordIO;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -34,22 +32,22 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="subStatusCode">Provides further details about why the batch was not processed.</param>
         /// <param name="errorMessage">The reason for failure.</param>
         /// <param name="operations">Operations that were to be executed.</param>
-        /// <param name="trace">Diagnostics for the operation</param>
+        /// <param name="diagnosticsContext">Diagnostics for the operation</param>
         internal TransactionalBatchResponse(
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
             string errorMessage,
             IReadOnlyList<ItemBatchOperation> operations,
-            ITrace trace)
+            CosmosDiagnosticsContext diagnosticsContext)
             : this(statusCode,
                   subStatusCode,
                   errorMessage,
                   new Headers(),
-                  trace: trace,
+                  diagnosticsContext: diagnosticsContext,
                   operations: operations,
                   serializer: null)
         {
-            this.CreateAndPopulateResults(operations, trace);
+            this.CreateAndPopulateResults(operations);
         }
 
         /// <summary>
@@ -64,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
             SubStatusCodes subStatusCode,
             string errorMessage,
             Headers headers,
-            ITrace trace,
+            CosmosDiagnosticsContext diagnosticsContext,
             IReadOnlyList<ItemBatchOperation> operations,
             CosmosSerializerCore serializer)
         {
@@ -74,7 +72,8 @@ namespace Microsoft.Azure.Cosmos
             this.Operations = operations;
             this.SerializerCore = serializer;
             this.Headers = headers;
-            this.Diagnostics = new CosmosTraceDiagnostics(trace ?? NoOpTrace.Singleton);
+            this.Diagnostics = diagnosticsContext.Diagnostics;
+            this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
         }
 
         /// <summary>
@@ -133,6 +132,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
         public virtual CosmosDiagnostics Diagnostics { get; }
+
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         internal virtual SubStatusCodes SubStatusCode { get; }
 
@@ -208,114 +209,106 @@ namespace Microsoft.Azure.Cosmos
             ServerBatchRequest serverRequest,
             CosmosSerializerCore serializer,
             bool shouldPromoteOperationStatus,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (ITrace createResponseTrace = trace.StartChild("Create Trace", TraceComponent.Batch, TraceLevel.Info))
+            using (responseMessage)
             {
-                using (responseMessage)
+                TransactionalBatchResponse response = null;
+                if (responseMessage.Content != null)
                 {
-                    TransactionalBatchResponse response = null;
-                    if (responseMessage.Content != null)
+                    Stream content = responseMessage.Content;
+
+                    // Shouldn't be the case practically, but handle it for safety.
+                    if (!responseMessage.Content.CanSeek)
                     {
-                        Stream content = responseMessage.Content;
-
-                        // Shouldn't be the case practically, but handle it for safety.
-                        if (!responseMessage.Content.CanSeek)
-                        {
-                            content = new MemoryStream();
-                            await responseMessage.Content.CopyToAsync(content);
-                        }
-
-                        if (content.ReadByte() == (int)HybridRowVersion.V1)
-                        {
-                            content.Position = 0;
-                            response = await TransactionalBatchResponse.PopulateFromContentAsync(
-                                content,
-                                responseMessage,
-                                serverRequest,
-                                serializer,
-                                trace,
-                                shouldPromoteOperationStatus);
-
-                            if (response == null)
-                            {
-                                // Convert any payload read failures as InternalServerError
-                                response = new TransactionalBatchResponse(
-                                    HttpStatusCode.InternalServerError,
-                                    SubStatusCodes.Unknown,
-                                    ClientResources.ServerResponseDeserializationFailure,
-                                    responseMessage.Headers,
-                                    trace,
-                                    serverRequest.Operations,
-                                    serializer);
-                            }
-                        }
+                        content = new MemoryStream();
+                        await responseMessage.Content.CopyToAsync(content);
                     }
 
-                    if (response == null)
+                    if (content.ReadByte() == (int)HybridRowVersion.V1)
                     {
+                        content.Position = 0;
+                        response = await TransactionalBatchResponse.PopulateFromContentAsync(
+                            content,
+                            responseMessage,
+                            serverRequest,
+                            serializer,
+                            shouldPromoteOperationStatus);
+
+                        if (response == null)
+                        {
+                            // Convert any payload read failures as InternalServerError
+                            response = new TransactionalBatchResponse(
+                                HttpStatusCode.InternalServerError,
+                                SubStatusCodes.Unknown,
+                                ClientResources.ServerResponseDeserializationFailure,
+                                responseMessage.Headers,
+                                responseMessage.DiagnosticsContext,
+                                serverRequest.Operations,
+                                serializer);
+                        }
+                    }
+                }
+
+                if (response == null)
+                {
+                    response = new TransactionalBatchResponse(
+                        responseMessage.StatusCode,
+                        responseMessage.Headers.SubStatusCode,
+                        responseMessage.ErrorMessage,
+                        responseMessage.Headers,
+                        responseMessage.DiagnosticsContext,
+                        serverRequest.Operations,
+                        serializer);
+                }
+
+                if (response.results == null || response.results.Count != serverRequest.Operations.Count)
+                {
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        // Server should be guaranteeing number of results equal to operations when
+                        // batch request is successful - so fail as InternalServerError if this is not the case.
                         response = new TransactionalBatchResponse(
-                            responseMessage.StatusCode,
-                            responseMessage.Headers.SubStatusCode,
-                            responseMessage.ErrorMessage,
+                            HttpStatusCode.InternalServerError,
+                            SubStatusCodes.Unknown,
+                            ClientResources.InvalidServerResponse,
                             responseMessage.Headers,
-                            trace,
+                            responseMessage.DiagnosticsContext,
                             serverRequest.Operations,
                             serializer);
                     }
 
-                    if (response.results == null || response.results.Count != serverRequest.Operations.Count)
+                    // When the overall response status code is TooManyRequests, propagate the RetryAfter into the individual operations.
+                    int retryAfterMilliseconds = 0;
+
+                    if ((int)responseMessage.StatusCode == (int)StatusCodes.TooManyRequests)
                     {
-                        if (responseMessage.IsSuccessStatusCode)
+                        if (!responseMessage.Headers.TryGetValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfter) ||
+                            retryAfter == null ||
+                            !int.TryParse(retryAfter, out retryAfterMilliseconds))
                         {
-                            // Server should be guaranteeing number of results equal to operations when
-                            // batch request is successful - so fail as InternalServerError if this is not the case.
-                            response = new TransactionalBatchResponse(
-                                HttpStatusCode.InternalServerError,
-                                SubStatusCodes.Unknown,
-                                ClientResources.InvalidServerResponse,
-                                responseMessage.Headers,
-                                trace,
-                                serverRequest.Operations,
-                                serializer);
+                            retryAfterMilliseconds = 0;
                         }
-
-                        // When the overall response status code is TooManyRequests, propagate the RetryAfter into the individual operations.
-                        int retryAfterMilliseconds = 0;
-
-                        if ((int)responseMessage.StatusCode == (int)StatusCodes.TooManyRequests)
-                        {
-                            if (!responseMessage.Headers.TryGetValue(HttpConstants.HttpHeaders.RetryAfterInMilliseconds, out string retryAfter) ||
-                                retryAfter == null ||
-                                !int.TryParse(retryAfter, out retryAfterMilliseconds))
-                            {
-                                retryAfterMilliseconds = 0;
-                            }
-                        }
-
-                        response.CreateAndPopulateResults(serverRequest.Operations, trace, retryAfterMilliseconds);
                     }
 
-                    return response;
+                    response.CreateAndPopulateResults(serverRequest.Operations, retryAfterMilliseconds);
                 }
+
+                return response;
             }
         }
 
-        private void CreateAndPopulateResults(IReadOnlyList<ItemBatchOperation> operations, ITrace trace, int retryAfterMilliseconds = 0)
+        private void CreateAndPopulateResults(IReadOnlyList<ItemBatchOperation> operations, int retryAfterMilliseconds = 0)
         {
             this.results = new List<TransactionalBatchOperationResult>();
             for (int i = 0; i < operations.Count; i++)
             {
-                TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(this.StatusCode)
-                {
-                    SubStatusCode = this.SubStatusCode,
-                    RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
-                };
-
-                result.Trace = trace;
-
-                this.results.Add(result);
+                this.results.Add(
+                    new TransactionalBatchOperationResult(this.StatusCode)
+                    {
+                        SubStatusCode = this.SubStatusCode,
+                        RetryAfter = TimeSpan.FromMilliseconds(retryAfterMilliseconds),
+                    });
             }
         }
 
@@ -324,7 +317,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             ServerBatchRequest serverRequest,
             CosmosSerializerCore serializer,
-            ITrace trace,
             bool shouldPromoteOperationStatus)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -340,8 +332,6 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return r;
                     }
-
-                    operationResult.Trace = trace;
 
                     results.Add(operationResult);
                     return r;
@@ -377,7 +367,7 @@ namespace Microsoft.Azure.Cosmos
                 responseSubStatusCode,
                 responseMessage.ErrorMessage,
                 responseMessage.Headers,
-                trace,
+                responseMessage.DiagnosticsContext,
                 serverRequest.Operations,
                 serializer)
             {

@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal abstract class ContainerInternal : Container
@@ -36,30 +35,21 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             CancellationToken cancellationToken);
 
-        public Task<string> GetCachedRIDAsync(
-            CancellationToken cancellationToken)
-        {
-            return this.GetCachedRIDAsync(forceRefresh: false, trace: NoOpTrace.Singleton, cancellationToken);
-        }
-
         public abstract Task<string> GetCachedRIDAsync(
-            bool forceRefresh,
-            ITrace trace,
-            CancellationToken cancellationToken);
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default);
 
         public abstract Task<Documents.PartitionKeyDefinition> GetPartitionKeyDefinitionAsync(
             CancellationToken cancellationToken);
 
         public abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
-            bool forceRefresh,
-            ITrace trace,
-            CancellationToken cancellationToken);
+            bool forceRefresh = false,
+            CancellationToken cancellationToken = default);
 
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
             CancellationToken cancellationToken = default);
 
         public abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
-            ITrace trace,
             CancellationToken cancellationToken);
 
         public abstract Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken);
@@ -94,8 +84,10 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<PartitionKey> GetPartitionKeyValueFromStreamAsync(
             Stream stream,
-            ITrace trace,
             CancellationToken cancellation);
+
+        public abstract Task<IEnumerable<string>> GetChangeFeedTokensAsync(
+            CancellationToken cancellationToken = default);
 
         public abstract IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,

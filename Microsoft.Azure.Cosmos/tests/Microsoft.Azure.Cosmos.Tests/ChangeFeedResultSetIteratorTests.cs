@@ -43,8 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     ETag = "ShouldNotContainThis"
                 },
-                trace: NoOpTrace.Singleton,
-                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"));
+                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"),
+                diagnostics: new CosmosDiagnosticsContextCore());
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
                 It.IsAny<string>(),
@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
@@ -80,6 +81,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
@@ -112,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
@@ -136,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
@@ -170,6 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse))
@@ -196,6 +201,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Exactly(3));
         }
@@ -226,6 +232,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(firstResponse));
@@ -248,8 +255,43 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<Func<ResponseMessage, ResponseMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task GetChangeFeedTokensAsyncReturnsOnePerPartitionKeyRange()
+        {
+            // Setting mock to have 3 ranges, to generate 3 tokens
+            MultiRangeMockDocumentClient documentClient = new MultiRangeMockDocumentClient();
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.ClientOptions).Returns(MockCosmosUtil.GetDefaultConfiguration());
+            mockContext.Setup(x => x.DocumentClient).Returns(documentClient);
+            mockContext.Setup(x => x.SerializerCore).Returns(MockCosmosUtil.Serializer);
+            mockContext.Setup(x => x.Client).Returns(client);
+            mockContext.Setup(x => x.CreateLink(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(UriFactory.CreateDocumentCollectionUri("test", "test").OriginalString);
+
+            DatabaseInternal db = new DatabaseInlineCore(mockContext.Object, "test");
+            ContainerInternal container = new ContainerInlineCore(mockContext.Object, db, "test");
+            IEnumerable<string> tokens = await container.GetChangeFeedTokensAsync();
+            Assert.AreEqual(3, tokens.Count());
+
+            PartitionKeyRangeCache pkRangeCache = await documentClient.GetPartitionKeyRangeCacheAsync();
+            foreach (string token in tokens)
+            {
+                // Validate that each token represents a StandByFeedContinuationToken with a single Range
+                List<CompositeContinuationToken> deserialized = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(token);
+                Assert.AreEqual(1, deserialized.Count);
+                CompositeContinuationToken compositeToken = deserialized[0];
+
+                IReadOnlyList<Documents.PartitionKeyRange> rangesForTheToken = await pkRangeCache.TryGetOverlappingRangesAsync("", compositeToken.Range);
+                // Token represents one range
+                Assert.AreEqual(1, rangesForTheToken.Count);
+                Assert.AreEqual(rangesForTheToken[0].MinInclusive, compositeToken.Range.Min);
+                Assert.AreEqual(rangesForTheToken[0].MaxExclusive, compositeToken.Range.Max);
+            }
         }
 
         private class MultiRangeMockDocumentClient : MockDocumentClient

@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -39,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType)
         {
             string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                    await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
             return (token, default);
         }
 
@@ -49,10 +48,10 @@ namespace Microsoft.Azure.Cosmos
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            ITrace trace)
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             return AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(trace));
+                    await this.tokenCredentialCache.GetTokenAsync(diagnosticsContext));
         }
 
         public override async ValueTask AddAuthorizationHeaderAsync(
@@ -62,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenType tokenType)
         {
             string token = AuthorizationTokenProviderTokenCredential.GenerateAadAuthorizationSignature(
-                    await this.tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                    await this.tokenCredentialCache.GetTokenAsync(EmptyCosmosDiagnosticsContext.Singleton));
 
             headersCollection.Add(HttpConstants.HttpHeaders.Authorization, token);
         }

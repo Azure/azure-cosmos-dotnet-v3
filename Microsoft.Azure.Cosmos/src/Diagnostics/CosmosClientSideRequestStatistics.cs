@@ -1,16 +1,19 @@
-﻿// ------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-// ------------------------------------------------------------
+//------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tracing.TraceData
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
-    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum
+    internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticsInternal, IClientSideRequestStatistics
     {
+        public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
         private readonly long clientSideRequestStatisticsCreateTime;
 
@@ -19,30 +22,28 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
         private bool received429ResponseSinceLastStartRequest = false;
 
-        public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
+        public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
         {
-            this.RequestStartTimeUtc = startTime;
+            this.RequestStartTimeUtc = DateTime.UtcNow;
             this.RequestEndTimeUtc = null;
             this.EndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
-            this.RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
             this.ContactedReplicas = new List<Uri>();
-            this.StoreResponseStatisticsList = new List<StoreResponseStatistics>();
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContacted = new HashSet<Uri>();
+            this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContextCore.Create(requestOptions: null);
+            this.DiagnosticsContext.AddDiagnosticsInternal(this);
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
 
-        public DateTime RequestStartTimeUtc { get; }
+        private DateTime RequestStartTimeUtc { get; }
 
-        public DateTime? RequestEndTimeUtc { get; set; }
+        private DateTime? RequestEndTimeUtc { get; set; }
 
-        public Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
+        private Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
 
-        private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime { get; }
+        private readonly Dictionary<int, DateTime> RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
 
-        public List<Uri> ContactedReplicas { get; }
-
-        public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
+        public List<Uri> ContactedReplicas { get; set; }
 
         public HashSet<Uri> FailedReplicas { get; }
 
@@ -62,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         }
 
         public bool IsCpuOverloaded { get; private set; } = false;
+
+        public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
 
@@ -143,7 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.RegionsContacted.Add(locationEndpoint);
                 }
 
-                this.StoreResponseStatisticsList.Add(responseStatistics);
+                this.DiagnosticsContext.AddDiagnosticsInternal(responseStatistics);
 
                 if (!this.received429ResponseSinceLastStartRequest &&
                     storeResult.StatusCode == StatusCodes.TooManyRequests)
@@ -164,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             lock (this.lockObject)
             {
                 this.EndpointToAddressResolutionStatistics.Add(identifier, resolutionStats);
+                this.DiagnosticsContext.AddDiagnosticsInternal(resolutionStats);
             }
 
             return identifier;
@@ -189,63 +193,38 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.RequestEndTimeUtc = responseTime;
                 }
 
-                AddressResolutionStatistics start = this.EndpointToAddressResolutionStatistics[identifier];
-
-                this.EndpointToAddressResolutionStatistics[identifier] = new AddressResolutionStatistics(
-                    start.StartTime,
-                    responseTime,
-                    start.TargetEndpoint);
+                this.EndpointToAddressResolutionStatistics[identifier].EndTime = responseTime;
             }
         }
 
-        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
+        /// <summary>
+        /// The new Cosmos Exception always includes the diagnostics and the
+        /// document client exception message. Some of the older document client exceptions
+        /// include the request statistics in the message causing a circle reference.
+        /// This always returns empty string to prevent the circle reference which
+        /// would cause the diagnostic string to grow exponentially.
+        /// </summary>
+        public override string ToString()
         {
-            traceDatumVisitor.Visit(this);
+            return DefaultToStringMessage;
         }
 
-        public readonly struct AddressResolutionStatistics
+        /// <summary>
+        /// Please see ToString() documentation
+        /// </summary>
+        public void AppendToBuilder(StringBuilder stringBuilder)
         {
-            public AddressResolutionStatistics(
-                DateTime startTime,
-                DateTime endTime,
-                string targetEndpoint)
-            {
-                this.StartTime = startTime;
-                this.EndTime = endTime;
-                this.TargetEndpoint = targetEndpoint ?? throw new ArgumentNullException(nameof(startTime));
-            }
-
-            public DateTime StartTime { get; }
-            public DateTime? EndTime { get; }
-            public string TargetEndpoint { get; }
+            stringBuilder.Append(DefaultToStringMessage);
         }
 
-        public sealed class StoreResponseStatistics
+        public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
         {
-            public StoreResponseStatistics(
-                DateTime? requestStartTime,
-                DateTime requestResponseTime,
-                StoreResult storeResult,
-                ResourceType resourceType,
-                OperationType operationType,
-                Uri locationEndpoint)
-            {
-                this.RequestStartTime = requestStartTime;
-                this.RequestResponseTime = requestResponseTime;
-                this.StoreResult = storeResult;
-                this.RequestResourceType = resourceType;
-                this.RequestOperationType = operationType;
-                this.LocationEndpoint = locationEndpoint;
-                this.IsSupplementalResponse = operationType == OperationType.Head || operationType == OperationType.HeadFeed;
-            }
+            visitor.Visit(this);
+        }
 
-            public DateTime? RequestStartTime { get; }
-            public DateTime RequestResponseTime { get; }
-            public StoreResult StoreResult { get; }
-            public ResourceType RequestResourceType { get; }
-            public OperationType RequestOperationType { get; }
-            public Uri LocationEndpoint { get; }
-            public bool IsSupplementalResponse { get; }
+        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 }

@@ -1,21 +1,23 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests
-{
-    using System;
-    using System.IO;
-    using System.Net;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+﻿using System;
+using System.IO;
+using System.Net;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
 
+namespace Microsoft.Azure.Cosmos
+{
     [TestClass]
     public class BatchOperationResultTests
     {
+        static readonly CosmosDiagnosticsContext CosmosDiagnostics = new CosmosDiagnosticsContextCore();
         static TransactionalBatchOperationResult CreateTestResult() => new TransactionalBatchOperationResult(HttpStatusCode.Unused)
         {
             SubStatusCode = Documents.SubStatusCodes.CanNotAcquireOfferOwnerLock,
             ETag = "TestETag",
             ResourceStream = new MemoryStream(),
             RequestCharge = 1.5,
-            RetryAfter = TimeSpan.FromMilliseconds(1234)
+            RetryAfter = TimeSpan.FromMilliseconds(1234),
+            DiagnosticsContext = CosmosDiagnostics
         };
 
         [TestMethod]

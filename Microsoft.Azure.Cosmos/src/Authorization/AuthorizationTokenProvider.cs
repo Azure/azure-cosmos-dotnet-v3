@@ -6,8 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
+    using System.Net.Http;
+    using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -48,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            ITrace trace);
+            CosmosDiagnosticsContext diagnosticsContext);
 
         public abstract void TraceUnauthorized(
             DocumentClientException dce,

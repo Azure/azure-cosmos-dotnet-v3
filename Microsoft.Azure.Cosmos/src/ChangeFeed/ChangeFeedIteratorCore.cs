@@ -195,15 +195,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            using (ITrace trace = Trace.GetRootTrace("Change Feed Iterator Read Next Async", TraceComponent.ChangeFeed, TraceLevel.Info))
-            {
-                ResponseMessage responseMessage = await this.ReadNextAsync(trace, cancellationToken);
-                responseMessage.Trace = trace;
-
-                return responseMessage;
-            } 
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
@@ -225,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    trace: trace);
+                    diagnostics: new CosmosDiagnosticsContextCore());
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
@@ -247,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    trace: trace);
+                    diagnostics: new CosmosDiagnosticsContextCore());
             }
 
             CrossFeedRangePage<Pagination.ChangeFeedPage, ChangeFeedState> crossFeedRangePage = enumerator.Current.Result;
@@ -304,7 +298,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.ContinuationToken = continuationToken;
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;
             responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;
-            responseMessage.Trace = trace;
 
             return responseMessage;
         }

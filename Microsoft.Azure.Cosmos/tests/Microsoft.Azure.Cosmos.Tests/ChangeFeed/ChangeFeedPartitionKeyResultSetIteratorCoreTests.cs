@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<FeedRange>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
@@ -106,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<FeedRange>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
@@ -154,6 +156,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
@@ -181,6 +184,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
@@ -214,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangeEpk),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
@@ -243,6 +248,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<FeedRange>(fr => fr is FeedRangeEpk),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
+                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     internal static class CosmosContainerExtensions
     {
@@ -48,11 +47,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
 
                     response.EnsureSuccessStatusCode();
 
-                    return new ItemResponse<T>(
-                        response.StatusCode, 
-                        response.Headers, 
-                        CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), 
-                        response.Trace);
+                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
                 }
             }
         }
@@ -69,11 +64,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                 using (ResponseMessage response = await container.ReplaceItemStreamAsync(itemStream, itemId, partitionKey, itemRequestOptions).ConfigureAwait(false))
                 {
                     response.EnsureSuccessStatusCode();
-                    return new ItemResponse<T>(
-                        response.StatusCode, 
-                        response.Headers, 
-                        CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), 
-                        response.Trace);
+                    return new ItemResponse<T>(response.StatusCode, response.Headers, CosmosContainerExtensions.DefaultJsonSerializer.FromStream<T>(response.Content), response.Diagnostics);
                 }
             }
         }
@@ -107,10 +98,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             this Container monitoredContainer,
             CancellationToken cancellationToken = default)
         {
-            string containerRid = await ((ContainerInternal)monitoredContainer).GetCachedRIDAsync(
-                forceRefresh: false,
-                NoOpTrace.Singleton,
-                cancellationToken: cancellationToken);
+            string containerRid = await ((ContainerInternal)monitoredContainer).GetCachedRIDAsync(cancellationToken: cancellationToken);
             string databaseRid = await ((DatabaseInternal)((ContainerInternal)monitoredContainer).Database).GetRIDAsync(cancellationToken);
             return $"{databaseRid}_{containerRid}";
         }

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class SinglePartitionKeyServerBatchRequest : ServerBatchRequest
     {
@@ -39,22 +38,17 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">Partition key of the request.</param>
         /// <param name="operations">Operations to be added into this batch request.</param>
         /// <param name="serializerCore">Serializer to serialize user provided objects to JSON.</param>
-        /// <param name="trace">The trace.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A newly created instance of <see cref="SinglePartitionKeyServerBatchRequest"/>.</returns>
         public static async Task<SinglePartitionKeyServerBatchRequest> CreateAsync(
             PartitionKey? partitionKey,
             ArraySegment<ItemBatchOperation> operations,
             CosmosSerializerCore serializerCore,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (trace.StartChild("Create Batch Request", TraceComponent.Batch, TraceLevel.Info))
-            {
-                SinglePartitionKeyServerBatchRequest request = new SinglePartitionKeyServerBatchRequest(partitionKey, serializerCore);
-                await request.CreateBodyStreamAsync(operations, cancellationToken);
-                return request;
-            }
+            SinglePartitionKeyServerBatchRequest request = new SinglePartitionKeyServerBatchRequest(partitionKey, serializerCore);
+            await request.CreateBodyStreamAsync(operations, cancellationToken);
+            return request;
         }
     }
 }

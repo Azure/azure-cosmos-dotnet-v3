@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -530,20 +529,18 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Internal constructor purely for unit-testing
         /// </summary>
-        internal DocumentClient(Uri serviceEndpoint, string authKey)
+        internal DocumentClient(Uri serviceEndpoint,
+                      string authKey)
         {
             // do nothing 
             this.ServiceEndpoint = serviceEndpoint;
             this.ConnectionPolicy = new ConnectionPolicy();
         }
 
-        internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
+        internal virtual async Task<ClientCollectionCache> GetCollectionCacheAsync()
         {
-            using (ITrace childTrace = trace.StartChild("Get Collection Cache", TraceComponent.Routing, Tracing.TraceLevel.Info))
-            {
-                await this.EnsureValidClientAsync();
-                return this.collectionCache;
-            }
+            await this.EnsureValidClientAsync();
+            return this.collectionCache;
         }
 
         internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
@@ -968,7 +965,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(collection));
             }
 
-            CollectionCache collectionCache = await this.GetCollectionCacheAsync(NoOpTrace.Singleton);
+            CollectionCache collectionCache = await this.GetCollectionCacheAsync();
             using (
                 DocumentServiceRequest request = DocumentServiceRequest.Create(
                     OperationType.Query,
@@ -978,13 +975,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                    resolvedCollection.ResourceId,
-                    new Range<string>(
-                        PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                        PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                        true,
-                        false),
-                    NoOpTrace.Singleton);
+                resolvedCollection.ResourceId,
+                new Range<string>(
+                    PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                    PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                    true,
+                    false));
 
                 // In Gateway mode, AddressCache is null
                 if (this.AddressResolver != null)
@@ -1683,9 +1679,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             if (options == null || options.PartitionKey == null)
             {
-                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
-                    requestRetryPolicy);
+                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.GetCollectionCacheAsync(), requestRetryPolicy);
             }
 
             return await TaskHelper.InlineIfPossible(() => this.CreateDocumentPrivateAsync(
@@ -3055,22 +3049,11 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<Document>> ReplaceDocumentInlineAsync(string documentLink, object document, Documents.Client.RequestOptions options, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-            if ((options == null) || (options.PartitionKey == null))
+            if (options == null || options.PartitionKey == null)
             {
-                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
-                    requestRetryPolicy);
+                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.GetCollectionCacheAsync(), requestRetryPolicy);
             }
-
-            return await TaskHelper.InlineIfPossible(
-                () => this.ReplaceDocumentPrivateAsync(
-                    documentLink, 
-                    document, 
-                    options, 
-                    requestRetryPolicy, 
-                    cancellationToken), 
-                requestRetryPolicy, 
-                cancellationToken);
+            return await TaskHelper.InlineIfPossible(() => this.ReplaceDocumentPrivateAsync(documentLink, document, options, requestRetryPolicy, cancellationToken), requestRetryPolicy, cancellationToken);
         }
 
         private Task<ResourceResponse<Document>> ReplaceDocumentPrivateAsync(string documentLink, object document, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
@@ -5638,9 +5621,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
             if (options == null || options.PartitionKey == null)
             {
-                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
-                    requestRetryPolicy);
+                requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(await this.GetCollectionCacheAsync(), requestRetryPolicy);
             }
 
             return await TaskHelper.InlineIfPossible(() => this.UpsertDocumentPrivateAsync(
@@ -6114,7 +6095,7 @@ namespace Microsoft.Azure.Cosmos
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            ITrace trace)
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             return this.cosmosAuthorization.GetUserAuthorizationTokenAsync(
                 resourceAddress,
@@ -6122,7 +6103,7 @@ namespace Microsoft.Azure.Cosmos
                 requestVerb,
                 headers,
                 tokenType,
-                trace);
+                diagnosticsContext);
         }
 
         Task IAuthorizationTokenProvider.AddSystemAuthorizationHeaderAsync(
@@ -6591,7 +6572,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
-            CollectionCache collectionCache = await this.GetCollectionCacheAsync(NoOpTrace.Singleton);
+            CollectionCache collectionCache = await this.GetCollectionCacheAsync();
             ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
@@ -6614,7 +6595,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
-            CollectionCache collectionCache = await this.GetCollectionCacheAsync(NoOpTrace.Singleton);
+            CollectionCache collectionCache = await this.GetCollectionCacheAsync();
             ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 

@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ClientEncryptionKeyResponse response = await this.ReadInternalAsync(
                 requestOptions,
-                trace: NoOpTrace.Singleton,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
             return response;
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos
             ClientEncryptionKeyResponse response = await this.ReplaceInternalAsync(
                 clientEncryptionKeyProperties,
                 requestOptions,
-                trace: NoOpTrace.Singleton,
+                diagnosticsContext: null,
                 cancellationToken: cancellationToken);
 
             return response;
@@ -88,14 +88,14 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ClientEncryptionKeyResponse> ReadInternalAsync(
             RequestOptions requestOptions,
-            ITrace trace,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             ResponseMessage responseMessage = await this.ProcessStreamAsync(
                 streamPayload: null,
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
-                trace: trace,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             ClientEncryptionKeyResponse response = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(this, responseMessage);
@@ -107,14 +107,14 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ClientEncryptionKeyResponse> ReplaceInternalAsync(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions,
-            ITrace trace,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             ResponseMessage responseMessage = await this.ProcessStreamAsync(
                 streamPayload: this.ClientContext.SerializerCore.ToStream(clientEncryptionKeyProperties),
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
-                trace: trace,
+                diagnosticsContext: diagnosticsContext,
                 cancellationToken: cancellationToken);
 
             ClientEncryptionKeyResponse response = this.ClientContext.ResponseFactory.CreateClientEncryptionKeyResponse(this, responseMessage);
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             OperationType operationType,
             RequestOptions requestOptions,
-            ITrace trace,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -139,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
                 streamPayload: streamPayload,
                 requestOptions: requestOptions,
                 requestEnricher: null,
-                trace: trace,
+                diagnosticsContext: diagnosticsContext,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken);
         }
     }

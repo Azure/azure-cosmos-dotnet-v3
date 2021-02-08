@@ -221,16 +221,17 @@ namespace Microsoft.Azure.Cosmos
             return this.container.ClientContext.OperationHelperAsync(
                 nameof(ExecuteAsync),
                 requestOptions,
-                (trace) =>
+                (diagnostics, trace) =>
                 {
                     BatchExecutor executor = new BatchExecutor(
                         container: this.container,
                         partitionKey: this.partitionKey,
                         operations: this.operations,
-                        batchOptions: requestOptions);
+                        batchOptions: requestOptions,
+                        diagnosticsContext: diagnostics);
 
                     this.operations = new List<ItemBatchOperation>();
-                    return executor.ExecuteAsync(trace,  cancellationToken);
+                    return executor.ExecuteAsync(cancellationToken);
                 });
         }
 

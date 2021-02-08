@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Net;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -27,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge,
             TimeSpan? retryAfter,
             Headers headers,
-            ITrace trace,
+            CosmosDiagnosticsContext diagnosticsContext,
             Error error,
             Exception innerException)
             : base(CosmosException.GetMessageHelper(
@@ -45,7 +43,9 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.Headers = headers;
             this.Error = error;
-            this.Trace = trace;
+
+            // Always have a diagnostic context. A new diagnostic will have useful info like user agent
+            this.DiagnosticsContext = diagnosticsContext ?? new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             this.RequestCharge = requestCharge;
             this.ActivityId = activityId;
             this.Headers = new Headers();
-            this.Trace = NoOpTrace.Singleton;
+            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
         }
 
         /// <summary>
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the diagnostics for the request
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
+        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext.Diagnostics;
 
         /// <inheritdoc/>
         public override string StackTrace
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual ITrace Trace { get; }
+        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         /// <summary>
         /// Gets the internal error object.
@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
                  requestMessage: request,
                  cosmosException: this,
                  statusCode: this.StatusCode,
-                 trace: this.Trace);
+                 diagnostics: this.DiagnosticsContext);
             if (this.SubStatusCode != 0)
             {
                 responseMessage.Headers.SubStatusCode = (SubStatusCodes)this.SubStatusCode;

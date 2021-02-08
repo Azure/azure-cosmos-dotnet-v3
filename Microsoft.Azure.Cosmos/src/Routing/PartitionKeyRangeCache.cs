@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -43,29 +42,26 @@ namespace Microsoft.Azure.Cosmos.Routing
         public virtual async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionRid,
             Range<string> range,
-            ITrace trace,
             bool forceRefresh = false)
         {
-            using (ITrace childTrace = trace.StartChild("Try Get Overlapping Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
+            ResourceId collectionRidParsed;
+            Debug.Assert(ResourceId.TryParse(collectionRid, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
+
+            CollectionRoutingMap routingMap =
+                await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None);
+
+            if (forceRefresh && routingMap != null)
             {
-                Debug.Assert(ResourceId.TryParse(collectionRid, out ResourceId collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
-
-                CollectionRoutingMap routingMap =
-                    await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None);
-
-                if (forceRefresh && routingMap != null)
-                {
-                    routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, CancellationToken.None);
-                }
-
-                if (routingMap == null)
-                {
-                    DefaultTrace.TraceWarning(string.Format("Routing Map Null for collection: {0} for range: {1}, forceRefresh:{2}", collectionRid, range.ToString(), forceRefresh));
-                    return null;
-                }
-
-                return routingMap.GetOverlappingRanges(range);
+                routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, CancellationToken.None);
             }
+
+            if (routingMap == null)
+            {
+                DefaultTrace.TraceWarning(string.Format("Routing Map Null for collection: {0} for range: {1}, forceRefresh:{2}", collectionRid, range.ToString(), forceRefresh));
+                return null;
+            }
+
+            return routingMap.GetOverlappingRanges(range);
         }
 
         public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(

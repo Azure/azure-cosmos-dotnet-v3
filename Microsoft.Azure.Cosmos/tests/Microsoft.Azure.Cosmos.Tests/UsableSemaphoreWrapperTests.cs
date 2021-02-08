@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -15,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task NotDisposedAfterUsing()
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-            using(await semaphore.UsingWaitAsync(NoOpTrace.Singleton, default))
+            using(await semaphore.UsingWaitAsync(null, default(CancellationToken)))
             {
                 ;
             }

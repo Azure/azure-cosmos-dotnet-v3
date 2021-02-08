@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Handler which selects the pipeline for the requested resource operation
@@ -29,11 +28,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            using (ITrace childTrace = request.Trace.StartChild("Router Handler Send Async", TraceComponent.RequestHandler, TraceLevel.Info))
+            RequestHandler targetHandler = request.IsPartitionKeyRangeHandlerRequired ? this.documentFeedHandler : this.pointOperationHandler;
+            using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(targetHandler))
             {
-                request.Trace = childTrace;
-
-                RequestHandler targetHandler = request.IsPartitionKeyRangeHandlerRequired ? this.documentFeedHandler : this.pointOperationHandler;
                 return await targetHandler.SendAsync(request, cancellationToken);
             }
         }

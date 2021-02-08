@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -110,92 +109,101 @@ namespace Microsoft.Azure.Cosmos
             BatchPartitionMetric partitionMetric,
             CancellationToken cancellationToken = default)
         {
-            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Dispatch Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            this.interlockIncrementCheck.EnterLockCheck();
+
+            PartitionKeyRangeServerBatchRequest serverRequest = null;
+            ArraySegment<ItemBatchOperation> pendingOperations;
+
+            try
             {
-                this.interlockIncrementCheck.EnterLockCheck();
-
-                PartitionKeyRangeServerBatchRequest serverRequest = null;
-                ArraySegment<ItemBatchOperation> pendingOperations;
-
                 try
                 {
-                    try
+                    // HybridRow serialization might leave some pending operations out of the batch
+                    Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>> createRequestResponse = await this.CreateServerRequestAsync(cancellationToken);
+                    serverRequest = createRequestResponse.Item1;
+                    pendingOperations = createRequestResponse.Item2;
+                    // Any overflow goes to a new batch
+                    foreach (ItemBatchOperation operation in pendingOperations)
                     {
-                        // HybridRow serialization might leave some pending operations out of the batch
-                        Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>> createRequestResponse = await this.CreateServerRequestAsync(cancellationToken);
-                        serverRequest = createRequestResponse.Item1;
-                        pendingOperations = createRequestResponse.Item2;
-                        // Any overflow goes to a new batch
-                        foreach (ItemBatchOperation operation in pendingOperations)
-                        {
-                            await this.retrier(operation, trace, cancellationToken);
-                        }
+                        await this.retrier(operation, cancellationToken);
                     }
-                    catch (Exception ex)
-                    {
-                        // Exceptions happening during request creation, fail the entire list
-                        foreach (ItemBatchOperation itemBatchOperation in this.batchOperations)
-                        {
-                            itemBatchOperation.Context.Fail(this, ex);
-                        }
-
-                        throw;
-                    }
-
-                    try
-                    {
-                        Stopwatch stopwatch = Stopwatch.StartNew();
-
-                        PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, cancellationToken);
-
-                        int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
-                        partitionMetric.Add(
-                            numberOfDocumentsOperatedOn: result.ServerResponse.Count,
-                            timeTakenInMilliseconds: stopwatch.ElapsedMilliseconds,
-                            numberOfThrottles: numThrottle);
-
-                        using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
-                        {
-                            foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
-                            {
-                                TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
-
-                                if (!response.IsSuccessStatusCode)
-                                {
-                                    Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
-                                    if (shouldRetry.ShouldRetry)
-                                    {
-                                        await this.retrier(itemBatchOperation, trace, cancellationToken);
-                                        continue;
-                                    }
-                                }
-
-                                itemBatchOperation.Context.Complete(this, response);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Exceptions happening during execution fail all the Tasks part of the request (excluding overflow)
-                        foreach (ItemBatchOperation itemBatchOperation in serverRequest.Operations)
-                        {
-                            itemBatchOperation.Context.Fail(this, ex);
-                        }
-
-                        throw;
-                    }
-
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
+                    // Exceptions happening during request creation, fail the entire list
+                    foreach (ItemBatchOperation itemBatchOperation in this.batchOperations)
+                    {
+                        itemBatchOperation.Context.Fail(this, ex);
+                    }
+
+                    throw;
                 }
-                finally
+
+                try
                 {
-                    this.batchOperations.Clear();
-                    this.dispatched = true;
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+
+                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, cancellationToken);
+
+                    int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
+                    partitionMetric.Add(
+                        numberOfDocumentsOperatedOn: result.ServerResponse.Count,
+                        timeTakenInMilliseconds: stopwatch.ElapsedMilliseconds,
+                        numberOfThrottles: numThrottle);
+
+                    using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
+                    {
+                        foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
+                        {
+                            TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
+
+                            // Bulk has diagnostics per a item operation.
+                            // Batch has a single diagnostics for the execute operation
+                            if (itemBatchOperation.DiagnosticsContext != null)
+                            {
+                                response.DiagnosticsContext = itemBatchOperation.DiagnosticsContext;
+                                response.DiagnosticsContext.AddDiagnosticsInternal(batchResponse.DiagnosticsContext);
+                            }
+                            else
+                            {
+                                response.DiagnosticsContext = batchResponse.DiagnosticsContext;
+                            }
+
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
+                                if (shouldRetry.ShouldRetry)
+                                {
+                                    await this.retrier(itemBatchOperation, cancellationToken);
+                                    continue;
+                                }
+                            }
+
+                            itemBatchOperation.Context.Complete(this, response);
+                        }
+                    }
                 }
-            } 
+                catch (Exception ex)
+                {
+                    // Exceptions happening during execution fail all the Tasks part of the request (excluding overflow)
+                    foreach (ItemBatchOperation itemBatchOperation in serverRequest.Operations)
+                    {
+                        itemBatchOperation.Context.Fail(this, ex);
+                    }
+
+                    throw;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
+            }
+            finally
+            {
+                this.batchOperations.Clear();
+                this.dispatched = true;
+            }
         }
 
         internal virtual async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateServerRequestAsync(CancellationToken cancellationToken)
@@ -219,17 +227,11 @@ namespace Microsoft.Azure.Cosmos
     /// Executor implementation that processes a list of operations.
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
-    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(
-        PartitionKeyRangeServerBatchRequest request,
-        ITrace trace,
-        CancellationToken cancellationToken);
+    internal delegate Task<PartitionKeyRangeBatchExecutionResult> BatchAsyncBatcherExecuteDelegate(PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken);
 
     /// <summary>
     /// Delegate to process a request for retry an operation
     /// </summary>
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
-    internal delegate Task BatchAsyncBatcherRetryDelegate(
-        ItemBatchOperation operation,
-        ITrace trace,
-        CancellationToken cancellationToken);
+    internal delegate Task BatchAsyncBatcherRetryDelegate(ItemBatchOperation operation, CancellationToken cancellationToken);
 }

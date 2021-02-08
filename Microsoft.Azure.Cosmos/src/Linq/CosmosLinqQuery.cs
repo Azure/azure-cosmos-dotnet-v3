@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -176,27 +175,40 @@ namespace Microsoft.Azure.Cosmos.Linq
         internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
+            CosmosDiagnosticsContext diagnosticsContext = null;
             Headers headers = new Headers();
-
-            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false);
-            FeedIteratorInternal<T> localFeedIteratorInternal = (FeedIteratorInternal<T>)localFeedIterator;
-
-            ITrace rootTrace;
-            using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
+            while (localFeedIterator.HasMoreResults)
             {
-                while (localFeedIterator.HasMoreResults)
+                FeedResponse<T> response = await localFeedIterator.ReadNextAsync(cancellationToken);
+                headers.RequestCharge += response.RequestCharge;
+
+                // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
+                if (response.Diagnostics is CosmosDiagnosticsCore diagnosticsCore)
                 {
-                    FeedResponse<T> response = await localFeedIteratorInternal.ReadNextAsync(rootTrace, cancellationToken);
-                    headers.RequestCharge += response.RequestCharge;
-                    result.AddRange(response);
+                    if (diagnosticsContext == null)
+                    {
+                        diagnosticsContext = diagnosticsCore.Context;
+                    }
+                    else
+                    {
+                        diagnosticsContext.AddDiagnosticsInternal(diagnosticsCore.Context);
+                    }
+
                 }
+                else
+                {
+                    throw new ArgumentException($"Invalid diagnostic object {response.Diagnostics.GetType().FullName}");
+                }
+
+                result.AddRange(response);
             }
 
             return new ItemResponse<T>(
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                rootTrace);
+                diagnosticsContext.Diagnostics);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
@@ -211,11 +223,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 
-        private FeedIterator<T> CreateFeedIterator(bool isContinuationExpected)
+        private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
         {
             SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
 
-            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExpected);
+            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
             return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(
                 streamIterator,
                 this.responseFactory.CreateQueryFeedUserTypeResponse<T>));

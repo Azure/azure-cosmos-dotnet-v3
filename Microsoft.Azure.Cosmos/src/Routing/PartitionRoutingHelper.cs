@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -203,10 +202,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 if (direction == RntdbEnumerationDirection.Reverse)
                 {
-                    IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
-                        collectionRid, 
-                        providedPartitionKeyRanges.Single(),
-                        NoOpTrace.Singleton);
+                    IReadOnlyList<PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, providedPartitionKeyRanges.Single());
                     PartitionKeyRange lastPartitionKeyRange = partitionKeyRanges[partitionKeyRanges.Count - 1];
 
                     return new ResolvedRangeInfo(lastPartitionKeyRange, suppliedTokens);
@@ -234,7 +230,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 IReadOnlyList<PartitionKeyRange> replacedRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                         collectionResourceId: collectionRid,
                         range: rangeFromContinuationToken,
-                        trace: NoOpTrace.Singleton,
                         forceRefresh: true);
 
                 if (replacedRanges == null || replacedRanges.Count < 1)
@@ -278,11 +273,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public static async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, IRoutingMapProvider routingMapProvider, string collectionRid)
         {
-            return (await routingMapProvider.TryGetOverlappingRangesAsync(
-                collectionRid, 
-                targetRange.ToRange(), 
-                NoOpTrace.Singleton, 
-                forceRefresh: true)).ToList();
+            return (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
         }
 
         /// <summary>
@@ -327,10 +318,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (direction == RntdbEnumerationDirection.Reverse)
                     {
                         rangeToUse = PartitionRoutingHelper.MinBefore(
-                            (await routingMapProvider.TryGetOverlappingRangesAsync(
-                                collectionRid, 
-                                providedPartitionKeyRanges.Single(),
-                                NoOpTrace.Singleton)).ToList(),
+                            (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, providedPartitionKeyRanges.Single())).ToList(),
                             currentRange);
                     }
                     else

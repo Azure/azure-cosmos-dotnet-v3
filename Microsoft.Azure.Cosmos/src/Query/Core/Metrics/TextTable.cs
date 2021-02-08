@@ -32,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         private const char CellHorizontalLine = '─';
         private const char CellVerticalLine = '│';
 
+        private const int PaddingLength = 3;
+
         private readonly List<Column> columns;
         private readonly string rowFormatString;
 

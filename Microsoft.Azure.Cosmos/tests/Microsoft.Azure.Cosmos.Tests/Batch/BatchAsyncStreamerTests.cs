@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -19,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private const int MaxBatchByteSize = 100000;
         private const int defaultMaxDegreeOfConcurrency = 10;
-        private static readonly Exception expectedException = new Exception();
-        private readonly ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null, "0");
-        private readonly TimerWheel TimerWheel = TimerWheel.CreateTimerWheel(TimeSpan.FromMilliseconds(50), 20);
-        private readonly SemaphoreSlim limiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
+        private static Exception expectedException = new Exception();
+        private ItemBatchOperation ItemBatchOperation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null, "0");
+        private TimerWheel TimerWheel = TimerWheel.CreateTimerWheel(TimeSpan.FromMilliseconds(50), 20);
+        private SemaphoreSlim limiter = new SemaphoreSlim(1, defaultMaxDegreeOfConcurrency);
 
         // Executor just returns a reponse matching the Id with Etag
-        private readonly BatchAsyncBatcherExecuteDelegate Executor
-            = async (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) =>
+        private BatchAsyncBatcherExecuteDelegate Executor
+            = async (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
             {
                 List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
                 ItemBatchOperation[] arrayOperations = new ItemBatchOperation[request.Operations.Count];
@@ -49,8 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: null,
                     operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                     serializerCore: MockCosmosUtil.Serializer,
-                    trace: NoOpTrace.Singleton,
-                    cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken);
 
                 await Task.Delay(20);
 
@@ -59,15 +57,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                     batchRequest,
                     MockCosmosUtil.Serializer,
                     true,
-                    NoOpTrace.Singleton,
                     CancellationToken.None);
 
                 return new PartitionKeyRangeBatchExecutionResult(request.PartitionKeyRangeId, request.Operations, batchresponse);
             };
 
-        private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) => throw expectedException;
+        private BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, CancellationToken cancellationToken) =>
+        {
+            throw expectedException;
+        };
 
-        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, ITrace trace, CancellationToken cancellation) => Task.CompletedTask;
+        private BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) =>
+        {
+            return Task.CompletedTask;
+        };
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -75,35 +78,35 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesSize(int size)
         {
-            _ = new BatchAsyncStreamer(size, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(size, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesExecutor()
         {
-            _ = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, MockCosmosUtil.Serializer, null, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, MockCosmosUtil.Serializer, null, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesRetrier()
         {
-            _ = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, null);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, MockCosmosUtil.Serializer, this.Executor, null);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
-            _ = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, null, this.Executor, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, this.limiter, 1, null, this.Executor, this.Retrier);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesLimiter()
         {
-            _ = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, null, 1, null, this.Executor, this.Retrier);
+            BatchAsyncStreamer batchAsyncStreamer = new BatchAsyncStreamer(1, MaxBatchByteSize, this.TimerWheel, null, 1, null, this.Executor, this.Retrier);
         }
 
         [TestMethod]

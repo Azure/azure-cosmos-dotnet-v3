@@ -1,17 +1,17 @@
-﻿// ------------------------------------------------------------
+﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-// ------------------------------------------------------------
+//------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Tracing.TraceData
+namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
     using System.Net;
     using System.Net.Http;
     using Microsoft.Azure.Documents;
 
-    internal sealed class PointOperationStatisticsTraceDatum : TraceDatum
+    internal sealed class PointOperationStatistics : CosmosDiagnosticsInternal
     {
-        public PointOperationStatisticsTraceDatum(
+        public PointOperationStatistics(
             string activityId,
             HttpStatusCode statusCode,
             SubStatusCodes subStatusCode,
@@ -46,9 +46,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public string RequestSessionToken { get; }
         public string ResponseSessionToken { get; }
 
-        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
+        public override void Accept(CosmosDiagnosticsInternalVisitor cosmosDiagnosticsInternalVisitor)
         {
-            traceDatumVisitor.Visit(this);
+            cosmosDiagnosticsInternalVisitor.Visit(this);
+        }
+
+        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        {
+            return visitor.Visit(this);
         }
     }
 }

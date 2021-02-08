@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.Tests;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Tests for <see cref="GatewayAccountReader"/>.
@@ -61,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 additionalHeaders: new StoreRequestNameValueCollection(),
                 resourceType: ResourceType.Document,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                trace: NoOpTrace.Singleton,
+                diagnosticsContext: null,
                 cancellationToken: default);
 
             Assert.AreEqual(HttpStatusCode.Conflict, response.StatusCode);

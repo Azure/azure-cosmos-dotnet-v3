@@ -5,8 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Net;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// The cosmos item response
@@ -29,12 +27,12 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             T item,
-            ITrace trace)
+            CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
             this.Headers = headers;
             this.Resource = item;
-            this.Diagnostics = new CosmosTraceDiagnostics(trace);
+            this.Diagnostics = diagnostics;
         }
 
         /// <inheritdoc/>

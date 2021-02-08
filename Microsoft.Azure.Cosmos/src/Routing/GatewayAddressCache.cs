@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -432,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 additionalHeaders: headers,
                 resourceType: resourceType,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
+                diagnosticsContext: null,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =
@@ -510,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 additionalHeaders: headers,
                 resourceType: ResourceType.Document,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
+                diagnosticsContext: null,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =
@@ -585,22 +584,32 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static Protocol ProtocolFromString(string protocol)
         {
-            return (protocol.ToLowerInvariant()) switch
+            switch (protocol.ToLowerInvariant())
             {
-                RuntimeConstants.Protocols.HTTPS => Protocol.Https,
-                RuntimeConstants.Protocols.RNTBD => Protocol.Tcp,
-                _ => throw new ArgumentOutOfRangeException("protocol"),
-            };
+                case RuntimeConstants.Protocols.HTTPS:
+                    return Protocol.Https;
+
+                case RuntimeConstants.Protocols.RNTBD:
+                    return Protocol.Tcp;
+
+                default:
+                    throw new ArgumentOutOfRangeException("protocol");
+            }
         }
 
         private static string ProtocolString(Protocol protocol)
         {
-            return ((int)protocol) switch
+            switch ((int)protocol)
             {
-                (int)Protocol.Https => RuntimeConstants.Protocols.HTTPS,
-                (int)Protocol.Tcp => RuntimeConstants.Protocols.RNTBD,
-                _ => throw new ArgumentOutOfRangeException("protocol"),
-            };
+                case (int)Protocol.Https:
+                    return RuntimeConstants.Protocols.HTTPS;
+
+                case (int)Protocol.Tcp:
+                    return RuntimeConstants.Protocols.RNTBD;
+
+                default:
+                    throw new ArgumentOutOfRangeException("protocol");
+            }
         }
     }
 }

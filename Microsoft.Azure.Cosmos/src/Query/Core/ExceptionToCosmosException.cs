@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ExceptionToCosmosException
     {
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 requestCharge: 0,
                 retryAfter: null,
                 headers: null,
-                trace: NoOpTrace.Singleton,
+                diagnosticsContext: null,
                 innerException: exception);
         }
 
@@ -88,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 cosmosException.RequestCharge,
                 cosmosException.RetryAfter,
                 cosmosException.Headers,
-                cosmosException.Trace,
+                cosmosException.DiagnosticsContext,
                 cosmosException.Error,
                 cosmosException.InnerException);
         }

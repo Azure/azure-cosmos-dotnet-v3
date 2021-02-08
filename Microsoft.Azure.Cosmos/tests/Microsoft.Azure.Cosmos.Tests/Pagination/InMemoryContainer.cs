@@ -439,6 +439,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     responseStream,
                     requestCharge: 42,
                     activityId: Guid.NewGuid().ToString(),
+                    CosmosDiagnosticsContext.Create(default),
                     additionalHeaders: new Dictionary<string, string>()
                     {
                         { "test-header", "test-value" }

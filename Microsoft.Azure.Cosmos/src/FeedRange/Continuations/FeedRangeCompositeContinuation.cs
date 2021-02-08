@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -318,7 +317,6 @@ namespace Microsoft.Azure.Cosmos
                     max,
                     isMaxInclusive: false,
                     isMinInclusive: true),
-                NoOpTrace.Singleton,
                 forceRefresh);
 
             if (keyRanges.Count == 0)

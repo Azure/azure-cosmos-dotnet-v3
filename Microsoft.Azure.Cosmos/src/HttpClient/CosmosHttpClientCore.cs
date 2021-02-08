@@ -12,9 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -169,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            ITrace trace,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (uri == null)
@@ -200,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
                 CreateRequestMessage,
                 resourceType,
                 timeoutPolicy,
-                trace,
+                diagnosticsContext,
                 cancellationToken);
         }
 
@@ -208,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            ITrace trace,
+            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (createRequestMessageAsync == null)
@@ -219,16 +218,16 @@ namespace Microsoft.Azure.Cosmos
             return this.SendHttpHelperAsync(
                 createRequestMessageAsync,
                 resourceType,
+                diagnosticsContext ?? new CosmosDiagnosticsContextCore(),
                 timeoutPolicy,
-                trace,
                 cancellationToken);
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
+            CosmosDiagnosticsContext diagnosticsContext,
             HttpTimeoutPolicy timeoutPolicy,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
@@ -245,82 +244,81 @@ namespace Microsoft.Azure.Cosmos
                     using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                     cancellationTokenSource.CancelAfter(requestTimeout);
 
-                    using (ITrace helperTrace = trace.StartChild($"Execute Http With Timeout Policy: {timeoutPolicy.TimeoutPolicyName}", TraceComponent.Transport, Tracing.TraceLevel.Info))
+                    try
                     {
-                        try
+                        using (diagnosticsContext.CreateScope(nameof(CosmosHttpClientCore.SendHttpHelperAsync) + ":" + timeoutPolicy.TimeoutPolicyName))
                         {
                             return await this.ExecuteHttpHelperAsync(
                                 requestMessage,
                                 resourceType,
                                 cancellationTokenSource.Token);
                         }
-                        catch (Exception e)
+                    }
+                    catch (Exception e)
+                    {
+                        // Log the error message
+                        diagnosticsContext.AddDiagnosticsInternal(
+                              new PointOperationStatistics(
+                                  activityId: Trace.CorrelationManager.ActivityId.ToString(),
+                                  statusCode: HttpStatusCode.ServiceUnavailable,
+                                  subStatusCode: SubStatusCodes.Unknown,
+                                  responseTimeUtc: DateTime.UtcNow,
+                                  requestCharge: 0,
+                                  errorMessage: e.ToString(),
+                                  method: requestMessage.Method,
+                                  requestUri: requestMessage.RequestUri.OriginalString,
+                                  requestSessionToken: null,
+                                  responseSessionToken: null));
+
+                        bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
+                            !timeoutEnumerator.MoveNext(); // No more retries are configured
+
+                        switch (e)
                         {
-                            // Log the error message
-                            trace.AddDatum(
-                                "Error",
-                                new PointOperationStatisticsTraceDatum(
-                                      activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                      statusCode: HttpStatusCode.ServiceUnavailable,
-                                      subStatusCode: SubStatusCodes.Unknown,
-                                      responseTimeUtc: DateTime.UtcNow,
-                                      requestCharge: 0,
-                                      errorMessage: e.ToString(),
-                                      method: requestMessage.Method,
-                                      requestUri: requestMessage.RequestUri.OriginalString,
-                                      requestSessionToken: null,
-                                      responseSessionToken: null));
-
-                            bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
-                                !timeoutEnumerator.MoveNext(); // No more retries are configured
-
-                            switch (e)
-                            {
-                                case OperationCanceledException operationCanceledException:
-                                    // Throw if the user passed in cancellation was requested
-                                    if (cancellationToken.IsCancellationRequested)
-                                    {
-                                        throw;
-                                    }
-
-                                    // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
-                                    // the request timed out and was not user canceled operation.
-                                    if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
-                                    {
-                                        // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                                        string message =
-                                            $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
-                                        throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                            message,
-                                            innerException: operationCanceledException,
-                                            trace: helperTrace);
-                                    }
-
-                                    break;
-                                case WebException webException:
-                                    if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(requestMessage.Method) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
-                                    {
-                                        throw;
-                                    }
-
-                                    break;
-                                case HttpRequestException httpRequestException:
-                                    if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
-                                    {
-                                        throw;
-                                    }
-
-                                    break;
-                                default:
+                            case OperationCanceledException operationCanceledException:
+                                // Throw if the user passed in cancellation was requested
+                                if (cancellationToken.IsCancellationRequested)
+                                {
                                     throw;
-                            }
+                                }
+
+                                // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
+                                // the request timed out and was not user canceled operation.
+                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                {
+                                    // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
+                                    string message =
+                                        $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {Trace.CorrelationManager.ActivityId};";
+                                    throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                        message,
+                                        innerException: operationCanceledException,
+                                        diagnosticsContext: diagnosticsContext);
+                                }
+
+                                break;
+                            case WebException webException:
+                                if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(requestMessage.Method) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                {
+                                    throw;
+                                }
+
+                                break;
+                            case HttpRequestException httpRequestException:
+                                if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                {
+                                    throw;
+                                }
+
+                                break;
+                            default:
+                                throw;
                         }
                     }
                 }
 
                 if (delayForNextRequest != TimeSpan.Zero)
                 {
-                    using (ITrace delayTrace = trace.StartChild("Retry Delay", TraceComponent.Transport, Tracing.TraceLevel.Info))
+                    using (diagnosticsContext.CreateScope($"HttpRetryDelay; Delay:{delayForNextRequest} seconds; Current request timeout {requestTimeout}; TimeoutPolicy: {timeoutPolicy.TimeoutPolicyName}"))
                     {
                         await Task.Delay(delayForNextRequest);
                     }
@@ -336,7 +334,7 @@ namespace Microsoft.Azure.Cosmos
             DateTime sendTimeUtc = DateTime.UtcNow;
             Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
 
-            Guid requestedActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
+            Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
             this.eventSource.Request(
                 requestedActivityId,
                 localGuid,

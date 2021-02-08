@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -40,10 +39,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(GenerateSplitResponseAsync(itemBatchOperation))
-                .Returns(GenerateOkResponseAsync(itemBatchOperation));
+                .Returns(this.GenerateSplitResponseAsync(itemBatchOperation))
+                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<ContainerInternal> mockContainer = new Mock<ContainerInternal>();
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
-            mockContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
+            mockContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
             Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
             mockContainer.Setup(c => c.ClientContext).Returns(context.Object);
             context.Setup(c => c.DocumentClient).Returns(new ClientWithSplitDetection());
@@ -79,10 +79,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.ToResponseMessage().Trace);
+            Assert.IsNotNull(result.DiagnosticsContext);
+
+            string diagnosticsString = result.DiagnosticsContext.ToString();
+            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -102,10 +106,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(GenerateCacheStaleResponseAsync(itemBatchOperation))
-                .Returns(GenerateOkResponseAsync(itemBatchOperation));
+                .Returns(this.GenerateCacheStaleResponseAsync(itemBatchOperation))
+                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
@@ -116,9 +121,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                 new[]
-                {
-                    Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
-                },
+                    {
+                        Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
+                    },
                 string.Empty);
             mockContainer.Setup(x => x.GetRoutingMapAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(routingMap));
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(mockContainer.Object, mockedContext.Object, 20, BatchAsyncContainerExecutorCache.DefaultMaxBulkRequestBodySizeInBytes);
@@ -136,10 +141,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.ToResponseMessage().Trace);
+            Assert.IsNotNull(result.DiagnosticsContext);
+
+            string diagnosticsString = result.DiagnosticsContext.ToString();
+            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -159,10 +168,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(Generate429ResponseAsync(itemBatchOperation))
-                .Returns(GenerateOkResponseAsync(itemBatchOperation));
+                .Returns(this.Generate429ResponseAsync(itemBatchOperation))
+                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
@@ -193,10 +203,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
-            Assert.IsNotNull(result.ToResponseMessage().Trace);
+            Assert.IsNotNull(result.DiagnosticsContext);
+
+            string diagnosticsString = result.DiagnosticsContext.ToString();
+            Assert.IsTrue(diagnosticsString.Contains("PointOperationStatistics"), "Diagnostics might be missing");
         }
 
         [TestMethod]
@@ -216,9 +230,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
-                .Returns(GenerateOkResponseAsync(itemBatchOperation));
+                .Returns(this.GenerateOkResponseAsync(itemBatchOperation));
 
             mockedContext.Setup(c => c.SerializerCore).Returns(MockCosmosUtil.Serializer);
 
@@ -249,23 +264,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                     It.IsAny<Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()), Times.Once);
             Assert.AreEqual(HttpStatusCode.OK, result.StatusCode);
         }
 
-        private static async Task<ResponseMessage> GenerateResponseAsync(
-            ItemBatchOperation itemBatchOperation, 
-            HttpStatusCode httpStatusCode, 
-            SubStatusCodes subStatusCode)
+        private async Task<ResponseMessage> GenerateSplitResponseAsync(ItemBatchOperation itemBatchOperation)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
             ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
             results.Add(
-                new TransactionalBatchOperationResult(httpStatusCode)
+                new TransactionalBatchOperationResult(HttpStatusCode.Gone)
                 {
                     ETag = itemBatchOperation.Id,
-                    SubStatusCode = subStatusCode
+                    SubStatusCode = SubStatusCodes.PartitionKeyRangeGone
                 });
 
             arrayOperations[0] = itemBatchOperation;
@@ -276,53 +289,149 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
-                trace: NoOpTrace.Singleton,
-                cancellationToken: CancellationToken.None);
+            cancellationToken: CancellationToken.None);
 
-            ResponseMessage responseMessage = new ResponseMessage(httpStatusCode)
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
             {
                 Content = responseContent,
             };
 
-            using (responseMessage.Trace = Trace.GetRootTrace("Test Trace"))
-            {
-                responseMessage.Trace.AddDatum(
-                    "Point Operation Statistics",
-                    new PointOperationStatisticsTraceDatum(
-                    activityId: Guid.NewGuid().ToString(),
-                    statusCode: httpStatusCode,
-                    subStatusCode: subStatusCode,
-                    responseTimeUtc: DateTime.UtcNow,
-                    requestCharge: 0,
-                    errorMessage: string.Empty,
-                    method: HttpMethod.Get,
-                    requestUri: "http://localhost",
-                    requestSessionToken: null,
-                    responseSessionToken: null));
-            }
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.Gone,
+                subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: "http://localhost",
+                requestSessionToken: null,
+                responseSessionToken: null));
 
-            responseMessage.Headers.SubStatusCode = subStatusCode;
+            responseMessage.Headers.SubStatusCode = SubStatusCodes.PartitionKeyRangeGone;
             return responseMessage;
         }
 
-        private static Task<ResponseMessage> GenerateSplitResponseAsync(ItemBatchOperation itemBatchOperation)
+        private async Task<ResponseMessage> GenerateCacheStaleResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            return GenerateResponseAsync(itemBatchOperation, HttpStatusCode.Gone, SubStatusCodes.PartitionKeyRangeGone);
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+            ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
+            results.Add(
+                new TransactionalBatchOperationResult(HttpStatusCode.Gone)
+                {
+                    ETag = itemBatchOperation.Id,
+                    SubStatusCode = SubStatusCodes.NameCacheIsStale
+                });
+
+            arrayOperations[0] = itemBatchOperation;
+
+            MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+            _ = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                partitionKey: null,
+                operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                serializerCore: MockCosmosUtil.Serializer,
+            cancellationToken: CancellationToken.None);
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.Gone)
+            {
+                Content = responseContent,
+            };
+
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.Gone,
+                subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: "http://localhost",
+                requestSessionToken: null,
+                responseSessionToken: null));
+
+            responseMessage.Headers.SubStatusCode = SubStatusCodes.NameCacheIsStale;
+            return responseMessage;
         }
 
-        private static Task<ResponseMessage> GenerateCacheStaleResponseAsync(ItemBatchOperation itemBatchOperation)
+        private async Task<ResponseMessage> Generate429ResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            return GenerateResponseAsync(itemBatchOperation, HttpStatusCode.Gone, SubStatusCodes.NameCacheIsStale);
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+            ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
+            results.Add(
+                new TransactionalBatchOperationResult((HttpStatusCode) StatusCodes.TooManyRequests)
+                {
+                    ETag = itemBatchOperation.Id
+                });
+
+            arrayOperations[0] = itemBatchOperation;
+
+            MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+            _ = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                partitionKey: null,
+                operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                serializerCore: MockCosmosUtil.Serializer,
+            cancellationToken: CancellationToken.None);
+
+            ResponseMessage responseMessage = new ResponseMessage((HttpStatusCode)StatusCodes.TooManyRequests)
+            {
+                Content = responseContent,
+            };
+
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: (HttpStatusCode)StatusCodes.TooManyRequests,
+                subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: "http://localhost",
+                requestSessionToken: null,
+                responseSessionToken: null));
+
+            return responseMessage;
         }
 
-        private static Task<ResponseMessage> Generate429ResponseAsync(ItemBatchOperation itemBatchOperation)
+        private async Task<ResponseMessage> GenerateOkResponseAsync(ItemBatchOperation itemBatchOperation)
         {
-            return GenerateResponseAsync(itemBatchOperation, (HttpStatusCode)429, SubStatusCodes.Unknown);
-        }
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
+            ItemBatchOperation[] arrayOperations = new ItemBatchOperation[1];
+            results.Add(
+                new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                {
+                    ETag = itemBatchOperation.Id
+                });
 
-        private static Task<ResponseMessage> GenerateOkResponseAsync(ItemBatchOperation itemBatchOperation)
-        {
-            return GenerateResponseAsync(itemBatchOperation, HttpStatusCode.OK, SubStatusCodes.Unknown);
+            arrayOperations[0] = itemBatchOperation;
+
+            MemoryStream responseContent = await new BatchResponsePayloadWriter(results).GeneratePayloadAsync();
+
+            _ = await SinglePartitionKeyServerBatchRequest.CreateAsync(
+                partitionKey: null,
+                operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
+                serializerCore: MockCosmosUtil.Serializer,
+            cancellationToken: CancellationToken.None);
+
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
+            {
+                Content = responseContent,
+            };
+
+            responseMessage.DiagnosticsContext.AddDiagnosticsInternal(new PointOperationStatistics(
+                activityId: Guid.NewGuid().ToString(),
+                statusCode: HttpStatusCode.OK,
+                subStatusCode: SubStatusCodes.Unknown,
+                responseTimeUtc: DateTime.UtcNow,
+                requestCharge: 0,
+                errorMessage: string.Empty,
+                method: HttpMethod.Get,
+                requestUri: "http://localhost",
+                requestSessionToken: null,
+                responseSessionToken: null));
+
+            return responseMessage;
         }
 
         private static ItemBatchOperation CreateItem(string id)
@@ -333,7 +442,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operationIndex: 0,
                 partitionKey: new Cosmos.PartitionKey(id),
                 id: id,
-                resourceStream: MockCosmosUtil.Serializer.ToStream(myDocument));
+                resourceStream: MockCosmosUtil.Serializer.ToStream(myDocument),
+                diagnosticsContext: new CosmosDiagnosticsContextCore());
         }
 
         private class MyDocument
@@ -356,10 +466,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
-                            It.IsAny<ITrace>(),
                             It.Is<bool>(b => b == true) // Mocking only the refresh, if it doesn't get called, the test fails
                         )
-                ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
+                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
             }
 
             internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()

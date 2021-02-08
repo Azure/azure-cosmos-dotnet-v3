@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal static class QueryResponseFactory
@@ -53,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                         requestCharge: 0,
                         retryAfter: null,
                         headers: null,
-                        trace: NoOpTrace.Singleton,
+                        diagnosticsContext: null,
                         innerException: exception);
 
                     // Unknown exception type should become a 500
@@ -121,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     cosmosException.RequestCharge,
                     cosmosException.RetryAfter,
                     cosmosException.Headers,
-                    cosmosException.Trace,
+                    cosmosException.DiagnosticsContext,
                     cosmosException.Error,
                     cosmosException.InnerException),
                 requestCharge: queryResponseCore.RequestCharge,

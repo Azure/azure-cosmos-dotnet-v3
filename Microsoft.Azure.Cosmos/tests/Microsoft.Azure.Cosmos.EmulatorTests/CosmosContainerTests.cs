@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -150,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             string diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath)
@@ -172,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await container.ReadContainerAsync();
@@ -185,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
@@ -619,9 +618,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestCharge: response.Headers.RequestCharge,
                         retryAfter: default,
                         headers: response.Headers,
+                        diagnosticsContext: response.DiagnosticsContext,
                         error: default,
-                        innerException: default,
-                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
+                        innerException: default).ToCosmosResponseMessage(request);
                 }
 
                 return response;

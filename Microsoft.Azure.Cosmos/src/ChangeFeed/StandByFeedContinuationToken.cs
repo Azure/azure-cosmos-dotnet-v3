@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -21,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// </remarks>
     internal class StandByFeedContinuationToken
     {
-        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh);
+        internal delegate Task<IReadOnlyList<Documents.PartitionKeyRange>> PartitionKeyRangeCacheDelegate(string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh);
 
         private readonly string containerRid;
         private readonly PartitionKeyRangeCacheDelegate pkRangeCacheDelegate;
@@ -176,8 +175,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                             isMinInclusive: true,
                             isMaxInclusive: false),
-                        trace: NoOpTrace.Singleton,
-                        forceRefresh: false);
+                        false);
 
                 Debug.Assert(allRanges.Count != 0);
                 // Initial state for a scenario where user does not provide any initial continuation token.
@@ -221,7 +219,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     targetRange.Max,
                     isMaxInclusive: false,
                     isMinInclusive: true),
-                NoOpTrace.Singleton,
                 forceRefresh);
 
             if (keyRanges.Count == 0)

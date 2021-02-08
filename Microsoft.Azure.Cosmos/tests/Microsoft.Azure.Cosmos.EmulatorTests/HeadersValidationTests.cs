@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public class HeadersValidationTests
@@ -982,7 +981,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 true,
                 false);
             IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
-            IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(collectionId, fullRange, NoOpTrace.Singleton).Result;
+            IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(collectionId, fullRange).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collectionId, ranges.First().Id));
 
             string queryText = JsonConvert.SerializeObject(sqlQuerySpec);
@@ -1002,7 +1001,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 true,
                 false);
             IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
-            IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(collectionId, fullRange, NoOpTrace.Singleton).Result;
+            IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(collectionId, fullRange).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collectionId, ranges.First().Id));
 
             Task<DocumentServiceResponse> response = client.ReadFeedAsync(request, retryPolicy: null);

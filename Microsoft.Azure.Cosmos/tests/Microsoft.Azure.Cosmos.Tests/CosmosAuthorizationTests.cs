@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -266,7 +265,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 try
                 {
-                    await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                    await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                     Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
                 }
                 catch (CosmosException cosmosException)
@@ -289,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 try
                 {
-                    await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                    await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                     Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
                 }
                 catch (CosmosException cosmosException)
@@ -333,14 +332,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
-                string t1 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                string t1 = await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                 Assert.AreEqual(token1, t1);
 
                 // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
 
-                string t2 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                string t2 = await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                 Assert.AreEqual(token1, t2);
 
                 // Wait until the background refresh occurs.
@@ -349,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     await Task.Delay(500);
                 }
 
-                string t3 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                string t3 = await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                 Assert.AreEqual(token2, t3);
 
                 Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
@@ -379,23 +378,23 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore()));
 
                 // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore()));
 
                 // Token refreshes fails except for the first time, but the cached token will be served as long as it is valid.
                 await Task.Delay(TimeSpan.FromSeconds(3));
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore()));
 
                 // Cache token has expired, and it fails to refresh.
                 await Task.Delay(TimeSpan.FromSeconds(2));
 
                 try
                 {
-                    await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                    await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore());
                     Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
                 }
                 catch (CosmosException cosmosException)
@@ -454,7 +453,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Assert.AreEqual(
                 this.AccessToken.Token,
-                await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                await tokenCredentialCache.GetTokenAsync(new CosmosDiagnosticsContextCore()));
         }
 
         private sealed class TestTokenCredential : TokenCredential

@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class DocumentQueryClient : IDocumentQueryClient
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         async Task<CollectionCache> IDocumentQueryClient.GetCollectionCacheAsync()
         {
-            return await this.innerClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
+            return await this.innerClient.GetCollectionCacheAsync();
         }
 
         async Task<IRoutingMapProvider> IDocumentQueryClient.GetRoutingMapProviderAsync()

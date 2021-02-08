@@ -24,15 +24,19 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             Stream content,
             double requestCharge,
             string activityId,
+            CosmosDiagnosticsContext diagnostics,
             IReadOnlyDictionary<string, string> additionalHeaders,
             ReadFeedState state)
             : base(requestCharge, activityId, additionalHeaders, state)
         {
             this.Content = content ?? throw new ArgumentNullException(nameof(content));
+            this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
         }
 
         public Stream Content { get; }
 
-        protected override ImmutableHashSet<string> DerivedClassBannedHeaders => BannedHeaders;
+        public CosmosDiagnosticsContext Diagnostics { get; }
+
+        protected override ImmutableHashSet<string> DerivedClassBannedHeaders => ReadFeedPage.BannedHeaders;
     }
 }

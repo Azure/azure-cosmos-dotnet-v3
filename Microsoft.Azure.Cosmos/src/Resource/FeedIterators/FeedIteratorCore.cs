@@ -66,13 +66,18 @@ namespace Microsoft.Azure.Cosmos
             return this.ReadNextAsync(NoOpTrace.Singleton);
         }
 
-        public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
-            return this.ReadNextInternalAsync(trace, cancellationToken);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(this.requestOptions);
+            using (diagnosticsContext.GetOverallScope())
+            {
+                return await this.ReadNextInternalAsync(trace, diagnosticsContext, cancellationToken);
+            }
         }
 
         private async Task<ResponseMessage> ReadNextInternalAsync(
             ITrace trace,
+            CosmosDiagnosticsContext diagnostics,
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -107,6 +112,7 @@ namespace Microsoft.Azure.Cosmos
                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                    }
                },
+               diagnosticsContext: diagnostics,
                trace: trace,
                cancellationToken: cancellationToken);
 
@@ -158,15 +164,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A query response from cosmos service</returns>
         public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.ReadNextWithRootTraceAsync(cancellationToken));
-        }
-
-        private async Task<FeedResponse<T>> ReadNextWithRootTraceAsync(CancellationToken cancellationToken = default)
-        {
-            using (ITrace trace = Trace.GetRootTrace("FeedIteratorCore ReadNextAsync", TraceComponent.Unknown, TraceLevel.Info))
-            {
-                return await this.ReadNextAsync(trace, cancellationToken);
-            }
+            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
         }
 
         public override async Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
