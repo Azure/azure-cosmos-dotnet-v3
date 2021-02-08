@@ -658,22 +658,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator(
                 this.Container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
+                    changeFeedMode,
                     changeFeedRequestOptions),
                 this.EncryptionProcessor);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
+                    changeFeedMode,
                     changeFeedRequestOptions),
                 this.ResponseFactory);
         }

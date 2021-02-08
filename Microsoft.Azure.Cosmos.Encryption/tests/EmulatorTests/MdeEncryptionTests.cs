@@ -106,6 +106,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = CosmosEncryptionType.Deterministic,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_BoolFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_FloatFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                },
             };
 
 
@@ -469,6 +485,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
+            // string/int
             QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
 
@@ -488,10 +505,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 queryDefinition:withEncryptedParameter,
                 expectedDoc: expectedDoc);
 
+            // bool and float type
 
-            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
+                    "SELECT * FROM c where c.Sensitive_BoolFormat = @Sensitive_BoolFormat AND c.Sensitive_FloatFormat = @Sensitive_FloatFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_BoolFormat",
+                    testDoc1.Sensitive_BoolFormat,
+                    "/Sensitive_BoolFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_FloatFormat",
+                    testDoc1.Sensitive_FloatFormat,
+                    "/Sensitive_FloatFormat");
+
+            expectedDoc = new TestDoc(testDoc1);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                MdeEncryptionTests.encryptionContainer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
 
             // with encrypted and non encrypted properties
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            
             withEncryptedParameter =
                     MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.NonSensitive = @NonSensitive AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
@@ -1028,7 +1065,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental);
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
@@ -1391,7 +1429,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_StringFormat = Guid.NewGuid().ToString(),
                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
                     Sensitive_DecimalFormat = 472.3108m,
-                    Sensitive_IntArray = new int[1] { 999 },
+                    Sensitive_IntArray = new int[2] { 999, 1000 },
                     Sensitive_IntFormat = 1965,
                     Sensitive_BoolFormat = true,
                     Sensitive_FloatFormat = 8923.124f,
