@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
@@ -30,8 +31,8 @@ namespace Microsoft.Azure.Cosmos
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private ClientCollectionCache ClientCollectionCache { get; set; }
-        private PartitionKeyRangeCache PartitionKeyRangeCache { get; set; }
+        private ClientCollectionCache ClientCollectionCache;
+        private PartitionKeyRangeCache PartitionKeyRangeCache;
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -298,12 +299,12 @@ namespace Microsoft.Azure.Cosmos
                                                                         clientCollectionCache: clientCollectionCache, 
                                                                         refreshCache: false);
 
-                if (isSuccess)
-                {
-                    string localSessionToken = sessionContainer.ResolvePartitionLocalSessionToken(request, partitionKeyRange.Id).ConvertToString();
+                if (isSuccess && sessionContainer is SessionContainer gatewaySessionContainer)
+                {   
+                    string localSessionToken = gatewaySessionContainer.ResolvePartitionLocalSessionTokenForGateway(request, partitionKeyRange.Id);
                     if (!string.IsNullOrEmpty(localSessionToken))
                     {
-                        return new Tuple<bool, string>(true, partitionKeyRange.Id + ":" + localSessionToken);
+                        return new Tuple<bool, string>(true, localSessionToken);
                     }
                 }
             }
