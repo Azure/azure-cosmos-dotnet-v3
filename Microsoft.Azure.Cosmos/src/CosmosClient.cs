@@ -1097,6 +1097,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 tasks.Add(CosmosClient.InitializeFeedRangeAsync(container, feedRange, cancellationToken));
             }
+
+            await Task.WhenAll(tasks);
         }
 
         private static async Task InitializeFeedRangeAsync(ContainerInternal container, FeedRange feedRange, CancellationToken cancellationToken = default)
