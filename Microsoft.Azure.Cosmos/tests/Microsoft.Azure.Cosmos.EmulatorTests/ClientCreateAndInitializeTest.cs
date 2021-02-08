@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -49,12 +50,33 @@
         [TestMethod]
         public async Task CreateAndInitializeTest()
         {
+            int httpCallsMade = 0;
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    httpCallsMade++;
+                    return null;
+                }
+            };
+
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)> 
             { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
 
-            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, null, containers);
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper)
+            };
+
+            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, cosmosClientOptions, containers);
             Assert.IsNotNull(cosmosClient);
+            int httpCallsMadeAfterCreation = httpCallsMade;
+
+            ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new PartitionKey("Status1"));
+            Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
+            cosmosClient.Dispose();
         }
     }
 }
