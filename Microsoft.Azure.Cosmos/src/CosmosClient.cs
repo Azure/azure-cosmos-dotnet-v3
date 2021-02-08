@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Net;
     using System.Text;
     using System.Threading;
@@ -255,6 +256,51 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
+        /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
+        /// <param name="containers">(Optional) Containers to be initialized</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, 
+                                                                        string authKeyOrResourceToken,
+                                                                        CosmosClientOptions cosmosClientOptions = null,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers = null,
+                                                                        CancellationToken cancellationToken = default)
+        {
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint, 
+                                                         authKeyOrResourceToken, 
+                                                         cosmosClientOptions);
+
+            try
+            {
+                List<Task> tasks = new List<Task>();
+                foreach ((string databaseId, string containerId) in containers)
+                {
+                    tasks.Add(cosmosClient.InitializeContainerAsync(databaseId, containerId, cancellationToken));
+                }
+
+                await Task.WhenAll(tasks);
+            }
+            catch (CosmosException ex)
+            {
+                cosmosClient.Dispose();
+                throw ex;
+            }
+
+            return cosmosClient;
         }
 
         /// <summary>
@@ -1040,6 +1086,34 @@ namespace Microsoft.Azure.Cosmos
                queryDefinition: queryDefinition,
                continuationToken: continuationToken,
                options: requestOptions);
+        }
+
+        private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
+        {
+            ContainerInternal container = (ContainerInternal)this.GetContainer(databaseId, containerId);
+            IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync(cancellationToken);
+            List<Task> tasks = new List<Task>();
+            foreach (FeedRange feedRange in feedRanges)
+            {
+                tasks.Add(CosmosClient.InitializeFeedRangeAsync(container, feedRange, cancellationToken));
+            }
+        }
+
+        private static async Task InitializeFeedRangeAsync(ContainerInternal container, FeedRange feedRange, CancellationToken cancellationToken = default)
+        {
+            // Do a dummy querry for each Partition Key Range to warm up the caches and connections
+            string guidToCheck = Guid.NewGuid().ToString();
+            QueryDefinition queryDefinition = new QueryDefinition($"select * from c where c.id = '{guidToCheck}'");
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(feedRange,
+                                                                                    queryDefinition,
+                                                                                    continuationToken: null,
+                                                                                    requestOptions: new QueryRequestOptions() { }))
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    await feedIterator.ReadNextAsync(cancellationToken);
+                }
+            }
         }
 
         /// <summary>
