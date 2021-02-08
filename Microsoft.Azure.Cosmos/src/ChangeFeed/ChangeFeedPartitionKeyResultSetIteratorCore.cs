@@ -121,7 +121,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 },
                 feedRange: this.changeFeedStartFrom.FeedRange,
                 streamPayload: default,
-                diagnosticsContext: default,
                 trace: trace,
                 cancellationToken: cancellationToken);
 

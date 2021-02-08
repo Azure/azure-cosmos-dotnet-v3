@@ -5,16 +5,15 @@
 namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
-    internal sealed class CosmosDiagnosticsTraceDatum : TraceDatum
+    internal sealed class CpuHistoryTraceDatum : TraceDatum
     {
-        public CosmosDiagnosticsInternal CosmosDiagnostics { get; }
-
-        public CosmosDiagnosticsTraceDatum(CosmosDiagnosticsInternal cosmosDiagnostics)
+        public CpuHistoryTraceDatum(Documents.Rntbd.CpuLoadHistory cpuLoadHistory)
         {
-            this.CosmosDiagnostics = cosmosDiagnostics ?? throw new ArgumentNullException(nameof(cosmosDiagnostics));
+            this.Value = cpuLoadHistory ?? throw new ArgumentNullException(nameof(cpuLoadHistory));
         }
+
+        public Documents.Rntbd.CpuLoadHistory Value { get; }
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
