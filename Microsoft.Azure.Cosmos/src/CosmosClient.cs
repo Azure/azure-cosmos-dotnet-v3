@@ -268,38 +268,141 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
-        /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="containers">(Optional) Containers to be initialized</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
-        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, 
+        /// <example>
+        /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and 2 containers in the account are initialized
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Microsoft.Azure.Cosmos;
+        /// List<(string, string)> containersToInitialize = new List<(string, string)>
+        /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
+        /// 
+        /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("account-endpoint-from-portal", 
+        ///                                                                         "account-key-from-portal",
+        ///                                                                         containersToInitialize)
+        /// 
+        /// // Dispose cosmosClient at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, 
                                                                         string authKeyOrResourceToken,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
-                                                                        IReadOnlyList<(string databaseId, string containerId)> containers = null,
                                                                         CancellationToken cancellationToken = default)
         {
+            if (containers == null)
+            {
+                throw new ArgumentNullException(nameof(containers));
+            }
+
             CosmosClient cosmosClient = new CosmosClient(accountEndpoint, 
                                                          authKeyOrResourceToken, 
                                                          cosmosClientOptions);
 
-            try
-            {
-                List<Task> tasks = new List<Task>();
-                foreach ((string databaseId, string containerId) in containers)
-                {
-                    tasks.Add(cosmosClient.InitializeContainerAsync(databaseId, containerId, cancellationToken));
-                }
+            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            return cosmosClient;
+        }
 
-                await Task.WhenAll(tasks);
-            }
-            catch (CosmosException ex)
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
+        /// <param name="containers">(Optional) Containers to be initialized</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+        /// <example>
+        /// The CosmosClient is created with the ConnectionString and 2 containers in the account are initialized
+        /// <code language="c#">
+        /// <![CDATA[
+        /// using Microsoft.Azure.Cosmos;
+        /// List<(string, string)> containersToInitialize = new List<(string, string)>
+        /// { ("DatabaseName1", "ContainerName1"), ("DatabaseName2", "ContainerName2") };
+        /// 
+        /// CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("connection-string-from-portal",
+        ///                                                                         containersToInitialize)
+        /// 
+        /// // Dispose cosmosClient at application exit
+        /// ]]>
+        /// </code>
+        /// </example>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
+                                                                        CosmosClientOptions cosmosClientOptions = null,
+                                                                        CancellationToken cancellationToken = default)
+        {
+            if (containers == null)
             {
-                cosmosClient.Dispose();
-                throw ex;
+                throw new ArgumentNullException(nameof(containers));
             }
 
+            CosmosClient cosmosClient = new CosmosClient(connectionString,
+                                                         cosmosClientOptions);
+
+            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
+            return cosmosClient;
+        }
+
+        /// <summary>
+        /// Creates a new CosmosClient with the account endpoint URI string and TokenCredential.
+        /// In addition to that it initializes the client with containers provided i.e The SDK warms up the caches and 
+        /// connections before the first call to the service is made. Use this to obtain lower latency while startup of your application.
+        /// CosmosClient is thread-safe. Its recommended to maintain a single instance of CosmosClient per lifetime 
+        /// of the application which enables efficient connection management and performance. Please refer to the
+        /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
+        /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
+        /// <param name="containers">(Optional) Containers to be initialized</param>
+        /// <param name="cosmosClientOptions">(Optional) client options</param>
+        /// <param name="cancellationToken">(Optional) Cancellation Token</param>
+        /// <returns>
+        /// A CosmosClient object.
+        /// </returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+                                                                        TokenCredential tokenCredential,
+                                                                        IReadOnlyList<(string databaseId, string containerId)> containers,
+                                                                        CosmosClientOptions cosmosClientOptions = null,
+                                                                        CancellationToken cancellationToken = default)
+        {
+            if (containers == null)
+            {
+                throw new ArgumentNullException(nameof(containers));
+            }
+
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
+                                                         tokenCredential,
+                                                         cosmosClientOptions);
+
+            await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
             return cosmosClient;
         }
 
@@ -1088,6 +1191,26 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
+        private Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers, 
+                                          CancellationToken cancellationToken)
+        {
+            try
+            {
+                List<Task> tasks = new List<Task>();
+                foreach ((string databaseId, string containerId) in containers)
+                {
+                    tasks.Add(this.InitializeContainerAsync(databaseId, containerId, cancellationToken));
+                }
+
+                return Task.WhenAll(tasks);
+            }
+            catch
+            {
+                this.Dispose();
+                throw;
+            }
+        }
+
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
         {
             ContainerInternal container = (ContainerInternal)this.GetContainer(databaseId, containerId);
@@ -1113,7 +1236,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 while (feedIterator.HasMoreResults)
                 {
-                    await feedIterator.ReadNextAsync(cancellationToken);
+                    using ResponseMessage response = await feedIterator.ReadNextAsync(cancellationToken);
+                    response.EnsureSuccessStatusCode();
                 }
             }
         }

@@ -7,6 +7,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -61,7 +62,7 @@
             };
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)> 
+            List<(string, string)> containers = new List<(string, string)> 
             { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
@@ -69,13 +70,46 @@
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper)
             };
 
-            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, cosmosClientOptions, containers);
+            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers, cosmosClientOptions);
             Assert.IsNotNull(cosmosClient);
             int httpCallsMadeAfterCreation = httpCallsMade;
 
             ContainerInternal container = (ContainerInternal)cosmosClient.GetContainer("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer");
-            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new PartitionKey("Status1"));
+            ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>("1", new Cosmos.PartitionKey("Status1"));
             Assert.AreEqual(httpCallsMade, httpCallsMadeAfterCreation);
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(HttpRequestException))]
+        public async Task AuthIncorrectTest()
+        {
+            List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)>
+            { ("ClientCreateAndInitializeDatabase", "ClientCreateAndInitializeContainer")};
+            string authKey = TestCommon.GetAccountInfo().authKey;
+            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync("https://127.0.0.1:0000/", authKey, containers);
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(CosmosException))]
+        public async Task DatabaseIncorrectTest()
+        {
+            List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)>
+            { ("IncorrectDatabase", "ClientCreateAndInitializeContainer")};
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers);
+            cosmosClient.Dispose();
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(CosmosException))]
+        public async Task ContainerIncorrectTest()
+        {
+            List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)>
+            { ("ClientCreateAndInitializeDatabase", "IncorrectContainer")};
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers);
             cosmosClient.Dispose();
         }
     }
