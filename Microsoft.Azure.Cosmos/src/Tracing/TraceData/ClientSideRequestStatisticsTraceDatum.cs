@@ -7,9 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Text;
     using Microsoft.Azure.Documents;
 
-    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum
+    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
         private readonly object lockObject = new object();
         private readonly long clientSideRequestStatisticsCreateTime;
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime { get; }
 
-        public List<Uri> ContactedReplicas { get; }
+        public List<Uri> ContactedReplicas { get; set; }
 
         public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
 
@@ -201,6 +202,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
+        }
+
+        public void AppendToBuilder(StringBuilder stringBuilder)
+        {
+            throw new NotImplementedException();
         }
 
         public readonly struct AddressResolutionStatistics
