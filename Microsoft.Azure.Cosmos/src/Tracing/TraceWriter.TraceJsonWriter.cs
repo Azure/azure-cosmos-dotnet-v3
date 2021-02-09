@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("component");
                 writer.WriteStringValue(trace.Component.ToString());
 
-#if false
+#if INTERNAL
                 writer.WriteFieldName("caller information");
                 writer.WriteObjectStart();
 

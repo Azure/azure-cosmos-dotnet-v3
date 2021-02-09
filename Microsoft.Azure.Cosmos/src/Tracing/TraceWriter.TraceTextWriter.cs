@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.Write("Component");
                 writer.Write(space);
 
-#if false
+#if INTERNAL
                 writer.Write(trace.CallerInfo.MemberName);
                 writer.Write('@');
                 writer.Write(trace.CallerInfo.FilePath.Split('\\').Last());
