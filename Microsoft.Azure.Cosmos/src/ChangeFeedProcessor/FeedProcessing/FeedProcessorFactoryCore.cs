@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedProcessorOptions = changeFeedProcessorOptions ?? throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
             this.leaseCheckpointer = leaseCheckpointer ?? throw new ArgumentNullException(nameof(leaseCheckpointer));
-            this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
         }
 
         public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer)
