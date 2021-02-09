@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
@@ -36,12 +38,35 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override string ToString()
         {
-            return $"User Agent: {this.UserAgent} {Environment.NewLine}{TraceWriter.TraceToText(this.Value)}";
+            return this.ToJsonString();
         }
 
         public override TimeSpan GetClientElapsedTime()
         {
             return this.Value.Duration;
+        }
+
+        private string ToJsonString()
+        {
+            ReadOnlyMemory<byte> utf8String = this.WriteTraceToJsonWriter(JsonSerializationFormat.Text);
+            return Encoding.UTF8.GetString(utf8String.Span);
+        }
+
+        private ReadOnlyMemory<byte> WriteTraceToJsonWriter(JsonSerializationFormat jsonSerializationFormat)
+        {
+            IJsonWriter jsonTextWriter = JsonWriter.Create(jsonSerializationFormat);
+
+            jsonTextWriter.WriteObjectStart();
+
+            jsonTextWriter.WriteFieldName("User Agent");
+            jsonTextWriter.WriteStringValue(this.UserAgent);
+
+            jsonTextWriter.WriteFieldName("Traces");
+            TraceWriter.WriteTrace(jsonTextWriter, this.Value);
+
+            jsonTextWriter.WriteObjectEnd();
+
+            return jsonTextWriter.GetResult();
         }
     }
 }
