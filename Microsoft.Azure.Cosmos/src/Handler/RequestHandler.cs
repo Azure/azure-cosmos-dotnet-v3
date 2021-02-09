@@ -49,6 +49,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (ITrace childTrace = request.Trace.StartChild("Send Async", TraceComponent.RequestHandler, TraceLevel.Info))
             {
+                request.Trace = childTrace;
+
                 return await this.InnerHandler.SendAsync(request, cancellationToken);
             }
         }

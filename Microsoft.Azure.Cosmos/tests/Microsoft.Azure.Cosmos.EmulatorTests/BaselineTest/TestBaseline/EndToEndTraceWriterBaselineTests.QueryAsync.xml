@@ -38,11 +38,14 @@
     │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │               │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │               │                   (
-    │               │                       [Client Side Request Stats]
-    │               │                       Redacted To Not Change The Baselines From Run To Run
-    │               │                   )
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -57,11 +60,14 @@
     │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │               │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │               │                   (
-    │               │                       [Client Side Request Stats]
-    │               │                       Redacted To Not Change The Baselines From Run To Run
-    │               │                   )
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -76,11 +82,14 @@
     │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │               │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │               │                   (
-    │               │                       [Client Side Request Stats]
-    │               │                       Redacted To Not Change The Baselines From Run To Run
-    │               │                   )
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
         └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -95,11 +104,14 @@
                     │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                     │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
                     │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                    │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-                    │                   (
-                    │                       [Client Side Request Stats]
-                    │                       Redacted To Not Change The Baselines From Run To Run
-                    │                   )
+                    │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                    │                               (
+                    │                                   [Client Side Request Stats]
+                    │                                   Redacted To Not Change The Baselines From Run To Run
+                    │                               )
                     └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -243,15 +255,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -353,15 +395,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -463,15 +535,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -573,15 +675,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -649,11 +781,14 @@
     │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │               │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │               │                   (
-    │               │                       [Client Side Request Stats]
-    │               │                       Redacted To Not Change The Baselines From Run To Run
-    │               │                   )
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -668,11 +803,14 @@
     │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │               │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │               │                   (
-    │               │                       [Client Side Request Stats]
-    │               │                       Redacted To Not Change The Baselines From Run To Run
-    │               │                   )
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -687,11 +825,14 @@
     │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │               │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │               │                   (
-    │               │                       [Client Side Request Stats]
-    │               │                       Redacted To Not Change The Baselines From Run To Run
-    │               │                   )
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
     │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
         └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -706,11 +847,14 @@
                     │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                     │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
                     │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                    │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-                    │                   (
-                    │                       [Client Side Request Stats]
-                    │                       Redacted To Not Change The Baselines From Run To Run
-                    │                   )
+                    │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                    │                               (
+                    │                                   [Client Side Request Stats]
+                    │                                   Redacted To Not Change The Baselines From Run To Run
+                    │                               )
                     └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -854,15 +998,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -964,15 +1138,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -1074,15 +1278,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -1184,15 +1418,45 @@
                               "data": {},
                               "children": [
                                 {
-                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                  "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
+                                  "component": "RequestHandler",
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
                                 }
                               ]
                             }
@@ -1263,11 +1527,14 @@
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │                   │                   (
-    │                   │                       [Client Side Request Stats]
-    │                   │                       Redacted To Not Change The Baselines From Run To Run
-    │                   │                   )
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1283,11 +1550,14 @@
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │                   │                   (
-    │                   │                       [Client Side Request Stats]
-    │                   │                       Redacted To Not Change The Baselines From Run To Run
-    │                   │                   )
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1303,11 +1573,14 @@
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │                   │                   (
-    │                   │                       [Client Side Request Stats]
-    │                   │                       Redacted To Not Change The Baselines From Run To Run
-    │                   │                   )
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1323,11 +1596,14 @@
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
                         │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                        │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-                        │                   (
-                        │                       [Client Side Request Stats]
-                        │                       Redacted To Not Change The Baselines From Run To Run
-                        │                   )
+                        │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                        │                               (
+                        │                                   [Client Side Request Stats]
+                        │                                   Redacted To Not Change The Baselines From Run To Run
+                        │                               )
                         └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -1479,15 +1755,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
@@ -1599,15 +1905,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
@@ -1719,15 +2055,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
@@ -1839,15 +2205,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
@@ -1920,11 +2316,14 @@
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │                   │                   (
-    │                   │                       [Client Side Request Stats]
-    │                   │                       Redacted To Not Change The Baselines From Run To Run
-    │                   │                   )
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1940,11 +2339,14 @@
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │                   │                   (
-    │                   │                       [Client Side Request Stats]
-    │                   │                       Redacted To Not Change The Baselines From Run To Run
-    │                   │                   )
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1960,11 +2362,14 @@
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-    │                   │                   (
-    │                   │                       [Client Side Request Stats]
-    │                   │                       Redacted To Not Change The Baselines From Run To Run
-    │                   │                   )
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
     └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1980,11 +2385,14 @@
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
                         │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
-                        │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
-                        │                   (
-                        │                       [Client Side Request Stats]
-                        │                       Redacted To Not Change The Baselines From Run To Run
-                        │                   )
+                        │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                        │                               (
+                        │                                   [Client Side Request Stats]
+                        │                                   Redacted To Not Change The Baselines From Run To Run
+                        │                               )
                         └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
@@ -2136,15 +2544,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
@@ -2256,15 +2694,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
@@ -2376,15 +2844,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
@@ -2496,15 +2994,45 @@
                                   "data": {},
                                   "children": [
                                     {
-                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "Transport",
+                                      "component": "RequestHandler",
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {
-                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                      },
-                                      "children": []
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
                                     }
                                   ]
                                 }
