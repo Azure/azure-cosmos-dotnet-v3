@@ -7,7 +7,9 @@
 4. Allocate a VM in the same region as the Cosmos account. Recommend Standard F4s_v2 (4 vcpus, 8 GiB memory). Anything larger might result in request being throttled.
 5. Clone the github repo to the VM. 
 6. Follow the [Running on linux](linux) or [Running on Windows](windows) sections below.
-7. The concurrency changed to ensure the request P99 latency is completing is under 10ms to match SLA requirements. 
+7. The concurrency changed to ensure the request P99 latency is completing is under 10ms to match SLA requirements.
+8. After the run the results will be published to the runsummary container. 
+9. It's recommended to run the project at least 3 times per a commit to average the numbers to get a solid baseline to compare commits.
 
 ## Sample tool usage
 ```
