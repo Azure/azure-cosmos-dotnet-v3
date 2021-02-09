@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -44,7 +45,8 @@ namespace Microsoft.Azure.Cosmos
                 uri: serviceEndpoint,
                 additionalHeaders: headers,
                 resourceType: ResourceType.DatabaseAccount,
-                diagnosticsContext: null,
+                timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))

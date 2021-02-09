@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// FeedRange that represents an effective partition key range.
@@ -29,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
 
         public Documents.Routing.Range<string> Range { get; }
 
-        public override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
+        internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
@@ -37,43 +38,74 @@ namespace Microsoft.Azure.Cosmos
             return Task.FromResult(new List<Documents.Routing.Range<string>>() { this.Range });
         }
 
-        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        internal override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             CancellationToken cancellationToken)
         {
-            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(containerRid, this.Range, forceRefresh: false);
+            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                containerRid, 
+                this.Range,
+                NoOpTrace.Singleton,
+                forceRefresh: false);
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 
-        public override void Accept(IFeedRangeVisitor visitor)
+        internal override void Accept(IFeedRangeVisitor visitor)
         {
             visitor.Visit(this);
         }
 
-        public override void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input)
+        internal override void Accept<TInput>(IFeedRangeVisitor<TInput> visitor, TInput input)
         {
             visitor.Visit(this, input);
         }
 
-        public override Task<TResult> AcceptAsync<TResult>(
+        internal override TOutput Accept<TInput, TOutput>(IFeedRangeVisitor<TInput, TOutput> visitor, TInput input)
+        {
+            return visitor.Visit(this, input);
+        }
+
+        internal override Task<TResult> AcceptAsync<TResult>(
             IFeedRangeAsyncVisitor<TResult> visitor,
             CancellationToken cancellationToken = default)
         {
             return visitor.VisitAsync(this, cancellationToken);
         }
 
-        public override Task<TResult> AcceptAsync<TResult, TArg>(
+        internal override Task<TResult> AcceptAsync<TResult, TArg>(
             IFeedRangeAsyncVisitor<TResult, TArg> visitor,
             TArg argument,
             CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
 
         public override string ToString() => this.Range.ToString();
 
-        public override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer)
+        internal override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer)
         {
             return transformer.Visit(this);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as FeedRangeEpk);
+        }
+
+        public bool Equals(FeedRangeEpk other)
+        {
+            return (other != null)
+                && this.Range.Min.Equals(other.Range.Min)
+                && this.Range.Max.Equals(other.Range.Max)
+                && this.Range.IsMinInclusive.Equals(other.Range.IsMinInclusive)
+                && this.Range.IsMaxInclusive.Equals(other.Range.IsMaxInclusive);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.Range.Min.GetHashCode()
+                ^ this.Range.Max.GetHashCode()
+                ^ this.Range.IsMinInclusive.GetHashCode()
+                ^ this.Range.IsMaxInclusive.GetHashCode();
         }
     }
 }

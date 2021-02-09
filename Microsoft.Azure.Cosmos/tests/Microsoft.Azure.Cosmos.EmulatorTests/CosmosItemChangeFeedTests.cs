@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -26,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -180,11 +181,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string corruptedTokenSerialized = JsonConvert.SerializeObject(corruptedTokens);
 
             ContainerInternal itemsCore = this.Container;
-            FeedIterator setIteratorNew =
+            using FeedIterator setIteratorNew =
                 itemsCore.GetStandByFeedIterator(corruptedTokenSerialized);
 
-            ResponseMessage responseMessage =
-                    await setIteratorNew.ReadNextAsync(this.cancellationToken);
+            using ResponseMessage responseMessage = await setIteratorNew.ReadNextAsync(this.cancellationToken);
 
             Assert.Fail("Should have thrown.");
         }
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             await this.CreateRandomItems(this.Container, 2, randomPartitionKey: true);
             ContainerInternal itemsCore = this.Container;
-            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
+            using FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
 
             while (feedIterator.HasMoreResults)
             {
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 StandByFeedIteratorRequestOptions requestOptions = new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue };
 
-                FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
+                using FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(continuationToken, requestOptions: requestOptions);
                 using (ResponseMessage responseMessage =
                     await feedIterator.ReadNextAsync(this.cancellationToken))
                 {
@@ -280,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<CompositeContinuationToken> previousToken = null;
             await this.CreateRandomItems(this.LargerContainer, expected, randomPartitionKey: true);
             ContainerInternal itemsCore = this.LargerContainer;
-            FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
+            using FeedIterator feedIterator = itemsCore.GetStandByFeedIterator(maxItemCount: 1, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
             while (true)
             {
                 using (ResponseMessage responseMessage =
@@ -315,60 +315,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(iterator.Iteration > 1);
                 Assert.AreEqual(responseMessage.StatusCode, System.Net.HttpStatusCode.NotModified);
             }
-        }
-
-        [TestMethod]
-        public async Task GetChangeFeedTokensAsync_MatchesPkRanges()
-        {
-            int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerInternal itemsCore = this.LargerContainer;
-            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
-            Assert.AreEqual(pkRangesCount, tokens.Count());
-        }
-
-        [TestMethod]
-        public async Task GetChangeFeedTokensAsync_AllowsParallelProcessing()
-        {
-            int pkRangesCount = (await this.LargerContainer.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.LargerContainer.LinkUri)).Count;
-            ContainerInternal itemsCore = this.LargerContainer;
-            IEnumerable<string> tokens = await itemsCore.GetChangeFeedTokensAsync();
-            Assert.IsTrue(pkRangesCount > 1, "Should have created a multi partition container.");
-            Assert.AreEqual(pkRangesCount, tokens.Count());
-            int totalDocuments = 200;
-            await this.CreateRandomItems(this.LargerContainer, totalDocuments, randomPartitionKey: true);
-            List<Task<int>> tasks = tokens.Select(token => Task.Run(async () =>
-            {
-                int count = 0;
-                FeedIterator iteratorForToken =
-                    itemsCore.GetStandByFeedIterator(continuationToken: token, requestOptions: new StandByFeedIteratorRequestOptions() { StartTime = DateTime.MinValue });
-                while (true)
-                {
-                    using (ResponseMessage responseMessage =
-                    await iteratorForToken.ReadNextAsync(this.cancellationToken))
-                    {
-                        if (!responseMessage.IsSuccessStatusCode)
-                        {
-                            break;
-                        }
-
-                        Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(responseMessage.Content).Data;
-                        count += response.Count;
-                    }
-                }
-
-                return count;
-
-            })).ToList();
-
-            await Task.WhenAll(tasks);
-
-            int documentsRead = 0;
-            foreach (Task<int> task in tasks)
-            {
-                documentsRead += task.Result;
-            }
-
-            Assert.AreEqual(totalDocuments, documentsRead);
         }
 
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
@@ -408,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 id = Guid.NewGuid().ToString(),
                 description = "CreateRandomToDoActivity",
-                status = pk,
+                pk = pk,
                 taskNum = 42,
                 cost = double.MaxValue
             };
@@ -441,7 +387,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string serialized = JsonConvert.SerializeObject(compositeContinuationTokens);
 
-                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, bool forceRefresh) =>
+                this.compositeContinuationToken = StandByFeedContinuationToken.CreateAsync("containerRid", serialized, (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh) =>
                 {
                     IReadOnlyList<Documents.PartitionKeyRange> filteredRanges = new List<Documents.PartitionKeyRange>()
                     {
@@ -462,6 +408,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string partitionKeyRangeId,
                 int? maxItemCount,
                 StandByFeedIteratorRequestOptions options,
+                ITrace trace,
                 CancellationToken cancellationToken)
             {
                 if (this.Iteration++ == 0)
@@ -474,15 +421,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 return Task.FromResult(new ResponseMessage(System.Net.HttpStatusCode.NotModified));
             }
-        }
-
-        public class ToDoActivity
-        {
-            public string id { get; set; }
-            public int taskNum { get; set; }
-            public double cost { get; set; }
-            public string description { get; set; }
-            public string status { get; set; }
         }
     }
 }

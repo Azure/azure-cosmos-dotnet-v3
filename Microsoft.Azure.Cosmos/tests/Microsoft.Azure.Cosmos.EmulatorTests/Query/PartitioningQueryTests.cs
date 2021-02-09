@@ -38,7 +38,7 @@
                 ImplementationAsync,
                 "/key");
 
-            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
                 Assert.AreEqual(0, (await QueryTestsBase.RunQueryAsync(
                     container,
@@ -54,7 +54,7 @@
                     List<string> expected = documents
                         .Skip(i * 3)
                         .Take(3)
-                        .Select(doc => ((CosmosString)doc["id"]).Value)
+                        .Select(doc => ((CosmosString)doc["id"]).Value.ToString())
                         .ToList();
                     string expectedResult = string.Join(",", expected);
 
@@ -79,16 +79,7 @@
 
                     if (i < keys.Length - 1)
                     {
-                        string key;
-                        if (keys[i] is string)
-                        {
-                            key = "'" + keys[i].ToString() + "'";
-                        }
-                        else
-                        {
-                            key = keys[i].ToString();
-                        }
-
+                        string key = keys[i] is string ? "'" + keys[i].ToString() + "'" : keys[i].ToString();
                         queries.Add((string.Format(CultureInfo.InvariantCulture, @"SELECT * FROM Root r WHERE r.key = {0} ORDER BY r.prop", key), expectedOrderByResult));
                     }
 
@@ -109,7 +100,10 @@
                         }
 
                         string resultDocIds = string.Join(",", result.Select(doc => doc.Id));
-                        Assert.AreEqual(queryAndExpectedResult.Item2, resultDocIds);
+                        Assert.AreEqual(
+                            queryAndExpectedResult.Item2,
+                            resultDocIds,
+                            $"Query: {queryAndExpectedResult.Item1} with partition key: {keys[i]} failed.");
                     }
                 }
             }

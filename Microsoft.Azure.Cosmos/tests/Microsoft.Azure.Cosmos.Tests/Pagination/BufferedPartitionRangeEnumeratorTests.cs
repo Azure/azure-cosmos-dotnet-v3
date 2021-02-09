@@ -8,6 +8,7 @@
     using System;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public sealed class BufferedPartitionPartitionRangeEnumeratorTests
@@ -99,15 +100,14 @@
                 foreach (int partitionKeyRangeId in new int[] { 1, 2 })
                 {
                     PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState> enumerable = new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
-                        range: new FeedRangePartitionKeyRange(partitionKeyRangeId: partitionKeyRangeId.ToString()),
-                        state: state,
-                        (range, state) => new ReadFeedPartitionRangeEnumerator(
-                                inMemoryCollection,
-                                feedRange: range,
-                                pageSize: 10,
-                                queryRequestOptions: default,
-                                cancellationToken: default,
-                                state: state));
+                        feedRangeState: new FeedRangeState<ReadFeedState>(
+                            new FeedRangePartitionKeyRange(partitionKeyRangeId: partitionKeyRangeId.ToString()),
+                            state),
+                        (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
+                            inMemoryCollection,
+                            feedRangeState: feedRangeState,
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
                     childIdentifiers.UnionWith(resourceIdentifiers);
@@ -124,11 +124,11 @@
                 BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
-                        feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                        pageSize: 10,
-                        queryRequestOptions: default,
-                        cancellationToken: default,
-                        state: new ReadFeedState(CosmosNull.Create())),
+                        feedRangeState: new FeedRangeState<ReadFeedState>(
+                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                            ReadFeedState.Beginning()),
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: default),
                     cancellationToken: default);
 
                 int count = 0;
@@ -136,7 +136,7 @@
                 for (int i = 0; i < 10; i++)
                 {
                     // This call is idempotent;
-                    await enumerator.PrefetchAsync(default);
+                    await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                 }
 
                 Random random = new Random();
@@ -148,7 +148,7 @@
                         for (int i = 0; i < 10; i++)
                         {
                             // This call is idempotent;
-                            await enumerator.PrefetchAsync(default);
+                            await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                         }
                     }
                 }
@@ -168,16 +168,16 @@
                     BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
-                        feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                        pageSize: 10,
-                        queryRequestOptions: default,
-                        cancellationToken: default,
-                        state: new ReadFeedState(CosmosNull.Create())),
+                        feedRangeState: new FeedRangeState<ReadFeedState>(
+                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                            ReadFeedState.Beginning()),
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: default),
                     cancellationToken: default);
 
                     if ((random.Next() % 2) == 0)
                     {
-                        await enumerator.PrefetchAsync(default);
+                        await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                     }
 
                     int count = 0;
@@ -187,7 +187,7 @@
                         
                         if ((random.Next() % 2) == 0)
                         {
-                            await enumerator.PrefetchAsync(default);
+                            await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                         }
                     }
 
@@ -203,16 +203,15 @@
             public override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
                 ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
-                    range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                    state: state ?? new ReadFeedState(CosmosNull.Create()),
-                    (range, state) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                    feedRangeState: new FeedRangeState<ReadFeedState>( 
+                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                        state ?? ReadFeedState.Beginning()),
+                    (feedRangeState) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                         new ReadFeedPartitionRangeEnumerator(
                             documentContainer,
-                            feedRange: range,
-                            pageSize: 10,
-                            queryRequestOptions: default,
-                            cancellationToken: default,
-                            state: state),
+                            feedRangeState: feedRangeState,
+                            readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            cancellationToken: default),
                         cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
@@ -220,18 +219,18 @@
                 ReadFeedState state = null) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
-                        feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                        pageSize: 10,
-                        queryRequestOptions: default,
-                        cancellationToken: default,
-                        state: state ?? new ReadFeedState(CosmosNull.Create())),
+                        feedRangeState: new FeedRangeState<ReadFeedState>(
+                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                            state ?? ReadFeedState.Beginning()),
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: default),
                     cancellationToken: default);
 
             private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator)
             {
                 while (true)
                 {
-                    await enumerator.PrefetchAsync(default);
+                    await enumerator.PrefetchAsync(trace: NoOpTrace.Singleton, default);
                     await Task.Delay(10);
                 }
             }

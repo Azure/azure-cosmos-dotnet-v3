@@ -10,38 +10,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ReadFeedPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
     {
         private readonly IReadFeedDataSource readFeedDataSource;
-        private readonly QueryRequestOptions queryRequestOptions;
-        private readonly int pageSize;
+        private readonly ReadFeedPaginationOptions readFeedPaginationOptions;
 
         public ReadFeedPartitionRangeEnumerator(
             IReadFeedDataSource readFeedDataSource,
-            FeedRangeInternal feedRange,
-            QueryRequestOptions queryRequestOptions,
-            int pageSize,
-            CancellationToken cancellationToken,
-            ReadFeedState state)
-            : base(
-                  feedRange,
-                  cancellationToken,
-                  state)
+            FeedRangeState<ReadFeedState> feedRangeState,
+            ReadFeedPaginationOptions readFeedPaginationOptions,
+            CancellationToken cancellationToken)
+            : base(feedRangeState, cancellationToken)
         {
             this.readFeedDataSource = readFeedDataSource ?? throw new ArgumentNullException(nameof(readFeedDataSource));
-            this.queryRequestOptions = queryRequestOptions;
-            this.pageSize = pageSize;
+            this.readFeedPaginationOptions = readFeedPaginationOptions;
         }
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(CancellationToken cancellationToken = default) => this.readFeedDataSource.MonadicReadFeedAsync(
-            feedRange: this.Range,
-            readFeedState: this.State,
-            queryRequestOptions: this.queryRequestOptions,
-            pageSize: this.pageSize,
+        protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken = default) => this.readFeedDataSource.MonadicReadFeedAsync(
+            feedRangeState: this.FeedRangeState,
+            readFeedPaginationOptions: this.readFeedPaginationOptions,
+            trace: trace,
             cancellationToken: cancellationToken);
     }
 }

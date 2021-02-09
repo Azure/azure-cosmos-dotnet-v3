@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal abstract class ScriptsCore : Scripts
@@ -25,19 +26,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         protected CosmosClientContext ClientContext { get; }
 
         public Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessScriptsCreateOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Create,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
                 responseFunc: this.ClientContext.ResponseFactory.CreateStoredProcedureResponse,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -110,9 +111,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<StoredProcedureResponse> ReadStoredProcedureAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(id))
@@ -121,33 +122,33 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessStoredProcedureOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: id,
                 operationType: OperationType.Read,
                 streamPayload: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessStoredProcedureOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(storedProcedureProperties),
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(id))
@@ -156,39 +157,39 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessStoredProcedureOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: id,
                 operationType: OperationType.Delete,
                 streamPayload: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public async Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(
-            CosmosDiagnosticsContext diagnosticsContext,
             string storedProcedureId,
             Cosmos.PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ExecuteStoredProcedureStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 parameters: parameters,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateStoredProcedureExecuteResponse<TOutput>(response);
         }
 
         public Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string storedProcedureId,
             Cosmos.PartitionKey partitionKey,
             dynamic[] parameters,
             StoredProcedureRequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             Stream streamPayload = null;
@@ -198,20 +199,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ExecuteStoredProcedureStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 storedProcedureId: storedProcedureId,
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string storedProcedureId,
             Stream streamPayload,
             Cosmos.PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(storedProcedureId))
@@ -227,20 +228,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: storedProcedureId);
 
             return this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.ExecuteJavaScript,
                 partitionKey: partitionKey,
                 streamPayload: streamPayload,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<TriggerResponse> CreateTriggerAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             TriggerProperties triggerProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (triggerProperties == null)
@@ -259,13 +260,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessScriptsCreateOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: OperationType.Create,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties),
                 requestOptions: requestOptions,
                 responseFunc: this.ClientContext.ResponseFactory.CreateTriggerResponse,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -338,9 +339,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<TriggerResponse> ReadTriggerAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(id))
@@ -349,18 +350,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessTriggerOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: id,
                 operationType: OperationType.Read,
                 streamPayload: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<TriggerResponse> ReplaceTriggerAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             TriggerProperties triggerProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (triggerProperties == null)
@@ -379,18 +380,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessTriggerOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: triggerProperties.Id,
                 operationType: OperationType.Replace,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties),
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<TriggerResponse> DeleteTriggerAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(id))
@@ -399,18 +400,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessTriggerOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: id,
                 operationType: OperationType.Delete,
                 streamPayload: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (userDefinedFunctionProperties == null)
@@ -429,13 +430,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessScriptsCreateOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.Create,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 responseFunc: this.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -508,9 +509,9 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(id))
@@ -519,18 +520,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessUserDefinedFunctionOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: id,
                 operationType: OperationType.Read,
                 streamPayload: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (userDefinedFunctionProperties == null)
@@ -549,18 +550,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessUserDefinedFunctionOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         public Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (string.IsNullOrEmpty(id))
@@ -569,20 +570,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
             }
 
             return this.ProcessUserDefinedFunctionOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 id: id,
                 operationType: OperationType.Delete,
                 streamPayload: null,
                 requestOptions: requestOptions,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         private async Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             OperationType operationType,
             Stream streamPayload,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             string linkUri = this.ClientContext.CreateLink(
@@ -591,24 +592,24 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: id);
 
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: linkUri,
                 resourceType: ResourceType.StoredProcedure,
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: null,
                 streamPayload: streamPayload,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
         private async Task<TriggerResponse> ProcessTriggerOperationAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             OperationType operationType,
             Stream streamPayload,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             string linkUri = this.ClientContext.CreateLink(
@@ -617,26 +618,26 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: id);
 
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: linkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: null,
                 streamPayload: streamPayload,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateTriggerResponse(response);
         }
 
         private Task<ResponseMessage> ProcessStreamOperationAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Cosmos.PartitionKey? partitionKey,
             Stream streamPayload,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ClientContext.ProcessResourceOperationStreamAsync(
@@ -645,42 +646,42 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 operationType: operationType,
                 requestOptions: requestOptions,
                 cosmosContainerCore: this.container,
-                partitionKey: partitionKey,
+                feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
                 streamPayload: streamPayload,
                 requestEnricher: null,
-                diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
         private async Task<T> ProcessScriptsCreateOperationAsync<T>(
-            CosmosDiagnosticsContext diagnosticsContext,
             string resourceUri,
             ResourceType resourceType,
             OperationType operationType,
             Stream streamPayload,
             RequestOptions requestOptions,
             Func<ResponseMessage, T> responseFunc,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: resourceUri,
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: null,
-                streamPayload: streamPayload,
+                streamPayload: streamPayload, 
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return responseFunc(response);
         }
 
         private async Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             string id,
             OperationType operationType,
             Stream streamPayload,
             RequestOptions requestOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             string linkUri = this.ClientContext.CreateLink(
@@ -689,13 +690,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 id: id);
 
             ResponseMessage response = await this.ProcessStreamOperationAsync(
-                diagnosticsContext: diagnosticsContext,
                 resourceUri: linkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: operationType,
                 requestOptions: requestOptions,
                 partitionKey: null,
                 streamPayload: streamPayload,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);

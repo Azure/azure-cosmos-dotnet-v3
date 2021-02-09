@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -95,17 +96,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
             }
 
-            // default page size, expect 100 documents
+            // Arbitrary count of elements up to int.MaxValue.
             DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
-            Assert.AreEqual(100, result.Count);
+            Assert.IsTrue(result.Count <= 200, $"{result.Count} elements returned. It is more than available on collection");
 
-            // dynamic page size (-1), expect all documents to be returned
+            // dynamic page size (-1), expect arbitrary count of elements up to int.MaxValue.
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = -1, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
-            Assert.AreEqual(200, result.Count);
+            Assert.IsTrue(result.Count <= 200, $"{result.Count} elements returned. It is more than available on collection");
 
             // page size 10
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { MaxItemCount = 10, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
-            Assert.AreEqual(10, result.Count);
+            Assert.IsTrue(result.Count <= 10, $"{result.Count} elements returned. It is more than MaxItemCount = 10");
 
             TestCommon.RetryRateLimiting<ResourceResponse<Database>>(() =>
             {
@@ -884,12 +885,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 DateTime startTime = DateTime.Now;
                 this.LoadDocuments(coll).Wait();
-                Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+                System.Diagnostics.Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
                 startTime = DateTime.Now;
 
                 Util.WaitForLazyIndexingToCompleteAsync(coll).Wait();
-                Trace.TraceInformation("Indexing took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+                System.Diagnostics.Trace.TraceInformation("Indexing took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
                 QueryOracle.QueryOracle qo =
                     new QueryOracle.QueryOracle(this.client, coll.SelfLink, true,
@@ -936,7 +937,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
             Assert.IsTrue(ranges.Count() > 1);
 
             Document document = new Document { Id = "id1" };
@@ -964,7 +965,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryMultiplePartitions(bool useGateway)
         {
-            Trace.TraceInformation(
+            System.Diagnostics.Trace.TraceInformation(
                 "Start TestQueryMultiplePartitions in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
 
@@ -1000,7 +1001,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
             Assert.IsTrue(ranges.Count() > 1);
 
             DateTime startTime = DateTime.Now;
@@ -1008,10 +1009,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (string document in documents)
             {
                 ResourceResponse<Document> response = await client.CreateDocumentAsync(coll.SelfLink, JsonConvert.DeserializeObject(document));
-                Trace.TraceInformation("Document: {0}, SessionToken: {1}", document, response.SessionToken);
+                System.Diagnostics.Trace.TraceInformation("Document: {0}, SessionToken: {1}", document, response.SessionToken);
             }
 
-            Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
+            System.Diagnostics.Trace.TraceInformation("Load documents took {0} ms", (DateTime.Now - startTime).TotalMilliseconds);
 
             string[] links = new[] { coll.AltLink, coll.SelfLink };
             foreach (string link in links)
@@ -1034,7 +1035,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task TestQueryForRoutingMapSanity(string inputDatabaseId, string inputCollectionId, bool useGateway, int numDocuments, bool isDeleteDB)
         {
-            Trace.TraceInformation(
+            System.Diagnostics.Trace.TraceInformation(
                 "Start TestQueryForRoutingMapSanity in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
 
@@ -1052,7 +1053,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
             Assert.IsTrue(ranges.Count > 1);
 
             // Query Number 1, that failed before
@@ -1143,7 +1144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private async Task CreateDataSet(bool useGateway, string dbName, string collName, int numberOfDocuments, int inputThroughputOffer)
         {
-            Trace.TraceInformation(
+            System.Diagnostics.Trace.TraceInformation(
                 "Start TestQueryParallelExecution in {0} mode",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString());
 
@@ -1213,7 +1214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task TestQueryParallelExecution(string inputDatabaseId, string inputCollectionId, bool useGateway, Protocol protocol, bool isDeleteDB)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            Trace.TraceInformation(
+            System.Diagnostics.Trace.TraceInformation(
                 "Start TestQueryParallelExecution in {0} mode with seed{1}",
                 useGateway ? ConnectionMode.Gateway.ToString() : ConnectionMode.Direct.ToString(),
                 seed);
@@ -1230,7 +1231,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
             Assert.AreEqual(5, ranges.Count);
 
             // Query Number 1
@@ -1372,7 +1373,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private async Task TestReadFeedParallelQuery(string inputDatabaseId, string inputCollectionId, bool useGateway, Protocol protocol, bool isDeleteDB)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            Trace.TraceInformation(
+            System.Diagnostics.Trace.TraceInformation(
                 "Start TestQueryParallelExecution in {0} mode with seed{1}",
                 useGateway ? ConnectionMode.Gateway : ConnectionMode.Direct,
                 seed);
@@ -1389,7 +1390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
             Assert.AreEqual(5, ranges.Count);
 
             FeedOptions feedOptions = new FeedOptions
@@ -1823,6 +1824,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             });
         }
 
+        [Ignore] // Ignore until backend index utilization is on by default and other query metrics test are completed
+        [TestMethod]
+        public async Task TestIndexUtilizationParsing()
+        {
+
+            Database database = await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
+
+            DocumentCollection collection;
+            RequestOptions options = new RequestOptions();
+            
+            collection = new DocumentCollection()
+            {
+                Id = Guid.NewGuid().ToString()
+            };
+
+            options.OfferThroughput = 10000;
+
+            collection = await TestCommon.CreateCollectionAsync(this.client, database, collection, options);
+
+            int maxDocumentCount = 2000;
+            for (int i = 0; i < maxDocumentCount; i++)
+            {
+                QueryDocument doc = new QueryDocument()
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    NumericField = i,
+                    StringField = i.ToString(CultureInfo.InvariantCulture),
+                };
+
+                await this.client.CreateDocumentAsync(collection, doc);
+            }
+
+            DocumentFeedResponse<dynamic> result = await this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r.name = 'Julien' and r.age > 12", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync();
+            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
+            Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); 
+
+            QueryMetrics queryMetrics = new QueryMetrics(
+                BackendMetrics.ParseFromDelimitedString(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics]),
+                IndexUtilizationInfo.CreateFromString(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization]),
+                ClientSideMetrics.Empty);
+            
+            // If these fields populate then the parsing is successful and correct.
+            Assert.AreEqual("/name/?", queryMetrics.IndexUtilizationInfo.UtilizedSingleIndexes[0].IndexDocumentExpression);
+            Assert.AreEqual(String.Join(", ", new object[] { "/name ASC", "/age ASC" }), String.Join(", ", queryMetrics.IndexUtilizationInfo.PotentialCompositeIndexes[0].IndexDocumentExpressions));
+            
+            await this.client.DeleteDatabaseAsync(database);
+        }
+
         [TestMethod]
         public async Task TestQueryMetricsNonZero()
         {
@@ -2168,12 +2217,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             feedOptions.ResponseContinuationTokenLimitInKb = 1;
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             string continuation = result.ResponseContinuation;
-            Assert.IsTrue(!continuation.Contains("#FPC") && !continuation.Contains("#FPP"));
+            Assert.IsTrue(
+                continuation.StartsWith("CGW") || (!continuation.Contains("#FPC") && !continuation.Contains("#FPP")),
+                $"{continuation} neither constructed by Compute nor proper BE token");
 
             feedOptions.ResponseContinuationTokenLimitInKb = 2;
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r WHERE r._ts > 0", feedOptions).AsDocumentQuery().ExecuteNextAsync().Result;
             continuation = result.ResponseContinuation;
-            Assert.IsTrue(continuation.Contains("#FPC") || continuation.Contains("#FPP"));
+            Assert.IsTrue(
+                continuation.StartsWith("CGW") || (continuation.Contains("#FPC") || continuation.Contains("#FPP")),
+                $"{continuation} neither constructed by Compute nor proper BE token");
         }
 
         private void TestQueryMetricsHeaders(Database database, bool partitionedCollection)
@@ -2228,9 +2281,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // simple validations - existence - yes & no
             DocumentFeedResponse<dynamic> result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected no metrics headers for query");
+            Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected no index utilization headers for query");
 
             result = this.client.CreateDocumentQuery<Document>(collection, "SELECT r.id FROM root r", new FeedOptions() { PopulateQueryMetrics = true, EnableCrossPartitionQuery = true }).AsDocumentQuery().ExecuteNextAsync().Result;
             Assert.IsNotNull(result.ResponseHeaders[WFConstants.BackendHeaders.QueryMetrics], "Expected metrics headers for query");
+            Assert.IsNull(result.ResponseHeaders[WFConstants.BackendHeaders.IndexUtilization], "Expected index utilization headers for query"); // False for now
 
             this.ValidateQueryMetricsHeadersOverContinuations(collection, maxDocumentCount).Wait();
         }
@@ -2240,7 +2295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int documentCount)
         {
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            Trace.TraceInformation("seed: " + seed);
+            System.Diagnostics.Trace.TraceInformation("seed: " + seed);
             Random rand = new Random(seed);
 
             int[] numericFieldFilters = new int[] { rand.Next(documentCount), rand.Next(documentCount), rand.Next(documentCount) };
@@ -2287,7 +2342,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             foreach (KeyValuePair<string, QueryMetrics> pair in response.QueryMetrics)
                             {
-                                Trace.TraceInformation(JsonConvert.SerializeObject(pair));
+                                System.Diagnostics.Trace.TraceInformation(JsonConvert.SerializeObject(pair));
                                 this.ValidateQueryMetrics(pair.Value);
                             }
 

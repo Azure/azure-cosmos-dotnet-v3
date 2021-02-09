@@ -1029,7 +1029,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return Undefined;
             }
 
-            if (subStringValue.Value.Length == 0)
+            if (subStringValue.Value.IsEmpty)
             {
                 return Undefined;
             }
@@ -1039,7 +1039,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return Undefined;
             }
 
-            return CosmosString.Create(stringValueValue.Value.Replace(subStringValue.Value, replacementValue.Value));
+            return CosmosString.Create(stringValueValue.Value.ToString().Replace(subStringValue.Value, replacementValue.Value));
         }
 
         /// <summary>
@@ -1073,7 +1073,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 checked
                 {
-                    if ((strValue.Value.Length * repeatCountAsLong) > 10000)
+                    if ((strValue.Value.ToString().Length * repeatCountAsLong) > 10000)
                     {
                         return Undefined;
                     }
@@ -1127,8 +1127,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return Undefined;
             }
 
-            CosmosElement offset = CosmosNumber64.Create(Math.Max(stringValue.Value.Length - Number64.ToLong(lengthValue.Value), 0));
-            return ExecuteSubstring(value, offset, CosmosNumber64.Create(stringValue.Value.Length));
+            CosmosElement offset = CosmosNumber64.Create(Math.Max(stringValue.Value.ToString().Length - Number64.ToLong(lengthValue.Value), 0));
+            return ExecuteSubstring(value, offset, CosmosNumber64.Create(stringValue.Value.ToString().Length));
         }
 
         /// <summary>
@@ -1454,7 +1454,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 return Undefined;
             }
 
-            if (stringArgumentValue.Value.Length == 0)
+            if (stringArgumentValue.Value.IsEmpty)
             {
                 return CosmosString.Empty;
             }
@@ -1474,19 +1474,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             int safeStartIndexAsInteger = (int)Math.Min(startIndexAsInteger, int.MaxValue);
 
-            if ((startIndexAsInteger == 0) && (stringArgumentValue.Value.Length <= lengthAsInteger))
+            if ((startIndexAsInteger == 0) && (stringArgumentValue.Value.ToString().Length <= lengthAsInteger))
             {
                 return stringArgumentValue;
             }
 
-            if ((startIndexAsInteger >= stringArgumentValue.Value.Length) || (startIndexAsInteger < 0) || (lengthAsInteger <= 0))
+            if ((startIndexAsInteger >= stringArgumentValue.Value.ToString().Length) || (startIndexAsInteger < 0) || (lengthAsInteger <= 0))
             {
                 return CosmosString.Empty;
             }
 
-            long maxLength = stringArgumentValue.Value.Length - startIndexAsInteger;
+            long maxLength = stringArgumentValue.Value.ToString().Length - startIndexAsInteger;
             int safeMaxLength = (int)Math.Min(Math.Min(maxLength, lengthAsInteger), int.MaxValue);
-            return CosmosString.Create(stringArgumentValue.Value.Substring(safeStartIndexAsInteger, safeMaxLength));
+            return CosmosString.Create(stringArgumentValue.Value.ToString().Substring(safeStartIndexAsInteger, safeMaxLength));
         }
     }
 }

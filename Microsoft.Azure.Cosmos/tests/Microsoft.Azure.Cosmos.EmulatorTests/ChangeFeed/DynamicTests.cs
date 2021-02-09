@@ -238,5 +238,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
             Assert.AreEqual("doc0.doc1.doc2.doc3.doc4.", accumulator);
         }
+
+        [TestMethod]
+        public async Task TestWithStartTime_CustomTime()
+        {
+            int partitionKey = 0;
+
+            foreach (int id in Enumerable.Range(0, 5))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
+            }
+
+            await Task.Delay(1000);
+
+            DateTime now = DateTime.UtcNow;
+
+            await Task.Delay(1000);
+
+            foreach (int id in Enumerable.Range(5, 5))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
+            }
+
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    Assert.IsTrue(docs.Count > 0);
+                    processedDocCount += docs.Count;
+                    foreach (dynamic doc in docs)
+                    {
+                        accumulator += doc.id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 5)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithStartTime(now)
+                .WithInstanceName("random")
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            // Letting processor initialize and pickup changes
+            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            Assert.AreEqual("doc5.doc6.doc7.doc8.doc9.", accumulator);
+        }
     }
 }

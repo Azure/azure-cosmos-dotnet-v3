@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Moq;
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
 
-        internal override Task<ClientCollectionCache> GetCollectionCacheAsync()
+        internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
             return Task.FromResult(this.collectionCache.Object);
         }
@@ -140,7 +141,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             string requestVerb,
             INameValueCollection headers,
             AuthorizationTokenType tokenType,
-            CosmosDiagnosticsContext diagnosticsContext) /* unused, use token based upon what is passed in constructor */
+            ITrace trace) /* unused, use token based upon what is passed in constructor */
         {
             return new ValueTask<string>((string)null);
         }
@@ -148,6 +149,11 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
         internal virtual IReadOnlyList<PartitionKeyRange> ResolveOverlapingPartitionKeyRanges(string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh)
         {
             return (IReadOnlyList<PartitionKeyRange>) new List<Documents.PartitionKeyRange>() {new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" } };
+        }
+
+        internal virtual PartitionKeyRange ResolvePartitionKeyRangeById(string collectionRid, string pkRangeId, bool forceRefresh)
+        {
+            return new Documents.PartitionKeyRange() { MinInclusive = "", MaxExclusive = "FF", Id = "0" };
         }
 
         private void Init()
@@ -179,6 +185,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         m.ResolveByNameAsync(
                         It.IsAny<string>(),
                         It.IsAny<string>(),
+                        It.IsAny<bool>(),
                         It.IsAny<CancellationToken>()
                     )
                 ).Returns(() => {
@@ -192,6 +199,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         m.ResolveByNameAsync(
                         It.IsAny<string>(),
                         It.IsAny<string>(),
+                        It.IsAny<bool>(),
                         It.IsAny<CancellationToken>()
                     )
                 ).Returns(() =>
@@ -222,12 +230,24 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
+                            It.IsAny<ITrace>(),
                             It.IsAny<bool>()
                         )
-                ).Returns((string collectionRid, Documents.Routing.Range<string> range, bool forceRefresh) =>
-                {
-                    return Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh));
-                });
+                ).Returns(
+                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) 
+                    => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(
+                        this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
+
+            this.partitionKeyRangeCache.Setup(
+                    m => m.TryGetPartitionKeyRangeByIdAsync(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<bool>()
+                    )
+            ).Returns((string collectionRid, string pkRangeId, bool forceRefresh) =>
+            {
+                return Task.FromResult<PartitionKeyRange>(this.ResolvePartitionKeyRangeById(collectionRid, pkRangeId, forceRefresh));
+            });
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 

@@ -37,77 +37,77 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     case JsonTokenType.FieldName:
                         if (materializeValue)
                         {
-                            string stringValue = jsonReader.GetStringValue();
+                            string _ = jsonReader.GetStringValue();
                         }
                         break;
 
                     case JsonTokenType.Number:
                         if (materializeValue)
                         {
-                            Number64 number64Value = jsonReader.GetNumberValue();
+                            Number64 _ = jsonReader.GetNumberValue();
                         }
                         break;
 
                     case JsonTokenType.Int8:
                         if (materializeValue)
                         {
-                            sbyte int8Value = jsonReader.GetInt8Value();
+                            sbyte _ = jsonReader.GetInt8Value();
                         }
                         break;
 
                     case JsonTokenType.Int16:
                         if (materializeValue)
                         {
-                            short int16Value = jsonReader.GetInt16Value();
+                            short _ = jsonReader.GetInt16Value();
                         }
                         break;
 
                     case JsonTokenType.Int32:
                         if (materializeValue)
                         {
-                            int int32Value = jsonReader.GetInt32Value();
+                            int _ = jsonReader.GetInt32Value();
                         }
                         break;
 
                     case JsonTokenType.Int64:
                         if (materializeValue)
                         {
-                            long int64Value = jsonReader.GetInt64Value();
+                            long _ = jsonReader.GetInt64Value();
                         }
                         break;
 
                     case JsonTokenType.UInt32:
                         if (materializeValue)
                         {
-                            uint uInt32Value = jsonReader.GetUInt32Value();
+                            uint _ = jsonReader.GetUInt32Value();
                         }
                         break;
 
                     case JsonTokenType.Float32:
                         if (materializeValue)
                         {
-                            float float32Value = jsonReader.GetFloat32Value();
+                            float _ = jsonReader.GetFloat32Value();
                         }
                         break;
 
                     case JsonTokenType.Float64:
                         if (materializeValue)
                         {
-                            double doubleValue = jsonReader.GetFloat64Value();
+                            double _ = jsonReader.GetFloat64Value();
                         }
                         break;
 
                     case JsonTokenType.Guid:
                         if (materializeValue)
                         {
-                            Guid guidValue = jsonReader.GetGuidValue();
+                            Guid _ = jsonReader.GetGuidValue();
                         }
                         break;
 
                     case JsonTokenType.Binary:
                         if (materializeValue)
                         {
-                            ReadOnlyMemory<byte> binaryValue = jsonReader.GetBinaryValue();
+                            ReadOnlyMemory<byte> _ = jsonReader.GetBinaryValue();
                         }
                         break;
 

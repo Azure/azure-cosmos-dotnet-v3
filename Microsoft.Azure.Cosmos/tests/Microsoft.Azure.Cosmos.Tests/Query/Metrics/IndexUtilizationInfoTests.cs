@@ -12,20 +12,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
     [TestClass]
     public class IndexUtilizationInfoTests
     {
-        private static readonly IndexUtilizationData data = new IndexUtilizationData(
-                nameof(IndexUtilizationData.FilterExpression),
-                nameof(IndexUtilizationData.IndexDocumentExpression),
-                default(bool),
-                default(bool));
+        private static readonly SingleIndexUtilizationEntity singleUtilizationEntity = new SingleIndexUtilizationEntity(
+                nameof(SingleIndexUtilizationEntity.FilterExpression),
+                nameof(SingleIndexUtilizationEntity.IndexDocumentExpression),
+                default,
+                default,
+                nameof(SingleIndexUtilizationEntity.IndexImpactScore));
+
+        private static readonly CompositeIndexUtilizationEntity compositeUtilizationEntity = new CompositeIndexUtilizationEntity(
+                new List<string>(),
+                default,
+                nameof(CompositeIndexUtilizationEntity.IndexImpactScore));
 
         internal static readonly IndexUtilizationInfo MockIndexUtilizationInfo = new IndexUtilizationInfo(
-            new List<IndexUtilizationData>() { data },
-            new List<IndexUtilizationData>() { data });
+            new List<SingleIndexUtilizationEntity>() { singleUtilizationEntity },
+            new List<SingleIndexUtilizationEntity>() { singleUtilizationEntity },
+            new List<CompositeIndexUtilizationEntity>() { compositeUtilizationEntity },
+            new List<CompositeIndexUtilizationEntity>() { compositeUtilizationEntity });
 
         [TestMethod]
         public void TestParse()
         {
-            Assert.IsTrue(IndexUtilizationInfo.TryCreateFromDelimitedString("eyJVdGlsaXplZEluZGV4ZXMiOlt7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5leWVDb2xvciA9IFwiYmx1ZVwiKSIsIkluZGV4U3BlYyI6IlwvZXllQ29sb3JcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmFnZSA9IDI3KSIsIkluZGV4U3BlYyI6IlwvYWdlXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6dHJ1ZSwiSW5kZXhQcmVjaXNlU2V0Ijp0cnVlfSx7IkZpbHRlckV4cHJlc3Npb24iOiIoUk9PVC5pZCA+IDApIiwiSW5kZXhTcGVjIjoiXC9pZFwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QuZmlyc3ROYW1lKSIsIkluZGV4U3BlYyI6IlwvZmlyc3ROYW1lXC8/IiwiRmlsdGVyUHJlY2lzZVNldCI6ZmFsc2UsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiSXNEZWZpbmVkKFJPT1QubGFzdE5hbWUpIiwiSW5kZXhTcGVjIjoiXC9sYXN0TmFtZVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOmZhbHNlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULmdlbmRlciA9IFwiZmVtYWxlXCIpIiwiSW5kZXhTcGVjIjoiXC9nZW5kZXJcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9LHsiRmlsdGVyRXhwcmVzc2lvbiI6IihST09ULnNhbGFyeSA+IDE4NjAwMCkiLCJJbmRleFNwZWMiOiJcL3NhbGFyeVwvPyIsIkZpbHRlclByZWNpc2VTZXQiOnRydWUsIkluZGV4UHJlY2lzZVNldCI6dHJ1ZX0seyJGaWx0ZXJFeHByZXNzaW9uIjoiKFJPT1QuY29tcGFueSA9IFwiRmFjZWJvb2tcIikiLCJJbmRleFNwZWMiOiJcL2NvbXBhbnlcLz8iLCJGaWx0ZXJQcmVjaXNlU2V0Ijp0cnVlLCJJbmRleFByZWNpc2VTZXQiOnRydWV9XSwiUG90ZW50aWFsSW5kZXhlcyI6W119",
+            Assert.IsTrue(IndexUtilizationInfo.TryCreateFromDelimitedString("ewogICAgIlV0aWxpemVkU2luZ2xlSW5kZXhlcyI6IFsKICAgICAgICB7CiAgICAgICAgICAgICJGaWx0ZXJFeHByZXNzaW9uIjogIihST09ULm5hbWUgPSBcIkp1bGllblwiKSIsCiAgICAgICAgICAgICJJbmRleFNwZWMiOiAiXC9uYW1lXC8 / IiwKICAgICAgICAgICAgIkZpbHRlclByZWNpc2VTZXQiOiB0cnVlLAogICAgICAgICAgICAiSW5kZXhQcmVjaXNlU2V0IjogdHJ1ZSwKICAgICAgICAgICAgIkluZGV4SW1wYWN0U2NvcmUiOiAiSGlnaCIKICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICAgIkZpbHRlckV4cHJlc3Npb24iOiAiKFJPT1QuYWdlID4gMTIpIiwKICAgICAgICAgICAgIkluZGV4U3BlYyI6ICJcL2FnZVwvPyIsCiAgICAgICAgICAgICJGaWx0ZXJQcmVjaXNlU2V0IjogdHJ1ZSwKICAgICAgICAgICAgIkluZGV4UHJlY2lzZVNldCI6IHRydWUsCiAgICAgICAgICAgICJJbmRleEltcGFjdFNjb3JlIjogIkhpZ2giCiAgICAgICAgfQogICAgXSwKICAgICJQb3RlbnRpYWxTaW5nbGVJbmRleGVzIjogW10sCiAgICAiVXRpbGl6ZWRDb21wb3NpdGVJbmRleGVzIjogW10sCiAgICAiUG90ZW50aWFsQ29tcG9zaXRlSW5kZXhlcyI6IFsKICAgICAgICB7CiAgICAgICAgICAgICJJbmRleFNwZWNzIjogWwogICAgICAgICAgICAgICAgIlwvbmFtZSBBU0MiLAogICAgICAgICAgICAgICAgIlwvYWdlIEFTQyIKICAgICAgICAgICAgXSwKICAgICAgICAgICAgIkluZGV4UHJlY2lzZVNldCI6IGZhbHNlLAogICAgICAgICAgICAiSW5kZXhJbXBhY3RTY29yZSI6ICJIaWdoIgogICAgICAgIH0KICAgIF0KfQ == ",
                 out IndexUtilizationInfo parsedInfo));
             Assert.IsNotNull(parsedInfo);
         }
@@ -46,8 +54,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             accumulator = accumulator.Accumulate(MockIndexUtilizationInfo);
 
             IndexUtilizationInfo doubleInfo = IndexUtilizationInfo.Accumulator.ToIndexUtilizationInfo(accumulator);
-            Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialIndexes.Count, doubleInfo.PotentialIndexes.Count);
-            Assert.AreEqual(2 * MockIndexUtilizationInfo.UtilizedIndexes.Count, doubleInfo.UtilizedIndexes.Count);
+            Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialSingleIndexes.Count, doubleInfo.PotentialSingleIndexes.Count);
+            Assert.AreEqual(2 * MockIndexUtilizationInfo.UtilizedSingleIndexes.Count, doubleInfo.UtilizedSingleIndexes.Count);
+            Assert.AreEqual(2 * MockIndexUtilizationInfo.PotentialCompositeIndexes.Count, doubleInfo.PotentialCompositeIndexes.Count);
+            Assert.AreEqual(2 * MockIndexUtilizationInfo.UtilizedCompositeIndexes.Count, doubleInfo.UtilizedCompositeIndexes.Count);
         }
     }
 }

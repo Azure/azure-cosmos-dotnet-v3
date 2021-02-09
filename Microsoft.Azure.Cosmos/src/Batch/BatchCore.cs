@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
-    internal class BatchCore : TransactionalBatch
+    internal class BatchCore : TransactionalBatchInternal
     {
         private readonly PartitionKey partitionKey;
 
@@ -221,17 +221,16 @@ namespace Microsoft.Azure.Cosmos
             return this.container.ClientContext.OperationHelperAsync(
                 nameof(ExecuteAsync),
                 requestOptions,
-                (diagnostics) =>
+                (trace) =>
                 {
                     BatchExecutor executor = new BatchExecutor(
-                                    container: this.container,
-                                    partitionKey: this.partitionKey,
-                                    operations: this.operations,
-                                    batchOptions: requestOptions,
-                                    diagnosticsContext: diagnostics);
+                        container: this.container,
+                        partitionKey: this.partitionKey,
+                        operations: this.operations,
+                        batchOptions: requestOptions);
 
                     this.operations = new List<ItemBatchOperation>();
-                    return executor.ExecuteAsync(cancellationToken);
+                    return executor.ExecuteAsync(trace,  cancellationToken);
                 });
         }
 
@@ -240,12 +239,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
         /// <param name="patchStream">A <see cref="Stream"/> containing the patch specification.</param>
-        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the patch request. <see cref="TransactionalBatchPatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
         public virtual TransactionalBatch PatchItemStream(
             string id,
             Stream patchStream,
-            TransactionalBatchItemRequestOptions requestOptions = null)
+            TransactionalBatchPatchItemRequestOptions requestOptions = null)
         {
             this.operations.Add(new ItemBatchOperation(
                 operationType: OperationType.Patch,
@@ -263,17 +262,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The cosmos item id.</param>
         /// <param name="patchOperations">Represents a list of operations to be sequentially applied to the referred Cosmos item.</param>
-        /// <param name="requestOptions">(Optional) The options for the item request. <see cref="TransactionalBatchItemRequestOptions"/>.</param>
+        /// <param name="requestOptions">(Optional) The options for the Patch request. <see cref="TransactionalBatchPatchItemRequestOptions"/>.</param>
         /// <returns>The <see cref="TransactionalBatch"/> instance with the operation added.</returns>
-#if INTERNAL
-        public override
-#else
-        internal
-#endif
-            TransactionalBatch PatchItem(
+        public override TransactionalBatch PatchItem(
                 string id,
                 IReadOnlyList<PatchOperation> patchOperations,
-                TransactionalBatchItemRequestOptions requestOptions = null)
+                TransactionalBatchPatchItemRequestOptions requestOptions = null)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -286,11 +280,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            this.operations.Add(new ItemBatchOperation<IReadOnlyList<PatchOperation>>(
+            PatchSpec patchSpec = new PatchSpec(patchOperations, requestOptions);
+
+            this.operations.Add(new ItemBatchOperation<PatchSpec>(
                 operationType: OperationType.Patch,
                 operationIndex: this.operations.Count,
                 id: id,
-                resource: patchOperations,
+                resource: patchSpec,
                 requestOptions: requestOptions,
                 containerCore: this.container));
 

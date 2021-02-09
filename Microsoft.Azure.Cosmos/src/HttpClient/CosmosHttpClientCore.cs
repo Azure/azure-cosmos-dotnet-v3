@@ -12,12 +12,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http.Headers;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
-        private static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
         private readonly HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
 
@@ -96,20 +98,25 @@ namespace Microsoft.Azure.Cosmos
 
         public static HttpMessageHandler CreateHttpClientHandler(int gatewayModeMaxConnectionLimit, IWebProxy webProxy)
         {
+            HttpClientHandler httpClientHandler = new HttpClientHandler();
+
+            // Proxy is only set by users and can cause not supported exception on some platforms
+            if (webProxy != null)
+            {
+                httpClientHandler.Proxy = webProxy;
+            }
+
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             try
             {
-                return new HttpClientHandler
-                {
-                    Proxy = webProxy,
-                    MaxConnectionsPerServer = gatewayModeMaxConnectionLimit
-                };
+                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
             }
+            // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
             {
-                // Proxy and MaxConnectionsPerServer are not supported on some platforms.
-                return new HttpClientHandler();
             }
+
+            return httpClientHandler;
         }
 
         private static HttpMessageHandler CreateHttpMessageHandler(
@@ -161,7 +168,8 @@ namespace Microsoft.Azure.Cosmos
             Uri uri,
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
-            CosmosDiagnosticsContext diagnosticsContext,
+            HttpTimeoutPolicy timeoutPolicy,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (uri == null)
@@ -191,84 +199,184 @@ namespace Microsoft.Azure.Cosmos
             return this.SendHttpAsync(
                 CreateRequestMessage,
                 resourceType,
-                diagnosticsContext,
+                timeoutPolicy,
+                trace,
                 cancellationToken);
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
-            CosmosDiagnosticsContext diagnosticsContext,
+            HttpTimeoutPolicy timeoutPolicy,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
-            diagnosticsContext ??= new CosmosDiagnosticsContextCore();
-            HttpRequestMessage requestMessage = null;
-            Func<Task<HttpResponseMessage>> funcDelegate = async () =>
+            if (createRequestMessageAsync == null)
             {
-                using (diagnosticsContext.CreateScope(nameof(CosmosHttpClientCore.SendHttpAsync)))
-                {
-                    using (requestMessage = await createRequestMessageAsync())
-                    {
-                        DateTime sendTimeUtc = DateTime.UtcNow;
-                        Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
-
-                        Guid requestedActivityId = Trace.CorrelationManager.ActivityId;
-                        this.eventSource.Request(
-                            requestedActivityId,
-                            localGuid,
-                            requestMessage.RequestUri.ToString(),
-                            resourceType.ToResourceTypeString(),
-                            requestMessage.Headers);
-
-                        // Only read the header initially. The content gets copied into a memory stream later
-                        // if we read the content http client will buffer the message and then it will get buffered
-                        // again when it is copied to the memory stream.
-                        HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
-                                requestMessage,
-                                HttpCompletionOption.ResponseHeadersRead,
-                                cancellationToken);
-
-                        // WebAssembly HttpClient does not set the RequestMessage property on SendAsync
-                        if (responseMessage.RequestMessage == null)
-                        {
-                            responseMessage.RequestMessage = requestMessage;
-                        }
-
-                        DateTime receivedTimeUtc = DateTime.UtcNow;
-                        TimeSpan durationTimeSpan = receivedTimeUtc - sendTimeUtc;
-
-                        Guid activityId = Guid.Empty;
-                        if (responseMessage.Headers.TryGetValues(
-                            HttpConstants.HttpHeaders.ActivityId,
-                            out IEnumerable<string> headerValues) && headerValues.Any())
-                        {
-                            activityId = new Guid(headerValues.First());
-                        }
-
-                        this.eventSource.Response(
-                            activityId,
-                            localGuid,
-                            (short)responseMessage.StatusCode,
-                            durationTimeSpan.TotalMilliseconds,
-                            responseMessage.Headers);
-
-                        return responseMessage;
-                    }
-                }
-            };
-
-            HttpRequestMessage GetHttpRequestMessage()
-            {
-                return requestMessage;
+                throw new ArgumentNullException(nameof(createRequestMessageAsync));
             }
 
-            return BackoffRetryUtility<HttpResponseMessage>.ExecuteAsync(
-                callbackMethod: funcDelegate,
-                retryPolicy: new TransientHttpClientRetryPolicy(
-                    getHttpRequestMessage: GetHttpRequestMessage,
-                    gatewayRequestTimeout: this.httpClient.Timeout,
-                    diagnosticsContext: diagnosticsContext),
-                cancellationToken: cancellationToken);
+            return this.SendHttpHelperAsync(
+                createRequestMessageAsync,
+                resourceType,
+                timeoutPolicy,
+                trace,
+                cancellationToken);
+        }
+
+        private async Task<HttpResponseMessage> SendHttpHelperAsync(
+            Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
+            ResourceType resourceType,
+            HttpTimeoutPolicy timeoutPolicy,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            DateTime startDateTimeUtc = DateTime.UtcNow;
+            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
+            timeoutEnumerator.MoveNext();
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                (TimeSpan requestTimeout, TimeSpan delayForNextRequest) = timeoutEnumerator.Current;
+                using (HttpRequestMessage requestMessage = await createRequestMessageAsync())
+                {
+                    // If the default cancellation token is passed then use the timeout policy
+                    using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    cancellationTokenSource.CancelAfter(requestTimeout);
+
+                    using (ITrace helperTrace = trace.StartChild($"Execute Http With Timeout Policy: {timeoutPolicy.TimeoutPolicyName}", TraceComponent.Transport, Tracing.TraceLevel.Info))
+                    {
+                        try
+                        {
+                            return await this.ExecuteHttpHelperAsync(
+                                requestMessage,
+                                resourceType,
+                                cancellationTokenSource.Token);
+                        }
+                        catch (Exception e)
+                        {
+                            // Log the error message
+                            trace.AddDatum(
+                                "Error",
+                                new PointOperationStatisticsTraceDatum(
+                                      activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                      statusCode: HttpStatusCode.ServiceUnavailable,
+                                      subStatusCode: SubStatusCodes.Unknown,
+                                      responseTimeUtc: DateTime.UtcNow,
+                                      requestCharge: 0,
+                                      errorMessage: e.ToString(),
+                                      method: requestMessage.Method,
+                                      requestUri: requestMessage.RequestUri.OriginalString,
+                                      requestSessionToken: null,
+                                      responseSessionToken: null));
+
+                            bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
+                                !timeoutEnumerator.MoveNext(); // No more retries are configured
+
+                            switch (e)
+                            {
+                                case OperationCanceledException operationCanceledException:
+                                    // Throw if the user passed in cancellation was requested
+                                    if (cancellationToken.IsCancellationRequested)
+                                    {
+                                        throw;
+                                    }
+
+                                    // Convert OperationCanceledException to 408 when the HTTP client throws it. This makes it clear that the 
+                                    // the request timed out and was not user canceled operation.
+                                    if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                    {
+                                        // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
+                                        string message =
+                                            $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                        throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                            message,
+                                            innerException: operationCanceledException,
+                                            trace: helperTrace);
+                                    }
+
+                                    break;
+                                case WebException webException:
+                                    if (isOutOfRetries || (!timeoutPolicy.IsSafeToRetry(requestMessage.Method) && !WebExceptionUtility.IsWebExceptionRetriable(webException)))
+                                    {
+                                        throw;
+                                    }
+
+                                    break;
+                                case HttpRequestException httpRequestException:
+                                    if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
+                                    {
+                                        throw;
+                                    }
+
+                                    break;
+                                default:
+                                    throw;
+                            }
+                        }
+                    }
+                }
+
+                if (delayForNextRequest != TimeSpan.Zero)
+                {
+                    using (ITrace delayTrace = trace.StartChild("Retry Delay", TraceComponent.Transport, Tracing.TraceLevel.Info))
+                    {
+                        await Task.Delay(delayForNextRequest);
+                    }
+                }
+            }
+        }
+
+        private async Task<HttpResponseMessage> ExecuteHttpHelperAsync(
+            HttpRequestMessage requestMessage,
+            ResourceType resourceType,
+            CancellationToken cancellationToken)
+        {
+            DateTime sendTimeUtc = DateTime.UtcNow;
+            Guid localGuid = Guid.NewGuid(); // For correlating HttpRequest and HttpResponse Traces
+
+            Guid requestedActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
+            this.eventSource.Request(
+                requestedActivityId,
+                localGuid,
+                requestMessage.RequestUri.ToString(),
+                resourceType.ToResourceTypeString(),
+                requestMessage.Headers);
+
+            // Only read the header initially. The content gets copied into a memory stream later
+            // if we read the content HTTP client will buffer the message and then it will get buffered
+            // again when it is copied to the memory stream.
+            HttpResponseMessage responseMessage = await this.httpClient.SendAsync(
+                    requestMessage,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    cancellationToken);
+
+            // WebAssembly HttpClient does not set the RequestMessage property on SendAsync
+            if (responseMessage.RequestMessage == null)
+            {
+                responseMessage.RequestMessage = requestMessage;
+            }
+
+            DateTime receivedTimeUtc = DateTime.UtcNow;
+            TimeSpan durationTimeSpan = receivedTimeUtc - sendTimeUtc;
+
+            Guid activityId = Guid.Empty;
+            if (responseMessage.Headers.TryGetValues(
+                HttpConstants.HttpHeaders.ActivityId,
+                out IEnumerable<string> headerValues) && headerValues.Any())
+            {
+                activityId = new Guid(headerValues.First());
+            }
+
+            this.eventSource.Response(
+                activityId,
+                localGuid,
+                (short)responseMessage.StatusCode,
+                durationTimeSpan.TotalMilliseconds,
+                responseMessage.Headers);
+
+            return responseMessage;
         }
 
         protected override void Dispose(bool disposing)

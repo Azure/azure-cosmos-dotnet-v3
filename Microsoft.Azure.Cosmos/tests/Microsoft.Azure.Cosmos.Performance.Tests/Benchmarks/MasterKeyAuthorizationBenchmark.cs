@@ -26,12 +26,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public void CreateSignatureGeneration()
         {
             this.TestSignature("POST", "dbs/testdb/colls/testcollection/dbs", "dbs");
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public void ReadSignatureGeneration()
         {
             this.TestSignature("GET", "dbs/testdb/colls/testcollection/dbs/item1", "dbs");

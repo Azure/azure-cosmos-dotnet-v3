@@ -4,7 +4,15 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
-    internal enum TraceLevel
+    /// <summary>
+    /// The level (of information) for an <see cref="ITrace"/>.
+    /// </summary>
+#if INTERNAL
+    public
+#else
+    internal
+#endif 
+        enum TraceLevel
     {
         /// <summary>
         /// Output no tracing and debugging messages.

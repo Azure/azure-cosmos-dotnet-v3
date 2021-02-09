@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     // TODO: This class should inherit from ConflictsInternal to avoid the downcasting hacks.
@@ -36,9 +37,9 @@ namespace Microsoft.Azure.Cosmos
         protected CosmosClientContext ClientContext { get; }
 
         public Task<ResponseMessage> DeleteAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties conflict,
             PartitionKey partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             if (conflict == null)
@@ -57,10 +58,10 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Delete,
                 requestOptions: null,
                 cosmosContainerCore: this.container,
-                partitionKey: partitionKey,
+                feedRange: new FeedRangePartitionKey(partitionKey),
                 streamPayload: null,
                 requestEnricher: null,
-                diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
         }
 
@@ -133,9 +134,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<ItemResponse<T>> ReadCurrentAsync<T>(
-            CosmosDiagnosticsContext diagnosticsContext,
             ConflictProperties cosmosConflict,
             PartitionKey partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             if (cosmosConflict == null)
@@ -146,7 +147,10 @@ namespace Microsoft.Azure.Cosmos
             // SourceResourceId is RID based on Conflicts, so we need to obtain the db and container rid
             DatabaseInternal databaseCore = (DatabaseInternal)this.container.Database;
             string databaseResourceId = await databaseCore.GetRIDAsync(cancellationToken);
-            string containerResourceId = await this.container.GetRIDAsync(cancellationToken);
+            string containerResourceId = await this.container.GetCachedRIDAsync(
+                forceRefresh: false, 
+                trace, 
+                cancellationToken: cancellationToken);
 
             string dbLink = this.ClientContext.CreateLink(
                 parentLink: string.Empty,
@@ -169,10 +173,10 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Read,
                 requestOptions: null,
                 cosmosContainerCore: this.container,
-                partitionKey: partitionKey,
+                feedRange: new FeedRangePartitionKey(partitionKey),
                 streamPayload: null,
                 requestEnricher: null,
-                diagnosticsContext: diagnosticsContext,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);

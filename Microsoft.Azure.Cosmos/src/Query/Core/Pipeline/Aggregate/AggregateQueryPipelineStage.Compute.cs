@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
     {
@@ -94,9 +96,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
             }
 
-            public override async ValueTask<bool> MoveNextAsync()
+            public override async ValueTask<bool> MoveNextAsync(ITrace trace)
             {
                 this.cancellationToken.ThrowIfCancellationRequested();
+
+                if (trace == null)
+                {
+                    throw new ArgumentNullException(nameof(trace));
+                }
 
                 if (this.returnedFinalPage)
                 {
@@ -106,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 
                 // Draining aggregates is broken down into two stages
                 QueryPage queryPage;
-                if (await this.inputStage.MoveNextAsync())
+                if (await this.inputStage.MoveNextAsync(trace))
                 {
                     // Stage 1:
                     // Drain the aggregates fully from all continuations and all partitions
@@ -140,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        additionalHeaders: sourcePage.AdditionalHeaders,
                         state: queryState);
 
                     queryPage = emptyPage;
@@ -162,6 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                         responseLengthInBytes: default,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
+                        additionalHeaders: default,
                         state: default);
 
                     queryPage = finalPage;

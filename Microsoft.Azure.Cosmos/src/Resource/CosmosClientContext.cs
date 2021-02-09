@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -53,16 +54,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<ContainerProperties> GetCachedContainerPropertiesAsync(
             string containerUri,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         internal abstract Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
-            Func<CosmosDiagnosticsContext, Task<TResult>> task);
-
-        internal abstract CosmosDiagnosticsContext CreateDiagnosticContext(
-            string operationName,
-            RequestOptions requestOptions);
+            Func<ITrace, Task<TResult>> task);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
@@ -78,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -91,10 +89,10 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             ContainerInternal cosmosContainerCore,
-            PartitionKey? partitionKey,
+            FeedRange feedRange,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsContext,
+            ITrace trace,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -107,11 +105,11 @@ namespace Microsoft.Azure.Cosmos
            OperationType operationType,
            RequestOptions requestOptions,
            ContainerInternal containerInternal,
-           PartitionKey? partitionKey,
+           FeedRange feedRange,
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
-           CosmosDiagnosticsContext diagnosticsContext,
+           ITrace trace,
            CancellationToken cancellationToken);
 
         public abstract void Dispose();

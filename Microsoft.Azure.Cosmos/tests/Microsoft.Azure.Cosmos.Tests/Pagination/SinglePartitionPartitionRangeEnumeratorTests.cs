@@ -4,15 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
-    using System;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public sealed class SinglePartitionPartitionRangeEnumeratorTests
@@ -72,16 +71,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
-                IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> ranges = await inMemoryCollection.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 Assert.AreEqual(1, ranges.Count);
 
                 ReadFeedPartitionRangeEnumerator enumerator = new ReadFeedPartitionRangeEnumerator(
                     inMemoryCollection,
-                    feedRange: ranges[0],
-                    pageSize: 10,
-                    queryRequestOptions: default,
-                    cancellationToken: default,
-                    state: new ReadFeedState(CosmosNull.Create()));
+                    feedRangeState: new FeedRangeState<ReadFeedState>(ranges[0], ReadFeedState.Beginning()),
+                    readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                    cancellationToken: default);
 
 
                 (HashSet<string> parentIdentifiers, ReadFeedState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
@@ -96,18 +93,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 // Resume on the children using the parent continuaiton token
                 HashSet<string> childIdentifiers = new HashSet<string>();
 
-                IReadOnlyList<FeedRangeInternal> childRanges = await inMemoryCollection.GetFeedRangesAsync(cancellationToken: default);
+                await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                IReadOnlyList<FeedRangeInternal> childRanges = await inMemoryCollection.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
                 foreach (FeedRangeInternal childRange in childRanges)
                 {
                     PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState> enumerable = new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
-                        range: childRange,
-                        state: state,
-                        (range, state) => new ReadFeedPartitionRangeEnumerator(
+                        feedRangeState: new FeedRangeState<ReadFeedState>(childRange, state),
+                        (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                                 inMemoryCollection,
-                                feedRange: childRange,
-                                pageSize: 10,
-                                state: state,
-                                queryRequestOptions: default,
+                                feedRangeState: feedRangeState,
+                                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                                 cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -125,24 +120,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public override IAsyncEnumerable<TryCatch<ReadFeedPage>> CreateEnumerable(
                 IDocumentContainer documentContainer,
                 ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
-                    range: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                    state: state,
-                    (range, state) => new ReadFeedPartitionRangeEnumerator(
+                    feedRangeState: new FeedRangeState<ReadFeedState>(
+                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"), 
+                        state ?? ReadFeedState.Beginning()),
+                    (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                         documentContainer,
-                        feedRange: range,
-                        pageSize: 10,
-                        state: state ?? new ReadFeedState(CosmosNull.Create()),
-                        queryRequestOptions: default,
+                        feedRangeState: feedRangeState,
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
                 IDocumentContainer inMemoryCollection,
                 ReadFeedState state = null) => new ReadFeedPartitionRangeEnumerator(
                     inMemoryCollection,
-                    feedRange: new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
-                    pageSize: 10,
-                    state: state ?? new ReadFeedState(CosmosNull.Create()),
-                    queryRequestOptions: default,
+                    feedRangeState: new FeedRangeState<ReadFeedState>(
+                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                        state ?? ReadFeedState.Beginning()),
+                    readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                     cancellationToken: default);
         }
     }

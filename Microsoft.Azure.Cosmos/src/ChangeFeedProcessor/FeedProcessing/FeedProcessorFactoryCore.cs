@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
 
     internal class FeedProcessorFactoryCore : FeedProcessorFactory
     {
@@ -22,13 +21,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             DocumentServiceLeaseCheckpointer leaseCheckpointer)
         {
-            if (container == null) throw new ArgumentNullException(nameof(container));
-            if (changeFeedProcessorOptions == null) throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
-            if (leaseCheckpointer == null) throw new ArgumentNullException(nameof(leaseCheckpointer));
-
-            this.container = container;
-            this.changeFeedProcessorOptions = changeFeedProcessorOptions;
-            this.leaseCheckpointer = leaseCheckpointer;
+            this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.changeFeedProcessorOptions = changeFeedProcessorOptions ?? throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
+            this.leaseCheckpointer = leaseCheckpointer ?? throw new ArgumentNullException(nameof(leaseCheckpointer));
+            this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
         }
 
         public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer)
@@ -49,11 +45,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 SessionToken = this.changeFeedProcessorOptions.SessionToken,
             };
 
-            string partitionKeyRangeId = lease.CurrentLeaseToken;
-
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
-            ChangeFeedPartitionKeyResultSetIteratorCore iterator = ResultSetIteratorUtils.BuildResultSetIterator(
-                partitionKeyRangeId: partitionKeyRangeId,
+            ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
+                lease: lease,
                 continuationToken: options.StartContinuation,
                 maxItemCount: options.MaxItemCount,
                 container: this.container,

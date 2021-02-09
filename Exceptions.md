@@ -24,6 +24,11 @@ These APIs are designed for more advance scenario where perfomance is critical o
 5. ResponseMessage.ErrorMessage contains the error message. It does not include the diagnostics.
 6. ResponseMessage.Diagnostics.ToString() contains information required to troubleshoot most issues.
 
+### Retry Logic <a id="retry-logics"></a>
+Cosmos DB SDK on any IO failure will attempt to retry the failed operation if retry in the SDK is feasible. Having a retry in place for any failure is a good practice but specifically handling/retrying write failures is a must.
+
+1. Read and query IO failures will get retried by the SDK without surfacing them to the end user.
+2. Writes (Create, Upsert, Replace, Delete) are "not" idempotent and hence SDK cannot always blindly retry the failed write operations. It is a must that user's application logic to handle the failure and retry.
 
 ## Common error status codes and troubleshooting guide <a id="error-codes"></a>
 

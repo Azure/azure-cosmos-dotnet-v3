@@ -10,6 +10,7 @@ namespace CosmosBenchmark
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Newtonsoft.Json;
 
     internal class ParallelExecutionStrategy : IExecutionStrategy
     {
@@ -136,7 +137,7 @@ namespace CosmosBenchmark
                     runSummary.Top95PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(95);
                     runSummary.Top99PercentLatencyInMs = TelemetrySpan.GetLatencyPercentile(99);
 
-                    string summary = JsonHelper.ToString(runSummary);
+                    string summary = JsonConvert.SerializeObject(runSummary);
                     Utility.TeeTraceInformation(summary);
                 }
                 else

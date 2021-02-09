@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class SkipEmptyPageQueryPipelineStage : IQueryPipelineStage
     {
@@ -18,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
+        private ImmutableDictionary<string, string> cumulativeAdditionalHeaders;
         private CancellationToken cancellationToken;
         private bool returnedFinalStats;
 
@@ -31,11 +35,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public ValueTask DisposeAsync() => this.inputStage.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
+        {
+            return this.MoveNextAsync(NoOpTrace.Singleton);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            if (!await this.inputStage.MoveNextAsync())
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            if (!await this.inputStage.MoveNextAsync(trace))
             {
                 if (!this.returnedFinalStats)
                 {
@@ -46,9 +60,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         responseLengthInBytes: this.cumulativeResponseLengthInBytes,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
+                        additionalHeaders: this.cumulativeAdditionalHeaders,
                         state: default);
                     this.cumulativeRequestCharge = 0;
                     this.cumulativeResponseLengthInBytes = 0;
+                    this.cumulativeAdditionalHeaders = null;
                     this.returnedFinalStats = true;
                     this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                     return true;
@@ -70,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 this.cumulativeRequestCharge += sourcePage.RequestCharge;
                 this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
+                this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
                 if (sourcePage.State == null)
                 {
                     QueryPage queryPage = new QueryPage(
@@ -79,9 +96,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        additionalHeaders: sourcePage.AdditionalHeaders,
                         state: default);
                     this.cumulativeRequestCharge = 0;
                     this.cumulativeResponseLengthInBytes = 0;
+                    this.cumulativeAdditionalHeaders = null;
                     this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                     return true;
                 }
@@ -99,9 +118,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes + this.cumulativeResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    additionalHeaders: sourcePage.AdditionalHeaders,
                     state: sourcePage.State);
                 this.cumulativeRequestCharge = 0;
                 this.cumulativeResponseLengthInBytes = 0;
+                this.cumulativeAdditionalHeaders = null;
             }
             else
             {

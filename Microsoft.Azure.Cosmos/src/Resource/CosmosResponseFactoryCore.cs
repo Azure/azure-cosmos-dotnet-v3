@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Trace);
             });
         }
 
@@ -129,6 +129,22 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.Headers,
                     permissionProperties,
                     permission,
+                    cosmosResponseMessage.Diagnostics);
+            });
+        }
+
+        public override ClientEncryptionKeyResponse CreateClientEncryptionKeyResponse(
+            ClientEncryptionKey clientEncryptionKey,
+            ResponseMessage responseMessage)
+        {
+            return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
+            {
+                ClientEncryptionKeyProperties cekProperties = this.ToObjectpublic<ClientEncryptionKeyProperties>(cosmosResponseMessage);
+                return new ClientEncryptionKeyResponse(
+                    cosmosResponseMessage.StatusCode,
+                    cosmosResponseMessage.Headers,
+                    cekProperties,
+                    clientEncryptionKey,
                     cosmosResponseMessage.Diagnostics);
             });
         }

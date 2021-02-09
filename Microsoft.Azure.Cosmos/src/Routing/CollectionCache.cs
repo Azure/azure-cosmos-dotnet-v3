@@ -137,7 +137,11 @@ namespace Microsoft.Azure.Cosmos.Common
                 if (request.RequestContext.ResolvedCollectionRid == null)
                 {
                     collectionInfo =
-                        await this.ResolveByNameAsync(request.Headers[HttpConstants.HttpHeaders.Version], request.ResourceAddress, cancellationToken);
+                        await this.ResolveByNameAsync(
+                            apiVersion: request.Headers[HttpConstants.HttpHeaders.Version],
+                            resourceAddress: request.ResourceAddress,
+                            forceRefesh: false,
+                            cancellationToken: cancellationToken);
 
                     if (collectionInfo != null)
                     {
@@ -145,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Common
                             "Mapped resourceName {0} to resourceId {1}. '{2}'",
                             request.ResourceAddress,
                             collectionInfo.ResourceId,
-                            Trace.CorrelationManager.ActivityId);
+                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
 
                         request.ResourceId = collectionInfo.ResourceId;
                         request.RequestContext.ResolvedCollectionRid = collectionInfo.ResourceId;
@@ -155,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Common
                         DefaultTrace.TraceVerbose(
                             "Collection with resourceName {0} not found. '{1}'",
                             request.ResourceAddress,
-                            Trace.CorrelationManager.ActivityId);
+                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
                     }
 
                     return collectionInfo;
@@ -238,12 +242,19 @@ namespace Microsoft.Azure.Cosmos.Common
         internal virtual async Task<ContainerProperties> ResolveByNameAsync(
             string apiVersion,
             string resourceAddress,
+            bool forceRefesh,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
             InternalCache cache = this.GetCache(apiVersion);
+
+            if (forceRefesh)
+            {
+                cache.collectionInfoByName.TryRemoveIfCompleted(resourceFullName);
+            }
+
             return await cache.collectionInfoByName.GetAsync(
                 resourceFullName,
                 null,

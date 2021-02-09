@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Has the ability to page through a partition range.
@@ -20,41 +20,51 @@ namespace Microsoft.Azure.Cosmos.Pagination
     {
         private CancellationToken cancellationToken;
 
-        protected PartitionRangePageAsyncEnumerator(FeedRangeInternal range, CancellationToken cancellationToken, TState state = default)
+        protected PartitionRangePageAsyncEnumerator(FeedRangeState<TState> feedRangeState, CancellationToken cancellationToken)
         {
-            this.Range = range ?? throw new ArgumentNullException(nameof(range));
-            this.State = state;
+            this.FeedRangeState = feedRangeState;
             this.cancellationToken = cancellationToken;
         }
 
-        public FeedRangeInternal Range { get; }
+        public FeedRangeState<TState> FeedRangeState { get; private set; }
 
         public TryCatch<TPage> Current { get; private set; }
 
-        public TState State { get; private set; }
-
         public bool HasStarted { get; private set; }
 
-        private bool HasMoreResults => !this.HasStarted || (this.State != default);
+        private bool HasMoreResults => !this.HasStarted || (this.FeedRangeState.State != default);
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
-            if (!this.HasMoreResults)
-            {
-                return false;
-            }
-
-            this.Current = await this.GetNextPageAsync(cancellationToken: this.cancellationToken);
-            if (this.Current.Succeeded)
-            {
-                this.State = this.Current.Result.State;
-                this.HasStarted = true;
-            }
-
-            return true;
+            return this.MoveNextAsync(NoOpTrace.Singleton);
         }
 
-        protected abstract Task<TryCatch<TPage>> GetNextPageAsync(CancellationToken cancellationToken);
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            using (ITrace childTrace = trace.StartChild(name: $"{this.FeedRangeState.FeedRange} move next", TraceComponent.Pagination, TraceLevel.Info))
+            {
+                if (!this.HasMoreResults)
+                {
+                    return false;
+                }
+
+                this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken: this.cancellationToken);
+                if (this.Current.Succeeded)
+                {
+                    this.FeedRangeState = new FeedRangeState<TState>(this.FeedRangeState.FeedRange, this.Current.Result.State);
+                    this.HasStarted = true;
+                }
+
+                return true;
+            }
+        }
+
+        protected abstract Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken);
 
         public abstract ValueTask DisposeAsync();
 

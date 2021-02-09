@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using CommandLine;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
+    using Newtonsoft.Json;
 
     public class BenchmarkConfig
     {
@@ -23,6 +24,7 @@ namespace CosmosBenchmark
         public string EndPoint { get; set; }
 
         [Option('k', Required = true, HelpText = "Cosmos account master key")]
+        [JsonIgnore]
         public string Key { get; set; }
 
         [Option(Required = false, HelpText = "Database to use")]
@@ -54,6 +56,12 @@ namespace CosmosBenchmark
 
         [Option("pl", Required = false, HelpText = "Degree of parallism")]
         public int DegreeOfParallelism { get; set; } = -1;
+
+        [Option("tcp", Required = false, HelpText = "MaxRequestsPerTcpConnection")]
+        public int? MaxRequestsPerTcpConnection { get; set; } = null;
+
+        [Option(Required = false, HelpText = "MaxTcpConnectionsPerEndpoint")]
+        public int? MaxTcpConnectionsPerEndpoint { get; set; } = null;
 
         [Option(Required = false, HelpText = "Item template")]
         public string ItemTemplateFile { get; set; } = "Player.json";
@@ -88,8 +96,18 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
+        [Option(Required = false, HelpText = "Endpoint to publish results to")]
+        public string ResultsEndpoint { get; set; }
+
+        [Option(Required = false, HelpText = "Key to publish results to")]
+        [JsonIgnore]
+        public string ResultsKey { get; set; }
+
+        [Option(Required = false, HelpText = "Database to publish results to")]
+        public string ResultsDatabase { get; set; } 
+
         [Option(Required = false, HelpText = "Container to publish results to")]
-        internal string ResultsContainer { get; set; } = "runsummary";
+        public string ResultsContainer { get; set; } = "runsummary";
 
         internal int GetTaskCount(int containerThroughput)
         {
@@ -120,7 +138,8 @@ namespace CosmosBenchmark
         internal static BenchmarkConfig From(string[] args)
         {
             BenchmarkConfig options = null;
-            Parser.Default.ParseArguments<BenchmarkConfig>(args)
+            Parser parser = new Parser((settings) => settings.CaseSensitive = false);
+            parser.ParseArguments<BenchmarkConfig>(args)
                 .WithParsed<BenchmarkConfig>(e => options = e)
                 .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
 
@@ -144,7 +163,9 @@ namespace CosmosBenchmark
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
-                MaxRetryAttemptsOnRateLimitedRequests = 0
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
+                MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -172,6 +193,8 @@ namespace CosmosBenchmark
                             {
                                 ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
                                 ConnectionProtocol = Protocol.Tcp,
+                                MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                                 UserAgentSuffix = BenchmarkConfig.UserAgentSuffix,
                                 RetryOptions = new RetryOptions()
                                 {

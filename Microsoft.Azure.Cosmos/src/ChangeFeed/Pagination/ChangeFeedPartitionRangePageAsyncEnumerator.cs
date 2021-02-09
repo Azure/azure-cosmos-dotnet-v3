@@ -9,31 +9,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ChangeFeedPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>
     {
         private readonly IChangeFeedDataSource changeFeedDataSource;
-        private readonly int pageSize;
+        private readonly ChangeFeedPaginationOptions changeFeedPaginationOptions;
 
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
-            FeedRangeInternal range,
-            int pageSize,
-            ChangeFeedState state,
+            FeedRangeState<ChangeFeedState> feedRangeState,
+            ChangeFeedPaginationOptions changeFeedPaginationOptions,
             CancellationToken cancellationToken)
-            : base(range, cancellationToken, state)
+            : base(feedRangeState, cancellationToken)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
-            this.pageSize = pageSize;
+            this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? throw new ArgumentNullException(nameof(changeFeedPaginationOptions));
         }
 
         public override ValueTask DisposeAsync() => default;
 
-        protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(CancellationToken cancellationToken) => this.changeFeedDataSource.MonadicChangeFeedAsync(
-            this.State,
-            this.Range,
-            this.pageSize,
+        protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(
+            ITrace trace, 
+            CancellationToken cancellationToken) => this.changeFeedDataSource.MonadicChangeFeedAsync(
+            this.FeedRangeState,
+            this.changeFeedPaginationOptions,
+            trace,
             cancellationToken);
     }
 }

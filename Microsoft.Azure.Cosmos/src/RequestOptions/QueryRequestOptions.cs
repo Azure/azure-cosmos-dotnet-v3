@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Documents;
 
@@ -233,36 +232,7 @@ namespace Microsoft.Azure.Cosmos
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 
-            if (this.FeedRange != null)
-            {
-                ((FeedRangeInternal)this.FeedRange).Accept(FeedRangeRequestMessagePopulatorVisitor.Singleton, request);
-            }
-
             base.PopulateRequestOptions(request);
-        }
-
-        internal QueryRequestOptions Clone()
-        {
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
-            {
-                IfMatchEtag = this.IfMatchEtag,
-                IfNoneMatchEtag = this.IfNoneMatchEtag,
-                MaxItemCount = this.MaxItemCount,
-                ResponseContinuationTokenLimitInKb = this.ResponseContinuationTokenLimitInKb,
-                EnableScanInQuery = this.EnableScanInQuery,
-                EnableLowPrecisionOrderBy = this.EnableLowPrecisionOrderBy,
-                MaxBufferedItemCount = this.MaxBufferedItemCount,
-                SessionToken = this.SessionToken,
-                ConsistencyLevel = this.ConsistencyLevel,
-                MaxConcurrency = this.MaxConcurrency,
-                PartitionKey = this.PartitionKey,
-                CosmosSerializationFormatOptions = this.CosmosSerializationFormatOptions,
-                Properties = this.Properties,
-                IsEffectivePartitionKeyRouting = this.IsEffectivePartitionKeyRouting,
-                CosmosElementContinuationToken = this.CosmosElementContinuationToken,
-            };
-
-            return queryRequestOptions;
         }
 
         internal static void FillContinuationToken(

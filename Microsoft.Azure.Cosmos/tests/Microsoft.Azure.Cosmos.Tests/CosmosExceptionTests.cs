@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -97,17 +98,8 @@ namespace Microsoft.Azure.Cosmos
             string headerValue = "Test" + Guid.NewGuid();
             dce.Headers.Add(headerValue, null);
 
-            try
-            {
-                ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
-                Assert.Fail("Should throw exception");
-            }
-            catch (ArgumentNullException ane)
-            {
-                Assert.IsTrue(ane.ToString().Contains(headerValue));
-                Assert.IsTrue(ane.ToString().Contains(errorMessage));
-                Assert.IsTrue(ane.InnerException is DocumentClientException);
-            }
+            ResponseMessage responseMessage = dce.ToCosmosResponseMessage(null);
+            Assert.IsNull(responseMessage.Headers.Get(headerValue));
         }
 
         [TestMethod]
@@ -224,18 +216,16 @@ namespace Microsoft.Azure.Cosmos
 
             };
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
-
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
                 error.ToString(),
                 error: error,
-                diagnosticsContext: diagnostics);
+                trace: NoOpTrace.Singleton);
 
             ResponseMessage responseMessage = QueryResponse.CreateFailure(
                 statusCode: System.Net.HttpStatusCode.BadRequest,
                 cosmosException: cosmosException,
                 requestMessage: null,
-                diagnostics: diagnostics,
+                trace: NoOpTrace.Singleton,
                 responseHeaders: null);
 
             Assert.AreEqual(error, responseMessage.CosmosException.Error);
@@ -260,7 +250,6 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             string message)
         {
-            exception.DiagnosticsContext.GetOverallScope().Dispose();
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));

@@ -10,7 +10,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    
+    using Microsoft.Azure.Cosmos.Encryption.Custom;
+
     [TestClass]
     public class CosmosEncryptorTests
     {
@@ -22,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
+            _ = testContext;
             CosmosEncryptorTests.mockDataEncryptionKey = new Mock<DataEncryptionKey>();
             CosmosEncryptorTests.mockDataEncryptionKey
                 .Setup(m => m.EncryptData(It.IsAny<byte[]>()))

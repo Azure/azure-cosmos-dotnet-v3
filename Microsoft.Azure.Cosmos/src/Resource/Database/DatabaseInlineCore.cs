@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerAsync(diagnostics, containerProperties, throughput, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerAsync(containerProperties, throughput, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(string id,
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerAsync(diagnostics, id, partitionKeyPath, throughput, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerIfNotExistsAsync(diagnostics, containerProperties, throughput, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerIfNotExistsAsync(diagnostics, id, partitionKeyPath, throughput, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerIfNotExistsAsync(id, partitionKeyPath, throughput, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerStreamAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerStreamAsync(diagnostics, containerProperties, throughput, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerStreamAsync(containerProperties, throughput, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserResponse> CreateUserAsync(string id,
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateUserAsync),
                 requestOptions,
-                (diagnostics) => base.CreateUserAsync(diagnostics, id, requestOptions, cancellationToken));
+                (trace) => base.CreateUserAsync(id, requestOptions, trace, cancellationToken));
         }
 
         public override ContainerBuilder DefineContainer(
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteAsync),
                 requestOptions,
-                (diagnostics) => base.DeleteAsync(diagnostics, requestOptions, cancellationToken));
+                (trace) => base.DeleteAsync(requestOptions, trace, cancellationToken));
         }
 
         public override Task<ResponseMessage> DeleteStreamAsync(
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(DeleteStreamAsync),
                 requestOptions,
-                (diagnostics) => base.DeleteStreamAsync(diagnostics, requestOptions, cancellationToken));
+                (trace) => base.DeleteStreamAsync(requestOptions, trace, cancellationToken));
         }
 
         public override Container GetContainer(string id)
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadAsync),
                 requestOptions,
-                (diagnostics) => base.ReadAsync(diagnostics, requestOptions, cancellationToken));
+                (trace) => base.ReadAsync(requestOptions, trace, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReadStreamAsync(
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadStreamAsync),
                 requestOptions,
-                (diagnostics) => base.ReadStreamAsync(diagnostics, requestOptions, cancellationToken));
+                (trace) => base.ReadStreamAsync(requestOptions, trace, cancellationToken));
         }
 
         public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputAsync),
                 null,
-                (diagnostics) => base.ReadThroughputAsync(diagnostics, cancellationToken));
+                (trace) => base.ReadThroughputAsync(trace, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReadThroughputAsync(
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReadThroughputAsync),
                 requestOptions,
-                (diagnostics) => base.ReadThroughputAsync(diagnostics, requestOptions, cancellationToken));
+                (trace) => base.ReadThroughputAsync(requestOptions, trace, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceThroughputAsync),
                 requestOptions,
-                (diagnostics) => base.ReplaceThroughputAsync(diagnostics, throughput, requestOptions, cancellationToken));
+                (trace) => base.ReplaceThroughputAsync(throughput, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(ReplaceThroughputAsync),
                 requestOptions,
-                (diagnostics) => base.ReplaceThroughputAsync(diagnostics, throughputProperties, requestOptions, cancellationToken));
+                (trace) => base.ReplaceThroughputAsync(throughputProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ContainerResponse> CreateContainerAsync(
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerAsync(diagnostics, containerProperties, throughputProperties, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ContainerResponse> CreateContainerIfNotExistsAsync(
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerIfNotExistsAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerIfNotExistsAsync(diagnostics, containerProperties, throughputProperties, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerIfNotExistsAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<ResponseMessage> CreateContainerStreamAsync(
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(CreateContainerStreamAsync),
                 requestOptions,
-                (diagnostics) => base.CreateContainerStreamAsync(diagnostics, containerProperties, throughputProperties, requestOptions, cancellationToken));
+                (trace) => base.CreateContainerStreamAsync(containerProperties, throughputProperties, requestOptions, trace, cancellationToken));
         }
 
         public override Task<UserResponse> UpsertUserAsync(
@@ -296,7 +296,46 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(UpsertUserAsync),
                 requestOptions,
-                (diagnostics) => base.UpsertUserAsync(diagnostics, id, requestOptions, cancellationToken));
+                (trace) => base.UpsertUserAsync(id, requestOptions, trace, cancellationToken));
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override ClientEncryptionKey GetClientEncryptionKey(string id)
+        {
+            return base.GetClientEncryptionKey(id);
+        }
+
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+            override FeedIterator<ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(
+                QueryDefinition queryDefinition,
+                string continuationToken = null,
+                QueryRequestOptions requestOptions = null)  
+        {
+            return base.GetClientEncryptionKeyQueryIterator(queryDefinition, continuationToken, requestOptions);
+        }
+
+#if PREVIEW
+        public override
+#else
+        internal
+#endif
+            Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
+                ClientEncryptionKeyProperties clientEncryptionKeyProperties,
+                RequestOptions requestOptions = null,
+                CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(CreateClientEncryptionKeyAsync),
+                requestOptions,
+                (trace) => base.CreateClientEncryptionKeyAsync(trace, clientEncryptionKeyProperties, requestOptions, cancellationToken));
         }
     }
 }

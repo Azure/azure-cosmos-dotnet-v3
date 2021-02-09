@@ -6,10 +6,10 @@
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -85,19 +85,20 @@
                 // Resume on the children using the parent continuaiton token
                 HashSet<string> childIdentifiers = new HashSet<string>();
 
-                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(cancellationToken: default);
+                await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default);
                 foreach (FeedRangeEpk range in ranges)
                 {
                     IAsyncEnumerable<TryCatch<QueryPage>> enumerable = new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
-                        range: range,
-                        state: state,
-                        (range, state) => new QueryPartitionRangePageAsyncEnumerator(
+                        feedRangeState: new FeedRangeState<QueryState>(range, state),
+                        (feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
                             queryDataSource: documentContainer,
                             sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                            feedRange: range,
+                            feedRangeState: feedRangeState,
                             partitionKey: null,
-                            pageSize: 10,
-                            state: state,
+                            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                             cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -114,10 +115,10 @@
                 {
                     CosmosObject document = (CosmosObject)element;
                     ResourceId resourceIdentifier = ResourceId.Parse(((CosmosString)document["_rid"]).Value);
-                    long timestamp = Number64.ToLong(((CosmosNumber)document["_ts"]).Value);
+                    long ticks = Number64.ToLong(((CosmosNumber)document["_ts"]).Value);
                     string identifer = ((CosmosString)document["id"]).Value;
 
-                    records.Add(new Record(resourceIdentifier, timestamp, identifer, document));
+                    records.Add(new Record(resourceIdentifier, new DateTime(ticks: ticks, DateTimeKind.Utc), identifer, document));
                 }
 
                 return records;
@@ -127,18 +128,18 @@
                 IDocumentContainer documentContainer,
                 QueryState state = null)
             {
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
                 return new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
-                    range: ranges[0],
-                    state: state,
-                    (range, state) => new QueryPartitionRangePageAsyncEnumerator(
+                    feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
+                    (feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
                         queryDataSource: documentContainer,
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                        feedRange: range,
+                        feedRangeState: feedRangeState,
                         partitionKey: null,
-                        pageSize: 10,
-                        state: state,
+                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default));
             }
 
@@ -146,15 +147,16 @@
                 IDocumentContainer documentContainer,
                 QueryState state = default)
             {
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(cancellationToken: default).Result;
+                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton, 
+                    cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
                 return new QueryPartitionRangePageAsyncEnumerator(
                     queryDataSource: documentContainer,
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                    feedRange: ranges[0],
-                    pageSize: 10,
+                    feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                     partitionKey: null,
-                    state: state,
+                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     cancellationToken: default);
             }
         }

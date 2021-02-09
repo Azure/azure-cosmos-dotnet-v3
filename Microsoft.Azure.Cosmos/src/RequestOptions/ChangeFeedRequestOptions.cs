@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.Globalization;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -65,17 +66,6 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(request != null);
 
             base.PopulateRequestOptions(request);
-
-            if (this.PageSizeHint.HasValue)
-            {
-                request.Headers.Add(
-                    HttpConstants.HttpHeaders.PageSize,
-                    this.PageSizeHint.Value.ToString(CultureInfo.InvariantCulture));
-            }
-
-            request.Headers.Add(
-                HttpConstants.HttpHeaders.A_IM,
-                HttpConstants.A_IMHeaderValues.IncrementalFeed);
         }
 
         /// <summary>
@@ -99,6 +89,16 @@ namespace Microsoft.Azure.Cosmos
             get => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
             set => throw new NotSupportedException($"{nameof(ChangeFeedRequestOptions)} does not use the {nameof(this.IfNoneMatchEtag)} property.");
         }
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+        public
+#else
+        internal
+#endif
+        JsonSerializationFormatOptions JsonSerializationFormatOptions { get; set; }
 
         internal ChangeFeedRequestOptions Clone()
         {

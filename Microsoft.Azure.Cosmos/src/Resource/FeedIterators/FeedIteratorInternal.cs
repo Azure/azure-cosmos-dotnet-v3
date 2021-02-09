@@ -4,7 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Internal feed iterator API for casting and mocking purposes.
@@ -26,5 +29,7 @@ namespace Microsoft.Azure.Cosmos
                 || (cosmosException.StatusCode == System.Net.HttpStatusCode.RequestTimeout)
                 || (cosmosException.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable);
         }
+
+        public abstract Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken);
     }
 }

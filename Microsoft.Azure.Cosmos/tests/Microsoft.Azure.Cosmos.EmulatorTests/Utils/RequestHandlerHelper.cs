@@ -11,12 +11,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class RequestHandlerHelper : RequestHandler
     {
         public Action<RequestMessage> UpdateRequestMessage = null;
-
-        public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+        public Func<RequestMessage, ResponseMessage, ResponseMessage> CallBackOnResponse = null;
+        public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
         {
             this.UpdateRequestMessage?.Invoke(request);
+            ResponseMessage responseMessage = await base.SendAsync(request, cancellationToken);
+            if (this.CallBackOnResponse != null)
+            {
+                responseMessage = this.CallBackOnResponse.Invoke(request, responseMessage);
+            }
 
-            return base.SendAsync(request, cancellationToken);
+            return responseMessage;
         }
     }
 }

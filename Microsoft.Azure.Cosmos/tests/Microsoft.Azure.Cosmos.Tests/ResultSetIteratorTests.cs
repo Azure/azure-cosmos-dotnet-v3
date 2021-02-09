@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                Assert.IsTrue(request.IsPartitionKeyRangeHandlerRequired);
+                Assert.IsFalse(request.IsPartitionKeyRangeHandlerRequired);
                 Assert.AreEqual(OperationType.ReadFeed, request.OperationType);
                 Assert.AreEqual(ResourceType.Conflict, request.ResourceType);
                 ResponseMessage handlerResponse = TestHandler.ReturnSuccess().Result;

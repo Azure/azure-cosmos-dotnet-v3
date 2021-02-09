@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -76,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerRequestOptions requestOptions = new ContainerRequestOptions();
             requestOptions.PopulateQuotaInfo = true;
 
-            while(true)
+            while (true)
             {
                 ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
                 string indexTransformationStatus = readResponse.Headers["x-ms-documentdb-collection-index-transformation-progress"];
@@ -149,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             string diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath)
@@ -171,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await container.ReadContainerAsync();
@@ -184,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            Assert.IsTrue(diagnostics.Contains("Status Code"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
@@ -411,7 +412,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 containerResponse = await this.cosmosDatabase.CreateContainerAsync(geographyWithBoundingBox);
                 Assert.Fail("Expected an exception");
-            }            
+            }
             catch
             {
                 //"Incorrect parameter 'boundingBox' specified for 'Geography' collection"
@@ -548,22 +549,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await database.CreateContainerIfNotExistsAsync(settings, requestOptions: requestOptions);
             Assert.IsTrue(count > 0);
         }
-        
+
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncTest()
         {
+            RequestChargeHandlerHelper requestChargeHandler = new RequestChargeHandlerHelper();
+            RequestHandlerHelper requestHandlerHelper = new RequestHandlerHelper();
+
+            CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(requestChargeHandler, requestHandlerHelper));
+            Cosmos.Database database = client.GetDatabase(this.cosmosDatabase.Id);
+
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath1 = "/users";
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath1);
-            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            requestChargeHandler.TotalRequestCharges = 0;
+            ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(settings);
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, containerResponse.RequestCharge);
 
+            Assert.IsTrue(containerResponse.RequestCharge > 0);
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
             Assert.AreEqual(partitionKeyPath1, containerResponse.Resource.PartitionKey.Paths.First());
 
             //Creating container with same partition key path
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+            requestChargeHandler.TotalRequestCharges = 0;
+            containerResponse = await database.CreateContainerIfNotExistsAsync(settings);
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, containerResponse.RequestCharge);
 
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(containerName, containerResponse.Resource.Id);
@@ -574,10 +586,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 settings = new ContainerProperties(containerName, partitionKeyPath2);
-                containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(settings);
+                containerResponse = await database.CreateContainerIfNotExistsAsync(settings);
                 Assert.Fail("Should through ArgumentException on partition key path");
             }
-            catch(ArgumentException ex)
+            catch (ArgumentException ex)
             {
                 Assert.AreEqual(nameof(settings.PartitionKey), ex.ParamName);
                 Assert.IsTrue(ex.Message.Contains(string.Format(
@@ -586,11 +598,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     containerName,
                     partitionKeyPath1)));
             }
-
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
 
+            // Test the conflict scenario on create.
+            bool conflictReturned = false;
+            requestHandlerHelper.CallBackOnResponse = (request, response) =>
+            {
+                if (request.OperationType == Documents.OperationType.Create &&
+                    request.ResourceType == Documents.ResourceType.Collection)
+                {
+                    conflictReturned = true;
+                    // Simulate a race condition which results in a 409
+                    return CosmosExceptionFactory.Create(
+                        statusCode: HttpStatusCode.Conflict,
+                        subStatusCode: default,
+                        message: "Fake 409 conflict",
+                        stackTrace: string.Empty,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: response.Headers.RequestCharge,
+                        retryAfter: default,
+                        headers: response.Headers,
+                        error: default,
+                        innerException: default,
+                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
+                }
 
+                return response;
+            };
+
+            requestChargeHandler.TotalRequestCharges = 0;
+            ContainerResponse createWithConflictResponse = await database.CreateContainerIfNotExistsAsync(
+                Guid.NewGuid().ToString(), 
+                "/pk");
+
+            Assert.AreEqual(requestChargeHandler.TotalRequestCharges, createWithConflictResponse.RequestCharge);
+            Assert.AreEqual(HttpStatusCode.OK, createWithConflictResponse.StatusCode);
+            Assert.IsTrue(conflictReturned);
+
+            await createWithConflictResponse.Container.DeleteContainerAsync();
+        }
+
+        [TestMethod]
+        public async Task CreateContainerWithSystemKeyTest()
+        {
             //Creating existing container with partition key having value for SystemKey
             //https://github.com/Azure/azure-cosmos-dotnet-v3/issues/623
             string v2ContainerName = "V2Container";
@@ -605,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.cosmosDatabase.CreateContainerAsync(containerPropertiesWithSystemKey);
 
             ContainerProperties containerProperties = new ContainerProperties(v2ContainerName, "/test");
-            containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(containerProperties);
             Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
             Assert.AreEqual(v2ContainerName, containerResponse.Resource.Id);
             Assert.AreEqual("/test", containerResponse.Resource.PartitionKey.Paths.First());
@@ -624,7 +675,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-            
+        }
+
+        [TestMethod]
+        public async Task GetFeedRangeOnContainerRecreateScenariosTestAsync()
+        {
+            try
+            {
+                await ((ContainerInternal)this.cosmosDatabase.GetContainer(Guid.NewGuid().ToString())).GetFeedRangesAsync();
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+            {
+                Assert.IsTrue(ce.ToString().Contains("Resource Not Found"));
+            }
+
+            for (int i = 0; i < 3; i++) // using a loop to repro because sometimes cache refresh happens providing correct collection rid
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                        new ContainerProperties("coll", "/pk"),
+                        throughput: 10000);
+                await containerResponse.Container.DeleteContainerAsync();
+
+                ContainerResponse recreatedContainer = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(
+                        new ContainerProperties("coll", "/pk"),
+                        throughput: 10000);
+                await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
+                await recreatedContainer.Container.DeleteContainerAsync();
+
+                try
+                {
+                    await ((ContainerInternal)recreatedContainer.Container).GetFeedRangesAsync();
+                }
+                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+                {
+                    Assert.IsTrue(ce.ToString().Contains("Resource Not Found"));
+                }
+            }
         }
 
 #if INTERNAL || SUBPARTITIONING
@@ -750,7 +836,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.Fail("Multiple partition keys should have caused an exception.");
             }
-            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.BadRequest)
             {
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
@@ -928,7 +1014,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         response.EnsureSuccessStatusCode();
                         using (StreamReader streamReader = new StreamReader(response.Content))
-                        using(JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
+                        using (JsonTextReader jsonTextReader = new JsonTextReader(streamReader))
                         {
                             // Output will be:
                             // {"_rid":"FwsdAA==","DocumentCollections":[{"id":"2fdd3591-4ba7-415d-bbe1-c2ca635d409c"},{"id":"3caa5692-3645-4d65-a2aa-a0b67f4dbf52"}],"_count":2}
@@ -994,7 +1080,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
-            }            
+            }
         }
 
         [TestMethod]
@@ -1237,7 +1323,129 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             containerResponse = await container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
-        
+
+        [TestMethod]
+        public async Task ClientEncryptionPolicyTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path1",
+                    ClientEncryptionKeyId = "dekId1",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    EncryptionType = "Randomized"
+                },
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path2",
+                    ClientEncryptionKeyId = "dekId2",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    EncryptionType = "Deterministic"
+                }
+            };
+
+            ContainerProperties setting = new ContainerProperties()
+            {
+                Id = containerName,
+                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
+            };
+
+            ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Container container = containerResponse;
+            ContainerProperties responseSettings = containerResponse;
+
+            Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
+            ClientEncryptionIncludedPath includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(0);
+            Assert.AreEqual("/path1", includedPath.Path);
+            Assert.AreEqual("dekId1", includedPath.ClientEncryptionKeyId);
+            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
+            Assert.AreEqual("Randomized", includedPath.EncryptionType);
+
+            includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(1);
+            Assert.AreEqual("/path2", includedPath.Path);
+            Assert.AreEqual("dekId2", includedPath.ClientEncryptionKeyId);
+            Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
+            Assert.AreEqual("Deterministic", includedPath.EncryptionType);
+
+            ContainerResponse readResponse = await container.ReadContainerAsync();
+            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+            Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+        }
+
+        [TestMethod]
+        public void ClientEncryptionPolicyFailureTest()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path1",
+                    ClientEncryptionKeyId = "dekId1",
+                    EncryptionAlgorithm = "LegacyAeadAes256CbcHmac256",
+                    EncryptionType = "Randomized"
+                },
+            };
+
+            try
+            {
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
+                };
+
+                Assert.Fail("Creating ContainerProperties should have failed.");
+            }            
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."));
+            }
+
+            try
+            {
+                ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path1",
+                    ClientEncryptionKeyId = "dekId2",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    EncryptionType = "Deterministic"
+                };
+
+                Collection<ClientEncryptionIncludedPath> pathsList = new Collection<ClientEncryptionIncludedPath>()
+                        {
+                            new ClientEncryptionIncludedPath()
+                            {
+                                Path = "/path1",
+                                ClientEncryptionKeyId = "dekId1",
+                                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                                EncryptionType = "Randomized"
+                            },
+                        };
+                pathsList.Add(path1);
+
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsList)                    
+                };
+
+                Assert.Fail("Creating ContainerProperties should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Duplicate Path found."));
+            }
+        }
+
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
         {
             Assert.IsNotNull(containerResponse);

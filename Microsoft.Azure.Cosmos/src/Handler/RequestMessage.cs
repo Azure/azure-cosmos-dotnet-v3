@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public RequestMessage()
         {
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.Trace = NoOpTrace.Singleton;
         }
 
         /// <summary>
@@ -44,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.Method = method;
             this.RequestUriString = requestUri?.OriginalString;
             this.InternalRequestUri = requestUri;
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
+            this.Trace = NoOpTrace.Singleton;
         }
 
         /// <summary>
@@ -52,15 +53,15 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="method">The http method</param>
         /// <param name="requestUriString">The requested URI</param>
-        /// <param name="diagnosticsContext">The diagnostics object used to track the request</param>
+        /// /// <param name="trace">The trace node to append traces to.</param>
         internal RequestMessage(
             HttpMethod method,
             string requestUriString,
-            CosmosDiagnosticsContext diagnosticsContext)
+            ITrace trace)
         {
             this.Method = method;
             this.RequestUriString = requestUriString;
-            this.DiagnosticsContext = diagnosticsContext ?? throw new ArgumentNullException(nameof(diagnosticsContext));
+            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
         /// <summary>
@@ -106,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal Uri InternalRequestUri { get; private set; }
 
-        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
+        internal ITrace Trace { get; set; }
 
         internal RequestOptions RequestOptions { get; set; }
 
@@ -218,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
 #if DEBUG
             try
             {
-                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync();
+                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
                 ContainerProperties collectionFromCache =
                     await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
                 if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
@@ -253,7 +254,13 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    serviceRequest = new DocumentServiceRequest(this.OperationType, this.ResourceType, this.RequestUriString, this.Content, AuthorizationTokenType.PrimaryMasterKey, this.Headers.CosmosMessageHeaders);
+                    serviceRequest = new DocumentServiceRequest(
+                        this.OperationType, 
+                        this.ResourceType,
+                        this.RequestUriString, 
+                        this.Content, 
+                        AuthorizationTokenType.PrimaryMasterKey, 
+                        this.Headers.CosmosMessageHeaders);
                 }
 
                 if (this.UseGatewayMode.HasValue)
@@ -261,7 +268,6 @@ namespace Microsoft.Azure.Cosmos
                     serviceRequest.UseGatewayMode = this.UseGatewayMode.Value;
                 }
 
-                serviceRequest.RequestContext.ClientRequestStatistics = new CosmosClientSideRequestStatistics(this.DiagnosticsContext);
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
                 serviceRequest.Properties = this.Properties;
@@ -290,10 +296,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
-            if (this.OnBeforeSendRequestActions != null)
-            {
-                this.OnBeforeSendRequestActions(serviceRequest);
-            }
+            this.OnBeforeSendRequestActions?.Invoke(serviceRequest);
         }
 
         private bool AssertPartitioningPropertiesAndHeaders()

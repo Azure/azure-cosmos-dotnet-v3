@@ -7,12 +7,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Linq;
     using System.Net;
     using System.Runtime.CompilerServices;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
@@ -43,6 +46,33 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 Assert.AreEqual(
                     documents.Count(),
                     queryResults.Count);
+            }
+        }
+
+        [TestMethod]
+        public async Task ResponseHeadersAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 1;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                FeedIterator<JToken> itemQuery = container.GetItemQueryIterator<JToken>(
+                    queryText: "SELECT * FROM c",
+                    requestOptions: new QueryRequestOptions());
+                while (itemQuery.HasMoreResults)
+                {
+                    FeedResponse<JToken> page = await itemQuery.ReadNextAsync();
+                    Assert.IsTrue(page.Headers.AllKeys().Length > 1);
+                }
             }
         }
 
@@ -127,12 +157,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test draining typed iterator
             using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
-                    queryDefinition: null,
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 1000,
-                    }))
+                queryDefinition: null,
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 1000,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
                 while (feedIterator.HasMoreResults)
@@ -147,12 +177,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test draining stream iterator
             using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-                    queryDefinition: null,
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 1000,
-                    }))
+                queryDefinition: null,
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 1000,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
                 while (feedIterator.HasMoreResults)
@@ -166,12 +196,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test single page typed iterator
             using (FeedIterator<JObject> feedIterator = container.GetItemQueryIterator<JObject>(
-                    queryText: "SELECT * FROM c",
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 10,
-                    }))
+                queryText: "SELECT * FROM c",
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 10,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
                 FeedResponse<JObject> response = await feedIterator.ReadNextAsync();
@@ -183,12 +213,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             // Test single page stream iterator
             using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
-                    queryText: "SELECT * FROM c",
-                    continuationToken: null,
-                    requestOptions: new QueryRequestOptions
-                    {
-                        MaxItemCount = 10,
-                    }))
+                queryText: "SELECT * FROM c",
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 10,
+                }))
             {
                 weakReferences.Add(new WeakReference(feedIterator, true));
                 using (ResponseMessage response = await feedIterator.ReadNextAsync())
@@ -197,7 +227,74 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
             }
 
+            // Dummy Operation
+            using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                queryText: "SELECT * FROM c",
+                continuationToken: null,
+                requestOptions: new QueryRequestOptions
+                {
+                    MaxItemCount = 10,
+                }))
+            {
+                using (ResponseMessage response = await feedIterator.ReadNextAsync())
+                {
+                    Assert.IsNotNull(response.Content);
+                }
+            }
+
             return weakReferences;
+        }
+
+        [TestMethod]
+        public async Task StoreResponseStatisticsMemoryLeak()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                using (FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+                    queryText: "SELECT * FROM c",
+                    continuationToken: null,
+                    requestOptions: new QueryRequestOptions
+                    {
+                        MaxItemCount = 10,
+                    }))
+                {
+                    WeakReference weakReference = await CreateWeakReferenceToResponseContent(feedIterator);
+
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    await Task.Delay(500 /*ms*/);
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+
+                    Assert.IsFalse(weakReference.IsAlive);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<WeakReference> CreateWeakReferenceToResponseContent(
+            FeedIterator feedIterator)
+        {
+            WeakReference weakResponseContent;
+            using (ResponseMessage response = await feedIterator.ReadNextAsync())
+            {
+                Assert.IsNotNull(response.Content);
+                weakResponseContent = new WeakReference(response.Content, true);
+            }
+
+            return weakResponseContent;
         }
 
         [TestMethod]
@@ -236,9 +333,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 bool hasOrderBy)
                             {
                                 List<CosmosObject> queryResults = await queryFunc(container, query, queryRequestOptions);
-                                HashSet<string> expectedIds = new HashSet<string>(inputDocuments
+                                HashSet<UtfAnyString> expectedIds = new HashSet<UtfAnyString>(inputDocuments
                                     .Select(document => ((CosmosString)document["id"]).Value));
-                                HashSet<string> actualIds = new HashSet<string>(queryResults
+                                HashSet<UtfAnyString> actualIds = new HashSet<UtfAnyString>(queryResults
                                     .Select(queryResult => ((CosmosString)queryResult["id"]).Value));
                                 Assert.IsTrue(
                                     expectedIds.SetEquals(actualIds),
@@ -869,6 +966,134 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestTracingAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 10,
+                        MaxItemCount = 10,
+                        ReturnResultsInDeterministicOrder = true,
+                    };
+
+                    FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                        queryText: query,
+                        requestOptions: queryRequestOptions);
+                    ITrace trace;
+                    int numChildren = 1; // +1 for create query pipeline
+                    using (trace = Trace.GetRootTrace("Cross Partition Query"))
+                    {
+                        while (feedIterator.HasMoreResults)
+                        {
+                            await feedIterator.ReadNextAsync(trace, default);
+                            numChildren++;
+                        }
+                    }
+
+                    string traceString = TraceWriter.TraceToText(trace);
+
+                    Console.WriteLine(traceString);
+
+                    //Assert.AreEqual(numChildren, trace.Children.Count);
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task TestCancellationTokenAsync()
+        {
+            int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
+            uint numberOfDocuments = 100;
+            QueryOracleUtil util = new QueryOracle2(seed);
+            IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                inputDocuments,
+                ImplementationAsync);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                foreach (string query in new string[] { "SELECT c.id FROM c", "SELECT c._ts, c.id FROM c ORDER BY c._ts" })
+                {
+                    QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+                    {
+                        MaxBufferedItemCount = 7000,
+                        MaxConcurrency = 10,
+                        MaxItemCount = 10,
+                        ReturnResultsInDeterministicOrder = true,
+                    };
+
+                    // See if cancellation token is honored for first request
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        cancellationTokenSource.Cancel();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+
+                    // See if cancellation token is honored for second request
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        cancellationTokenSource.Cancel();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(default);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
+
+                    // See if cancellation token is honored mid draining
+                    try
+                    {
+                        CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                        FeedIteratorInternal<CosmosElement> feedIterator = (FeedIteratorInternal<CosmosElement>)container.GetItemQueryIterator<CosmosElement>(
+                            queryText: query,
+                            requestOptions: queryRequestOptions);
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+                        cancellationTokenSource.Cancel();
+                        await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                        Assert.Fail("Expected exception.");
+                    }
+                    catch (OperationCanceledException)
+                    {
                     }
                 }
             }

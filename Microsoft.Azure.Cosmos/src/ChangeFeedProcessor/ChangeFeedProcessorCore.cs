@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ChangeFeedProcessorCore : ChangeFeedProcessor
     {
@@ -29,12 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public ChangeFeedProcessorCore(ChangeFeedObserverFactory observerFactory)
         {
-            if (observerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(observerFactory));
-            }
-
-            this.observerFactory = observerFactory;
+            this.observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
         }
 
         public void ApplyBuildConfiguration(
@@ -45,27 +41,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             ContainerInternal monitoredContainer)
         {
-            if (monitoredContainer == null)
-            {
-                throw new ArgumentNullException(nameof(monitoredContainer));
-            }
-
             if (customDocumentServiceLeaseStoreManager == null && leaseContainer == null)
             {
                 throw new ArgumentNullException(nameof(leaseContainer));
             }
 
-            if (instanceName == null)
-            {
-                throw new ArgumentNullException("InstanceName is required for the processor to initialize.");
-            }
-
             this.documentServiceLeaseStoreManager = customDocumentServiceLeaseStoreManager;
             this.leaseContainer = leaseContainer;
-            this.instanceName = instanceName;
+            this.instanceName = instanceName ?? throw new ArgumentNullException("InstanceName is required for the processor to initialize.");
             this.changeFeedProcessorOptions = changeFeedProcessorOptions;
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
-            this.monitoredContainer = monitoredContainer;
+            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
         }
 
         public override async Task StartAsync()
@@ -89,18 +75,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private async Task InitializeAsync()
         {
+            string containerRid = await this.monitoredContainer.GetCachedRIDAsync(
+                forceRefresh: false, 
+                NoOpTrace.Singleton, 
+                default);
             string monitoredDatabaseAndContainerRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync();
             string leaseContainerPrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredDatabaseAndContainerRid);
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             if (this.documentServiceLeaseStoreManager == null)
             {
-                this.documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(this.leaseContainer, leaseContainerPrefix, this.instanceName).ConfigureAwait(false);
+                this.documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(this.monitoredContainer, this.leaseContainer, leaseContainerPrefix, this.instanceName).ConfigureAwait(false);
             }
 
-            this.partitionManager = this.BuildPartitionManager();
+            this.partitionManager = this.BuildPartitionManager(
+                containerRid, 
+                partitionKeyRangeCache);
             this.initialized = true;
         }
 
-        private PartitionManager BuildPartitionManager()
+        private PartitionManager BuildPartitionManager(
+            string containerRid,
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache)
         {
             CheckpointerObserverFactory factory = new CheckpointerObserverFactory(this.observerFactory, this.changeFeedProcessorOptions.CheckpointFrequency);
 
@@ -109,7 +104,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.documentServiceLeaseStoreManager.LeaseContainer,
                 this.documentServiceLeaseStoreManager.LeaseManager,
                 PartitionSynchronizerCore.DefaultDegreeOfParallelism,
-                this.changeFeedProcessorOptions.QueryFeedMaxBatchSize);
+                partitionKeyRangeCache,
+                containerRid);
             BootstrapperCore bootstrapper = new BootstrapperCore(synchronizer, this.documentServiceLeaseStoreManager.LeaseStore, BootstrapperCore.DefaultLockTime, BootstrapperCore.DefaultSleepTime);
 
             PartitionSupervisorFactoryCore partitionSuperviserFactory = new PartitionSupervisorFactoryCore(

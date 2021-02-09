@@ -17,10 +17,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
             AsciiType asciiType = AsciiType.Default)
         {
             TraceTextWriter.WriteTrace(
-writer,
-trace,
-level,
-asciiType);
+                writer,
+                trace,
+                level,
+                asciiType);
         }
 
         public static void WriteTrace(

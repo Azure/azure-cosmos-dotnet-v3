@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<FeedSplitException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            await Assert.ThrowsExceptionAsync<FeedRangeGoneException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
 
         [DataRow(HttpStatusCode.NotFound, (int)Documents.SubStatusCodes.Unknown)]

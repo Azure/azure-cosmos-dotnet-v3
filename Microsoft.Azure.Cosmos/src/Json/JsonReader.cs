@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
-    using System.Globalization;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// Base abstract class for JSON readers.
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract Number64 GetNumberValue();
 
         /// <inheritdoc />
-        public abstract string GetStringValue();
+        public abstract UtfAnyString GetStringValue();
 
         /// <inheritdoc />
         public abstract bool TryGetBufferedStringValue(out Utf8Memory value);
