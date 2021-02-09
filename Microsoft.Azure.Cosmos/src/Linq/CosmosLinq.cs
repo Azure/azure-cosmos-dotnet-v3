@@ -3,15 +3,18 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Linq
 {
-    using System;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.Scripts;
 
     /// <summary>
     /// Helper class to invoke User Defined Functions via Linq queries in the Azure Cosmos DB service.
     /// </summary>
-    public static class UserDefinedFunctionProvider
+    public abstract class CosmosLinq
     {
+        /// <summary>
+        /// Returns an instance of <see cref="CosmosLinq"/> to allow access to the contained methods.
+        /// </summary>
+        public static readonly CosmosLinq Instance = new CosmosLinqCore();
+
         /// <summary>
         /// Helper method to invoke User Defined Functions via Linq queries in the Azure Cosmos DB service.
         /// </summary>
@@ -39,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// IQueryable<Book> queryable = client
         ///     .GetContainer("database", "container")
         ///     .GetItemLinqQueryable<Book>()
-        ///     .Where(b => UserDefinedFunctionProvider.Invoke("toLowerCase", b.Title) == "war and peace");
+        ///     .Where(b => CosmosLinq.Instance.InvokeUserDefinedFunction("toLowerCase", b.Title) == "war and peace");
         ///
         /// FeedIterator<Book> bookIterator = queryable.ToFeedIterator();
         /// while (feedIterator.HasMoreResults)
@@ -52,14 +55,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         /// <seealso cref="UserDefinedFunctionProperties"/>
         /// <returns>Placeholder for the udf result.</returns>
-#pragma warning disable IDE0060 // Remove unused parameter
-        public static object Invoke(string udfName, params object[] arguments)
-#pragma warning restore IDE0060 // Remove unused parameter
-        {
-            throw new NotSupportedException(
-                string.Format(
-                    CultureInfo.CurrentCulture,
-                    ClientResources.InvalidCallToUserDefinedFunctionProvider));
-        }
+        public abstract object InvokeUserDefinedFunction(string udfName, params object[] arguments);
     }
 }
