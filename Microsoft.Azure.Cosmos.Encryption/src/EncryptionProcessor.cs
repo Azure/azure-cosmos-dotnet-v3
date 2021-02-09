@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else if (propertyValue.Type == JTokenType.Array)
             {
-                if (propertyValue.Children().Count() > 0)
+                if (propertyValue.Children().Any())
                 {
                     if (!propertyValue.Children().First().Children().Any())
                     {
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         this.DecryptAndDeserializeProperty(
                             itemJObj,
                             settings,
-                            propertyName,
+                            jProperty.Name,
                             jProperty.Value,
                             diagnosticsContext,
                             cancellationToken);
@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else if (propertyValue.Type == JTokenType.Array)
             {
-                if (propertyValue.Children().Count() > 0)
+                if (propertyValue.Children().Any())
                 {
                     if (!propertyValue.Children().First().Children().Any())
                     {
@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                     this.DecryptAndDeserializeProperty(
                                         itemJObj,
                                         settings,
-                                        propertyName,
+                                        jProperty.Name,
                                         jProperty.Value,
                                         diagnosticsContext,
                                         cancellationToken);
