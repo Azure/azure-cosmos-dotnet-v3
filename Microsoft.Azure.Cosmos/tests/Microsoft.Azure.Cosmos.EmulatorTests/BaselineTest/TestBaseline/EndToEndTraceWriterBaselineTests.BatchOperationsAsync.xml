@@ -34,29 +34,24 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ExecuteAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Execute Next Batch(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        ├── Create Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Execute Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── ExecuteAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Execute Next Batch(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+        ├── Create Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+        └── Execute Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+            ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
             │                   (
             │                       [Client Side Request Stats]
             │                       Redacted To Not Change The Baselines From Run To Run
             │                   )
-            └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "name": "ExecuteAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Transport",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -65,11 +60,6 @@
       "name": "Execute Next Batch",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Batch",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -78,11 +68,6 @@
           "name": "Create Batch Request",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Batch",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -92,11 +77,6 @@
           "name": "Execute Batch Request",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Batch",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -105,11 +85,6 @@
               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "data": {},
@@ -118,11 +93,6 @@
                   "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "RequestHandler",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {},
@@ -131,11 +101,6 @@
                       "name": "Send Async",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
                       "data": {},
@@ -144,11 +109,6 @@
                           "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Transport",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file path": "FilePath",
-                            "line number": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
                           "data": {
@@ -166,11 +126,6 @@
               "name": "Create Trace",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Batch",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "data": {},

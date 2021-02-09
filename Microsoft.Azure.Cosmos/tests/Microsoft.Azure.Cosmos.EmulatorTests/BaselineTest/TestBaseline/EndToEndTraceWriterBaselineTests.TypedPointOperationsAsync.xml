@@ -16,13 +16,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    ├── Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
                         (
                             [Client Side Request Stats]
                             Redacted To Not Change The Baselines From Run To Run
@@ -32,11 +32,6 @@
   "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Transport",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -45,11 +40,6 @@
       "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Transport",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -59,11 +49,6 @@
       "name": "Get PkValue From Stream",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Routing",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -73,11 +58,6 @@
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "RequestHandler",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -86,11 +66,6 @@
           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -99,11 +74,6 @@
               "name": "Send Async",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "data": {},
@@ -112,11 +82,6 @@
                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
@@ -147,11 +112,11 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ReadItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── ReadItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
                         (
                             [Client Side Request Stats]
                             Redacted To Not Change The Baselines From Run To Run
@@ -161,11 +126,6 @@
   "name": "ReadItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Transport",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -174,11 +134,6 @@
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "RequestHandler",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -187,11 +142,6 @@
           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -200,11 +150,6 @@
               "name": "Send Async",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "data": {},
@@ -213,11 +158,6 @@
                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
@@ -256,12 +196,12 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── ReplaceItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── ReplaceItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
                         (
                             [Client Side Request Stats]
                             Redacted To Not Change The Baselines From Run To Run
@@ -271,11 +211,6 @@
   "name": "ReplaceItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Transport",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -284,11 +219,6 @@
       "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Transport",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -298,11 +228,6 @@
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "RequestHandler",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -311,11 +236,6 @@
           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -324,11 +244,6 @@
               "name": "Send Async",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "data": {},
@@ -337,11 +252,6 @@
                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
@@ -374,11 +284,11 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── DeleteItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── DeleteItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
                         (
                             [Client Side Request Stats]
                             Redacted To Not Change The Baselines From Run To Run
@@ -388,11 +298,6 @@
   "name": "DeleteItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Transport",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
-  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -401,11 +306,6 @@
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "RequestHandler",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -414,11 +314,6 @@
           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -427,11 +322,6 @@
               "name": "Send Async",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
               "data": {},
@@ -440,11 +330,6 @@
                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
                   "data": {
