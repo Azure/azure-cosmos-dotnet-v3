@@ -654,12 +654,49 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // This function is used by Compute
-        internal static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
+        internal static string GenerateAuthorizationTokenWithHashCore(
             string verb,
             string resourceId,
             string resourceType,
             INameValueCollection headers,
             IComputeHash stringHMACSHA256Helper,
+            out ArrayOwner payload)
+        {
+            return AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+                verb,
+                resourceId,
+                resourceType,
+                headers,
+                stringHMACSHA256Helper,
+                urlEncode: false,
+                out payload);
+        }
+
+        private static string GenerateUrlEncodedAuthorizationTokenWithHashCore(
+            string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            IComputeHash stringHMACSHA256Helper,
+            out ArrayOwner payload)
+        {
+            return AuthorizationHelper.GenerateAuthorizationTokenWithHashCore(
+                verb,
+                resourceId,
+                resourceType,
+                headers,
+                stringHMACSHA256Helper,
+                urlEncode: true,
+                out payload);
+        }
+
+        private static string GenerateAuthorizationTokenWithHashCore(
+            string verb,
+            string resourceId,
+            string resourceType,
+            INameValueCollection headers,
+            IComputeHash stringHMACSHA256Helper,
+            bool urlEncode,
             out ArrayOwner payload)
         {
             // resourceId can be null for feed-read of /dbs
@@ -706,7 +743,7 @@ namespace Microsoft.Azure.Cosmos
 
                 payload = new ArrayOwner(ArrayPool<byte>.Shared, new ArraySegment<byte>(buffer, 0, length));
                 byte[] hashPayLoad = stringHMACSHA256Helper.ComputeHash(payload.Buffer);
-                return AuthorizationHelper.OptimizedConvertToBase64string(hashPayLoad);
+                return AuthorizationHelper.OptimizedConvertToBase64string(hashPayLoad, urlEncode);
             }
             catch
             {
@@ -716,10 +753,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// This an optimized version of doing HttpUtility.UrlEncode(Convert.ToBase64String(hashPayLoad)).
+        /// This an optimized version of doing Convert.ToBase64String(hashPayLoad) with an optional wrapping HttpUtility.UrlEncode.
         /// This avoids the over head of converting it to a string and back to a byte[].
         /// </summary>
-        private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad)
+        private static unsafe string OptimizedConvertToBase64string(byte[] hashPayLoad, bool urlEncode)
         {
             // Create a large enough buffer that URL encode can use it.
             // Increase the buffer by 3x so it can be used for the URL encoding
@@ -741,7 +778,9 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentException($"Authorization key payload is invalid. {status}");
                 }
 
-                return AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten);
+                return urlEncode 
+                    ? AuthorizationHelper.UrlEncodeBase64SpanInPlace(encodingBuffer, bytesWritten)
+                    : Encoding.UTF8.GetString(encodingBuffer.Slice(0, bytesWritten));
             }
             finally
             {

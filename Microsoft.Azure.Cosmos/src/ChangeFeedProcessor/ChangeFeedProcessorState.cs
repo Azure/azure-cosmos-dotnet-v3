@@ -9,12 +9,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Change Feed processor state for a particular range of partition keys.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class ChangeFeedProcessorState
+    public sealed class ChangeFeedProcessorState
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="ChangeFeedProcessorState"/> class.

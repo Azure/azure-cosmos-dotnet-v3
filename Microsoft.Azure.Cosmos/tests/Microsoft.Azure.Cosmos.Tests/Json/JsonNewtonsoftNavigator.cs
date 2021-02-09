@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return this.root;
         }
 
-        public override string GetStringValue(IJsonNavigatorNode stringNode)
+        public override UtfAnyString GetStringValue(IJsonNavigatorNode stringNode)
         {
             return (string)((NewtonsoftNode)stringNode).JToken;
         }

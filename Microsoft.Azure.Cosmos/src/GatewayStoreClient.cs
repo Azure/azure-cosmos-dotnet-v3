@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly ICommunicationEventSource eventSource;
         private readonly CosmosHttpClient httpClient;
-        private JsonSerializerSettings SerializerSettings;
+        private readonly JsonSerializerSettings SerializerSettings;
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
@@ -82,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                 createRequestMessageAsync: requestMessage,
                 resourceType: resourceType,
                 timeoutPolicy: timeoutPolicy,
-                diagnosticsContext: null,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken);
         }
 
@@ -123,47 +124,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal static INameValueCollection ExtractResponseHeaders(HttpResponseMessage responseMessage)
         {
-            // Use DictionaryNameValueCollection because some Compute scenarios have duplicate headers
-            INameValueCollection headers = new DictionaryNameValueCollection();
-
-            foreach (KeyValuePair<string, IEnumerable<string>> headerPair in responseMessage.Headers)
-            {
-                if (string.Compare(headerPair.Key, HttpConstants.HttpHeaders.OwnerFullName, StringComparison.Ordinal) == 0)
-                {
-                    foreach (string val in headerPair.Value)
-                    {
-                        headers.Add(headerPair.Key, Uri.UnescapeDataString(val));
-                    }
-                }
-                else
-                {
-                    foreach (string val in headerPair.Value)
-                    {
-                        headers.Add(headerPair.Key, val);
-                    }
-                }
-            }
-
-            if (responseMessage.Content != null)
-            {
-                foreach (KeyValuePair<string, IEnumerable<string>> headerPair in responseMessage.Content.Headers)
-                {
-                    if (string.Compare(headerPair.Key, HttpConstants.HttpHeaders.OwnerFullName, StringComparison.Ordinal) == 0)
-                    {
-                        foreach (string val in headerPair.Value)
-                        {
-                            headers.Add(headerPair.Key, Uri.UnescapeDataString(val));
-                        }
-                    }
-                    else
-                    {
-                        foreach (string val in headerPair.Value)
-                        {
-                            headers.Add(headerPair.Key, val);
-                        }
-                    }
-                }
-            }
+            INameValueCollection headers = new HttpResponseHeadersWrapper(
+                responseMessage.Headers,
+                responseMessage.Content?.Headers);
 
             return headers;
         }
@@ -287,7 +250,8 @@ namespace Microsoft.Azure.Cosmos
                 request.OperationType == OperationType.SqlQuery ||
                 request.OperationType == OperationType.Batch ||
                 request.OperationType == OperationType.ExecuteJavaScript ||
-                request.OperationType == OperationType.QueryPlan)
+                request.OperationType == OperationType.QueryPlan ||
+                (request.ResourceType == ResourceType.PartitionKey && request.OperationType == OperationType.Delete))
             {
                 httpMethod = HttpMethod.Post;
             }
@@ -296,7 +260,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 httpMethod = HttpMethod.Get;
             }
-            else if (request.OperationType == OperationType.Replace)
+            else if ((request.OperationType == OperationType.Replace)
+                || (request.OperationType == OperationType.CollectionTruncate))
             {
                 httpMethod = HttpMethod.Put;
             }
@@ -349,7 +314,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // add activityId
-            Guid activityId = Trace.CorrelationManager.ActivityId;
+            Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
             Debug.Assert(activityId != Guid.Empty);
             requestMessage.Headers.Add(HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
 
@@ -363,17 +328,11 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            CancellationToken cancellationToken)
         {
-            CosmosDiagnosticsContext diagnosticsContext = null;
-            if (request?.RequestContext?.ClientRequestStatistics is CosmosClientSideRequestStatistics cosmosClientSideRequestStatistics)
-            {
-                diagnosticsContext = cosmosClientSideRequestStatistics.DiagnosticsContext;
-            }
-            
             return this.httpClient.SendHttpAsync(
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
-                diagnosticsContext,
+                NoOpTrace.Singleton,
                 cancellationToken);
         }
     }

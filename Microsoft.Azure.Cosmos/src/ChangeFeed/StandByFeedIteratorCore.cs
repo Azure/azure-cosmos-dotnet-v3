@@ -115,8 +115,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (this.compositeContinuationToken == null)
             {
                 PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                this.containerRid = await this.container.GetCachedRIDAsync(cancellationToken: cancellationToken);
-                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(this.containerRid, this.continuationToken, pkRangeCache.TryGetOverlappingRangesAsync);
+                this.containerRid = await this.container.GetCachedRIDAsync(
+                    forceRefresh: false, 
+                    trace, 
+                    cancellationToken: cancellationToken);
+                this.compositeContinuationToken = await StandByFeedContinuationToken.CreateAsync(
+                    this.containerRid, 
+                    this.continuationToken, 
+                    pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
             (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
@@ -198,7 +204,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 responseCreator: response => response,
                 feedRange: null,
                 streamPayload: null,
-                diagnosticsContext: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }

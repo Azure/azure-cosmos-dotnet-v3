@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             Assert.AreEqual(1, elements.Count);
             Assert.AreEqual(42, Number64.ToLong(((elements[0] as CosmosObject)["count"] as CosmosNumber).Value));
-            Assert.AreEqual("John", ((elements[0] as CosmosObject)["name"] as CosmosString).Value);
+            Assert.AreEqual("John", ((elements[0] as CosmosObject)["name"] as CosmosString).Value.ToString());
         }
 
         private static async Task<List<CosmosElement>> CreateAndDrainAsync(

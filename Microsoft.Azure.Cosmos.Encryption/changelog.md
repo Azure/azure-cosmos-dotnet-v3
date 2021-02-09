@@ -3,6 +3,22 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="1.0.0-previewV10"/> [1.0.0-previewV10](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV10) - 2021-02-08
+
+#### Fixes 
+- [#2171](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2171) Adds support to Migrate Data Encryption Key via Rewrap from Legacy Encryption Algorithm to MDE based Encryption Algorithm.
+
+### <a name="1.0.0-preview9"/> [1.0.0-preview9](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-preview9) - 2021-01-06
+
+#### Fixes 
+- [#2105](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2105) Fixes the nuget generation to include Cryptography DLL.
+
+### <a name="1.0.0-preview8"/> [1.0.0-preview8](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-preview8) - 2021-01-05
+
+#### Added 
+- [#1861](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1861) Adds Support for Microsoft Data Encryption/MDE, its Encryption Algorithm and KeyWrap Provider Services.
+
+
 ### <a name="1.0.0-preview7"/> [1.0.0-preview7](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-preview7) - 2020-11-19
 
 #### Added 

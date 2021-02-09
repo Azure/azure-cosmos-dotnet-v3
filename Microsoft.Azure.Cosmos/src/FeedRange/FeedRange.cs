@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents a unit of feed consumption that can be used as unit of parallelism.
     /// </summary>
     [Serializable]
-#if PREVIEW
+#if PREVIEW || INTERNAL
     public
 #else
     internal

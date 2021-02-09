@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
     /// JsonNavigator interface for classes that can navigate jsons.
@@ -54,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="stringNode">The node to get the string value from.</param>
         /// <returns>The string value from the node.</returns>
-        string GetStringValue(IJsonNavigatorNode stringNode);
+        UtfAnyString GetStringValue(IJsonNavigatorNode stringNode);
 
         /// <summary>
         /// Gets the numeric value for a node as a signed byte.

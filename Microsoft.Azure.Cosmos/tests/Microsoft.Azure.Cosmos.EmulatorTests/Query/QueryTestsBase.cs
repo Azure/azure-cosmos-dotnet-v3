@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -94,7 +95,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
             Assert.IsNotNull(routingMapProvider);
 
-            IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(container.ResourceId, fullRange);
+            IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                container.ResourceId, 
+                fullRange,
+                NoOpTrace.Singleton);
             return ranges;
         }
 
@@ -544,7 +548,25 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             CosmosElement continuationToken = null;
             do
             {
-                QueryRequestOptions computeRequestOptions = queryRequestOptions.Clone();
+                QueryRequestOptions computeRequestOptions = new QueryRequestOptions
+                {
+                    IfMatchEtag = queryRequestOptions.IfMatchEtag,
+                    IfNoneMatchEtag = queryRequestOptions.IfNoneMatchEtag,
+                    MaxItemCount = queryRequestOptions.MaxItemCount,
+                    ResponseContinuationTokenLimitInKb = queryRequestOptions.ResponseContinuationTokenLimitInKb,
+                    EnableScanInQuery = queryRequestOptions.EnableScanInQuery,
+                    EnableLowPrecisionOrderBy = queryRequestOptions.EnableLowPrecisionOrderBy,
+                    MaxBufferedItemCount = queryRequestOptions.MaxBufferedItemCount,
+                    SessionToken = queryRequestOptions.SessionToken,
+                    ConsistencyLevel = queryRequestOptions.ConsistencyLevel,
+                    MaxConcurrency = queryRequestOptions.MaxConcurrency,
+                    PartitionKey = queryRequestOptions.PartitionKey,
+                    CosmosSerializationFormatOptions = queryRequestOptions.CosmosSerializationFormatOptions,
+                    Properties = queryRequestOptions.Properties,
+                    IsEffectivePartitionKeyRouting = queryRequestOptions.IsEffectivePartitionKeyRouting,
+                    CosmosElementContinuationToken = queryRequestOptions.CosmosElementContinuationToken,
+                };
+
                 computeRequestOptions.ExecutionEnvironment = ExecutionEnvironment.Compute;
                 computeRequestOptions.CosmosElementContinuationToken = continuationToken;
 

@@ -690,7 +690,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -722,7 +722,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 #endif
 
@@ -1088,7 +1088,7 @@ namespace Microsoft.Azure.Cosmos
         ///     {
         ///         foreach(var item in await feedIterator.ReadNextAsync()){
         ///         {
-        ///             Console.WriteLine(item.cost); 
+        ///             Console.WriteLine(item.Price); 
         ///         }
         ///     }
         /// }
@@ -1149,7 +1149,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
-#if PREVIEW
+
         /// <summary>
         /// Gets a <see cref="ChangeFeedEstimator"/> for change feed monitoring.
         /// </summary>
@@ -1162,7 +1162,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedEstimator GetChangeFeedEstimator(
             string processorName,
             Container leaseContainer);
-#endif
 
         /// <summary>
         /// Initializes a new instance of <see cref="TransactionalBatch"/>
@@ -1172,6 +1171,24 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKey">The partition key for all items in the batch.</param>
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
+
+#if INTERNAL
+        /// <summary>
+        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
+        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
+        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
+        /// </summary>
+        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
+        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
+        /// </returns>
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
 
 #if PREVIEW
         /// <summary>
@@ -1186,6 +1203,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
         /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
@@ -1202,6 +1220,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
         ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
@@ -1224,12 +1243,14 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
         /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
@@ -1246,6 +1267,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
         ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedMode.Incremental,
         ///     options);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1264,6 +1286,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>

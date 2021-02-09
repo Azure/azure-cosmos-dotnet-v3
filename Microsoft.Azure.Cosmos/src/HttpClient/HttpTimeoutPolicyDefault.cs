@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Net.Http;
     using System.Text;
 
     internal sealed class HttpTimeoutPolicyDefault : HttpTimeoutPolicy
@@ -29,6 +30,16 @@ namespace Microsoft.Azure.Cosmos
 
         public override int TotalRetryCount => this.TimeoutsAndDelays.Count;
 
-        public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutEnumerator => this.TimeoutsAndDelays.GetEnumerator();
+        public override IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> GetTimeoutEnumerator()
+        {
+            return this.TimeoutsAndDelays.GetEnumerator();
+        }
+
+        // Assume that it is not safe to retry unless it is a get method.
+        // Create and other operations could have succeeded even though a timeout occurred.
+        public override bool IsSafeToRetry(HttpMethod httpMethod)
+        {
+            return httpMethod == HttpMethod.Get;
+        }
     }
 }

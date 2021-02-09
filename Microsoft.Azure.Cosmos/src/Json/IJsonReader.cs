@@ -46,14 +46,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets the next JSON token from the JsonReader as a UTF-16 string.
         /// </summary>
-        /// <returns>The next JSON token from the JsonReader as a UTF-16 string.</returns>
-        string GetStringValue();
-
-        /// <summary>
-        /// Gets the next JSON token from the JsonReader as a UTF-8 string.
-        /// </summary>
-        /// <returns>The next JSON token from the JsonReader as a UTF-8 string.</returns>
-        Utf8String GetUtf8StringValue();
+        /// <returns>The next JSON token from the JsonReader as a string.</returns>
+        UtfAnyString GetStringValue();
 
         /// <summary>
         /// Tries to get the buffered UTF-8 string value.
