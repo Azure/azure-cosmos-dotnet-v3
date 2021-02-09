@@ -251,6 +251,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             JToken propertyValueToEncrypt = jToken;
 
+            if (propertyValueToEncrypt.Type == JTokenType.Null)
+            {
+                return propertyValueToEncrypt;
+            }
+
             (TypeMarker typeMarker, byte[] plainText) = Serialize(propertyValueToEncrypt);
 
             byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText);
@@ -309,11 +314,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 // possibly a wrong path configured in the Client Encryption Policy, ignore.
                 if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
-                {
-                    continue;
-                }
-
-                if (propertyValue.Type == JTokenType.Null)
                 {
                     continue;
                 }
