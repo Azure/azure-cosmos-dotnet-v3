@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="request"><see cref="RequestMessage"/> received by the handler.</param>
         /// <param name="cancellationToken"><see cref="CancellationToken"/> received by the handler.</param>
         /// <returns>An instance of <see cref="ResponseMessage"/>.</returns>
-        public virtual Task<ResponseMessage> SendAsync(
+        public virtual async Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
@@ -47,7 +47,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            return this.InnerHandler.SendAsync(request, cancellationToken);
+            using (ITrace childTrace = request.Trace.StartChild("Send Async", TraceComponent.RequestHandler, TraceLevel.Info))
+            {
+                return await this.InnerHandler.SendAsync(request, cancellationToken);
+            }
         }
     }
 }
