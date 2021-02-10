@@ -107,13 +107,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal SqlQuerySpec ToSqlQuerySpec()
         {
-            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.parameters ?? new List<SqlParameter>()));
+            return new SqlQuerySpec(this.QueryText, new SqlParameterCollection(this.parameters ?? (IReadOnlyList<SqlParameter>)Array.Empty<SqlParameter>()));
         }
 
         /// <summary>
         /// Gets the sql parameters for the class
         /// </summary>
         [JsonIgnore]
-        internal IReadOnlyList<SqlParameter> Parameters => this.parameters ?? new List<SqlParameter>();
+        internal IReadOnlyList<SqlParameter> Parameters => this.parameters ?? (IReadOnlyList<SqlParameter>)Array.Empty<SqlParameter>();
     }
 }
