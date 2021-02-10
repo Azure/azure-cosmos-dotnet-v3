@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
@@ -43,14 +44,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             return new ChangeFeedObserverBase(this.ChangesStreamHandlerAsync);
         }
 
-        private async Task ChangesStreamHandlerAsync(Stream changes, CancellationToken cancellationToken)
+        private Task ChangesStreamHandlerAsync(Stream changes, CancellationToken cancellationToken)
         {
             IReadOnlyCollection<T> asFeedResponse;
             try
             {
                 asFeedResponse = CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
                                     this.serializerCore,
-                                    changes); 
+                                    changes);
+                
+                if (!asFeedResponse.Any())
+                {
+                    return Task.CompletedTask;
+                }
             }
             catch (Exception serializationException)
             {
@@ -58,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 throw new ObserverException(serializationException);
             }
 
-            await this.onChanges(asFeedResponse, cancellationToken);
+            return this.onChanges(asFeedResponse, cancellationToken);
         }
     }
 }

@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ThrowsOnFailedCustomSerializer()
         {
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(10000);
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();

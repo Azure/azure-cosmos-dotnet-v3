@@ -152,14 +152,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
             leaseStoreManager.Setup(l => l.LeaseStore).Returns(leaseStore.Object);
             leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
-            ChangeFeedProcessorCore processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out Mock<ChangeFeedObserver> observer);
-            processor.ApplyBuildConfiguration(
-                leaseStoreManager.Object,
-                null,
-                "instanceName",
-                new ChangeFeedLeaseOptions(),
-                new ChangeFeedProcessorOptions(),
-                ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
+            ChangeFeedProcessorCore processor = null;
+            try
+            {
+                processor = ChangeFeedProcessorCoreTests.CreateProcessor(out Mock<ChangeFeedObserverFactory> factory, out Mock<ChangeFeedObserver> observer);
+                processor.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    new ChangeFeedProcessorOptions(),
+                    ChangeFeedProcessorCoreTests.GetMockedContainer("monitored"));
 
                 await processor.StartAsync();
 
@@ -169,6 +172,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Mock.Get(observer.Object)
                     .Verify(mock => mock.OpenAsync(It.Is<ChangeFeedObserverContext>((context) => context.LeaseToken == ownedLeases.First().CurrentLeaseToken)), Times.Once);
             }
+            finally
+            {
+                if (processor != null)
+                {
+                    await processor.StopAsync();
+                }
+            }
+        }
 
         [TestMethod]
         public async Task StopAsync()
@@ -203,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
 
         private static ChangeFeedProcessorCore CreateProcessor(
-            out Mock<ChangeFeedObserverFactory> factory, 
+            out Mock<ChangeFeedObserverFactory> factory,
             out Mock<ChangeFeedObserver> observer)
         {
             factory = new Mock<ChangeFeedObserverFactory>();
