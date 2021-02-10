@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
                 catch (RequestFailedException ex)
                 {
-                    // The access to master key was revoked. Try to fetch the latest ClientEncryptionKeyProperties from the backend.
+                    // The access to master key was probably revoked. Try to fetch the latest ClientEncryptionKeyProperties from the backend.
                     // This will succeed provided the user has rewraped the Client Encryption Key with right set of meta data.
                     // This is based on the AKV provider implementaion so we expect a RequestFailedException in case other providers are used in unwrap implementation.
                     if (ex.Status == (int)HttpStatusCode.Forbidden)
@@ -175,12 +175,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        private void EncryptAndSerializeProperty(
+        private void EncryptProperty(
             JObject itemJObj,
             JToken propertyValue,
-            EncryptionSettings settings,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            EncryptionSettings settings)
         {
             /* Top Level can be an Object*/
             if (propertyValue.Type == JTokenType.Object)
@@ -189,16 +187,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                     {
-                        this.EncryptAndSerializeProperty(
+                        this.EncryptProperty(
                             itemJObj,
                             jProperty.Value,
-                            settings,
-                            diagnosticsContext,
-                            cancellationToken);
+                            settings);
                     }
                     else
                     {
-                        jProperty.Value = this.EncryptAndSerializeValue(jProperty.Value, settings);
+                        jProperty.Value = this.SerializeAndEncryptValue(jProperty.Value, settings);
                     }
                 }
             }
@@ -206,14 +202,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (propertyValue.Children().Any())
                 {
-                    if (!propertyValue.Children().First().Children().Any())
-                    {
-                        for (int i = 0; i < propertyValue.Count(); i++)
-                        {
-                            propertyValue[i] = this.EncryptAndSerializeValue(propertyValue[i], settings);
-                        }
-                    }
-                    else
+                    // objects as array elements.
+                    if (propertyValue.Children().First().Type == JTokenType.Object)
                     {
                         foreach (JObject arrayjObject in propertyValue.Children<JObject>())
                         {
@@ -221,31 +211,65 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             {
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
-                                    this.EncryptAndSerializeProperty(
+                                    this.EncryptProperty(
                                         itemJObj,
                                         jProperty.Value,
-                                        settings,
-                                        diagnosticsContext,
-                                        cancellationToken);
+                                        settings);
                                 }
+
+                                // primitive type
                                 else
                                 {
-                                    jProperty.Value = this.EncryptAndSerializeValue(jProperty.Value, settings);
+                                    jProperty.Value = this.SerializeAndEncryptValue(jProperty.Value, settings);
                                 }
                             }
+                        }
+                    }
+
+                    // array as elements.
+                    else if (propertyValue.Children().First().Type == JTokenType.Array)
+                    {
+                        foreach (JArray jArray in propertyValue.Value<JArray>())
+                        {
+                            for (int i = 0; i < jArray.Count(); i++)
+                            {
+                                // iterates over individual elements
+                                if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
+                                {
+                                    this.EncryptProperty(
+                                        itemJObj,
+                                        jArray[i],
+                                        settings);
+                                }
+
+                                // primitive type
+                                else
+                                {
+                                    jArray[i] = this.SerializeAndEncryptValue(jArray[i], settings);
+                                }
+                            }
+                        }
+                    }
+
+                    // array of primitive types.
+                    else
+                    {
+                        for (int i = 0; i < propertyValue.Count(); i++)
+                        {
+                            propertyValue[i] = this.SerializeAndEncryptValue(propertyValue[i], settings);
                         }
                     }
                 }
             }
             else
             {
-                itemJObj.Property(propertyValue.Path).Value = this.EncryptAndSerializeValue(
+                itemJObj.Property(propertyValue.Path).Value = this.SerializeAndEncryptValue(
                     itemJObj.Property(propertyValue.Path).Value,
                     settings);
             }
         }
 
-        private JToken EncryptAndSerializeValue(
+        private JToken SerializeAndEncryptValue(
            JToken jToken,
            EncryptionSettings settings)
         {
@@ -262,7 +286,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (cipherText == null)
             {
-                throw new InvalidOperationException($"{nameof(this.EncryptAndSerializeValue)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. ");
+                throw new InvalidOperationException($"{nameof(this.SerializeAndEncryptValue)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. ");
             }
 
             byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
@@ -285,6 +309,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 throw new ArgumentNullException(nameof(input));
             }
+
+            Debug.Assert(diagnosticsContext != null);
 
             await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
@@ -325,12 +351,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
-                this.EncryptAndSerializeProperty(
+                this.EncryptProperty(
                     itemJObj,
                     propertyValue,
-                    settings,
-                    diagnosticsContext,
-                    cancellationToken);
+                    settings);
             }
 
             input.Dispose();
@@ -339,9 +363,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private JToken DecryptAndDeserializeValue(
            JToken jToken,
-           EncryptionSettings settings,
-           CosmosDiagnosticsContext diagnosticsContext,
-           CancellationToken cancellationToken)
+           EncryptionSettings settings)
         {
             byte[] cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
 
@@ -353,40 +375,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
             Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
 
-            byte[] plainText = this.DecryptProperty(
-                cipherText,
-                settings,
-                diagnosticsContext,
-                cancellationToken);
+            byte[] plainText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText);
+
+            if (plainText == null)
+            {
+                throw new InvalidOperationException($"{nameof(this.DecryptAndDeserializeValue)} returned null plainText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
+            }
 
             return DeserializeAndAddProperty(
                 plainText,
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
 
-        private byte[] DecryptProperty(
-           byte[] cipherText,
-           EncryptionSettings settings,
-           CosmosDiagnosticsContext diagnosticsContext,
-           CancellationToken cancellationToken)
-        {
-            byte[] plainText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText);
-
-            if (plainText == null)
-            {
-                throw new InvalidOperationException($"{nameof(this.DecryptProperty)} returned null plainText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
-            }
-
-            return plainText;
-        }
-
-        private void DecryptAndDeserializeProperty(
+        private void DecryptProperty(
             JObject itemJObj,
             EncryptionSettings settings,
             string propertyName,
-            JToken propertyValue,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            JToken propertyValue)
         {
             if (propertyValue.Type == JTokenType.Object)
             {
@@ -394,21 +399,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                     {
-                        this.DecryptAndDeserializeProperty(
+                        this.DecryptProperty(
                             itemJObj,
                             settings,
                             jProperty.Name,
-                            jProperty.Value,
-                            diagnosticsContext,
-                            cancellationToken);
+                            jProperty.Value);
                     }
                     else
                     {
                         jProperty.Value = this.DecryptAndDeserializeValue(
                             jProperty.Value,
-                            settings,
-                            diagnosticsContext,
-                            cancellationToken);
+                            settings);
                     }
                 }
             }
@@ -416,18 +417,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (propertyValue.Children().Any())
                 {
-                    if (!propertyValue.Children().First().Children().Any())
-                    {
-                        for (int i = 0; i < propertyValue.Count(); i++)
-                        {
-                            propertyValue[i] = this.DecryptAndDeserializeValue(
-                                propertyValue[i],
-                                settings,
-                                diagnosticsContext,
-                                cancellationToken);
-                        }
-                    }
-                    else
+                    if (propertyValue.Children().First().Type == JTokenType.Object)
                     {
                         foreach (JObject arrayjObject in propertyValue.Children<JObject>())
                         {
@@ -435,23 +425,54 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             {
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
-                                    this.DecryptAndDeserializeProperty(
+                                    this.DecryptProperty(
                                         itemJObj,
                                         settings,
                                         jProperty.Name,
-                                        jProperty.Value,
-                                        diagnosticsContext,
-                                        cancellationToken);
+                                        jProperty.Value);
                                 }
                                 else
                                 {
                                     jProperty.Value = this.DecryptAndDeserializeValue(
                                         jProperty.Value,
-                                        settings,
-                                        diagnosticsContext,
-                                        cancellationToken);
+                                        settings);
                                 }
                             }
+                        }
+                    }
+                    else if (propertyValue.Children().First().Type == JTokenType.Array)
+                    {
+                        foreach (JArray jArray in propertyValue.Value<JArray>())
+                        {
+                            for (int i = 0; i < jArray.Count(); i++)
+                            {
+                                // iterates over individual elements
+                                if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
+                                {
+                                    this.DecryptProperty(
+                                        itemJObj,
+                                        settings,
+                                        jArray[i].Path,
+                                        jArray[i]);
+                                }
+                                else
+                                {
+                                    jArray[i] = this.DecryptAndDeserializeValue(
+                                        jArray[i],
+                                        settings);
+                                }
+                            }
+                        }
+                    }
+
+                    // primitive type
+                    else
+                    {
+                        for (int i = 0; i < propertyValue.Count(); i++)
+                        {
+                            propertyValue[i] = this.DecryptAndDeserializeValue(
+                                propertyValue[i],
+                                settings);
                         }
                     }
                 }
@@ -460,9 +481,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 itemJObj.Property(propertyName).Value = this.DecryptAndDeserializeValue(
                     itemJObj.Property(propertyName).Value,
-                    settings,
-                    diagnosticsContext,
-                    cancellationToken);
+                    settings);
             }
         }
 
@@ -471,6 +490,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            Debug.Assert(diagnosticsContext != null);
+
             foreach (ClientEncryptionIncludedPath path in this.ClientEncryptionPolicy.IncludedPaths)
             {
                 if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
@@ -483,13 +504,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
                     }
 
-                    this.DecryptAndDeserializeProperty(
+                    this.DecryptProperty(
                         document,
                         settings,
                         propertyName,
-                        propertyValue,
-                        diagnosticsContext,
-                        cancellationToken);
+                        propertyValue);
                 }
             }
 

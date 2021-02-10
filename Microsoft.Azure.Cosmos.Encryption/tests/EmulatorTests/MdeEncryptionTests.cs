@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = CosmosEncryptionType.Deterministic,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
-
+                
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_ArrayMultiTypes",
@@ -130,6 +130,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = CosmosEncryptionType.Deterministic,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
                 },
+               
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntMultiDimArray",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                }
             };
 
 
@@ -472,6 +480,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                          .WithParameter("@thePK", expectedDoc.PK),
                 expectedDoc: expectedDoc);
 
+            expectedDoc.Sensitive_IntMultiDimArray = null;
             expectedDoc.Sensitive_ArrayMultiTypes = null;
             expectedDoc.Sensitive_NestedObjectFormatL1 = null;
             expectedDoc.Sensitive_ArrayFormat = null;
@@ -1242,30 +1251,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.AreEqual(expectedDoc.Sensitive_IntArray, verifyDoc.Sensitive_IntArray);
             }
 
+            if (expectedDoc.Sensitive_IntMultiDimArray != null)
+            {
+                for (int i = 0; i < expectedDoc.Sensitive_IntMultiDimArray.GetLength(0); i++)
+                {
+                    for (int j = 0; j < expectedDoc.Sensitive_IntMultiDimArray.GetLength(1); j++)
+                    {
+                        Assert.AreEqual(expectedDoc.Sensitive_IntMultiDimArray[i, j], verifyDoc.Sensitive_IntMultiDimArray[i, j]);
+                    }
+                }
+            }
+
             if (expectedDoc.Sensitive_ArrayMultiTypes != null)
             {
-                for (int i = 0; i < expectedDoc.Sensitive_ArrayMultiTypes.Length; i++)
+                for (int i = 0; i < expectedDoc.Sensitive_ArrayMultiTypes.GetLength(0); i++)
                 {
-                    Assert.AreEqual(
-                        expectedDoc.Sensitive_ArrayMultiTypes[i].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0,
-                        verifyDoc.Sensitive_ArrayMultiTypes[i].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0);
-                    Assert.AreEqual(
-                        expectedDoc.Sensitive_ArrayMultiTypes[i].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0,
-                        verifyDoc.Sensitive_ArrayMultiTypes[i].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0);
-
-                    for (int j = 0; j < expectedDoc.Sensitive_ArrayMultiTypes[i].Sensitive_StringArrayMultiType.Length; j++)
+                    for (int j = 0; j < expectedDoc.Sensitive_ArrayMultiTypes.GetLength(1); j++)
                     {
-                        Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i].Sensitive_StringArrayMultiType[j],
-                            verifyDoc.Sensitive_ArrayMultiTypes[i].Sensitive_StringArrayMultiType[j]);
-                    }
+                        Assert.AreEqual(
+                        expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0,
+                        verifyDoc.Sensitive_ArrayMultiTypes[i, j].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0);
+                        Assert.AreEqual(
+                            expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0,
+                            verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0);
 
-                    Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i].Sensitive_ArrayMultiTypeDecimalFormat,
-                        verifyDoc.Sensitive_ArrayMultiTypes[i].Sensitive_ArrayMultiTypeDecimalFormat);
+                        for (int l = 0; l < expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType.Length; l++)
+                        {
+                            Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[l],
+                                verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[l]);
+                        }
 
-                    for (int k = 0; k < expectedDoc.Sensitive_ArrayMultiTypes[i].Sensitive_IntArrayMultiType.Length; k++)
-                    {
-                        Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i].Sensitive_StringArrayMultiType[k],
-                            verifyDoc.Sensitive_ArrayMultiTypes[i].Sensitive_StringArrayMultiType[k]);
+                        Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_ArrayMultiTypeDecimalFormat,
+                            verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_ArrayMultiTypeDecimalFormat);
+
+                        for (int k = 0; k < expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_IntArrayMultiType.Length; k++)
+                        {
+                            Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[k],
+                                verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[k]);
+                        }
                     }
                 }
             }
@@ -1346,9 +1369,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public int[] Sensitive_IntArray { get; set; }
 
+            public int[,] Sensitive_IntMultiDimArray { get; set; }
+
             public Sensitive_ArrayData[] Sensitive_ArrayFormat { get; set; }
 
-            public Sensitive_ArrayMultiType[] Sensitive_ArrayMultiTypes { get; set; }
+            public Sensitive_ArrayMultiType[,] Sensitive_ArrayMultiTypes { get; set; }
 
             public Sensitive_NestedObjectL1 Sensitive_NestedObjectFormatL1 { get; set; }
 
@@ -1480,6 +1505,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
                     Sensitive_DecimalFormat = 472.3108m,
                     Sensitive_IntArray = new int[2] { 999, 1000 },
+                    Sensitive_IntMultiDimArray = new [,] { { 1,2},{ 2,3}, { 4,5} },
                     Sensitive_IntFormat = 1965,
                     Sensitive_BoolFormat = true,
                     Sensitive_FloatFormat = 8923.124f,
@@ -1491,8 +1517,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                             Sensitive_ArrayDecimalFormat = 1111.11m
                         }
                     },
-                    Sensitive_ArrayMultiTypes = new Sensitive_ArrayMultiType[2]
+                    Sensitive_ArrayMultiTypes = new Sensitive_ArrayMultiType[,]
                     {
+                        {
                         new Sensitive_ArrayMultiType()
                             {
                                 Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
@@ -1500,11 +1527,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                                     Sensitive_IntFormatL0 = 888,
                                     Sensitive_DecimalFormatL0 = 888.1m,
                                 },
-                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata", "verysensitivedata"},
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata1a", "verysensitivedata1a"},
                                 Sensitive_ArrayMultiTypeDecimalFormat = 10.2m,
                                 Sensitive_IntArrayMultiType = new int[2] { 999, 1000 }
                             },
-
+                         new Sensitive_ArrayMultiType()
+                            {
+                                Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                                {
+                                    Sensitive_IntFormatL0 = 888,
+                                    Sensitive_DecimalFormatL0 = 888.1m,
+                                },
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata1b", "verysensitivedata1b"},
+                                Sensitive_ArrayMultiTypeDecimalFormat = 12.2m,
+                                Sensitive_IntArrayMultiType = new int[2] { 888, 1010 }
+                            }
+                        },
+                        {
                          new Sensitive_ArrayMultiType()
                             {
                                 Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
@@ -1512,10 +1551,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                                     Sensitive_IntFormatL0 = 111,
                                     Sensitive_DecimalFormatL0 = 222.3m,
                                 },
-                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata2", "verysensitivedata2"},
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata2a", "verysensitivedata2a"},
                                 Sensitive_ArrayMultiTypeDecimalFormat = 9876.2m,
                                 Sensitive_IntArrayMultiType = new int[2] { 1, 2 }
                             },
+                          new Sensitive_ArrayMultiType()
+                            {
+                                Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                                {
+                                    Sensitive_IntFormatL0 = 878,
+                                    Sensitive_DecimalFormatL0 = 188.1m,
+                                },
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata2b", "verysensitivedata2b"},
+                                Sensitive_ArrayMultiTypeDecimalFormat = 14.2m,
+                                Sensitive_IntArrayMultiType = new int[2] { 929, 1050 }
+                            }
+                        }
                     },
                     Sensitive_NestedObjectFormatL1 = new Sensitive_NestedObjectL1()
                     {
