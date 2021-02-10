@@ -5,7 +5,6 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 {
-    using Microsoft.Azure.Cosmos.Linq;
     using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
@@ -96,24 +95,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         public bool Flag { get; set; }
 
         public int[] Multiples { get; set; }
-    }
-
-    #endregion
-
-    #region UDF inherited class
-
-    public class MockCosmosLinq : CosmosLinq
-    {
-        public static CosmosLinq MyInstance = new MockCosmosLinq();
-
-        public override object InvokeUserDefinedFunction(string udfName, params object[] arguments)
-        {
-            return udfName switch
-            {
-                "addNumbers" => (int)arguments[0] + (int)arguments[1],
-                _ => throw new NotImplementedException($"Mock for UDF {udfName} is not implmented")
-            };
-        }
     }
 
     #endregion

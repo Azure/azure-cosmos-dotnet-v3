@@ -3761,22 +3761,6 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Linq.CosmosLinq;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "Microsoft.Azure.Cosmos.Linq.CosmosLinq Instance": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.Linq.CosmosLinq Instance;IsInitOnly:True;IsStatic:True;"
-        },
-        "System.Object InvokeUserDefinedFunction(System.String, System.Object[])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Object InvokeUserDefinedFunction(System.String, System.Object[]);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -3821,6 +3805,11 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Object InvokeUserDefinedFunction(System.String, System.Object[])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Object InvokeUserDefinedFunction(System.String, System.Object[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",

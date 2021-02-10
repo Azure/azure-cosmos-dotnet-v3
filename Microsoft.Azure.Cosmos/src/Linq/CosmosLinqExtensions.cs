@@ -7,11 +7,13 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -19,6 +21,56 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary>
     public static class CosmosLinqExtensions
     {
+        /// <summary>
+        /// Helper method to invoke User Defined Functions via Linq queries in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="udfName">The UserDefinedFunction name</param>
+        /// <param name="arguments">The arguments of the UserDefinedFunction</param>
+        /// <remarks>
+        /// This is a stub helper method for use within LINQ expressions. Cannot be called directly. 
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for more details about the LINQ provider.
+        /// Refer to https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs for more details about user defined functions.
+        /// </remarks>
+        /// <example> 
+        /// <code language="c#">
+        /// <![CDATA[
+        /// StoredProcedureResponse storedProcedureResponse = await client
+        ///     .GetContainer("database", "container")
+        ///     .Scripts
+        ///     .CreateStoredProcedureAsync(
+        ///         new StoredProcedureProperties()
+        ///         {
+        ///             Id = "toLowerCase",
+        ///             Body = @"function(s) { return s.ToLowerCase(); }",
+        ///         });
+        ///         
+        /// // Equivalent to SELECT * FROM books b WHERE udf.toLowerCase(b.title) = 'war and peace'" 
+        /// IQueryable<Book> queryable = client
+        ///     .GetContainer("database", "container")
+        ///     .GetItemLinqQueryable<Book>()
+        ///     .Where(b => CosmosLinqExtensions.InvokeUserDefinedFunction("toLowerCase", b.Title) == "war and peace");
+        ///
+        /// FeedIterator<Book> bookIterator = queryable.ToFeedIterator();
+        /// while (feedIterator.HasMoreResults)
+        /// {
+        ///     FeedResponse<Book> responseMessage = await feedIterator.ReadNextAsync();
+        ///     DoSomethingWithResponse(responseMessage);
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <seealso cref="UserDefinedFunctionProperties"/>
+        /// <returns>Placeholder for the udf result.</returns>
+#pragma warning disable IDE0060 // Remove unused parameter
+        public static object InvokeUserDefinedFunction(string udfName, params object[] arguments)
+#pragma warning restore IDE0060 // Remove unused parameter
+        {
+            throw new NotSupportedException(
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    ClientResources.InvalidCallToUserDefinedFunctionProvider));
+        }
+
         /// <summary>
         /// Determines if a certain property is defined or not.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.

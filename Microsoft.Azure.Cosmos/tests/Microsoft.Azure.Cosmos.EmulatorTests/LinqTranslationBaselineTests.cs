@@ -895,28 +895,26 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
-                new LinqTestInput("No param", b => getQuery(b).Select(f => CosmosLinq.Instance.InvokeUserDefinedFunction("NoParameterUDF"))),
-                new LinqTestInput("Single param", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("SingleParameterUDF", doc.NumericField))),
-                new LinqTestInput("Single param w/ array", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("SingleParameterUDFWithArray", doc.ArrayField))),
-                new LinqTestInput("Multi param", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("MultiParamterUDF", doc.NumericField, doc.StringField, doc.Point))),
-                new LinqTestInput("Multi param w/ array", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("MultiParamterUDWithArrayF", doc.ArrayField, doc.NumericField, doc.Point))),
-                new LinqTestInput("ArrayCount", b => getQuery(b).Where(doc => (int)CosmosLinq.Instance.InvokeUserDefinedFunction("ArrayCount", doc.ArrayField) > 2)),
-                new LinqTestInput("ArrayCount && SomeBooleanUDF", b => getQuery(b).Where(doc => (int)CosmosLinq.Instance.InvokeUserDefinedFunction("ArrayCount", doc.ArrayField) > 2 && (bool)CosmosLinq.Instance.InvokeUserDefinedFunction("SomeBooleanUDF"))),
-                new LinqTestInput("expression", b => getQuery(b).Where(doc => (int)CosmosLinq.Instance.InvokeUserDefinedFunction("SingleParameterUDF", doc.NumericField) + 2 == 4)),
+                new LinqTestInput("No param", b => getQuery(b).Select(f => CosmosLinqExtensions.InvokeUserDefinedFunction("NoParameterUDF"))),
+                new LinqTestInput("Single param", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("SingleParameterUDF", doc.NumericField))),
+                new LinqTestInput("Single param w/ array", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("SingleParameterUDFWithArray", doc.ArrayField))),
+                new LinqTestInput("Multi param", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("MultiParamterUDF", doc.NumericField, doc.StringField, doc.Point))),
+                new LinqTestInput("Multi param w/ array", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("MultiParamterUDWithArrayF", doc.ArrayField, doc.NumericField, doc.Point))),
+                new LinqTestInput("ArrayCount", b => getQuery(b).Where(doc => (int)CosmosLinqExtensions.InvokeUserDefinedFunction("ArrayCount", doc.ArrayField) > 2)),
+                new LinqTestInput("ArrayCount && SomeBooleanUDF", b => getQuery(b).Where(doc => (int)CosmosLinqExtensions.InvokeUserDefinedFunction("ArrayCount", doc.ArrayField) > 2 && (bool)CosmosLinqExtensions.InvokeUserDefinedFunction("SomeBooleanUDF"))),
+                new LinqTestInput("expression", b => getQuery(b).Where(doc => (int)CosmosLinqExtensions.InvokeUserDefinedFunction("SingleParameterUDF", doc.NumericField) + 2 == 4)),
                 // UDF with constant parameters
-                new LinqTestInput("Single constant param", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("SingleParameterUDF", 1))),
-                new LinqTestInput("Single constant int array param", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("SingleParameterUDFWithArray", new int[] { 1, 2, 3 }))),
-                new LinqTestInput("Single constant string array param", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("SingleParameterUDFWithArray", new string[] { "1", "2" }))),
-                new LinqTestInput("Multi constant params", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("MultiParamterUDF", 1, "str", true))),
-                new LinqTestInput("Multi constant array params", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("MultiParamterUDWithArrayF", new int[] { 1, 2, 3 }, 1, "str"))),
-                new LinqTestInput("ArrayCount with constant param", b => getQuery(b).Where(doc => (int)CosmosLinq.Instance.InvokeUserDefinedFunction("ArrayCount", new int[] { 1, 2, 3 }) > 2)),
+                new LinqTestInput("Single constant param", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("SingleParameterUDF", 1))),
+                new LinqTestInput("Single constant int array param", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("SingleParameterUDFWithArray", new int[] { 1, 2, 3 }))),
+                new LinqTestInput("Single constant string array param", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("SingleParameterUDFWithArray", new string[] { "1", "2" }))),
+                new LinqTestInput("Multi constant params", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("MultiParamterUDF", 1, "str", true))),
+                new LinqTestInput("Multi constant array params", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("MultiParamterUDWithArrayF", new int[] { 1, 2, 3 }, 1, "str"))),
+                new LinqTestInput("ArrayCount with constant param", b => getQuery(b).Where(doc => (int)CosmosLinqExtensions.InvokeUserDefinedFunction("ArrayCount", new int[] { 1, 2, 3 }) > 2)),
                 // regression (different type parameters including objects)
-                new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)CosmosLinq.Instance.InvokeUserDefinedFunction("MultiParamterUDF2", doc.Point, "str", 1))),
+                new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)CosmosLinqExtensions.InvokeUserDefinedFunction("MultiParamterUDF2", doc.Point, "str", 1))),
                 // errors
-                new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction(null))),
-                new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction(""))),
-                // overridden user test class
-                new LinqTestInput("User CosmosLinq provider", b => getQuery(b).Where(doc => (int)MockCosmosLinq.MyInstance.InvokeUserDefinedFunction("AddNumbers", 1, 2) > 2))
+                new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction(null))),
+                new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => CosmosLinqExtensions.InvokeUserDefinedFunction("")))
             };
             this.ExecuteTestSuite(inputs);
         }
