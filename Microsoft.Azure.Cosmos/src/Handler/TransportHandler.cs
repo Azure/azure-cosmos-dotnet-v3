@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
     //TODO: write unit test for this handler
@@ -69,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+            serviceRequest.RequestContext.ClientRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
 
             //TODO: extrace auth into a separate handler
             string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
@@ -77,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Method.ToString(),
                 serviceRequest.Headers,
                 AuthorizationTokenType.PrimaryMasterKey,
-                request.DiagnosticsContext);
+                request.Trace);
 
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
@@ -87,17 +89,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 TraceComponent.Transport,
                 Tracing.TraceLevel.Info))
             {
-                using (request.DiagnosticsContext.CreateScope(storeProxy.GetType().FullName))
-                {
-                    DocumentServiceResponse response = request.OperationType == OperationType.Upsert
+                request.Trace = processMessageAsyncTrace;
+                DocumentServiceResponse response = request.OperationType == OperationType.Upsert
                         ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
                         : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
 
-                    return response.ToCosmosResponseMessage(
-                        request, 
-                        serviceRequest.RequestContext.RequestChargeTracker,
-                        processMessageAsyncTrace);
-                }
+                return response.ToCosmosResponseMessage(
+                    request,
+                    serviceRequest.RequestContext.RequestChargeTracker);
             }
         }
 

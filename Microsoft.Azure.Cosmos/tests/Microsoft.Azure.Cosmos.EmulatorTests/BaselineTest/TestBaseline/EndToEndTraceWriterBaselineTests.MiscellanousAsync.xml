@@ -1,0 +1,240 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Custom Handler</Description>
+      <Setup><![CDATA[
+    TimeSpan delayTime = TimeSpan.FromSeconds(2);
+    CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
+        builder.AddCustomHandlers(new RequestHandlerSleepHelper(delayTime)));
+
+    DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+    ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
+    await databaseResponse.Database.DeleteAsync();
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                                └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                                        (
+                                            [Client Side Request Stats]
+                                            Redacted To Not Change The Baselines From Run To Run
+                                            [PointOperationStatisticsTraceDatum]
+                                            Redacted To Not Change The Baselines From Run To Run
+                                        )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "CreateDatabaseAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Transport",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "RequestHandler",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "RequestHandler",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Send Async",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "RequestHandler",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Send Async",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "RequestHandler",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Send Async",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Send Async",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "Transport",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {
+                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                    "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                                  },
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Custom Handler</Description>
+      <Setup><![CDATA[
+    RequestOptions requestOptions = new RequestOptions();
+    DatabaseResponse databaseResponse = await client.CreateDatabaseAsync(
+        id: Guid.NewGuid().ToString(),
+        requestOptions: requestOptions);
+    ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
+    await databaseResponse.Database.DeleteAsync();
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                            └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                                    (
+                                        [Client Side Request Stats]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                        [PointOperationStatisticsTraceDatum]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                    )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "CreateDatabaseAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Transport",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "RequestHandler",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "RequestHandler",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Send Async",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "RequestHandler",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Send Async",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "RequestHandler",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Send Async",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Send Async",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Transport",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+</Results>
