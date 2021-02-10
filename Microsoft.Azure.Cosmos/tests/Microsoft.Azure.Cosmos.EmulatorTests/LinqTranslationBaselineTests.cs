@@ -914,7 +914,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("different type parameters including objects", b => getQuery(b).Where(doc => (bool)CosmosLinq.Instance.InvokeUserDefinedFunction("MultiParamterUDF2", doc.Point, "str", 1))),
                 // errors
                 new LinqTestInput("Null udf name", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction(null))),
-                new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction("")))
+                new LinqTestInput("Empty udf name", b => getQuery(b).Select(doc => CosmosLinq.Instance.InvokeUserDefinedFunction(""))),
+                // overridden user test class
+                new LinqTestInput("User CosmosLinq provider", b => getQuery(b).Where(doc => (int)MockCosmosLinq.MyInstance.InvokeUserDefinedFunction("AddNumbers", 1, 2) > 2))
             };
             this.ExecuteTestSuite(inputs);
         }
