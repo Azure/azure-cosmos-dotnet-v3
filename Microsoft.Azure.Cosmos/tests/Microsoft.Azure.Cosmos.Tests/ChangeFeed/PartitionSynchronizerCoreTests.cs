@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
+                It.IsAny<ITrace>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -112,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
+                It.IsAny<ITrace>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -177,6 +180,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
+                It.IsAny<ITrace>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -234,6 +238,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
+                It.IsAny<ITrace>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -282,6 +287,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
+                It.IsAny<ITrace>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -326,6 +332,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
+                It.IsAny<ITrace>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -377,6 +384,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             pkRangeCache.Setup(p => p.TryGetOverlappingRangesAsync(
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
+                It.IsAny<ITrace>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 

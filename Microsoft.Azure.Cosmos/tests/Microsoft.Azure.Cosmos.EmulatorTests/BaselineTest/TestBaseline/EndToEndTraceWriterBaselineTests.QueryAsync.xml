@@ -1,0 +1,3066 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Query</Description>
+      <Setup><![CDATA[
+    FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
+        queryText: "SELECT * FROM c");
+
+    Trace rootTrace;
+    using (rootTrace = Trace.GetRootTrace("Root Trace"))
+    {
+        while (feedIterator.HasMoreResults)
+        {
+            await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
+        }
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Root Trace(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               │   (
+    │               │       [Query Metrics]
+    │               │       Redacted To Not Change The Baselines From Run To Run
+    │               │   )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
+    │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               │   (
+    │               │       [Query Metrics]
+    │               │       Redacted To Not Change The Baselines From Run To Run
+    │               │   )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
+    │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               │   (
+    │               │       [Query Metrics]
+    │               │       Redacted To Not Change The Baselines From Run To Run
+    │               │   )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
+    │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+        └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+            └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                    │   (
+                    │       [Query Metrics]
+                    │       Redacted To Not Change The Baselines From Run To Run
+                    │   )
+                    ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                    │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                    │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                    │                               (
+                    │                                   [Client Side Request Stats]
+                    │                                   Redacted To Not Change The Baselines From Run To Run
+                    │                               )
+                    └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Root Trace",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Create Query Pipeline",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Query",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Get Container Properties",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Transport",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Routing",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "Service Interop Query Plan",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Query",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Routing",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Prefetching",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "[,05C1CFFFFFFFF8) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[,05C1CFFFFFFFF8) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "[05C1E7FFFFFFFA,FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[05C1E7FFFFFFFA,FF) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Query Typed</Description>
+      <Setup><![CDATA[
+    FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
+        queryText: "SELECT * FROM c");
+
+    Trace rootTrace;
+    using (rootTrace = Trace.GetRootTrace("Root Trace"))
+    {
+        while (feedIterator.HasMoreResults)
+        {
+            await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
+        }
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Root Trace(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               │   (
+    │               │       [Query Metrics]
+    │               │       Redacted To Not Change The Baselines From Run To Run
+    │               │   )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
+    │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               │   (
+    │               │       [Query Metrics]
+    │               │       Redacted To Not Change The Baselines From Run To Run
+    │               │   )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
+    │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │   └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               │   (
+    │               │       [Query Metrics]
+    │               │       Redacted To Not Change The Baselines From Run To Run
+    │               │   )
+    │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │               │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │               │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │               │                               (
+    │               │                                   [Client Side Request Stats]
+    │               │                                   Redacted To Not Change The Baselines From Run To Run
+    │               │                               )
+    │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+        └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+            └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                    │   (
+                    │       [Query Metrics]
+                    │       Redacted To Not Change The Baselines From Run To Run
+                    │   )
+                    ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                    │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                    │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                    │                               (
+                    │                                   [Client Side Request Stats]
+                    │                                   Redacted To Not Change The Baselines From Run To Run
+                    │                               )
+                    └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Root Trace",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Create Query Pipeline",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Query",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Get Container Properties",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Transport",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Get Collection Cache",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Routing",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "Service Interop Query Plan",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Query",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "Get Partition Key Ranges",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Routing",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Prefetching",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "[,05C1CFFFFFFFF8) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[,05C1CFFFFFFFF8) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MoveNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Pagination",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "[05C1E7FFFFFFFA,FF) move next",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetch",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "[05C1E7FFFFFFFA,FF) move next",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {
+                    "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                  },
+                  "children": [
+                    {
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Cosmos Element Response",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Json",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Query Public API</Description>
+      <Setup><![CDATA[
+    FeedIterator feedIterator = container.GetItemQueryStreamIterator(
+        queryText: "SELECT * FROM c");
+
+    List<ITrace> traces = new List<ITrace>();
+
+    while (feedIterator.HasMoreResults)
+    {
+        ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+        traces.Add(trace);
+    }
+
+    ITrace traceForest = TraceJoiner.JoinTraces(traces);
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   (
+    │                   │       [Query Metrics]
+    │                   │       Redacted To Not Change The Baselines From Run To Run
+    │                   │   )
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   (
+    │                   │       [Query Metrics]
+    │                   │       Redacted To Not Change The Baselines From Run To Run
+    │                   │   )
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   (
+    │                   │       [Query Metrics]
+    │                   │       Redacted To Not Change The Baselines From Run To Run
+    │                   │   )
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+            └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                    └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                        │   (
+                        │       [Query Metrics]
+                        │       Redacted To Not Change The Baselines From Run To Run
+                        │   )
+                        ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                        │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                        │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                        │                               (
+                        │                                   [Client Side Request Stats]
+                        │                                   Redacted To Not Change The Baselines From Run To Run
+                        │                               )
+                        └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace Forest",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "FeedIterator Read Next Async",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Create Query Pipeline",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Query",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Get Container Properties",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Transport",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Get Collection Cache",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "Service Interop Query Plan",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Query",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Routing",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetching",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            },
+            {
+              "name": "[,05C1CFFFFFFFF8) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[,05C1CFFFFFFFF8) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FeedIterator Read Next Async",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FeedIterator Read Next Async",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FeedIterator Read Next Async",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "[05C1E7FFFFFFFA,FF) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[05C1E7FFFFFFFA,FF) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Query Public API Typed</Description>
+      <Setup><![CDATA[
+    FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
+        queryText: "SELECT * FROM c");
+
+    List<ITrace> traces = new List<ITrace>();
+
+    while (feedIterator.HasMoreResults)
+    {
+        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+        traces.Add(trace);
+    }
+
+    ITrace traceForest = TraceJoiner.JoinTraces(traces);
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  12:00:00:000  0.00 milliseconds  
+    │   │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   (
+    │                   │       [Query Metrics]
+    │                   │       Redacted To Not Change The Baselines From Run To Run
+    │                   │   )
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   (
+    │                   │       [Query Metrics]
+    │                   │       Redacted To Not Change The Baselines From Run To Run
+    │                   │   )
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │               └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   (
+    │                   │       [Query Metrics]
+    │                   │       Redacted To Not Change The Baselines From Run To Run
+    │                   │   )
+    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+    │                   │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    │                   │                               (
+    │                   │                                   [Client Side Request Stats]
+    │                   │                                   Redacted To Not Change The Baselines From Run To Run
+    │                   │                               )
+    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+            └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                    └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
+                        │   (
+                        │       [Query Metrics]
+                        │       Redacted To Not Change The Baselines From Run To Run
+                        │   )
+                        ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                        │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  12:00:00:000  0.00 milliseconds  
+                        │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                        │                               (
+                        │                                   [Client Side Request Stats]
+                        │                                   Redacted To Not Change The Baselines From Run To Run
+                        │                               )
+                        └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace Forest",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Typed FeedIterator ReadNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Create Query Pipeline",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Query",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Get Container Properties",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Transport",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Get Collection Cache",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "Service Interop Query Plan",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Query",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            },
+            {
+              "name": "Get Partition Key Ranges",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Routing",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Prefetching",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            },
+            {
+              "name": "[,05C1CFFFFFFFF8) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[,05C1CFFFFFFFF8) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Typed FeedIterator ReadNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Typed FeedIterator ReadNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Typed FeedIterator ReadNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Pagination",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "[05C1E7FFFFFFFA,FF) move next",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Pagination",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Prefetch",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[05C1E7FFFFFFFA,FF) move next",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {
+                        "Query Metrics": "Redacted To Not Change The Baselines From Run To Run"
+                      },
+                      "children": [
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Get Collection Cache",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Try Get Overlapping Ranges",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Routing",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "name": "Get Cosmos Element Response",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Json",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+</Results>

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// This class provides extension methods for cosmos LINQ code.
@@ -710,11 +711,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static Task<Response<T>> ResponseHelperAsync<T>(T value)
         {
             return Task.FromResult<Response<T>>(
-                       new ItemResponse<T>(
-                           System.Net.HttpStatusCode.OK,
-                           new Headers(),
-                           value,
-                           new CosmosDiagnosticsContextCore().Diagnostics));
+                new ItemResponse<T>(
+                    System.Net.HttpStatusCode.OK,
+                    new Headers(),
+                    value,
+                    NoOpTrace.Singleton));
         }
 
         private static MethodInfo GetMethodInfoOf<T1, T2>(Func<T1, T2> func)

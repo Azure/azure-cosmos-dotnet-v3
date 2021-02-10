@@ -1,0 +1,455 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Point Write</Description>
+      <Setup><![CDATA[
+    CosmosObject cosmosObject = CosmosObject.Create(
+        new Dictionary<string, CosmosElement>()
+        {
+            { "id", CosmosString.Create(9001.ToString()) }
+        });
+
+    ResponseMessage itemResponse = await container.CreateItemStreamAsync(
+        new MemoryStream(Encoding.UTF8.GetBytes(cosmosObject.ToString())),
+        new Cosmos.PartitionKey("9001"));
+
+    ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── CreateItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                            └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                                    (
+                                        [Client Side Request Stats]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                    )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "CreateItemStreamAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Transport",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "RequestHandler",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "RequestHandler",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Send Async",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "RequestHandler",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Send Async",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "RequestHandler",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Send Async",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Send Async",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Transport",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Point Read</Description>
+      <Setup><![CDATA[
+    ResponseMessage itemResponse = await container.ReadItemStreamAsync(
+        id: "9001",
+        partitionKey: new Cosmos.PartitionKey("9001"));
+
+    ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── ReadItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                            └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                                    (
+                                        [Client Side Request Stats]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                    )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "ReadItemStreamAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Transport",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "RequestHandler",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "RequestHandler",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Send Async",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "RequestHandler",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Send Async",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "RequestHandler",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Send Async",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Send Async",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Transport",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Point Replace</Description>
+      <Setup><![CDATA[
+    CosmosObject cosmosObject = CosmosObject.Create(
+        new Dictionary<string, CosmosElement>()
+        {
+            { "id", CosmosString.Create(9001.ToString()) },
+            { "someField", CosmosString.Create(9001.ToString()) }
+        });
+
+    ResponseMessage itemResponse = await container.ReplaceItemStreamAsync(
+        new MemoryStream(Encoding.UTF8.GetBytes(cosmosObject.ToString())),
+        id: "9001",
+        partitionKey: new Cosmos.PartitionKey("9001"));
+
+    ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── ReplaceItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                            └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                                    (
+                                        [Client Side Request Stats]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                    )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "ReplaceItemStreamAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Transport",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "RequestHandler",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "RequestHandler",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Send Async",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "RequestHandler",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Send Async",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "RequestHandler",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Send Async",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Send Async",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Transport",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Point Delete</Description>
+      <Setup><![CDATA[
+    ItemRequestOptions requestOptions = new ItemRequestOptions();
+    ContainerInternal containerInternal = (ContainerInternal)container;
+    ResponseMessage itemResponse = await containerInternal.DeleteItemStreamAsync(
+        id: "9001",
+        partitionKey: new PartitionKey("9001"),
+        requestOptions: requestOptions);
+
+    ITrace trace = ((CosmosTraceDiagnostics)itemResponse.Diagnostics).Value;
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── DeleteItemStreamAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+                            └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+                                    (
+                                        [Client Side Request Stats]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                    )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "DeleteItemStreamAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Transport",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "RequestHandler",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "RequestHandler",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Send Async",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "RequestHandler",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Send Async",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "RequestHandler",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Send Async",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Send Async",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "Transport",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                              },
+                              "children": []
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+</Results>
