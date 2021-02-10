@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <seealso cref="UserDefinedFunctionProperties"/>
         /// <returns>Placeholder for the udf result.</returns>
 #pragma warning disable IDE0060 // Remove unused parameter
-        public static object InvokeUserDefinedFunction(string udfName, params object[] arguments)
+        public static object InvokeUserDefinedFunction(this string udfName, params object[] arguments)
 #pragma warning restore IDE0060 // Remove unused parameter
         {
             throw new NotSupportedException(
