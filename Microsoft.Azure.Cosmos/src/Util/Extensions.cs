@@ -69,14 +69,9 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(requestMessage != null, nameof(requestMessage));
             Headers headers = new Headers(documentServiceResponse.Headers);
 
-            if (documentServiceResponse.RequestStats != null)
+            if (documentServiceResponse.RequestStats is ClientSideRequestStatisticsTraceDatum traceDatum)
             {
-                StringBuilder stringBuilder = new StringBuilder();
-                documentServiceResponse.RequestStats.AppendToBuilder(stringBuilder);
-
-                string clientSideRequestStats = stringBuilder.ToString();
-
-                requestMessage.Trace.AddDatum("Client Side Request Stats", clientSideRequestStats);
+                requestMessage.Trace.AddDatum("Client Side Request Stats", traceDatum);
             }
 
             if (requestChargeTracker != null && headers.RequestCharge < requestChargeTracker.TotalRequestCharge)

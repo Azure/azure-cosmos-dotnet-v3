@@ -47,9 +47,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(this.InnerHandler));
             }
 
-            using (ITrace childTrace = request.Trace.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, TraceLevel.Info))
+            using (ITrace childTrace = request.Trace.StartChild("Send Async", TraceComponent.RequestHandler, TraceLevel.Info))
             {
                 request.Trace = childTrace;
+
                 return await this.InnerHandler.SendAsync(request, cancellationToken);
             }
         }
