@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
                 statusCode,
                 subStatusCode,
                 message,
-                activityId), innerException)
+                activityId,
+                diagnosticsContext), innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
@@ -196,7 +197,8 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             int subStatusCode,
             string responseBody,
-            string activityId)
+            string activityId,
+            CosmosDiagnosticsContext diagnosticsContext)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -208,6 +210,8 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append(activityId ?? string.Empty);
             stringBuilder.Append("; Reason: (");
             stringBuilder.Append(responseBody ?? string.Empty);
+            stringBuilder.Append("); Cosmos Diagnostics: (");
+            stringBuilder.Append(diagnosticsContext?.ToString() ?? string.Empty);
             stringBuilder.Append(");");
 
             return stringBuilder.ToString();
