@@ -25,17 +25,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.pointOperationHandler = pointOperationHandler ?? throw new ArgumentNullException(nameof(pointOperationHandler));
         }
 
-        public override async Task<ResponseMessage> SendAsync(
+        public override Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            using (ITrace childTrace = request.Trace.StartChild("Router Handler Send Async", TraceComponent.RequestHandler, TraceLevel.Info))
-            {
-                request.Trace = childTrace;
-
-                RequestHandler targetHandler = request.IsPartitionKeyRangeHandlerRequired ? this.documentFeedHandler : this.pointOperationHandler;
-                return await targetHandler.SendAsync(request, cancellationToken);
-            }
+            RequestHandler targetHandler = request.IsPartitionKeyRangeHandlerRequired ? this.documentFeedHandler : this.pointOperationHandler;
+            return targetHandler.SendAsync(request, cancellationToken);
         }
     }
 }
