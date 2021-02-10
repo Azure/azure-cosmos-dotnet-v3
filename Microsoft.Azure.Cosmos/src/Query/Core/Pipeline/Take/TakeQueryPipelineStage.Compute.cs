@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
@@ -109,9 +110,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     throw new ArgumentNullException(nameof(trace));
                 }
 
-                if (!await this.inputStage.MoveNextAsync(trace))
+                if (this.ReturnedFinalPage || !await this.inputStage.MoveNextAsync(trace))
                 {
                     this.Current = default;
+                    this.takeCount = 0;
                     return false;
                 }
 
@@ -147,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    additionalHeaders: sourcePage.AdditionalHeaders,
                     state: queryState);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

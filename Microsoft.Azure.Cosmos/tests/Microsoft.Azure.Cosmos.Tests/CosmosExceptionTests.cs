@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -215,18 +216,16 @@ namespace Microsoft.Azure.Cosmos
 
             };
 
-            CosmosDiagnosticsContext diagnostics = new CosmosDiagnosticsContextCore();
-
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
                 error.ToString(),
                 error: error,
-                diagnosticsContext: diagnostics);
+                trace: NoOpTrace.Singleton);
 
             ResponseMessage responseMessage = QueryResponse.CreateFailure(
                 statusCode: System.Net.HttpStatusCode.BadRequest,
                 cosmosException: cosmosException,
                 requestMessage: null,
-                diagnostics: diagnostics,
+                trace: NoOpTrace.Singleton,
                 responseHeaders: null);
 
             Assert.AreEqual(error, responseMessage.CosmosException.Error);
@@ -251,7 +250,6 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             string message)
         {
-            exception.DiagnosticsContext.GetOverallScope().Dispose();
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));

@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -330,12 +331,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static void RouteToTheOnlyPartition(DocumentClient client, DocumentServiceRequest request)
         {
-            ClientCollectionCache collectionCache = client.GetCollectionCacheAsync().Result;
+            ClientCollectionCache collectionCache = client.GetCollectionCacheAsync(NoOpTrace.Singleton).Result;
             ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
             IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
             IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(
                 collection.ResourceId,
-                Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey)).Result;
+                Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
+                NoOpTrace.Singleton).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, ranges.Single().Id));
         }
 
@@ -986,12 +988,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (request.ResourceType.IsPartitioned())
                 {
-                    ClientCollectionCache collectionCache = client.GetCollectionCacheAsync().Result;
+                    ClientCollectionCache collectionCache = client.GetCollectionCacheAsync(NoOpTrace.Singleton).Result;
                     ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
                     IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
                     IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMapProvider.TryGetOverlappingRangesAsync(
                         collection.ResourceId,
-                        Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey)).Result;
+                        Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
+                        NoOpTrace.Singleton).Result;
 
                     request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, overlappingRanges.Single().Id));
                 }
