@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// IQueryable<Book> queryable = client
         ///     .GetContainer("database", "container")
         ///     .GetItemLinqQueryable<Book>()
-        ///     .Where(b => CosmosLinqExtensions.InvokeUserDefinedFunction("toLowerCase", b.Title) == "war and peace");
+        ///     .Where(b => "toLowerCase".InvokeUserDefinedFunction(b.Title) == "war and peace");
         ///
         /// FeedIterator<Book> bookIterator = queryable.ToFeedIterator();
         /// while (feedIterator.HasMoreResults)
