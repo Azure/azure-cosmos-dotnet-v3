@@ -258,12 +258,6 @@ namespace Microsoft.Azure.Cosmos
                 stringBuilder.AppendLine();
             }
 
-            if (this.Diagnostics != null)
-            {
-                stringBuilder.Append("--- Cosmos Diagnostics ---");
-                stringBuilder.Append(this.Diagnostics);
-            }
-
             return stringBuilder.ToString();
         }
     }
