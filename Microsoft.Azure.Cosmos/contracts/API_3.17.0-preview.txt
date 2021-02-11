@@ -1042,6 +1042,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
 }
 namespace Microsoft.Azure.Cosmos.Linq
 {
+    public static class CosmosLinq
+    {
+        public static object InvokeUserDefinedFunction(string udfName, params object[] arguments);
+    }
     public static class CosmosLinqExtensions
     {
         public static Task<Response<decimal>> AverageAsync(this IQueryable<decimal> source, CancellationToken cancellationToken=default(CancellationToken));
