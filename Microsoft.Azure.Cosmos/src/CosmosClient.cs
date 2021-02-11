@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use</param>
         /// <param name="authKeyOrResourceToken">The cosmos account key or resource token to use to create the client.</param>
-        /// <param name="containers">(Optional) Containers to be initialized</param>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
         /// <returns>
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see href="https://docs.microsoft.com/azure/cosmos-db/performance-tips">performance guide</see>.
         /// </summary>
         /// <param name="connectionString">The connection string to the cosmos account. ex: https://mycosmosaccount.documents.azure.com:443/;AccountKey=SuperSecretKey; </param>
-        /// <param name="containers">(Optional) Containers to be initialized</param>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
         /// <returns>
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
-        /// <param name="containers">(Optional) Containers to be initialized</param>
+        /// <param name="containers">Containers to be initialized identified by it's database name and container name.</param>
         /// <param name="cosmosClientOptions">(Optional) client options</param>
         /// <param name="cancellationToken">(Optional) Cancellation Token</param>
         /// <returns>

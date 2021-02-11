@@ -98,8 +98,15 @@
             List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)>
             { ("IncorrectDatabase", "ClientCreateAndInitializeContainer")};
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers);
-            cosmosClient.Dispose();
+            try
+            {
+                CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers);
+            }
+            catch (CosmosException ex)
+            {
+                Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
+                throw ex;
+            }
         }
 
         [TestMethod]
@@ -109,8 +116,15 @@
             List<(string databaseId, string containerId)> containers = new List<(string databaseId, string containerId)>
             { ("ClientCreateAndInitializeDatabase", "IncorrectContainer")};
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers);
-            cosmosClient.Dispose();
+            try
+            {
+                CosmosClient cosmosClient = await CosmosClient.CreateAndInitializeAsync(endpoint, authKey, containers);
+            }
+            catch (CosmosException ex)
+            {
+                Assert.IsTrue(ex.StatusCode == HttpStatusCode.NotFound);
+                throw ex;
+            }
         }
     }
 }
