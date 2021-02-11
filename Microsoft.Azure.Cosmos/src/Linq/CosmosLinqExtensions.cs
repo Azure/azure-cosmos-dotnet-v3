@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
