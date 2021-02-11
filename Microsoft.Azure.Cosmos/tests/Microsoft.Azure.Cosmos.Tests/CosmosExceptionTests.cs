@@ -255,8 +255,8 @@ namespace Microsoft.Azure.Cosmos
             }
             catch(CosmosException ex)
             {
-                Assert.IsTrue(ex.Message.Contains($"Cosmos Diagnostics: ({ex.Diagnostics});"));
-                Assert.IsFalse(ex.BaseMessage.Contains($"Cosmos Diagnostics: ({ex.Diagnostics});"));
+                Assert.IsTrue(ex.Message.Contains($"Cosmos Diagnostics: {ex.Diagnostics};"));
+                Assert.IsFalse(ex.BaseMessage.Contains($"Cosmos Diagnostics: {ex.Diagnostics};"));
             }
         }
 
@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));
-            string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; ActivityId: {exception.ActivityId}; Reason: ({message}); Cosmos Diagnostics: ({diagnostics});";
+            string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; ActivityId: {exception.ActivityId}; Reason: ({message}); Cosmos Diagnostics: {diagnostics};";
 
             Assert.AreEqual(expectedMessage, exception.Message);
         }

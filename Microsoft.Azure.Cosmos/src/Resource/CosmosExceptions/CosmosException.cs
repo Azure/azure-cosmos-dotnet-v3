@@ -127,9 +127,9 @@ namespace Microsoft.Azure.Cosmos
             get
             {
                 StringBuilder stringBuilder = new StringBuilder(base.Message);
-                stringBuilder.Append(" Cosmos Diagnostics: (");
+                stringBuilder.Append(" Cosmos Diagnostics: ");
                 stringBuilder.Append(this.Diagnostics?.ToString() ?? string.Empty);
-                stringBuilder.Append(");");
+                stringBuilder.Append(";");
                 return stringBuilder.ToString();
             }
         }
