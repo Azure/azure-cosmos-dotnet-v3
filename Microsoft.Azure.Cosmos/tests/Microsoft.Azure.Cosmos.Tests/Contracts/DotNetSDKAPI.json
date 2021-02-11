@@ -3761,6 +3761,17 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.Linq.CosmosLinq;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Object InvokeUserDefinedFunction(System.String, System.Object[])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Object InvokeUserDefinedFunction(System.String, System.Object[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
