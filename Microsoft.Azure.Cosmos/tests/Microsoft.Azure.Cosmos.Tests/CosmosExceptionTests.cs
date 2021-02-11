@@ -257,6 +257,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 Assert.IsTrue(ex.Message.Contains($"Cosmos Diagnostics: {ex.Diagnostics};"));
                 Assert.IsFalse(ex.BaseMessage.Contains($"Cosmos Diagnostics: {ex.Diagnostics};"));
+                Assert.IsTrue(ex.ToString().Contains($"Cosmos Diagnostics: {ex.Diagnostics};"));
             }
         }
 
