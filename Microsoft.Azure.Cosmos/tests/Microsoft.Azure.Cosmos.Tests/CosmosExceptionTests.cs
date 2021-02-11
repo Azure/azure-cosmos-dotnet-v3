@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
 
             foreach ((HttpStatusCode statusCode, CosmosException exception) item in exceptionsToStatusCodes)
             {
-                this.ValidateExceptionInfo(item.exception, item.statusCode, testMessage);
+                this.ValidateExceptionInfo(item.exception, item.statusCode, testMessage, item.exception?.Diagnostics);
             }
         }
 
@@ -245,15 +245,31 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [TestMethod]
+        public void VerifyCosmosExceptionMessageHasCosmosDiagnostics()
+        {
+            ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotFound);
+            try
+            {
+                responseMessage.EnsureSuccessStatusCode();
+            }
+            catch(CosmosException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains($"Cosmos Diagnostics: ({ex.Diagnostics});"));
+                Assert.IsFalse(ex.BaseMessage.Contains($"Cosmos Diagnostics: ({ex.Diagnostics});"));
+            }
+        }
+
         private void ValidateExceptionInfo(
             CosmosException exception,
             HttpStatusCode httpStatusCode,
-            string message)
+            string message,
+            CosmosDiagnostics diagnostics)
         {
             Assert.AreEqual(message, exception.ResponseBody);
             Assert.AreEqual(httpStatusCode, exception.StatusCode);
             Assert.IsTrue(exception.ToString().Contains(message));
-            string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; ActivityId: {exception.ActivityId}; Reason: ({message});";
+            string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; ActivityId: {exception.ActivityId}; Reason: ({message}); Cosmos Diagnostics: ({diagnostics});";
 
             Assert.AreEqual(expectedMessage, exception.Message);
         }

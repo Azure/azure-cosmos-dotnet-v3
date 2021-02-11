@@ -34,8 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 statusCode,
                 subStatusCode,
                 message,
-                activityId,
-                diagnosticsContext), innerException)
+                activityId), innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
@@ -123,6 +122,19 @@ namespace Microsoft.Azure.Cosmos
         public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
 
         /// <inheritdoc/>
+        public override string Message 
+        { 
+            get
+            {
+                StringBuilder stringBuilder = new StringBuilder(base.Message);
+                stringBuilder.Append(" Cosmos Diagnostics: (");
+                stringBuilder.Append(this.Diagnostics?.ToString() ?? string.Empty);
+                stringBuilder.Append(");");
+                return stringBuilder.ToString();
+            }
+        }
+
+        /// <inheritdoc/>
         public override string StackTrace
         {
             get
@@ -144,6 +156,11 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the internal error object.
         /// </summary>
         internal virtual Documents.Error Error { get; set; }
+
+        /// <summary>
+        /// Message that describes the current exception without Cosmos Diagnostics appended
+        /// </summary>
+        internal virtual string BaseMessage => base.Message;
 
         /// <summary>
         /// Try to get a header from the cosmos response message
@@ -197,8 +214,7 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode statusCode,
             int subStatusCode,
             string responseBody,
-            string activityId,
-            CosmosDiagnosticsContext diagnosticsContext)
+            string activityId)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
@@ -210,8 +226,6 @@ namespace Microsoft.Azure.Cosmos
             stringBuilder.Append(activityId ?? string.Empty);
             stringBuilder.Append("; Reason: (");
             stringBuilder.Append(responseBody ?? string.Empty);
-            stringBuilder.Append("); Cosmos Diagnostics: (");
-            stringBuilder.Append(diagnosticsContext?.ToString() ?? string.Empty);
             stringBuilder.Append(");");
 
             return stringBuilder.ToString();
