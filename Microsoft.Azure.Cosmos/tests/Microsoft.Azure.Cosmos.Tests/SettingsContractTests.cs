@@ -363,7 +363,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "PartitionKeyDefinitionVersion",
                 "ConflictResolutionPolicy",
                 "ChangeFeedPolicy",
-                "ClientEncryptionPolicy");
+                "ClientEncryptionPolicy",
+                "PartitionKeyPaths");
 #else
             SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties),
                 "Id",
