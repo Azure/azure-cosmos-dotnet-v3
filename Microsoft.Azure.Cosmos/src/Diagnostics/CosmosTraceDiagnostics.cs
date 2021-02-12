@@ -11,16 +11,12 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
-        private static readonly string userAgent = new UserAgentContainer().UserAgent;
-
-        public CosmosTraceDiagnostics(ITrace trace, string userAgent = null)
+        public CosmosTraceDiagnostics(ITrace trace)
         {
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
             }
-
-            this.UserAgent = userAgent ?? CosmosTraceDiagnostics.userAgent;
 
             // Need to set to the root trace, since we don't know which layer of the stack the response message was returned from.
             ITrace rootTrace = trace;
@@ -33,8 +29,6 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         }
 
         public ITrace Value { get; }
-
-        public string UserAgent { get; }
 
         public override string ToString()
         {
@@ -55,17 +49,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         private ReadOnlyMemory<byte> WriteTraceToJsonWriter(JsonSerializationFormat jsonSerializationFormat)
         {
             IJsonWriter jsonTextWriter = JsonWriter.Create(jsonSerializationFormat);
-
-            jsonTextWriter.WriteObjectStart();
-
-            jsonTextWriter.WriteFieldName("User Agent");
-            jsonTextWriter.WriteStringValue(this.UserAgent);
-
-            jsonTextWriter.WriteFieldName("Traces");
             TraceWriter.WriteTrace(jsonTextWriter, this.Value);
-
-            jsonTextWriter.WriteObjectEnd();
-
             return jsonTextWriter.GetResult();
         }
     }
