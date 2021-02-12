@@ -15,6 +15,21 @@ namespace Microsoft.Azure.Cosmos.Tracing
         enum TraceComponent
     {
         /// <summary>
+        /// Component is yet to be categorized.
+        /// </summary>
+        Unknown,
+
+        /// <summary>
+        /// Component that handles authorizing requests and managing auth tokens / credentials.
+        /// </summary>
+        Authorization,
+
+        /// <summary>
+        /// Component that handles batch requests.
+        /// </summary>
+        Batch,
+
+        /// <summary>
         /// Component that handles aggregating ChangeFeed results across multiple pages and partitions.
         /// </summary>
         ChangeFeed,
@@ -40,6 +55,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         ReadFeed, 
 
         /// <summary>
+        /// Request Handler pipeline.
+        /// </summary>
+        RequestHandler,
+
+        /// <summary>
         /// Component that handles routing requests to physical partitons and maintaining physical partition topology.
         /// </summary>
         Routing, 
@@ -47,11 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Component that handles sending requests over the wire (along with selecting the correct replica set for consistency).
         /// </summary>
-        Transport, 
-
-        /// <summary>
-        /// Component is yet to be categorized.
-        /// </summary>
-        Unknown
+        Transport,
     }
 }

@@ -531,14 +531,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
-        public override bool Visit(SqlOrderbyClause first, SqlObject secondAsObject)
+        public override bool Visit(SqlOrderByClause first, SqlObject secondAsObject)
         {
-            if (!(secondAsObject is SqlOrderbyClause second))
+            if (!(secondAsObject is SqlOrderByClause second))
             {
                 return false;
             }
 
-            if (!SequenceEquals(first.OrderbyItems, second.OrderbyItems))
+            if (!SequenceEquals(first.OrderByItems, second.OrderByItems))
             {
                 return false;
             }
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (!Equals(first.OrderbyClause, second.OrderbyClause))
+            if (!Equals(first.OrderByClause, second.OrderByClause))
             {
                 return false;
             }

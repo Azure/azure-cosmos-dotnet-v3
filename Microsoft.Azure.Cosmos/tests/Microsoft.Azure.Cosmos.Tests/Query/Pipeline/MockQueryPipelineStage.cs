@@ -13,13 +13,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class MockQueryPipelineStage : QueryPipelineStageBase
     {
         private readonly IReadOnlyList<IReadOnlyList<CosmosElement>> pages;
-        private long pageIndex;
+
+        public long PageIndex { get; private set; }
 
         public MockQueryPipelineStage(IReadOnlyList<IReadOnlyList<CosmosElement>> pages)
             : base(EmptyQueryPipelineStage.Singleton, cancellationToken: default)
@@ -36,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             if (continuationToken != null)
             {
                 CosmosNumber index = continuationToken as CosmosNumber;
-                stage.pageIndex = Number64.ToLong(index.Value);
+                stage.PageIndex = Number64.ToLong(index.Value);
             }
 
             return stage;
@@ -44,14 +46,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         public override ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            if (this.pageIndex == this.pages.Count)
+            if (this.PageIndex == this.pages.Count)
             {
                 this.Current = default;
                 return new ValueTask<bool>(false);
             }
 
-            IReadOnlyList<CosmosElement> documents = this.pages[(int)this.pageIndex++];
-            QueryState state = this.pageIndex == this.pages.Count ? null : new QueryState(CosmosNumber64.Create(this.pageIndex));
+            IReadOnlyList<CosmosElement> documents = this.pages[(int)this.PageIndex++];
+            QueryState state = this.PageIndex == this.pages.Count ? null : new QueryState(CosmosNumber64.Create(this.PageIndex));
             QueryPage page = new QueryPage(
                 documents: documents,
                 requestCharge: default,
@@ -59,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 responseLengthInBytes: default,
                 cosmosQueryExecutionInfo: default,
                 disallowContinuationTokenMessage: default,
+                additionalHeaders: default,
                 state: state);
             this.Current = TryCatch<QueryPage>.FromResult(page);
             return new ValueTask<bool>(true);

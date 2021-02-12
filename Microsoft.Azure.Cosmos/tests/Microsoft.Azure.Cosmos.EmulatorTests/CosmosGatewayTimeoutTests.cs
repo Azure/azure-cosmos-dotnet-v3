@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithHttpClientFactory(() => new HttpClient(httpClientHandler))))
             {
                 Cosmos.Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
-                ContainerInternal container = (ContainerInternal)await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/status");
+                ContainerInternal container = (ContainerInternal)await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
 
                 Container gatewayQueryPlanContainer = new ContainerInlineCore(
                     client.ClientContext,
@@ -109,14 +109,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<JObject> response = await iterator.ReadNextAsync();
 
                 Assert.IsTrue(isQueryRequestFound, "Query plan call back was not called.");
-
-                string diagnostics = response.Diagnostics.ToString();
-                JObject parsedDiagnostics = JObject.Parse(diagnostics);
-                JToken contextList = parsedDiagnostics["Context"];
-
-                Assert.IsNotNull(contextList.First(x => x["Id"]?.ToString() == "CreateQueryPipeline"));
-                Assert.IsNotNull(contextList.First(x => x["Id"]?.ToString() == "Microsoft.Azure.Cosmos.GatewayStoreModel"));
-                Assert.IsNotNull(contextList.First(x => x["Id"]?.ToString() == "SendHttpHelperAsync:" + nameof(HttpTimeoutPolicyControlPlaneRetriableHotPath)));
                 await database.DeleteStreamAsync();
             }
         }

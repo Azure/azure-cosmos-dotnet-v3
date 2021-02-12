@@ -284,8 +284,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>True or false if the header name existed in the header collection.</returns>
         public virtual bool TryGetValue(string headerName, out string value)
         {
-            value = this.CosmosMessageHeaders.Get(headerName);
-            return value != null;
+            return this.CosmosMessageHeaders.TryGetValue(headerName, out value);
         }
 
         /// <summary>
@@ -358,6 +357,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         internal CosmosMessageHeadersInternal CosmosMessageHeaders { get; }
+
+        internal static int GetIntValueOrDefault(string value)
+        {
+            int.TryParse(value, out int number);
+            return number;
+        }
 
         internal static SubStatusCodes GetSubStatusCodes(string value)
         {

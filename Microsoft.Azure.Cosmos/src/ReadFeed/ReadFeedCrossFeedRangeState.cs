@@ -14,7 +14,15 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
 
-    internal readonly struct ReadFeedCrossFeedRangeState
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif 
+        readonly struct ReadFeedCrossFeedRangeState
     {
         // TODO: this class can be auto generated. 
 

@@ -10,14 +10,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.VisualBasic;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     [TestClass]
@@ -89,8 +85,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> { new List<string> { "pk" } }));
-            containerMock.Setup(x => x.GetPartitionKeyValueFromStreamAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Returns<Stream, CancellationToken>((stream, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(stream, cancellationToken));
+            containerMock
+                .Setup(
+                    x => x.GetPartitionKeyValueFromStreamAsync(
+                        It.IsAny<Stream>(), 
+                        It.IsAny<ITrace>(), 
+                        It.IsAny<CancellationToken>()))
+                .Returns<Stream, ITrace, CancellationToken>(
+                (stream, trace, cancellationToken) => mockContainer.GetPartitionKeyValueFromStreamAsync(
+                    stream,
+                    trace, 
+                    cancellationToken));
 
             DateTime dateTime = new DateTime(2019, 05, 15, 12, 1, 2, 3, DateTimeKind.Utc);
             Guid guid = Guid.NewGuid();
@@ -120,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 object pk = await container.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco),
+                    NoOpTrace.Singleton,
                     default(CancellationToken));
                 if (pk is bool boolValue)
                 {
@@ -162,18 +168,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             foreach (dynamic poco in unsupportedTypesToTest)
             {
-                await Assert.ThrowsExceptionAsync<ArgumentException>(async () =>
-                {
-                    await container.GetPartitionKeyValueFromStreamAsync(
-                        MockCosmosUtil.Serializer.ToStream(poco),
-                        default(CancellationToken));
-                });
+                await Assert.ThrowsExceptionAsync<ArgumentException>(async () => await container.GetPartitionKeyValueFromStreamAsync(
+                    MockCosmosUtil.Serializer.ToStream(poco),
+                    NoOpTrace.Singleton,
+                    default(CancellationToken)));
             }
 
             //null should return null
             object pkValue = await container.GetPartitionKeyValueFromStreamAsync(
                 MockCosmosUtil.Serializer.ToStream(new { pk = (object)null }),
-                default(CancellationToken));
+                NoOpTrace.Singleton,
+                default);
             Assert.AreEqual(Cosmos.PartitionKey.Null, pkValue);
         }
 
@@ -529,6 +534,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 object pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco),
+                    NoOpTrace.Singleton,
                     default(CancellationToken));
                 Assert.IsTrue(object.Equals(Cosmos.PartitionKey.None, pk));
             }
@@ -641,6 +647,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Cosmos.PartitionKey pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
                     MockCosmosUtil.Serializer.ToStream(poco.Item1),
+                    NoOpTrace.Singleton,
                     default(CancellationToken));
                 string partitionKeyString = pk.InternalKey.ToJsonString();
                 Assert.AreEqual(poco.Item2, partitionKeyString);
@@ -660,24 +667,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.SerializerCore).Returns(context.SerializerCore);
             mockContext.Setup(x => x.DocumentClient).Returns(context.DocumentClient);
 
-            mockContext.Setup(x => x.CreateDiagnosticContext(
-                It.IsAny<string>(),
-                It.IsAny<RequestOptions>()))
-                .Returns<string, RequestOptions>((x, y) => new CosmosDiagnosticsContextCore(x, "MockUserAgentString"));
-
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ResponseMessage>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>>(
+                (operationName, requestOptions, func) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>()))
-               .Returns<string, RequestOptions, Func<CosmosDiagnosticsContext, ITrace, Task<ItemResponse<dynamic>>>>(
-                (x, y, z) => z(new CosmosDiagnosticsContextCore(x, "MockUserAgentString"), NoOpTrace.Singleton));
+                It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>>(
+                (operationName, requestOptions, func) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -689,10 +691,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
-                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
-                It.IsAny<CancellationToken>())).Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, CosmosDiagnosticsContext, ITrace, CancellationToken>(
-                (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, diagnostics, trace, cancellationToken) =>
+                It.IsAny<CancellationToken>())).Returns<string, ResourceType, OperationType, RequestOptions, ContainerInternal, Cosmos.PartitionKey, string, Stream, Action<RequestMessage>, ITrace, CancellationToken>(
+                (uri, resourceType, operationType, requestOptions, containerInternal, pk, itemId, stream, requestEnricher, trace, cancellationToken) =>
                  context.ProcessResourceOperationStreamAsync(
                      uri,
                      resourceType,
@@ -703,7 +704,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                      itemId,
                      stream,
                      requestEnricher,
-                     diagnostics,
                      trace,
                      cancellationToken));
 
@@ -923,10 +923,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             mockedExecutor
                 .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK)
-                    {
-                        DiagnosticsContext = new CosmosDiagnosticsContextCore()
-                    });
+                .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                {
+                });
 
             return mockedExecutor;
         }

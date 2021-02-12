@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -29,9 +28,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 0);
             List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
             TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                ChangeFeedState.Beginning(),
-                ranges[0],
-                pageSize: 10,
+                feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], ChangeFeedState.Beginning()),
+                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -49,9 +47,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             ChangeFeedState resumeState;
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    ChangeFeedState.Beginning(),
-                    ranges[0],
-                    pageSize: int.MaxValue,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], ChangeFeedState.Beginning()),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: int.MaxValue),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -63,9 +60,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             // No more changes left
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    resumeState,
-                    ranges[0],
-                    pageSize: 10,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], resumeState),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -84,9 +80,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             // No changes let
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    ChangeFeedState.Time(now),
-                    ranges[0],
-                    pageSize: 10,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], ChangeFeedState.Time(now)),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -112,9 +107,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             // Now we should be able to see the changes
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    ChangeFeedState.Time(now),
-                    ranges[0],
-                    pageSize: int.MaxValue,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], ChangeFeedState.Time(now)),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: int.MaxValue),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -132,9 +126,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             // No changes starting from now
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    ChangeFeedState.Now(),
-                    ranges[0],
-                    pageSize: 10,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], ChangeFeedState.Now()),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -165,9 +158,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    resumeState,
-                    ranges[0],
-                    pageSize: 10,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], resumeState),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -195,9 +187,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             // Should get back only the document with the partition key.
             TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                ChangeFeedState.Beginning(),
-                new FeedRangePartitionKey(new Cosmos.PartitionKey(0)),
-                pageSize: int.MaxValue,
+                feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKey(new Cosmos.PartitionKey(0)), ChangeFeedState.Beginning()),
+                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: int.MaxValue),
                 NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -233,14 +224,15 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             {
                 // Should get back only the document within the epk range.
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    ChangeFeedState.Beginning(),
-                    new FeedRangeEpk(
-                        new Documents.Routing.Range<string>(
-                            min: value.StartInclusive.Value.ToString(),
-                            max: value.EndExclusive.Value.ToString(),
-                            isMinInclusive: true,
-                            isMaxInclusive: false)),
-                    pageSize: int.MaxValue,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(
+                        new FeedRangeEpk(
+                            new Documents.Routing.Range<string>(
+                                min: value.StartInclusive.Value.ToString(),
+                                max: value.EndExclusive.Value.ToString(),
+                                isMinInclusive: true,
+                                isMaxInclusive: false)),
+                        ChangeFeedState.Beginning()),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: int.MaxValue),
                     NoOpTrace.Singleton,
                     cancellationToken: default);
 
@@ -259,12 +251,10 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             }
 
             long numRecords = (await documentContainer.ReadFeedAsync(
-                feedRange: range,
-                readFeedState: ReadFeedState.Beginning(),
-                pageSize: int.MaxValue,
+                feedRangeState: new FeedRangeState<ReadFeedState>(range, ReadFeedState.Beginning()),
+                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: int.MaxValue),
                 trace: NoOpTrace.Singleton,
-                cancellationToken: default,
-                queryRequestOptions: default)).GetRecords().Count;
+                cancellationToken: default)).GetRecords().Count;
 
             Assert.AreEqual(numRecords, sumChildCount);
         }
@@ -275,10 +265,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
             List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
-                feedRange: ranges[0],
-                readFeedState: ReadFeedState.Beginning(),
-                pageSize: int.MaxValue,
-                queryRequestOptions: default,
+                feedRangeState: new FeedRangeState<ReadFeedState>(ranges[0], ReadFeedState.Beginning()),
+                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: int.MaxValue),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default)).GetRecords().Count;
 
@@ -291,9 +279,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             foreach (FeedRangeInternal child in children)
             {
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                    ChangeFeedState.Beginning(),
-                    child,
-                    pageSize: 1000,
+                    feedRangeState: new FeedRangeState<ChangeFeedState>(child, ChangeFeedState.Beginning()),
+                    changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 1000),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 

@@ -243,10 +243,10 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ItemResponse`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProperties]] ReadDataEncryptionKeyAsync(System.String, Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ItemResponse`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProperties]] RewrapDataEncryptionKeyAsync(System.String, Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata, Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ItemResponse`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProperties]] RewrapDataEncryptionKeyAsync(System.String, Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata, System.String, Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ItemResponse`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProperties]] RewrapDataEncryptionKeyAsync(System.String, Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata, Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ItemResponse`1[Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKeyProperties]] RewrapDataEncryptionKeyAsync(System.String, Microsoft.Azure.Cosmos.Encryption.Custom.EncryptionKeyWrapMetadata, System.String, Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

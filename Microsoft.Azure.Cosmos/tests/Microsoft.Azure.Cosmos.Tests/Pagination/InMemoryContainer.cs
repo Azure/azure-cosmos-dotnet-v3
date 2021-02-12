@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
@@ -119,28 +120,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 if (feedRange is FeedRangeEpk feedRangeEpk)
                 {
                     // look for overlapping epk ranges.
-                    List<FeedRangeEpk> overlappedIds;
+                    List<FeedRangeEpk> overlappingRanges;
                     if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
                     {
-                        overlappedIds = this.cachedPartitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
+                        overlappingRanges = this.cachedPartitionKeyRangeIdToHashRange.Select(kvp => CreateRangeFromId(kvp.Key)).ToList();
                     }
                     else
                     {
-                        PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
-                        overlappedIds = this.cachedPartitionKeyRangeIdToHashRange
-                            .Where(kvp => hashRange.Contains(kvp.Value))
-                            .Select(kvp => CreateRangeFromId(kvp.Key))
-                            .ToList();
+                        overlappingRanges = new List<FeedRangeEpk>();
+                        PartitionKeyHashRange userRange = FeedRangeEpkToHashRange(feedRangeEpk);
+                        foreach (PartitionKeyHashRange systemRange in this.cachedPartitionKeyRangeIdToHashRange.Values)
+                        {
+                            if (userRange.TryGetOverlappingRange(systemRange, out PartitionKeyHashRange overlappingRange))
+                            {
+                                overlappingRanges.Add(HashRangeToFeedRangeEpk(overlappingRange));
+                            }
+                        }
                     }
 
-                    if (overlappedIds.Count == 0)
+                    if (overlappingRanges.Count == 0)
                     {
                         return TryCatch<List<FeedRangeEpk>>.FromException(
                             new KeyNotFoundException(
                                 $"PartitionKeyRangeId: {feedRangeEpk} does not exist."));
                     }
 
-                    return TryCatch<List<FeedRangeEpk>>.FromResult(overlappedIds);
+                    return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
                 }
 
                 if (!(feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange))
@@ -166,9 +171,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     }
 
                     List<FeedRangeEpk> singleRange = new List<FeedRangeEpk>()
-                {
-                    CreateRangeFromId(partitionKeyRangeId),
-                };
+                    {
+                        CreateRangeFromId(partitionKeyRangeId),
+                    };
 
                     return TryCatch<List<FeedRangeEpk>>.FromResult(singleRange);
                 }
@@ -189,8 +194,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     return tryGetRightRanges;
                 }
 
-                List<FeedRangeEpk> overlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
-                return TryCatch<List<FeedRangeEpk>>.FromResult(overlappingRanges);
+                List<FeedRangeEpk> recursiveOverlappingRanges = tryGetLeftRanges.Result.Concat(tryGetRightRanges.Result).ToList();
+                return TryCatch<List<FeedRangeEpk>>.FromResult(recursiveOverlappingRanges);
             }
         }
 
@@ -316,18 +321,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
-            ReadFeedState readFeedState,
-            FeedRangeInternal feedRange,
-            QueryRequestOptions queryRequestOptions,
-            int pageSize,
+            FeedRangeState<ReadFeedState> feedRangeState,
+            ReadFeedPaginationOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+
             using (ITrace readFeed = trace.StartChild("Read Feed Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
+                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRangeState.FeedRange);
                 if (monadicPartitionKeyRangeId.Failed)
                 {
                     return Task.FromResult(TryCatch<ReadFeedPage>.FromException(monadicPartitionKeyRangeId.Exception));
@@ -342,11 +347,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     return Task.FromResult(
                         TryCatch<ReadFeedPage>.FromException(
                             new CosmosException(
-                            message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
-                            statusCode: System.Net.HttpStatusCode.Gone,
-                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                            activityId: Guid.NewGuid().ToString(),
-                            requestCharge: 42)));
+                                message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                                statusCode: System.Net.HttpStatusCode.Gone,
+                                subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                                activityId: Guid.NewGuid().ToString(),
+                                requestCharge: 42)));
                 }
 
                 if (!this.partitionedRecords.TryGetValue(range, out Records records))
@@ -355,11 +360,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 (ulong pkrangeId, ulong documentIndex) rangeIdAndIndex;
-                if (readFeedState is ReadFeedBeginningState)
+                if (feedRangeState.State is ReadFeedBeginningState)
                 {
                     rangeIdAndIndex = (0, 0);
                 }
-                else if (readFeedState is ReadFeedContinuationState readFeedContinuationState)
+                else if (feedRangeState.State is ReadFeedContinuationState readFeedContinuationState)
                 {
                     ResourceIdentifier resourceIdentifier = ResourceIdentifier.Parse(((CosmosString)readFeedContinuationState.ContinuationToken).Value);
                     rangeIdAndIndex = (resourceIdentifier.Database, resourceIdentifier.Document);
@@ -372,7 +377,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 List<Record> page = records
                     .Where((record) =>
                     {
-                        if (!IsRecordWithinFeedRange(record, feedRange, this.partitionKeyDefinition))
+                        if (!IsRecordWithinFeedRange(record, feedRangeState.FeedRange, this.partitionKeyDefinition))
                         {
                             return false;
                         }
@@ -392,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             return record.ResourceIdentifier.Document > rangeIdAndIndex.documentIndex;
                         }
                     })
-                    .Take(pageSize)
+                    .Take(readFeedPaginationOptions.PageSizeLimit.GetValueOrDefault(int.MaxValue))
                     .ToList();
 
                 List<CosmosObject> documents = new List<CosmosObject>();
@@ -434,7 +439,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     responseStream,
                     requestCharge: 42,
                     activityId: Guid.NewGuid().ToString(),
-                    CosmosDiagnosticsContext.Create(default),
+                    additionalHeaders: new Dictionary<string, string>()
+                    {
+                        { "test-header", "test-value" }
+                    },
                     continuationState);
 
                 return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(readFeedPage));
@@ -443,9 +451,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch<QueryPage>> MonadicQueryAsync(
             SqlQuerySpec sqlQuerySpec,
-            string continuationToken,
-            FeedRangeInternal feedRange,
-            int pageSize,
+            FeedRangeState<QueryState> feedRangeState,
+            QueryPaginationOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -457,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             using (ITrace childTrace = trace.StartChild("Query Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
+                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRangeState.FeedRange);
                 if (monadicPartitionKeyRangeId.Failed)
                 {
                     return Task.FromResult(TryCatch<QueryPage>.FromException(monadicPartitionKeyRangeId.Exception));
@@ -484,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 List<CosmosObject> documents = new List<CosmosObject>();
-                foreach (Record record in records.Where(r => IsRecordWithinFeedRange(r, feedRange, this.partitionKeyDefinition)))
+                foreach (Record record in records.Where(r => IsRecordWithinFeedRange(r, feedRangeState.FeedRange, this.partitionKeyDefinition)))
                 {
                     CosmosObject document = ConvertRecordToCosmosElement(record);
                     documents.Add(CosmosObject.Create(document));
@@ -497,6 +504,43 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 SqlQuery sqlQuery = monadicParse.Result;
+                if ((sqlQuery.OrderByClause != null) && (feedRangeState.State != null))
+                {
+                    // This is a hack.
+                    // If the query is an ORDER BY query then we need to seek to the resume term.
+                    // Since I don't want to port over the proper logic from the backend I will just inject a filter.
+                    // For now I am only handling the single order by item case
+                    if (sqlQuery.OrderByClause.OrderByItems.Length != 1)
+                    {
+                        throw new NotImplementedException("Can only support a single order by column");
+                    }
+
+                    SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
+                    CosmosObject parsedContinuationToken = CosmosObject.Parse(((CosmosString)feedRangeState.State.Value).Value);
+                    SqlBinaryScalarExpression resumeFilter = SqlBinaryScalarExpression.Create(
+                        orderByItem.IsDescending ? SqlBinaryScalarOperatorKind.LessThan : SqlBinaryScalarOperatorKind.GreaterThan,
+                        orderByItem.Expression,
+                        parsedContinuationToken["orderByItem"].Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton));
+
+                    SqlWhereClause modifiedWhereClause = sqlQuery.WhereClause.FilterExpression == null
+                        ? SqlWhereClause.Create(resumeFilter)
+                        : SqlWhereClause.Create(
+                            SqlBinaryScalarExpression.Create(
+                                SqlBinaryScalarOperatorKind.And,
+                                sqlQuery.WhereClause.FilterExpression,
+                                resumeFilter));
+
+                    sqlQuery = SqlQuery.Create(
+                        sqlQuery.SelectClause,
+                        sqlQuery.FromClause,
+                        modifiedWhereClause,
+                        sqlQuery.GroupByClause,
+                        sqlQuery.OrderByClause,
+                        sqlQuery.OffsetLimitClause);
+
+                    // We still need to handle duplicate values and break the tie with the rid
+                    // But since all the values are unique for our testing purposes we can ignore this for now.
+                }
                 IEnumerable<CosmosElement> queryResults = SqlInterpreter.ExecuteQuery(documents, sqlQuery);
                 IEnumerable<CosmosElement> queryPageResults = queryResults;
 
@@ -504,9 +548,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 string continuationResourceId;
                 int continuationSkipCount;
 
-                if (continuationToken != null)
+                if ((sqlQuery.OrderByClause == null) && (feedRangeState.State != null))
                 {
-                    CosmosObject parsedContinuationToken = CosmosObject.Parse(continuationToken);
+                    CosmosObject parsedContinuationToken = CosmosObject.Parse(((CosmosString)feedRangeState.State.Value).Value);
                     continuationResourceId = ((CosmosString)parsedContinuationToken["resourceId"]).Value;
                     continuationSkipCount = (int)Number64.ToLong(((CosmosNumber64)parsedContinuationToken["skipCount"]).Value);
 
@@ -552,7 +596,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     continuationSkipCount = 0;
                 }
 
-                queryPageResults = queryPageResults.Take(pageSize);
+                queryPageResults = queryPageResults.Take((queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
                 List<CosmosElement> queryPageResultList = queryPageResults.ToList();
                 QueryState queryState;
                 if (queryPageResultList.LastOrDefault() is CosmosObject lastDocument)
@@ -566,11 +610,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         currentSkipCount += continuationSkipCount;
                     }
 
-                    CosmosObject queryStateValue = CosmosObject.Create(new Dictionary<string, CosmosElement>()
+                    Dictionary<string, CosmosElement> queryStateDictionary = new Dictionary<string, CosmosElement>()
                     {
                         { "resourceId", CosmosString.Create(currentResourceId) },
                         { "skipCount", CosmosNumber64.Create(currentSkipCount) },
-                    });
+                    };
+
+                    if (sqlQuery.OrderByClause != null)
+                    {
+                        SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
+                        string propertyName = ((SqlPropertyRefScalarExpression)orderByItem.Expression).Identifier.Value;
+                        queryStateDictionary["orderByItem"] = ((CosmosObject)lastDocument["payload"])[propertyName];
+                    }
+
+                    CosmosObject queryStateValue = CosmosObject.Create(queryStateDictionary);
 
                     queryState = new QueryState(CosmosString.Create(queryStateValue.ToString()));
                 }
@@ -588,37 +641,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
+                            additionalHeaders: default,
                             state: queryState)));
             }
         }
 
         public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            ChangeFeedState state,
-            FeedRangeInternal feedRange,
-            int pageSize,
+            FeedRangeState<ChangeFeedState> feedRangeState,
+            ChangeFeedPaginationOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (state == null)
-            {
-                throw new ArgumentNullException(nameof(state));
-            }
-
-            if (feedRange == null)
-            {
-                throw new ArgumentNullException(nameof(feedRange));
-            }
-
-            if (pageSize <= 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(pageSize));
-            }
-
             using (ITrace childTrace = trace.StartChild("Change Feed Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
+                TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRangeState.FeedRange);
                 if (monadicPartitionKeyRangeId.Failed)
                 {
                     return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(monadicPartitionKeyRangeId.Exception));
@@ -645,9 +683,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
 
                 List<Change> filteredChanges = changes
-                    .Where(change => IsRecordWithinFeedRange(change.Record, feedRange, this.partitionKeyDefinition))
-                    .Where(change => state.Accept(ChangeFeedPredicate.Singleton, change))
-                    .Take(pageSize)
+                    .Where(change => IsRecordWithinFeedRange(change.Record, feedRangeState.FeedRange, this.partitionKeyDefinition))
+                    .Where(change => feedRangeState.State.Accept(ChangeFeedPredicate.Singleton, change))
+                    .Take((changeFeedPaginationOptions ?? ChangeFeedPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue))
                     .ToList();
 
                 if (filteredChanges.Count == 0)
@@ -658,6 +696,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         new ChangeFeedNotModifiedPage(
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
+                            additionalHeaders: default,
                             notModifiedResponseState)));
                 }
 
@@ -700,6 +739,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseStream,
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
+                            additionalHeaders: default,
                             responseState)));
             }
         }
@@ -731,11 +771,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 return Task.FromResult(
                     TryCatch.FromException(
                         new CosmosException(
-                        message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
-                        statusCode: System.Net.HttpStatusCode.Gone,
-                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: 42)));
+                            message: $"PartitionKeyRangeId {partitionKeyRangeId} is gone",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: 42)));
             }
 
             if (!this.partitionedRecords.TryGetValue(parentRange, out Records parentRecords))
@@ -1032,38 +1072,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public IEnumerable<int> PartitionKeyRangeIds => this.partitionKeyRangeIdToHashRange.Keys;
 
-        private TryCatch<int> MonadicGetPkRangeIdFromEpk(FeedRangeEpk feedRangeEpk)
-        {
-            List<int> matchIds;
-            if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
-            {
-                matchIds = this.PartitionKeyRangeIds.ToList();
-            }
-            else
-            {
-                PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
-                matchIds = this.partitionKeyRangeIdToHashRange
-                    .Where(kvp => kvp.Value.Contains(hashRange) || hashRange.Contains(kvp.Value))
-                    .Select(kvp => kvp.Key)
-                    .ToList();
-            }
-
-            if (matchIds.Count != 1)
-            {
-                // Simulate a split exception, since we don't have a partition key range id to route to.
-                CosmosException goneException = new CosmosException(
-                    message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                    statusCode: System.Net.HttpStatusCode.Gone,
-                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                    activityId: Guid.NewGuid().ToString(),
-                    requestCharge: default);
-
-                return TryCatch<int>.FromException(goneException);
-            }
-
-            return TryCatch<int>.FromResult(matchIds[0]);
-        }
-
         private static PartitionKeyHash GetHashFromPayload(
             CosmosObject payload,
             PartitionKeyDefinition partitionKeyDefinition)
@@ -1205,14 +1213,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             int partitionKeyRangeId;
             if (feedRange is FeedRangeEpk feedRangeEpk)
             {
-                // Check to see if it lines up exactly with one physical partition
-                TryCatch<int> monadicGetPkRangeIdFromEpkRange = this.MonadicGetPkRangeIdFromEpk(feedRangeEpk);
-                if (monadicGetPkRangeIdFromEpkRange.Failed)
+                // Check to see if any of the system ranges contain the user range.
+                List<int> matchIds;
+                if (feedRangeEpk.Range.Min.Equals(FeedRangeEpk.FullRange.Range.Min) && feedRangeEpk.Range.Max.Equals(FeedRangeEpk.FullRange.Range.Max))
                 {
-                    return monadicGetPkRangeIdFromEpkRange;
+                    matchIds = this.PartitionKeyRangeIds.ToList();
+                }
+                else
+                {
+                    PartitionKeyHashRange hashRange = FeedRangeEpkToHashRange(feedRangeEpk);
+                    matchIds = this.partitionKeyRangeIdToHashRange
+                        .Where(kvp => kvp.Value.Contains(hashRange))
+                        .Select(kvp => kvp.Key)
+                        .ToList();
                 }
 
-                partitionKeyRangeId = monadicGetPkRangeIdFromEpkRange.Result;
+                if (matchIds.Count != 1)
+                {
+                    // Simulate a split exception, since we don't have a partition key range id to route to.
+                    CosmosException goneException = new CosmosException(
+                        message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: Guid.NewGuid().ToString(),
+                        requestCharge: default);
+
+                    return TryCatch<int>.FromException(goneException);
+                }
+
+                partitionKeyRangeId = matchIds[0];
             }
             else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
             {
@@ -1252,6 +1281,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
             PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
             return hashRange;
+        }
+
+        private static FeedRangeEpk HashRangeToFeedRangeEpk(PartitionKeyHashRange hashRange)
+        {
+            return new FeedRangeEpk(
+                new Documents.Routing.Range<string>(
+                    min: hashRange.StartInclusive.HasValue ? hashRange.StartInclusive.ToString() : string.Empty,
+                    max: hashRange.EndExclusive.HasValue ? hashRange.EndExclusive.ToString() : string.Empty,
+                    isMinInclusive: true,
+                    isMaxInclusive: false));
         }
 
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
@@ -1388,6 +1427,79 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 DateTime now = DateTime.UtcNow;
                 ChangeFeedStateTime startTime = new ChangeFeedStateTime(now);
                 return this.Visit(startTime, input);
+            }
+        }
+
+        private sealed class CosmosElementToSqlScalarExpressionVisitor : ICosmosElementVisitor<SqlScalarExpression>
+        {
+            public static readonly CosmosElementToSqlScalarExpressionVisitor Singleton = new CosmosElementToSqlScalarExpressionVisitor();
+
+            private CosmosElementToSqlScalarExpressionVisitor()
+            {
+                // Private constructor, since this class is a singleton.
+            }
+
+            public SqlScalarExpression Visit(CosmosArray cosmosArray)
+            {
+                List<SqlScalarExpression> items = new List<SqlScalarExpression>();
+                foreach (CosmosElement item in cosmosArray)
+                {
+                    items.Add(item.Accept(this));
+                }
+
+                return SqlArrayCreateScalarExpression.Create(items.ToImmutableArray());
+            }
+
+            public SqlScalarExpression Visit(CosmosBinary cosmosBinary)
+            {
+                // Can not convert binary to scalar expression without knowing the API type.
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosBoolean cosmosBoolean)
+            {
+                return SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(cosmosBoolean.Value));
+            }
+
+            public SqlScalarExpression Visit(CosmosGuid cosmosGuid)
+            {
+                // Can not convert guid to scalar expression without knowing the API type.
+                throw new NotImplementedException();
+            }
+
+            public SqlScalarExpression Visit(CosmosNull cosmosNull)
+            {
+                return SqlLiteralScalarExpression.Create(SqlNullLiteral.Create());
+            }
+
+            public SqlScalarExpression Visit(CosmosNumber cosmosNumber)
+            {
+                if (!(cosmosNumber is CosmosNumber64 cosmosNumber64))
+                {
+                    throw new ArgumentException($"Unknown {nameof(CosmosNumber)} type: {cosmosNumber.GetType()}.");
+                }
+
+                return SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(cosmosNumber64.GetValue()));
+            }
+
+            public SqlScalarExpression Visit(CosmosObject cosmosObject)
+            {
+                List<SqlObjectProperty> properties = new List<SqlObjectProperty>();
+                foreach (KeyValuePair<string, CosmosElement> prop in cosmosObject)
+                {
+                    SqlPropertyName name = SqlPropertyName.Create(prop.Key);
+                    CosmosElement value = prop.Value;
+                    SqlScalarExpression expression = value.Accept(this);
+                    SqlObjectProperty property = SqlObjectProperty.Create(name, expression);
+                    properties.Add(property);
+                }
+
+                return SqlObjectCreateScalarExpression.Create(properties.ToImmutableArray());
+            }
+
+            public SqlScalarExpression Visit(CosmosString cosmosString)
+            {
+                return SqlLiteralScalarExpression.Create(SqlStringLiteral.Create(cosmosString.Value));
             }
         }
     }
