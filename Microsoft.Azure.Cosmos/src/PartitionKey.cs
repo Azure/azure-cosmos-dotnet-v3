@@ -229,8 +229,8 @@ namespace Microsoft.Azure.Cosmos
         internal
 #endif
             static TryCatch<PartitionKey> CreateFromCosmosElementAndDefinition(
-            CosmosObject cosmosObject,
-            PartitionKeyDefinition partitionKeyDefinition)
+                CosmosObject cosmosObject,
+                PartitionKeyDefinition partitionKeyDefinition)
         {
             if (cosmosObject == null)
             {
@@ -280,39 +280,9 @@ namespace Microsoft.Azure.Cosmos
                     return true;
                 }
 
-                if (!TryGetPartitionKeyValueFromTokens(cosmosObject, tokens, out CosmosElement partitionKeyValue))
-                {
-                    partitionKeyBuilder.AddNoneType();
-                }
-                else
-                {
-                    switch (partitionKeyValue)
-                    {
-                        case CosmosString cosmosString:
-                            partitionKeyBuilder.Add(cosmosString.Value);
-                            break;
-
-                        case CosmosNumber cosmosNumber:
-                            partitionKeyBuilder.Add(Number64.ToDouble(cosmosNumber.Value));
-                            break;
-
-                        case CosmosBoolean cosmosBoolean:
-                            partitionKeyBuilder.Add(cosmosBoolean.Value);
-                            break;
-
-                        case CosmosNull _:
-                            partitionKeyBuilder.AddNullValue();
-                            break;
-
-                        default:
-                            return TryCatch<PartitionKey>.FromException(
-                                new ArgumentException(
-                                   string.Format(
-                                       CultureInfo.InvariantCulture,
-                                       RMResources.UnsupportedPartitionKeyComponentValue,
-                                       cosmosObject)));
-                    }
-                }
+                partitionKeyBuilder = !TryGetPartitionKeyValueFromTokens(cosmosObject, tokens, out CosmosElement partitionKeyValue)
+                    ? partitionKeyBuilder.AddNoneType()
+                    : partitionKeyBuilder.Add(partitionKeyValue);
             }
 
             return TryCatch<PartitionKey>.FromResult(partitionKeyBuilder.Build());

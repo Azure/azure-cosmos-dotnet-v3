@@ -5,6 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
@@ -79,6 +81,35 @@ namespace Microsoft.Azure.Cosmos
         {
             this.partitionKeyValues.Add(PartitionKey.None);
             return this;
+        }
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+        public
+#else
+        internal
+#endif
+            PartitionKeyBuilder Add(CosmosElement cosmosElement)
+        {
+            if (cosmosElement == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosElement));
+            }
+
+            return cosmosElement switch
+            {
+                CosmosString cosmosString => this.Add(cosmosString.Value),
+                CosmosNumber cosmosNumber => this.Add(Number64.ToDouble(cosmosNumber.Value)),
+                CosmosBoolean cosmosBoolean => this.Add(cosmosBoolean.Value),
+                CosmosNull _ => this.AddNullValue(),
+                _ => throw new ArgumentException(
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        RMResources.UnsupportedPartitionKeyComponentValue,
+                        cosmosElement)),
+            };
         }
 
         /// <summary>
