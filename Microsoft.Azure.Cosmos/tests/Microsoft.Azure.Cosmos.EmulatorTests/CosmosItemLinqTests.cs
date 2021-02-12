@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //LINQ query execution with correct partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
-                requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual, PartitionKey = new Cosmos.PartitionKey(itemList[1].status) });
+                requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual, PartitionKey = new Cosmos.PartitionKey(itemList[1].pk) });
             queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
@@ -282,19 +282,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task QueryableExtentionFunctionsTest(bool disableDiagnostic)
+        public async Task QueryableExtentionFunctionsTest()
         {
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-            if (disableDiagnostic)
-            {
-                queryRequestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
-            };
-
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 requestOptions: queryRequestOptions);
 
@@ -365,10 +358,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
             toDoActivity.taskNum = 20;
             toDoActivity.id = "minTaskNum";
-            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk));
             toDoActivity.taskNum = 100;
             toDoActivity.id = "maxTaskNum";
-            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.status));
+            await this.Container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk));
 
             Response<int> minTaskNum = await linqQueryable.Select(item => item.taskNum).MinAsync();
             Assert.AreEqual(20, minTaskNum);
@@ -655,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             NumberLinqItem parametrizedLinqItem = new NumberLinqItem
             {
                 id = id,
-                status = pk,
+                pk = pk,
                 stringValue = stringValue,
                 sbyteValue = sbyteValue,
                 byteValue = byteValue,
@@ -762,7 +755,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private class NumberLinqItem
         {
             public string id;
-            public string status;
+            public string pk;
             public string stringValue;
             public sbyte sbyteValue;
             public byte byteValue;
@@ -803,12 +796,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-
-            bool disableDiagnostics = queryRequestOptions.DiagnosticContextFactory != null;
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(
-                diagnostics: response.Diagnostics,
-                isFirstPage: false,
-                disableDiagnostics: disableDiagnostics);
         }
     }
 }

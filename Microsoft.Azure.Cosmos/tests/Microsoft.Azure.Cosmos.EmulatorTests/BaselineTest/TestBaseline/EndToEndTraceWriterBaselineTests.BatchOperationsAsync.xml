@@ -1,0 +1,175 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Batch Operation</Description>
+      <Setup><![CDATA[
+    string pkValue = "DiagnosticTestPk";
+    TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(pkValue));
+    BatchCore batchCore = (BatchCore)batch;
+    List<PatchOperation> patch = new List<PatchOperation>()
+    {
+        PatchOperation.Remove("/cost")
+    };
+
+    List<ToDoActivity> createItems = new List<ToDoActivity>();
+    for (int i = 0; i < 50; i++)
+    {
+        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+        createItems.Add(item);
+        batch.CreateItem<ToDoActivity>(item);
+    }
+
+    for (int i = 0; i < 20; i++)
+    {
+        batch.ReadItem(createItems[i].id);
+        batchCore.PatchItem(createItems[i].id, patch);
+    }
+
+    TransactionalBatchRequestOptions requestOptions = null;
+    TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
+
+    Assert.IsNotNull(response);
+    ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── ExecuteAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+    └── Execute Next Batch(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+        ├── Create Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+        └── Execute Batch Request(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+            ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
+            │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
+            │                               (
+            │                                   [Client Side Request Stats]
+            │                                   Redacted To Not Change The Baselines From Run To Run
+            │                               )
+            └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "ExecuteAsync",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Transport",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Execute Next Batch",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Batch",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Create Batch Request",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Batch",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "Execute Batch Request",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Batch",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
+            {
+              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "RequestHandler",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": [
+                {
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "RequestHandler",
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Send Async",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "RequestHandler",
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "Send Async",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "RequestHandler",
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Send Async",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "Transport",
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {
+                                        "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                      },
+                                      "children": []
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Create Trace",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Batch",
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+</Results>

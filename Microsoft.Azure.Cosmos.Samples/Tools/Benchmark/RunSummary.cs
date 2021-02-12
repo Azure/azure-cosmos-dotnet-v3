@@ -30,7 +30,8 @@ namespace CosmosBenchmark
 
         public int Concurrency { get; set; }
         public int TotalOps { get; set; }
-
+        public int? MaxRequestsPerTcpConnection { get; set; }
+        public int? MaxTcpConnectionsPerEndpoint { get; set; }
         [JsonProperty]
         public static string MachineName { get; set; } = Environment.MachineName;
         [JsonProperty]

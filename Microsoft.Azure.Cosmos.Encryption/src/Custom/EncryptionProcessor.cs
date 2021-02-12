@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         string propertyName = pathToEncrypt.Substring(1);
                         if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                         {
-                            throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                            continue;
                         }
 
                         if (propertyValue.Type == JTokenType.Null)
@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         string propertyName = pathToEncrypt.Substring(1);
                         if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                         {
-                            throw new ArgumentException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a path: '{pathToEncrypt}' which was not found.");
+                            continue;
                         }
 
                         toEncryptJObj.Add(propertyName, propertyValue.Value<JToken>());
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 string propertyName = path.Substring(1);
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
                 {
-                    throw new InvalidOperationException($"{nameof(encryptionProperties.EncryptedPaths)} includes a path: '{path}' which was not found.");
+                    continue;
                 }
 
                 byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
@@ -489,7 +489,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-            SqlNvarcharSerializer sqlNvarcharSerializer = new SqlNvarcharSerializer(-1);
+
+            // UTF-8 encoding.
+            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             switch (propertyValue.Type)
             {
@@ -506,11 +508,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 case JTokenType.Integer:
                     return (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>()));
                 case JTokenType.String:
-                    return (TypeMarker.String, sqlNvarcharSerializer.Serialize(propertyValue.ToObject<string>()));
+                    return (TypeMarker.String, sqlVarcharSerializer.Serialize(propertyValue.ToObject<string>()));
                 case JTokenType.Array:
-                    return (TypeMarker.Array, sqlNvarcharSerializer.Serialize(propertyValue.ToString()));
+                    return (TypeMarker.Array, sqlVarcharSerializer.Serialize(propertyValue.ToString()));
                 case JTokenType.Object:
-                    return (TypeMarker.Object, sqlNvarcharSerializer.Serialize(propertyValue.ToString()));
+                    return (TypeMarker.Object, sqlVarcharSerializer.Serialize(propertyValue.ToString()));
                 default:
                     throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}");
             }
@@ -524,6 +526,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
 
+            // UTF-8 encoding.
+            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
+
             switch (typeMarker)
             {
                 case TypeMarker.Boolean:
@@ -536,13 +541,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     jObject.Add(key, sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes));
                     break;
                 case TypeMarker.String:
-                    jObject.Add(key, sqlSerializerFactory.GetDefaultSerializer<string>().Deserialize(serializedBytes));
+                    jObject.Add(key, sqlVarcharSerializer.Deserialize(serializedBytes));
                     break;
                 case TypeMarker.Array:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JArray>(sqlSerializerFactory.GetDefaultSerializer<string>().Deserialize(serializedBytes)));
+                    jObject.Add(key, JsonConvert.DeserializeObject<JArray>(sqlVarcharSerializer.Deserialize(serializedBytes)));
                     break;
                 case TypeMarker.Object:
-                    jObject.Add(key, JsonConvert.DeserializeObject<JObject>(sqlSerializerFactory.GetDefaultSerializer<string>().Deserialize(serializedBytes)));
+                    jObject.Add(key, JsonConvert.DeserializeObject<JObject>(sqlVarcharSerializer.Deserialize(serializedBytes)));
                     break;
                 default:
                     Debug.Fail(string.Format("Unexpected type marker {0}", typeMarker));
