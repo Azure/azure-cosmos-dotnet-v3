@@ -72,7 +72,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static void InitializeDirectContainers()
         {
-            BatchTestBase.Client = TestCommon.CreateCosmosClient();
+
+            BatchTestBase.Client = TestCommon.CreateCosmosClient(builder => builder.WithConsistencyLevel(Cosmos.ConsistencyLevel.Session));
             BatchTestBase.Database = BatchTestBase.Client.CreateDatabaseAsync(Guid.NewGuid().ToString())
                 .GetAwaiter().GetResult().Database;
 
