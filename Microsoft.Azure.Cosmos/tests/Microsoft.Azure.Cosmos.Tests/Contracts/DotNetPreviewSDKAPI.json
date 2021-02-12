@@ -612,12 +612,8 @@
     "Microsoft.Azure.Cosmos.ContainerProperties;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Collections.Generic.IReadOnlyList`1[System.String] PartitionKeyPaths[Newtonsoft.Json.JsonIgnoreAttribute()]": {
         "Microsoft.Azure.Cosmos.ChangeFeedPolicy ChangeFeedPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
           "Attributes": [
             "JsonIgnoreAttribute"
           ],
@@ -631,6 +627,24 @@
         "Microsoft.Azure.Cosmos.ClientEncryptionPolicy ClientEncryptionPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
           "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionPolicy ClientEncryptionPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ClientEncryptionPolicy get_ClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ClientEncryptionPolicy(Microsoft.Azure.Cosmos.ClientEncryptionPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ClientEncryptionPolicy get_ClientEncryptionPolicy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionPolicy get_ClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] PartitionKeyPaths[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
           ],
           "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] PartitionKeyPaths;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
@@ -638,17 +652,6 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.String, System.Collections.Generic.IReadOnlyList`1[System.String]), Void .ctor(System.String, System.Collections.Generic.IReadOnlyList`1[System.String])]"
-        },
-        "Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionPolicy ClientEncryptionPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ClientEncryptionPolicy get_ClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ClientEncryptionPolicy(Microsoft.Azure.Cosmos.ClientEncryptionPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.ClientEncryptionPolicy get_ClientEncryptionPolicy()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionPolicy get_ClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_ChangeFeedPolicy(Microsoft.Azure.Cosmos.ChangeFeedPolicy)": {
           "Type": "Method",
@@ -659,6 +662,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_ClientEncryptionPolicy(Microsoft.Azure.Cosmos.ClientEncryptionPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
