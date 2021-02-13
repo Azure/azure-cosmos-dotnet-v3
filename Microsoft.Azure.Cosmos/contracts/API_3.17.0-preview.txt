@@ -763,6 +763,7 @@ namespace Microsoft.Azure.Cosmos
     {
         public TransactionalBatchRequestOptions();
         public Nullable<ConsistencyLevel> ConsistencyLevel { get; set; }
+        public string SessionToken { get; set; }
     }
     public class TransactionalBatchResponse : IDisposable, IEnumerable, IEnumerable<TransactionalBatchOperationResult>, IReadOnlyCollection<TransactionalBatchOperationResult>, IReadOnlyList<TransactionalBatchOperationResult>
     {
