@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -232,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(createExistingResponse.Diagnostics);
             string diagnostics = createExistingResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("StartUtc"));
+            Assert.IsTrue(diagnostics.Contains("CreateDatabaseIfNotExistsAsync"));
 
             bool conflictReturned = false;
             requestHandlerHelper.CallBackOnResponse = (request, response) =>
@@ -251,9 +252,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         requestCharge: response.Headers.RequestCharge,
                         retryAfter: default,
                         headers: response.Headers,
-                        diagnosticsContext: response.DiagnosticsContext,
                         error: default,
-                        innerException: default).ToCosmosResponseMessage(request);
+                        innerException: default,
+                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
                 }
 
                 return response;

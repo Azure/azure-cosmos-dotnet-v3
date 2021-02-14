@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents a partition key value list in the Azure Cosmos DB service.
     /// </summary>
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
     public
 #else
     internal

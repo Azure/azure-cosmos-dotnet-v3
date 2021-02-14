@@ -19,8 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestPointOperationStatistics.xml" />
-    <None Remove="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestQueryAggregateDiagnostics.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ElementsHash.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ExtendedTypesHash.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.NumbersHash.xml" />
@@ -33,6 +31,9 @@
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlQueries.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlScalarExpression.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml" />
+    <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.ScenariosAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.Serialization.xml" />
+    <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
@@ -298,19 +299,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Singletons.xml">
+    <Content Include="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestQueryAggregateDiagnostics.xml">
+    <Content Include="BaselineTest\TestBaseline\TraceWriterBaselineTests.Serialization.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\TraceWriterBaselineTests.ScenariosAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Singletons.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.ElementsHash.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.ExtendedTypesHash.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestPointOperationStatistics.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.NumbersHash.xml">
@@ -334,6 +338,16 @@
     <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Diagnostics\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Tracing\TraceWriterBaselineTests.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
   </ItemGroup>
 
   <PropertyGroup>

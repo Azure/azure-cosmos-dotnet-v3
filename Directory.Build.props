@@ -4,7 +4,7 @@
     <ClientOfficialVersion>3.16.0</ClientOfficialVersion>
     <ClientPreviewVersion>3.15.2</ClientPreviewVersion>
     <DirectVersion>3.17.1</DirectVersion>
-    <EncryptionVersion>1.0.0-preview9</EncryptionVersion>
+    <EncryptionVersion>1.0.0-previewV10</EncryptionVersion>
     <HybridRowVersion>1.1.0-preview1</HybridRowVersion>
     <AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
     <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>

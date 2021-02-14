@@ -3,6 +3,9 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+- [#2191](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2191) & [#796](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/796) Query: Expose query parameters
+
 ### <a name="3.16.0"/> [3.16.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.16.0) - 2021-01-12
 
 #### Added
@@ -97,6 +100,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1886](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1886) Change Feed Processor: Fixes failures during initialization
 - [#1892](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1892) GatewayAddressCache: Fixes high CPU from HashSet usage on Address refresh path
 - [#1909](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1909) Authorization: Fixes DocumentClientException being thrown on write operations
+- [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) Query: Fixes MalformedContinuationTokenException.  Introduced in 3.7.0 PR [#1260](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1260) and reported in issue [#1364](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1364)
 
 ### <a name="3.13.0"/> [3.13.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.13.0) - 2020-09-21
 

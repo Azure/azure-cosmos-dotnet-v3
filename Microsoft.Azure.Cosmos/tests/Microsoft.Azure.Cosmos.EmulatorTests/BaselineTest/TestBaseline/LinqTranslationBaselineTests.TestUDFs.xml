@@ -2,7 +2,7 @@
   <Result>
     <Input>
       <Description><![CDATA[No param]]></Description>
-      <Expression><![CDATA[query.Select(f => Invoke("NoParameterUDF", new [] {}))]]></Expression>
+      <Expression><![CDATA[query.Select(f => InvokeUserDefinedFunction("NoParameterUDF", new [] {}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -13,7 +13,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Single param]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("SingleParameterUDF", new [] {Convert(doc.NumericField, Object)}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("SingleParameterUDF", new [] {Convert(doc.NumericField, Object)}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -24,7 +24,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Single param w/ array]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("SingleParameterUDFWithArray", new [] {doc.ArrayField}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("SingleParameterUDFWithArray", new [] {doc.ArrayField}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -35,7 +35,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Multi param]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("MultiParamterUDF", new [] {Convert(doc.NumericField, Object), doc.StringField, doc.Point}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("MultiParamterUDF", new [] {Convert(doc.NumericField, Object), doc.StringField, doc.Point}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -46,7 +46,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Multi param w/ array]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("MultiParamterUDWithArrayF", new [] {doc.ArrayField, Convert(doc.NumericField, Object), doc.Point}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("MultiParamterUDWithArrayF", new [] {doc.ArrayField, Convert(doc.NumericField, Object), doc.Point}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -57,7 +57,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[ArrayCount]]></Description>
-      <Expression><![CDATA[query.Where(doc => (Convert(Invoke("ArrayCount", new [] {doc.ArrayField}), Int32) > 2))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (Convert(InvokeUserDefinedFunction("ArrayCount", new [] {doc.ArrayField}), Int32) > 2))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -69,7 +69,7 @@ WHERE (udf.ArrayCount(root["ArrayField"]) > 2) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[ArrayCount && SomeBooleanUDF]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((Convert(Invoke("ArrayCount", new [] {doc.ArrayField}), Int32) > 2) AndAlso Convert(Invoke("SomeBooleanUDF", new [] {}), Boolean)))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((Convert(InvokeUserDefinedFunction("ArrayCount", new [] {doc.ArrayField}), Int32) > 2) AndAlso Convert(InvokeUserDefinedFunction("SomeBooleanUDF", new [] {}), Boolean)))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -81,7 +81,7 @@ WHERE ((udf.ArrayCount(root["ArrayField"]) > 2) AND udf.SomeBooleanUDF()) ]]></S
   <Result>
     <Input>
       <Description><![CDATA[expression]]></Description>
-      <Expression><![CDATA[query.Where(doc => ((Convert(Invoke("SingleParameterUDF", new [] {Convert(doc.NumericField, Object)}), Int32) + 2) == 4))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => ((Convert(InvokeUserDefinedFunction("SingleParameterUDF", new [] {Convert(doc.NumericField, Object)}), Int32) + 2) == 4))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -93,7 +93,7 @@ WHERE ((udf.SingleParameterUDF(root["NumericField"]) + 2) = 4) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Single constant param]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("SingleParameterUDF", new [] {Convert(1, Object)}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("SingleParameterUDF", new [] {Convert(1, Object)}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -104,7 +104,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Single constant int array param]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("SingleParameterUDFWithArray", new [] {new [] {1, 2, 3}}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("SingleParameterUDFWithArray", new [] {new [] {1, 2, 3}}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -115,7 +115,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Single constant string array param]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("SingleParameterUDFWithArray", new [] {"1", "2"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("SingleParameterUDFWithArray", new [] {"1", "2"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -126,7 +126,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Multi constant params]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("MultiParamterUDF", new [] {Convert(1, Object), "str", Convert(True, Object)}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("MultiParamterUDF", new [] {Convert(1, Object), "str", Convert(True, Object)}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -137,7 +137,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Multi constant array params]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("MultiParamterUDWithArrayF", new [] {new [] {1, 2, 3}, Convert(1, Object), "str"}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("MultiParamterUDWithArrayF", new [] {new [] {1, 2, 3}, Convert(1, Object), "str"}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -148,7 +148,7 @@ FROM root ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[ArrayCount with constant param]]></Description>
-      <Expression><![CDATA[query.Where(doc => (Convert(Invoke("ArrayCount", new [] {new [] {1, 2, 3}}), Int32) > 2))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (Convert(InvokeUserDefinedFunction("ArrayCount", new [] {new [] {1, 2, 3}}), Int32) > 2))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -160,7 +160,7 @@ WHERE (udf.ArrayCount([1, 2, 3]) > 2) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[different type parameters including objects]]></Description>
-      <Expression><![CDATA[query.Where(doc => Convert(Invoke("MultiParamterUDF2", new [] {doc.Point, "str", Convert(1, Object)}), Boolean))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => Convert(InvokeUserDefinedFunction("MultiParamterUDF2", new [] {doc.Point, "str", Convert(1, Object)}), Boolean))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
@@ -172,7 +172,7 @@ WHERE udf.MultiParamterUDF2(root["Point"], "str", 1) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Null udf name]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke(null, new [] {}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction(null, new [] {}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
@@ -182,7 +182,7 @@ WHERE udf.MultiParamterUDF2(root["Point"], "str", 1) ]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[Empty udf name]]></Description>
-      <Expression><![CDATA[query.Select(doc => Invoke("", new [] {}))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => InvokeUserDefinedFunction("", new [] {}))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
