@@ -361,11 +361,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
             else
             {
                 CosmosException cosmosException = new CosmosException(
-                    responseMessage.ErrorMessage,
                     statusCode: responseMessage.StatusCode,
-                    (int)responseMessage.Headers.SubStatusCode,
-                    responseMessage.Headers.ActivityId,
-                    responseMessage.Headers.RequestCharge);
+                    message: responseMessage.ErrorMessage,
+                    subStatusCode: (int)responseMessage.Headers.SubStatusCode,
+                    stackTrace: null,
+                    activityId: responseMessage.Headers.ActivityId,
+                    requestCharge: responseMessage.Headers.RequestCharge,
+                    retryAfter: responseMessage.Headers.RetryAfter,
+                    headers: responseMessage.Headers,
+                    trace: trace,
+                    error: null,
+                    innerException: responseMessage.CosmosException);
                 cosmosException.Headers.ContinuationToken = responseMessage.Headers.ContinuationToken;
 
                 monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromException(cosmosException);
