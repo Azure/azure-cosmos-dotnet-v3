@@ -2433,7 +2433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
         {

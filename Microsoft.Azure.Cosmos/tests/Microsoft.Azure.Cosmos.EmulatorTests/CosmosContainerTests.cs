@@ -713,7 +713,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         //MultiHash container checks.
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncForMultiHashCollectionsTest()
