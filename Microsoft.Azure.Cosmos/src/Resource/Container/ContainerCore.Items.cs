@@ -437,13 +437,14 @@ namespace Microsoft.Azure.Cosmos
         {
             requestOptions ??= new QueryRequestOptions();
 
-            CosmosSerializationOptions serializationOptions = 
-                (cosmosPropertyNamingPolicy.GetValueOrDefault() == CosmosPropertyNamingPolicy.CamelCase)
-                ? new CosmosSerializationOptions
+            CosmosSerializationOptions serializationOptions = this.ClientContext.ClientOptions.SerializerOptions;
+            if (cosmosPropertyNamingPolicy.HasValue)
+            {
+                serializationOptions = new CosmosSerializationOptions
                 {
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-                }
-                : this.ClientContext.ClientOptions.SerializerOptions;
+                    PropertyNamingPolicy = cosmosPropertyNamingPolicy.Value
+                };
+            }
 
             return new CosmosLinqQuery<T>(
                 this,

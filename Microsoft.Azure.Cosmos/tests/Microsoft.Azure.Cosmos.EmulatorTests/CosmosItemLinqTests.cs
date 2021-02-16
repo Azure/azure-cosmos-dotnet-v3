@@ -428,15 +428,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 2);
 
-            // Naming Policy - Default set
-            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, CosmosPropertyNamingPolicy.Default);
+            // Override camelcase client with default
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true, null, null, CosmosPropertyNamingPolicy.Default);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 0);
 
-            // CamelCase flag not set
+            // Normal client - CamelCase flag not set
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 0);
+
+            // Camel case client - CamelCase flag not set
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 2);
         }
 
         [TestMethod]
