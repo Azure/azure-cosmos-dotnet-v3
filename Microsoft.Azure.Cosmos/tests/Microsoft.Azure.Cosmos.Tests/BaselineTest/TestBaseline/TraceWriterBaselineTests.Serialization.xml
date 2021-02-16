@@ -1,0 +1,521 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description>Root Trace</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": []
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Root Trace With Datum</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTraceWithDatum;
+    using (rootTraceWithDatum = TraceForBaselineTesting.GetRootTrace())
+    {
+        rootTraceWithDatum.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        (
+            [QueryMetrics]
+            Retrieved Document Count                 :           2,000             
+            Retrieved Document Size                  :       1,125,600 bytes       
+            Output Document Count                    :           2,000             
+            Output Document Size                     :       1,125,600 bytes       
+            Index Utilization                        :          100.00 %           
+            Total Query Execution Time               :           33.67 milliseconds
+              Query Preparation Time                 :            0.19 milliseconds
+              Index Lookup Time                      :            0.36 milliseconds
+              Document Load Time                     :            9.58 milliseconds
+              Runtime Execution Times                :            0.12 milliseconds
+              Document Write Time                    :           18.10 milliseconds
+            
+            Index Utilization Information
+              Utilized Single Indexes
+                Index Spec: IndexDocumentExpression
+                Index Impact Score: IndexImpactScore
+                ---
+              Potential Single Indexes
+                Index Spec: IndexDocumentExpression
+                Index Impact Score: IndexImpactScore
+                ---
+              Utilized Composite Indexes
+                Index Spec: 
+                Index Impact Score: IndexImpactScore
+                ---
+              Potential Composite Indexes
+                Index Spec: 
+                Index Impact Score: IndexImpactScore
+                ---
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {
+    "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+  },
+  "children": []
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Root Trace With One Child</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+        using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
+        {
+        }
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Child1",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": []
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Root Trace With One Child With Datum</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+        using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
+        {
+            childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
+        }
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+            (
+                [QueryMetrics]
+                Retrieved Document Count                 :           2,000             
+                Retrieved Document Size                  :       1,125,600 bytes       
+                Output Document Count                    :           2,000             
+                Output Document Size                     :       1,125,600 bytes       
+                Index Utilization                        :          100.00 %           
+                Total Query Execution Time               :           33.67 milliseconds
+                  Query Preparation Time                 :            0.19 milliseconds
+                  Index Lookup Time                      :            0.36 milliseconds
+                  Document Load Time                     :            9.58 milliseconds
+                  Runtime Execution Times                :            0.12 milliseconds
+                  Document Write Time                    :           18.10 milliseconds
+                
+                Index Utilization Information
+                  Utilized Single Indexes
+                    Index Spec: IndexDocumentExpression
+                    Index Impact Score: IndexImpactScore
+                    ---
+                  Potential Single Indexes
+                    Index Spec: IndexDocumentExpression
+                    Index Impact Score: IndexImpactScore
+                    ---
+                  Utilized Composite Indexes
+                    Index Spec: 
+                    Index Impact Score: IndexImpactScore
+                    ---
+                  Potential Composite Indexes
+                    Index Spec: 
+                    Index Impact Score: IndexImpactScore
+                    ---
+            )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Child1",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {
+        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+      },
+      "children": []
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Root Trace With Two Children</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+        using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
+        {
+        }
+
+        using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
+        {
+        }
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Child1",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": []
+    },
+    {
+      "name": "Child2",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": []
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Root Trace With Two Children With Info</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+        using (ITrace childTrace1 = rootTrace.StartChild("Child1"))
+        {
+            childTrace1.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
+        }
+
+        using (ITrace childTrace2 = rootTrace.StartChild("Child2"))
+        {
+            childTrace2.AddDatum("QueryMetrics", new QueryMetricsTraceDatum(MockQueryMetrics));
+        }
+    }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │       (
+    │           [QueryMetrics]
+    │           Retrieved Document Count                 :           2,000             
+    │           Retrieved Document Size                  :       1,125,600 bytes       
+    │           Output Document Count                    :           2,000             
+    │           Output Document Size                     :       1,125,600 bytes       
+    │           Index Utilization                        :          100.00 %           
+    │           Total Query Execution Time               :           33.67 milliseconds
+    │             Query Preparation Time                 :            0.19 milliseconds
+    │             Index Lookup Time                      :            0.36 milliseconds
+    │             Document Load Time                     :            9.58 milliseconds
+    │             Runtime Execution Times                :            0.12 milliseconds
+    │             Document Write Time                    :           18.10 milliseconds
+    │           
+    │           Index Utilization Information
+    │             Utilized Single Indexes
+    │               Index Spec: IndexDocumentExpression
+    │               Index Impact Score: IndexImpactScore
+    │               ---
+    │             Potential Single Indexes
+    │               Index Spec: IndexDocumentExpression
+    │               Index Impact Score: IndexImpactScore
+    │               ---
+    │             Utilized Composite Indexes
+    │               Index Spec: 
+    │               Index Impact Score: IndexImpactScore
+    │               ---
+    │             Potential Composite Indexes
+    │               Index Spec: 
+    │               Index Impact Score: IndexImpactScore
+    │               ---
+    │       )
+    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+            (
+                [QueryMetrics]
+                Retrieved Document Count                 :           2,000             
+                Retrieved Document Size                  :       1,125,600 bytes       
+                Output Document Count                    :           2,000             
+                Output Document Size                     :       1,125,600 bytes       
+                Index Utilization                        :          100.00 %           
+                Total Query Execution Time               :           33.67 milliseconds
+                  Query Preparation Time                 :            0.19 milliseconds
+                  Index Lookup Time                      :            0.36 milliseconds
+                  Document Load Time                     :            9.58 milliseconds
+                  Runtime Execution Times                :            0.12 milliseconds
+                  Document Write Time                    :           18.10 milliseconds
+                
+                Index Utilization Information
+                  Utilized Single Indexes
+                    Index Spec: IndexDocumentExpression
+                    Index Impact Score: IndexImpactScore
+                    ---
+                  Potential Single Indexes
+                    Index Spec: IndexDocumentExpression
+                    Index Impact Score: IndexImpactScore
+                    ---
+                  Utilized Composite Indexes
+                    Index Spec: 
+                    Index Impact Score: IndexImpactScore
+                    ---
+                  Potential Composite Indexes
+                    Index Spec: 
+                    Index Impact Score: IndexImpactScore
+                    ---
+            )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Child1",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {
+        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+      },
+      "children": []
+    },
+    {
+      "name": "Child2",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {
+        "QueryMetrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
+      },
+      "children": []
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Trace With Grandchildren</Description>
+      <Setup><![CDATA[
+    TraceForBaselineTesting rootTrace;
+    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+    {
+        using (ITrace childTrace1 = rootTrace.StartChild(
+            name: "Child1",
+            component: TraceComponent.Unknown,
+            level: TraceLevel.Info))
+        {
+            using (ITrace child1Child1 = childTrace1.StartChild(
+                name: "Child1Child1",
+                component: TraceComponent.Unknown,
+                level: TraceLevel.Info))
+            {
+            }
+
+            using (ITrace child1Child2 = childTrace1.StartChild(
+                name: "Child1Child2",
+                component: TraceComponent.Unknown,
+                level: TraceLevel.Info))
+            {
+            }
+        }
+
+        using (ITrace childTrace2 = rootTrace.StartChild(
+            name: "Child2",
+            component: TraceComponent.Unknown,
+            level: TraceLevel.Info))
+        {
+            using (ITrace child2Child1 = childTrace2.StartChild(
+                name: "Child2Child1",
+                component: TraceComponent.Unknown,
+                level: TraceLevel.Info))
+            {
+            }
+
+            using (ITrace child2Child2 = childTrace2.StartChild(
+                name: "Child2Child2",
+                component: TraceComponent.Unknown,
+                level: TraceLevel.Info))
+            {
+            }
+
+            using (ITrace child2Child3 = childTrace2.StartChild(
+                name: "Child2Child3",
+                component: TraceComponent.Unknown,
+                level: TraceLevel.Info))
+            {
+            }
+        }
+    }
+
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   ├── Child1Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    │   └── Child1Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        ├── Child2Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        ├── Child2Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        └── Child2Child3(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {},
+  "children": [
+    {
+      "name": "Child1",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Child1Child1",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Unknown",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "Child1Child2",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Unknown",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "Child2",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Unknown",
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {},
+      "children": [
+        {
+          "name": "Child2Child1",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Unknown",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "Child2Child2",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Unknown",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        },
+        {
+          "name": "Child2Child3",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Unknown",
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        }
+      ]
+    }
+  ]
+}]]></Json>
+    </Output>
+  </Result>
+</Results>

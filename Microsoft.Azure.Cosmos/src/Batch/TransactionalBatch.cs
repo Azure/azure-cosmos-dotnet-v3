@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract TransactionalBatch PatchItem(
                 string id,
                 System.Collections.Generic.IReadOnlyList<PatchOperation> patchOperations,
-                TransactionalBatchItemRequestOptions requestOptions = null);
+                TransactionalBatchPatchItemRequestOptions requestOptions = null);
 #endif
 
         /// <summary>

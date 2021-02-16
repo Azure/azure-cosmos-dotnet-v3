@@ -300,17 +300,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override Utf8String GetUtf8StringValue()
-            {
-                if (this.TryGetBufferedStringValue(out Utf8Memory memory))
-                {
-                    return Utf8String.UnsafeFromUtf8BytesNoValidation(memory.Memory);
-                }
-
-                return Utf8String.TranscodeUtf16(this.GetStringValue());
-            }
-
-            /// <inheritdoc />
             public override bool TryGetBufferedStringValue(out Utf8Memory value)
             {
                 if (this.token.JsonTextTokenType.HasFlag(JsonTextTokenType.EscapedFlag))

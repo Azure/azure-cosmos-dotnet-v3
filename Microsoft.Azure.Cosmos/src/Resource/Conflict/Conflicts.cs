@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         ///         foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
         ///         {
         ///             MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
-        ///             ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
+        ///             ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(item, intendedChanges.MyPartitionKey);
         ///         }
         ///     }
         /// }
@@ -74,7 +74,6 @@ namespace Microsoft.Azure.Cosmos
         ///         foreach(ConflictProperties item in await conflictIterator.ReadNextAsync())
         ///         {
         ///             MyClass intendedChanges = conflicts.ReadConflictContent<MyClass>(item);
-        ///             ItemResponse<MyClass> currentState = await conflicts.ReadCurrentAsync<MyClass>(intendedChanges.MyPartitionKey, item);
         ///         }
         ///     }
         /// }
