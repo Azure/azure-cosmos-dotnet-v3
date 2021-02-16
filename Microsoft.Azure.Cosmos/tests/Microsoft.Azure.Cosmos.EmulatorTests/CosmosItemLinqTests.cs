@@ -423,13 +423,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
-            // CamelCase flag set to true
-            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, true);
+            // NamingPolicy - CamelCase set
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, CosmosPropertyNamingPolicy.CamelCase);
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 2);
 
-            // CamelCase flag set to false
-            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, false);
+            // Naming Policy - Default set
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, CosmosPropertyNamingPolicy.Default);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 0);
 

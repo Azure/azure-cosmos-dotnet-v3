@@ -433,11 +433,12 @@ namespace Microsoft.Azure.Cosmos
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
-            bool? useCamelCaseOnPropertNames = null)
+            CosmosPropertyNamingPolicy? cosmosPropertyNamingPolicy = null)
         {
             requestOptions ??= new QueryRequestOptions();
 
-            CosmosSerializationOptions serializationOptions = useCamelCaseOnPropertNames.GetValueOrDefault()
+            CosmosSerializationOptions serializationOptions = 
+                (cosmosPropertyNamingPolicy.GetValueOrDefault() == CosmosPropertyNamingPolicy.CamelCase)
                 ? new CosmosSerializationOptions
                 {
                     PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
