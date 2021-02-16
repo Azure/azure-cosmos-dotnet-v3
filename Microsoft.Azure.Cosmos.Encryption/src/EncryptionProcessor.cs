@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private bool isEncryptionSettingsInitDone;
 
+        private static readonly SemaphoreSlim CacheInitSema = new SemaphoreSlim(1, 1);
+
         /// <summary>
         /// Gets the container that has items which are to be encrypted.
         /// </summary>
@@ -169,9 +171,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Task to await.</returns>
         internal async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default)
         {
-            if (!this.isEncryptionSettingsInitDone)
+            if (await CacheInitSema.WaitAsync(-1))
             {
-                await this.InitializeEncryptionSettingsAsync(cancellationToken);
+                if (!this.isEncryptionSettingsInitDone)
+                {
+                    try
+                    {
+                        await this.InitializeEncryptionSettingsAsync(cancellationToken);
+                    }
+                    finally
+                    {
+                        CacheInitSema.Release(1);
+                    }
+                }
+                else
+                {
+                    CacheInitSema.Release(1);
+                }
             }
         }
 

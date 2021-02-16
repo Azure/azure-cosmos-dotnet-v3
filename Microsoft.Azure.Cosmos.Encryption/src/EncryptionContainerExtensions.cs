@@ -39,8 +39,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
             if (container is EncryptionContainer encryptionContainer)
             {
+                await encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken);
+            }
+
+            return container;
+        }
+
+        internal static async Task InitContainerCacheAsync(
+            this Container container,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (container is EncryptionContainer encryptionContainer)
+            {
+                Console.WriteLine("Running it ....");
                 EncryptionCosmosClient encryptionCosmosClient = encryptionContainer.EncryptionCosmosClient;
                 ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetClientEncryptionPolicyAsync(
                     container: container,
@@ -58,8 +73,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 shouldForceRefresh: false);
                     }
                 }
-
-                return encryptionContainer;
             }
             else
             {
