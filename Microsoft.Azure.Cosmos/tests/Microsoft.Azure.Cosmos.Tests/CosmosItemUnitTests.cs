@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -546,6 +547,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 CallBase = true
             };
+
+            mockedContainer
+                .Setup(e => e.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new PartitionKeyDefinition() 
+                { 
+                    Paths = new Collection<string>()
+                    {
+                        "/a/b/c",
+                        "/a/e/f"
+                    }
+                });
+                
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
