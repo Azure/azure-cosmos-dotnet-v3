@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -345,15 +345,16 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public string PartitionKeyPath
         {
-            get =>
-#if SUBPARTITIONING
+            get
+            {
+#if PREVIEW
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
                     throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
-
 #endif
-                this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+                return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+            }
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -368,7 +369,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
@@ -646,7 +647,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
                 if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
