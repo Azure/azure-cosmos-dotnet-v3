@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -219,20 +220,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             else
             {
-                CosmosException cosmosException = new CosmosException(
-                    statusCode: responseMessage.StatusCode,
-                    responseMessage.ErrorMessage,
-                    (int)responseMessage.Headers.SubStatusCode,
-                    stackTrace: null,
-                    responseMessage.Headers.ActivityId,
-                    responseMessage.Headers.RequestCharge,
-                    responseMessage.Headers.RetryAfter,
-                    responseMessage.Headers,
-                    error: null,
-                    innerException: null,
-                    trace: trace);
-                cosmosException.Headers.ContinuationToken = responseMessage.Headers.ContinuationToken;
-
+                CosmosException cosmosException = CosmosExceptionFactory.Create(responseMessage);
                 monadicReadFeedPage = TryCatch<ReadFeedPage>.FromException(cosmosException);
             }
 
@@ -360,20 +348,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
             else
             {
-                CosmosException cosmosException = new CosmosException(
-                    statusCode: responseMessage.StatusCode,
-                    message: responseMessage.ErrorMessage,
-                    subStatusCode: (int)responseMessage.Headers.SubStatusCode,
-                    stackTrace: null,
-                    activityId: responseMessage.Headers.ActivityId,
-                    requestCharge: responseMessage.Headers.RequestCharge,
-                    retryAfter: responseMessage.Headers.RetryAfter,
-                    headers: responseMessage.Headers,
-                    trace: trace,
-                    error: null,
-                    innerException: responseMessage.CosmosException);
-                cosmosException.Headers.ContinuationToken = responseMessage.Headers.ContinuationToken;
-
+                CosmosException cosmosException = CosmosExceptionFactory.Create(responseMessage);
                 monadicChangeFeedPage = TryCatch<ChangeFeedPage>.FromException(cosmosException);
             }
 
