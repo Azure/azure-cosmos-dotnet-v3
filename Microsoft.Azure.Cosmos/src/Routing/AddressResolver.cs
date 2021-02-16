@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos
             object effectivePartitionKeyStringObject = null;
             if (partitionKeyString != null)
             {
-                range = TryResolveServerPartitionByPartitionKey(
+                range = AddressResolver.TryResolveServerPartitionByPartitionKey(
                     request,
                     partitionKeyString,
                     collectionCacheIsUptodate,

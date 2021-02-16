@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private ClientCollectionCache ClientCollectionCache;
-        private PartitionKeyRangeCache PartitionKeyRangeCache;
+        private ClientCollectionCache clientCollectionCache;
+        private PartitionKeyRangeCache partitionKeyRangeCache;
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos
                 request,
                 this.defaultConsistencyLevel,
                 this.sessionContainer,
-                this.PartitionKeyRangeCache,
-                this.ClientCollectionCache);
+                this.partitionKeyRangeCache,
+                this.clientCollectionCache);
 
             DocumentServiceResponse response;
             try
@@ -151,10 +151,11 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
 
-        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache, ClientCollectionCache clientCollectionCache)
+        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache, 
+                              ClientCollectionCache clientCollectionCache)
         {
-            this.ClientCollectionCache = clientCollectionCache;
-            this.PartitionKeyRangeCache = partitionKeyRangeCache;
+            this.clientCollectionCache = clientCollectionCache;
+            this.partitionKeyRangeCache = partitionKeyRangeCache;
         }
 
         public void Dispose()
@@ -243,17 +244,15 @@ namespace Microsoft.Azure.Cosmos
                 (!string.IsNullOrEmpty(requestConsistencyLevel)
                     && string.Equals(requestConsistencyLevel, ConsistencyLevel.Session.ToString(), StringComparison.OrdinalIgnoreCase));
 
-            if (!sessionConsistency || !request.IsReadOnlyRequest)
+            if (!sessionConsistency || (!request.IsReadOnlyRequest && request.OperationType != OperationType.Batch))
             {
                 return; // Only apply the session token in case of session consistency and the request is read only
             }
 
-            string sessionToken = null;
-            bool isSuccess = false;
-            if (clientCollectionCache != null && partitionKeyRangeCache != null)
-            {
-                (isSuccess, sessionToken) = await TryResolveSessionTokenAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache);
-            }
+            (bool isSuccess, string sessionToken) = await TryResolveSessionTokenAsync(request, 
+                                                                                      sessionContainer, 
+                                                                                      partitionKeyRangeCache, 
+                                                                                      clientCollectionCache);
 
             if (!isSuccess)
             {

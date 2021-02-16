@@ -194,8 +194,8 @@ namespace Microsoft.Azure.Cosmos
                         dsr,
                         ConsistencyLevel.Session,
                         new Mock<ISessionContainer>().Object,
-                        partitionKeyRangeCache: null,
-                        clientCollectionCache: null);
+                        partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                        clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
 
                     Assert.IsNull(dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
                 }
@@ -217,8 +217,9 @@ namespace Microsoft.Azure.Cosmos
                 dsrQueryPlan,
                 ConsistencyLevel.Session,
                 new Mock<ISessionContainer>().Object,
-                partitionKeyRangeCache: null,
-                clientCollectionCache: null);
+                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
+
 
             Assert.IsNull(dsrQueryPlan.Headers[HttpConstants.HttpHeaders.SessionToken]);
         }
@@ -265,8 +266,9 @@ namespace Microsoft.Azure.Cosmos
                         dsr,
                         ConsistencyLevel.Session,
                         new Mock<ISessionContainer>().Object,
-                        partitionKeyRangeCache: null,
-                        clientCollectionCache: null);
+                        partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                        clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
+
 
                     Assert.AreEqual(dsrSessionToken, dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
 
@@ -284,10 +286,11 @@ namespace Microsoft.Azure.Cosmos
                         dsrNoSessionToken,
                         ConsistencyLevel.Session,
                         sMock.Object,
-                        partitionKeyRangeCache: null,
-                        clientCollectionCache: null);
+                        partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                        clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
 
-                    if (dsrNoSessionToken.IsReadOnlyRequest)
+
+                    if (dsrNoSessionToken.IsReadOnlyRequest || dsrNoSessionToken.OperationType == OperationType.Batch)
                     {
                         Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
                     }
@@ -316,8 +319,9 @@ namespace Microsoft.Azure.Cosmos
                 dsrSprocExecute,
                 ConsistencyLevel.Session,
                 new Mock<ISessionContainer>().Object,
-                partitionKeyRangeCache: null,
-                clientCollectionCache: null);
+                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
+
 
             Assert.AreEqual(sessionToken, dsrSprocExecute.Headers[HttpConstants.HttpHeaders.SessionToken]);
         }
@@ -767,6 +771,10 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)));
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null).Object;
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache).Object;
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
             return storeModel;
         }

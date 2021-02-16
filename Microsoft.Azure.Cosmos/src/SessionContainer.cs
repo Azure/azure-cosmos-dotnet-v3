@@ -144,7 +144,9 @@ namespace Microsoft.Azure.Cosmos.Common
             return SessionTokenHelper.ResolvePartitionLocalSessionToken(request, partitionKeyRangeId, SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request));
         }
 
-        private static string ResolvePartitionLocalSessionTokenForGateway(SessionContainerState self, DocumentServiceRequest request, string partitionKeyRangeId)
+        private static string ResolvePartitionLocalSessionTokenForGateway(SessionContainerState self, 
+                                                                          DocumentServiceRequest request, 
+                                                                          string partitionKeyRangeId)
         {
             ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request);
             if (partitionKeyRangeIdToTokenMap != null)
@@ -157,7 +159,8 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     for (int parentIndex = request.RequestContext.ResolvedPartitionKeyRange.Parents.Count - 1; parentIndex >= 0; parentIndex--)
                     {
-                        if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], out sessionToken))
+                        if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], 
+                                                                      out sessionToken))
                         {
                             return partitionKeyRangeId + ":" + sessionToken.ConvertToString();
                         }
