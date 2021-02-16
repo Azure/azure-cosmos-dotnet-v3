@@ -290,12 +290,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, 
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, 
                                                                         string authKeyOrResourceToken,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
@@ -344,12 +339,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string connectionString,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
                                                                         CancellationToken cancellationToken = default)
@@ -382,12 +372,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         TokenCredential tokenCredential,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
