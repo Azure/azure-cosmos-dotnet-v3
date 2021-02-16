@@ -1,16 +1,5 @@
 {
   "Subclasses": {
-    "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptionAlgorithm;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.String AeadAes256CbcHmacSha256": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String AeadAes256CbcHmacSha256;IsInitOnly:False;IsStatic:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptionType;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -1301,13 +1290,13 @@
     "Microsoft.Azure.Cosmos.Encryption.EncryptionDatabaseExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.Database, System.String, System.String, Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.EncryptionDatabaseExtensions+<CreateClientEncryptionKeyAsync>))]-[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.Database, System.String, Microsoft.Data.Encryption.Cryptography.DataEncryptionKeyAlgorithm, Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.EncryptionDatabaseExtensions+<CreateClientEncryptionKeyAsync>))]-[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute",
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.Database, System.String, System.String, Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata, System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.Database, System.String, Microsoft.Data.Encryption.Cryptography.DataEncryptionKeyAlgorithm, Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata, System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] RewrapClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.Database, System.String, Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.EncryptionDatabaseExtensions+<RewrapClientEncryptionKeyAsync>))]-[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -1323,13 +1312,13 @@
     "Microsoft.Azure.Cosmos.Encryption.QueryDefinitionExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.QueryDefinition] AddParameterAsync[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, T, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.QueryDefinitionExtensions+<AddParameterAsync>`1))]-[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.QueryDefinition] AddParameterAsync(Microsoft.Azure.Cosmos.QueryDefinition, System.String, System.Object, System.String, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Encryption.QueryDefinitionExtensions+<AddParameterAsync>))]-[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "AsyncStateMachineAttribute",
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.QueryDefinition] AddParameterAsync[T](Microsoft.Azure.Cosmos.QueryDefinition, System.String, T, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.QueryDefinition] AddParameterAsync(Microsoft.Azure.Cosmos.QueryDefinition, System.String, System.Object, System.String, System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
