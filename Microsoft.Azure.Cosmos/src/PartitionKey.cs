@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-            static TryCatch<PartitionKey> CreateFromCosmosElementAndDefinition(
+            static PartitionKey CreateFromCosmosElementAndDefinition(
                 CosmosObject cosmosObject,
                 PartitionKeyDefinition partitionKeyDefinition)
         {
@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos
                     : partitionKeyBuilder.Add(partitionKeyValue);
             }
 
-            return TryCatch<PartitionKey>.FromResult(partitionKeyBuilder.Build());
+            return partitionKeyBuilder.Build();
         }
 
         /// <summary>

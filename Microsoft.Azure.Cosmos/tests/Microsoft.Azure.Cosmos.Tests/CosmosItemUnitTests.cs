@@ -549,7 +549,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
 
-            List<dynamic> validNestedItems = new List<dynamic>
+            List<(object, string)> validNestedItems = new List<(object, string)>
             {
                 (
                     new // a/b/c (Specify only one partition key)
@@ -633,14 +633,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 )
             };
 
-            foreach (dynamic poco in validNestedItems)
+            foreach ((object poco, string expectedJsonString) in validNestedItems)
             {
-                Cosmos.PartitionKey pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
-                    MockCosmosUtil.Serializer.ToStream(poco.Item1),
-                    NoOpTrace.Singleton,
-                    default(CancellationToken));
-                string partitionKeyString = pk.InternalKey.ToJsonString();
-                Assert.AreEqual(poco.Item2, partitionKeyString);
+                try
+                {
+                    Cosmos.PartitionKey pk = await containerWithMockPartitionKeyPath.GetPartitionKeyValueFromStreamAsync(
+                        MockCosmosUtil.Serializer.ToStream(poco),
+                        NoOpTrace.Singleton,
+                        cancellation: default);
+                    string partitionKeyString = pk.InternalKey.ToJsonString();
+                    Assert.AreEqual(expectedJsonString, partitionKeyString);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
             }
 
         }

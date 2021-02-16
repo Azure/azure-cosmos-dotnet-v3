@@ -911,10 +911,8 @@ namespace Microsoft.Azure.Cosmos
                     CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
                     PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellation);
 
-                    TryCatch<PartitionKey> monadicPartitionKey = PartitionKey.CreateFromCosmosElementAndDefinition(pathTraversal, partitionKeyDefinition);
-                    monadicPartitionKey.ThrowIfFailed();
-
-                    return monadicPartitionKey.Result;
+                    PartitionKey partitionKey = PartitionKey.CreateFromCosmosElementAndDefinition(pathTraversal, partitionKeyDefinition);
+                    return partitionKey;
                 }
                 finally
                 {
