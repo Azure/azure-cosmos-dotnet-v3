@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -54,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task TestGatewayModelSession()
         {
-            ContainerProperties containerProperties = await this.Container.GetCachedContainerPropertiesAsync();
+            ContainerProperties containerProperties = await this.Container.GetCachedContainerPropertiesAsync(false, NoOpTrace.Singleton, CancellationToken.None);
 
             ISessionContainer sessionContainer = this.cosmosClient.DocumentClient.sessionContainer;
             string docLink = "dbs/" + this.database.Id + "/colls/" + containerProperties.Id + "/docs/3";
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                            Cosmos.ConsistencyLevel.Session,
                                                            sessionContainer,
                                                            await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(),
-                                                           await this.cosmosClient.DocumentClient.GetCollectionCacheAsync());
+                                                           await this.cosmosClient.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
 
             string sessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
             Assert.IsTrue(!string.IsNullOrEmpty(sessionToken) && sessionToken.Split(',').Length == 1);
@@ -119,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                                Cosmos.ConsistencyLevel.Session,
                                                                client.DocumentClient.sessionContainer,
                                                                await client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
-                                                               await client.DocumentClient.GetCollectionCacheAsync());
+                                                               await client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
 
                 string readSessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
                 Assert.AreEqual(readSessionToken, createSessionToken);
