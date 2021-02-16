@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
 
             // UTF-8 encoding.
-            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
+            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             switch (propertyValue.Type)
             {
@@ -527,7 +527,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
 
             // UTF-8 encoding.
-            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
+            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             switch (typeMarker)
             {

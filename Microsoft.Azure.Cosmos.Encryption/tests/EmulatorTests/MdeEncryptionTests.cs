@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_ArrayFormat",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_NestedObjectFormatL1",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_IntArray",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_IntFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_DecimalFormat",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_DateFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_BoolFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_FloatFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
                 
                 new ClientEncryptionIncludedPath()
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_ArrayMultiTypes",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
                
                 new ClientEncryptionIncludedPath()
@@ -136,8 +136,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_IntMultiDimArray",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
-                }
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
 
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                    cekId,
-                   CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
                    encryptionKeyWrapMetadata);
 
             Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
@@ -253,22 +253,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 if (ex is CosmosException cosmosException)
                     Assert.AreEqual(HttpStatusCode.Conflict, cosmosException.StatusCode);
             }
-
-            // creating key with invalid algorithm
-            try
-            {
-                ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
-                   cekId,
-                   "invalidalgo",
-                   metadata1);
-
-                Assert.Fail("Creating key with invalid encryption algorithm should have failed.");
-            }
-            catch (ArgumentException ex)
-            {
-                Assert.AreEqual("Invalid Encryption Algorithm 'invalidalgo' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details. ", ex.Message);
-            }
-
         }
 
         [TestMethod]
@@ -355,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
-                       CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                       DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
                        metadata1);
                 Assert.Fail("CreateClientEncryptionKeyAsync should have failed due to restrictions");
             }
@@ -386,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/",
                 ClientEncryptionKeyId = "unknownKey",
                 EncryptionType = Encryption.CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>  { unknownKeyConfigured };
@@ -417,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/id",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = "unsupported",
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             try
@@ -751,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/id",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { restrictedPathId };
@@ -770,7 +754,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/PK",
                 ClientEncryptionKeyId = "key2",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             Collection<ClientEncryptionIncludedPath> pathsRestrictedPathPk = new Collection<ClientEncryptionIncludedPath> { restrictedPathPk };
@@ -796,7 +780,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/Sensitive_StringFormat",
                 ClientEncryptionKeyId = "key2",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             ClientEncryptionIncludedPath pathdup2 = new ClientEncryptionIncludedPath()
@@ -804,7 +788,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/Sensitive_StringFormat",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
 

@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="database">Regular cosmos database.</param>
         /// <param name="clientEncryptionKeyId"> Client Encryption Key id.</param>
-        /// <param name="encryptionAlgorithm"> Encryption Algorthm. </param>
+        /// <param name="dataEncryptionKeyAlgorithm"> Encryption Algorthm. </param>
         /// <param name="encryptionKeyWrapMetadata"> EncryptionKeyWrapMetadata.</param>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(
             this Database database,
             string clientEncryptionKeyId,
-            string encryptionAlgorithm,
+            DataEncryptionKeyAlgorithm dataEncryptionKeyAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             CancellationToken cancellationToken = default)
         {
@@ -49,14 +49,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(clientEncryptionKeyId));
             }
 
+            string encryptionAlgorithm = dataEncryptionKeyAlgorithm.ToString();
+
             if (string.IsNullOrWhiteSpace(encryptionAlgorithm))
             {
                 throw new ArgumentNullException(nameof(encryptionAlgorithm));
             }
 
-            if (!string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256))
+            if (!string.Equals(encryptionAlgorithm, DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()))
             {
                 throw new ArgumentException($"Invalid Encryption Algorithm '{encryptionAlgorithm}' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+
+            if (encryptionKeyWrapMetadata == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionKeyWrapMetadata));
             }
 
             EncryptionCosmosClient encryptionCosmosClient;
@@ -126,6 +133,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (string.IsNullOrWhiteSpace(clientEncryptionKeyId))
             {
                 throw new ArgumentNullException(nameof(clientEncryptionKeyId));
+            }
+
+            if (newEncryptionKeyWrapMetadata == null)
+            {
+                throw new ArgumentNullException(nameof(newEncryptionKeyWrapMetadata));
             }
 
             ClientEncryptionKey clientEncryptionKey = database.GetClientEncryptionKey(clientEncryptionKeyId);

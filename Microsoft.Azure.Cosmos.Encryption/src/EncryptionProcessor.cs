@@ -597,7 +597,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
+            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             return propertyValue.Type switch
             {
@@ -614,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TypeMarker typeMarker)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-            SqlVarcharSerializer sqlVarcharSerializer = new SqlVarcharSerializer(size: -1, codePageCharacterEncoding: 65001);
+            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             return typeMarker switch
             {
