@@ -1032,6 +1032,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
+        /// <param name="useCamelCaseOnPropertNames">(Optional) Boolean to decide whether property names will be read as camelcase in LINQ. This flag overrides the CosmosSerializationOptions.</param>
         /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
         /// 1. This example below shows LINQ query generation and blocked execution.
@@ -1098,10 +1099,12 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
+        /// <seealso cref="CosmosSerializationOptions.PropertyNamingPolicy"/>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
+            QueryRequestOptions requestOptions = null,
+            bool? useCamelCaseOnPropertNames = null);
 
         /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.

@@ -408,6 +408,38 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task LINQWithCamelCaseFlagTest()
+        {
+            static void builder(CosmosClientBuilder action)
+            {
+                action.WithSerializerOptions(new CosmosSerializationOptions()
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                });
+            }
+            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder, false);
+            Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
+            Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
+
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            // CamelCase flag set to true
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, true);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 2);
+
+            // CamelCase flag set to false
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, false);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 0);
+
+            // CamelCase flag not set
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 0);
+        }
+
+        [TestMethod]
         public async Task LinqParameterisedTest1()
         {
             //Creating items for query.

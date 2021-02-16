@@ -351,12 +351,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null,
+            bool? useCamelCaseOnPropertNames = null)
         {
             return base.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
-                requestOptions);
+                requestOptions,
+                useCamelCaseOnPropertNames);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
