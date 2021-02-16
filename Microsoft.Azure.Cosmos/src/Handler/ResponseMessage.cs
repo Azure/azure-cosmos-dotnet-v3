@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the reason for a failure in the current response.
         /// </summary>
-        public virtual string ErrorMessage => this.CosmosException?.Message;
+        public virtual string ErrorMessage => this.CosmosException?.BaseMessage;
 
         /// <summary>
         /// Gets the current <see cref="ResponseMessage"/> HTTP headers.
