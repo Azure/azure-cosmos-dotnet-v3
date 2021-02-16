@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("component");
                 writer.WriteStringValue(trace.Component.ToString());
 
+#if INTERNAL
                 writer.WriteFieldName("caller information");
                 writer.WriteObjectStart();
 
@@ -52,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteNumber64Value(trace.CallerInfo.LineNumber);
 
                 writer.WriteObjectEnd();
+#endif
 
                 writer.WriteFieldName("start time");
                 writer.WriteStringValue(trace.StartTime.ToString("hh:mm:ss:fff"));

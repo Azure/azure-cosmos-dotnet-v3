@@ -213,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string exception = ce.ToString();
                 Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
                 string diagnostics = ce.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("Forbidden/999999"));
+                Assert.IsTrue(diagnostics.Contains("999999"));
             }
         }
 
@@ -2268,7 +2268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(cosmosException.Message.Contains("The read session is not available for the input session token."), cosmosException.Message);
                     string exception = cosmosException.ToString();
-                    Assert.IsTrue(exception.Contains("StorePhysicalAddress"), exception);
+                    Assert.IsTrue(exception.Contains("Point Operation Statistics"), exception);
                 }
             }
             finally
@@ -2433,7 +2433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
         {

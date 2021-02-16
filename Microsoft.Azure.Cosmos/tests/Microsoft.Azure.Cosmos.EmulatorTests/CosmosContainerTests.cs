@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             string diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             ContainerProperties settings = new ContainerProperties(containerName, partitionKeyPath)
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await container.ReadContainerAsync();
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(containerResponse.Diagnostics);
             diagnostics = containerResponse.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
-            Assert.IsTrue(diagnostics.Contains("Status Code"));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
             SelflinkValidator.ValidateContainerSelfLink(containerResponse.Resource.SelfLink);
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
@@ -713,7 +713,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         //MultiHash container checks.
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncForMultiHashCollectionsTest()
