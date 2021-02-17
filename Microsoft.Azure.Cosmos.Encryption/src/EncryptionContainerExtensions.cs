@@ -55,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             cancellationToken.ThrowIfCancellationRequested();
             if (container is EncryptionContainer encryptionContainer)
             {
-                Console.WriteLine("Running it ....");
                 EncryptionCosmosClient encryptionCosmosClient = encryptionContainer.EncryptionCosmosClient;
                 ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetClientEncryptionPolicyAsync(
                     container: container,
