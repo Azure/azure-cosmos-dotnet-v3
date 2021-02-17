@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -106,8 +107,15 @@ namespace Microsoft.Azure.Cosmos
                     || subStatusCode == SubStatusCodes.CompletingPartitionMigration)
                 {
                     PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                    string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, cancellationToken: cancellationToken);
-                    await partitionKeyRangeCache.TryGetOverlappingRangesAsync(containerRid, FeedRangeEpk.FullRange.Range, forceRefresh: true);
+                    string containerRid = await this.container.GetCachedRIDAsync(
+                        forceRefresh: false, 
+                        NoOpTrace.Singleton, 
+                        cancellationToken: cancellationToken);
+                    await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                        containerRid,
+                        FeedRangeEpk.FullRange.Range,
+                        NoOpTrace.Singleton, 
+                        forceRefresh: true);
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
 

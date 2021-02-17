@@ -12,11 +12,11 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
 
     /// <summary>
-    /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents. 
+    /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents.
     /// </summary>
     /// <remarks>
-    /// A database may contain zero or more named containers and each container consists of zero or more JSON documents. 
-    /// Being schema-free, the documents in a container do not need to share the same structure or fields. Since containers are application resources, 
+    /// A database may contain zero or more named containers and each container consists of zero or more JSON documents.
+    /// Being schema-free, the documents in a container do not need to share the same structure or fields. Since containers are application resources,
     /// they can be authorized using either the master key or resource keys.
     /// </remarks>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/databases-containers-items"/>
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     Container container = await client.GetDatabase("dbName"].Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     Container container = await client.GetDatabase("dbName").Containers.CreateAsync("MyCollection", "/country", 50000} );
     ///     ContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
@@ -37,8 +37,8 @@ namespace Microsoft.Azure.Cosmos
     ///     ContainerProperties containerProperties = new ContainerProperties("MyCollection", "/country");
     ///     containerProperties.IndexingPolicy.Automatic = true;
     ///     containerProperties.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
-    ///     
-    ///     CosmosContainerResponse containerCreateResponse = await client.GetDatabase("dbName"].CreateContainerAsync(containerProperties, 50000);
+    ///
+    ///     CosmosContainerResponse containerCreateResponse = await client.GetDatabase("dbName").CreateContainerAsync(containerProperties, 50000);
     ///     ContainerProperties createdContainerProperties = containerCreateResponse.Container;
     /// ]]>
     /// </code>
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
     /// The example below deletes this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     Container container = client.GetDatabase("dbName"].Containers["MyCollection"];
+    ///     Container container = client.GetDatabase("dbName").Containers["MyCollection"];
     ///     await container.DeleteAsync();
     /// ]]>
     /// </code>
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateRequiredProperties();
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         /// <summary>
         /// Initializes a new instance of the <see cref="ContainerProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// The partition key definition version 1 uses a hash function that computes
         /// hash based on the first 100 bytes of the partition key. This can cause
         /// conflicts for documents with partition keys greater than 100 bytes.
-        /// 
+        ///
         /// The partition key definition version 2 uses a hash function that computes
         /// hash based on the first 2 KB of the partition key.
         /// </summary>
@@ -168,15 +168,15 @@ namespace Microsoft.Azure.Cosmos
         /// <value>The Id associated with the resource.</value>
         /// <remarks>
         /// <para>
-        /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier. 
+        /// Every resource within an Azure Cosmos DB database account needs to have a unique identifier.
         /// Unlike <see cref="Documents.Resource.ResourceId"/>, which is set internally, this Id is settable by the user and is not immutable.
         /// </para>
         /// <para>
-        /// When working with document resources, they too have this settable Id property. 
+        /// When working with document resources, they too have this settable Id property.
         /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
-        /// persisting the document in the database. 
+        /// persisting the document in the database.
         /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Cosmos.DocumentClient"/> instance to true.
-        /// This will prevent the SDK from generating new Ids. 
+        /// This will prevent the SDK from generating new Ids.
         /// </para>
         /// <para>
         /// The following characters are restricted and cannot be used in the Id property:
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
         /// The entity tag associated with the resource.
         /// </value>
         /// <remarks>
-        /// ETags are used for concurrency checking when updating resources. 
+        /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
         public string ETag { get; private set; }
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonIgnore]
 #if PREVIEW
-        public 
+        public
 #else
         internal
 #endif
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service. 
+        /// Gets the <see cref="IndexingPolicy"/> associated with the container from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The indexing policy associated with the container.
@@ -293,13 +293,18 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service. 
+        /// Gets the <see cref="ChangeFeedPolicy"/> associated with the container from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The change feed policy associated with the container.
         /// </value>
         [JsonIgnore]
-        internal ChangeFeedPolicy ChangeFeedPolicy
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedPolicy ChangeFeedPolicy
         {
             get
             {
@@ -314,10 +319,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the <see cref="GeospatialConfig"/> associated with the collection from the Azure Cosmos DB service. 
+        /// Gets the <see cref="GeospatialConfig"/> associated with the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
-        /// Geospatial type of collection i.e. geography or geometry 
+        /// Geospatial type of collection i.e. geography or geometry
         /// </value>
         [JsonIgnore]
         public GeospatialConfig GeospatialConfig
@@ -340,15 +345,16 @@ namespace Microsoft.Azure.Cosmos
         [JsonIgnore]
         public string PartitionKeyPath
         {
-            get =>
-#if SUBPARTITIONING
+            get
+            {
+#if PREVIEW
                 if (this.PartitionKey?.Kind == PartitionKind.MultiHash && this.PartitionKey?.Paths.Count > 1)
                 {
                     throw new NotImplementedException($"This MultiHash collection has more than 1 partition key path please use `PartitionKeyPaths`");
                 }
-
 #endif
-                this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+                return this.PartitionKey?.Paths != null && this.PartitionKey.Paths.Count > 0 ? this.PartitionKey?.Paths[0] : null;
+            }
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -363,7 +369,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         /// <summary>
         /// JSON path used for containers partitioning
         /// </summary>
@@ -415,10 +421,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>
         /// It is an optional property.
-        /// 
+        ///
         /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
         /// A valid value must be either a nonzero positive integer, '-1' or <c>null</c>.
-        /// 
+        ///
         /// By default, DefaultTimeToLive is set to null meaning the time to live is turned off for the container.
         /// </value>
         /// <remarks>
@@ -478,10 +484,10 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>
         /// It is an optional property.
-        /// 
+        ///
         /// The unit of measurement is seconds. The maximum allowed value is 2147483647.
         /// A valid value must be either a nonzero positive integer, '-1' or <c>null</c>.
-        /// 
+        ///
         /// By default, AnalyticalStoreTimeToLiveInSeconds is set to null meaning analytical store is turned-off.
         /// </value>
         /// <remarks>
@@ -495,11 +501,11 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// <para>
         /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is '-1', all the items changes will be captured
-        /// by analytical store and will never expire. 
+        /// by analytical store and will never expire.
         /// </para>
         /// <para>
         /// When the <see cref="AnalyticalStoreTimeToLiveInSeconds"/> is a nonzero positive integer, all the items
-        /// changes will be captured by analytical store and expired after the specified time to live. 
+        /// changes will be captured by analytical store and expired after the specified time to live.
         /// </para>
         /// </remarks>
         /// <example>
@@ -532,7 +538,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
         /// </summary>
-        /// <value>The self-link associated with the resource.</value> 
+        /// <value>The self-link associated with the resource.</value>
         /// <remarks>
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
@@ -561,7 +567,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Only collection cache needs this contract. None are expected to use it. 
+        /// Only collection cache needs this contract. None are expected to use it.
         /// </summary>
         /// <param name="resourceId">The resource identifier for the container.</param>
         /// <returns>An instance of <see cref="ContainerProperties"/>.</returns>
@@ -607,7 +613,7 @@ namespace Microsoft.Azure.Cosmos
         /// The Resource Id associated with the resource.
         /// </value>
         /// <remarks>
-        /// A Resource Id is the unique, immutable, identifier assigned to each Azure Cosmos DB 
+        /// A Resource Id is the unique, immutable, identifier assigned to each Azure Cosmos DB
         /// resource whether that is a database, a container or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
@@ -641,7 +647,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");
                 }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
                 if (this.PartitionKey.Kind == Documents.PartitionKind.MultiHash && this.PartitionKeyPaths == null)
                 {
                     throw new ArgumentOutOfRangeException($"Container {this.Id} is not partitioned");

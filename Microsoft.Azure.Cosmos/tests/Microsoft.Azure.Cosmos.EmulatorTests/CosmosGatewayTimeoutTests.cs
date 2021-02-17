@@ -109,14 +109,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 FeedResponse<JObject> response = await iterator.ReadNextAsync();
 
                 Assert.IsTrue(isQueryRequestFound, "Query plan call back was not called.");
-
-                string diagnostics = response.Diagnostics.ToString();
-                JObject parsedDiagnostics = JObject.Parse(diagnostics);
-                JToken contextList = parsedDiagnostics["Context"];
-
-                Assert.IsNotNull(contextList.First(x => x["Id"]?.ToString() == "CreateQueryPipeline"));
-                Assert.IsNotNull(contextList.First(x => x["Id"]?.ToString() == "Microsoft.Azure.Cosmos.GatewayStoreModel"));
-                Assert.IsNotNull(contextList.First(x => x["Id"]?.ToString() == "SendHttpHelperAsync:" + nameof(HttpTimeoutPolicyControlPlaneRetriableHotPath)));
                 await database.DeleteStreamAsync();
             }
         }

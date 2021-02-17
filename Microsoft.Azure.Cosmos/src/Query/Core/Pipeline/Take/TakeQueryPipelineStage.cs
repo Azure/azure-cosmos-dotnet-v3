@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     {
         private int takeCount;
 
+        private bool ReturnedFinalPage => this.takeCount <= 0;
+
         protected TakeQueryPipelineStage(
             IQueryPipelineStage source,
             CancellationToken cancellationToken,

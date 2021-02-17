@@ -35,8 +35,6 @@ namespace Microsoft.Azure.Cosmos
         private Uri locationEndpoint;
         private RetryContext retryContext;
 
-        private IClientSideRequestStatistics sharedStatistics;
-
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
             bool enableEndpointDiscovery,
@@ -78,12 +76,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DocumentClientException clientException = exception as DocumentClientException;
-
-            if (clientException?.RequestStatistics != null)
-            {
-                this.sharedStatistics = clientException.RequestStatistics;
-            }
-
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                 clientException?.StatusCode,
                 clientException?.GetSubStatus());
@@ -128,20 +120,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
-
-            if (request.RequestContext.ClientRequestStatistics == null)
-            {
-                if (this.sharedStatistics == null)
-                {
-                    this.sharedStatistics = new CosmosClientSideRequestStatistics();
-                }
-
-                request.RequestContext.ClientRequestStatistics = this.sharedStatistics;
-            }
-            else
-            {
-                this.sharedStatistics = request.RequestContext.ClientRequestStatistics;
-            }
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();

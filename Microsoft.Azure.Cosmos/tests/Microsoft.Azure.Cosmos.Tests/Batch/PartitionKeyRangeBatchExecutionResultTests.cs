@@ -11,7 +11,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -56,13 +57,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
-            cancellationToken: default(CancellationToken));
+                trace: NoOpTrace.Singleton,
+                cancellationToken: default);
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
+                NoOpTrace.Singleton,
                 CancellationToken.None);
 
             PartitionKeyRangeBatchResponse response = new PartitionKeyRangeBatchResponse(
@@ -75,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ToResponseMessage_MapsProperties()
         {
-            PointOperationStatistics pointOperationStatistics = new PointOperationStatistics(
+            PointOperationStatisticsTraceDatum pointOperationStatistics = new PointOperationStatisticsTraceDatum(
                 activityId: Guid.NewGuid().ToString(),
                 statusCode: HttpStatusCode.OK,
                 subStatusCode: SubStatusCodes.Unknown,
@@ -86,8 +89,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestUri: "http://localhost",
                 requestSessionToken: null,
                 responseSessionToken: null);
-            CosmosDiagnosticsContext context = new CosmosDiagnosticsContextCore();
-            context.AddDiagnosticsInternal(pointOperationStatistics);
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
@@ -95,9 +96,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ETag = "1234",
                 SubStatusCode = SubStatusCodes.CompletingSplit,
                 RetryAfter = TimeSpan.FromSeconds(10),
-                RequestCharge = 4.3,
-                DiagnosticsContext = context
+                RequestCharge = 4.3
             };
+
+            using (ITrace trace = Trace.GetRootTrace("testtrace"))
+            {
+                result.Trace = trace;
+                trace.AddDatum("Point Operation Statistics", pointOperationStatistics);
+            }
 
             ResponseMessage response = result.ToResponseMessage();
 
@@ -133,7 +139,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: null,
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
-            cancellationToken: default(CancellationToken));
+                trace: NoOpTrace.Singleton,
+                cancellationToken: default);
 
             ResponseMessage response = new ResponseMessage(statusCode) { Content = responseContent };
             response.Headers.SubStatusCode = subStatusCode;
@@ -143,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 batchRequest,
                 MockCosmosUtil.Serializer,
                 true,
+                NoOpTrace.Singleton,
                 CancellationToken.None);
 
             PartitionKeyRangeBatchExecutionResult result = new PartitionKeyRangeBatchExecutionResult("0", arrayOperations, batchresponse);

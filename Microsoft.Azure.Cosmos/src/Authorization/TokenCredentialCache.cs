@@ -12,8 +12,9 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -95,8 +96,7 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? BackgroundTokenCredentialRefreshInterval =>
             this.userDefinedBackgroundTokenCredentialRefreshInterval ?? this.systemBackgroundTokenCredentialRefreshInterval;
 
-        internal async ValueTask<string> GetTokenAsync(
-            CosmosDiagnosticsContext diagnosticsContext)
+        internal async ValueTask<string> GetTokenAsync(ITrace trace)
         {
             if (this.isDisposed)
             {
@@ -112,8 +112,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     try
                     {
-                        await this.RefreshCachedTokenWithRetryHelperAsync(
-                            diagnosticsContext);
+                        await this.RefreshCachedTokenWithRetryHelperAsync(trace);
                         this.StartRefreshToken();
                     }
                     finally
@@ -138,8 +137,7 @@ namespace Microsoft.Azure.Cosmos
             this.isDisposed = true;
         }
 
-        private async ValueTask RefreshCachedTokenWithRetryHelperAsync(
-            CosmosDiagnosticsContext diagnosticsContext)
+        private async ValueTask RefreshCachedTokenWithRetryHelperAsync(ITrace trace)
         {
             // A different thread is already updating the access token. Count starts off at 1.
             bool skipRefreshBecause = this.backgroundRefreshLock.CurrentCount != 1;
@@ -164,81 +162,89 @@ namespace Microsoft.Azure.Cosmos
                         break;
                     }
 
-                    try
+                    using (ITrace getTokenTrace = trace.StartChild(
+                        name: nameof(this.RefreshCachedTokenWithRetryHelperAsync),
+                        component: TraceComponent.Authorization,
+                        level: Tracing.TraceLevel.Info))
                     {
-                        await this.ExecuteGetTokenWithRequestTimeoutAsync(diagnosticsContext);
-                        return;
-                    }
-                    catch (RequestFailedException requestFailedException)
-                    {
-                        lastException = requestFailedException;
-                        diagnosticsContext.AddDiagnosticsInternal(
-                            new PointOperationStatistics(
-                                activityId: Trace.CorrelationManager.ActivityId.ToString(),
-                                statusCode: (HttpStatusCode)requestFailedException.Status,
-                                subStatusCode: SubStatusCodes.Unknown,
-                                responseTimeUtc: DateTime.UtcNow,
-                                requestCharge: default,
-                                errorMessage: requestFailedException.ToString(),
-                                method: default,
-                                requestUri: null,
-                                requestSessionToken: default,
-                                responseSessionToken: default));
-
-                        DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
-
-                        // Don't retry on auth failures
-                        if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
-                            requestFailedException.Status == (int)HttpStatusCode.Forbidden)
+                        try
                         {
-                            this.cachedAccessToken = default;
-                            throw;
+                            await this.ExecuteGetTokenWithRequestTimeoutAsync();
+                            return;
                         }
+                        catch (RequestFailedException requestFailedException)
+                        {
+                            lastException = requestFailedException;
+                            getTokenTrace.AddDatum(
+                                "Request Failed Exception",
+                                new PointOperationStatisticsTraceDatum(
+                                    activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                    statusCode: (HttpStatusCode)requestFailedException.Status,
+                                    subStatusCode: SubStatusCodes.Unknown,
+                                    responseTimeUtc: DateTime.UtcNow,
+                                    requestCharge: default,
+                                    errorMessage: requestFailedException.ToString(),
+                                    method: default,
+                                    requestUri: null,
+                                    requestSessionToken: default,
+                                    responseSessionToken: default));
 
-                    }
-                    catch (OperationCanceledException operationCancelled)
-                    {
-                        lastException = operationCancelled;
-                        diagnosticsContext.AddDiagnosticsInternal(
-                            new PointOperationStatistics(
-                                activityId: Trace.CorrelationManager.ActivityId.ToString(),
-                                statusCode: HttpStatusCode.RequestTimeout,
-                                subStatusCode: SubStatusCodes.Unknown,
-                                responseTimeUtc: DateTime.UtcNow,
-                                requestCharge: default,
-                                errorMessage: operationCancelled.ToString(),
-                                method: default,
-                                requestUri: default,
-                                requestSessionToken: default,
-                                responseSessionToken: default));
+                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
 
-                        DefaultTrace.TraceError(
-                            $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                            // Don't retry on auth failures
+                            if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
+                                requestFailedException.Status == (int)HttpStatusCode.Forbidden)
+                            {
+                                this.cachedAccessToken = default;
+                                throw;
+                            }
+                        }
+                        catch (OperationCanceledException operationCancelled)
+                        {
+                            lastException = operationCancelled;
+                            getTokenTrace.AddDatum(
+                                "Request Timeout Exception",
+                                new PointOperationStatisticsTraceDatum(
+                                    activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                    statusCode: HttpStatusCode.RequestTimeout,
+                                    subStatusCode: SubStatusCodes.Unknown,
+                                    responseTimeUtc: DateTime.UtcNow,
+                                    requestCharge: default,
+                                    errorMessage: operationCancelled.ToString(),
+                                    method: default,
+                                    requestUri: null,
+                                    requestSessionToken: default,
+                                    responseSessionToken: default));
 
-                        throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                            message: ClientResources.FailedToGetAadToken,
-                            subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
-                            innerException: lastException,
-                            diagnosticsContext: diagnosticsContext);
-                    }
-                    catch (Exception exception)
-                    {
-                        lastException = exception;
-                        diagnosticsContext.AddDiagnosticsInternal(
-                            new PointOperationStatistics(
-                                activityId: Trace.CorrelationManager.ActivityId.ToString(),
-                                statusCode: HttpStatusCode.InternalServerError,
-                                subStatusCode: SubStatusCodes.Unknown,
-                                responseTimeUtc: DateTime.UtcNow,
-                                requestCharge: default,
-                                errorMessage: exception.ToString(),
-                                method: default,
-                                requestUri: default,
-                                requestSessionToken: default,
-                                responseSessionToken: default));
+                            DefaultTrace.TraceError(
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
 
-                        DefaultTrace.TraceError(
-                            $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                            throw CosmosExceptionFactory.CreateRequestTimeoutException(
+                                message: ClientResources.FailedToGetAadToken,
+                                subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
+                                innerException: lastException,
+                                trace: getTokenTrace);
+                        }
+                        catch (Exception exception)
+                        {
+                            lastException = exception;
+                            getTokenTrace.AddDatum(
+                                "Internal Server Error Exception",
+                                new PointOperationStatisticsTraceDatum(
+                                    activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
+                                    statusCode: HttpStatusCode.InternalServerError,
+                                    subStatusCode: SubStatusCodes.Unknown,
+                                    responseTimeUtc: DateTime.UtcNow,
+                                    requestCharge: default,
+                                    errorMessage: exception.ToString(),
+                                    method: default,
+                                    requestUri: null,
+                                    requestSessionToken: default,
+                                    responseSessionToken: default));
+
+                            DefaultTrace.TraceError(
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                        }
                     }
 
                     DefaultTrace.TraceError(
@@ -249,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
                     message: ClientResources.FailedToGetAadToken,
                     subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
                     innerException: lastException,
-                    diagnosticsContext: diagnosticsContext);
+                    trace: trace);
             }
             finally
             {
@@ -257,37 +263,32 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async ValueTask ExecuteGetTokenWithRequestTimeoutAsync(CosmosDiagnosticsContext diagnosticsContext)
+        private async ValueTask ExecuteGetTokenWithRequestTimeoutAsync()
         {
-            using (diagnosticsContext.CreateScope(nameof(this.RefreshCachedTokenWithRetryHelperAsync)))
+            using CancellationTokenSource singleRequestCancellationTokenSource = new CancellationTokenSource(this.requestTimeout);
+
+            Task[] valueTasks = new Task[2];
+            valueTasks[0] = Task.Delay(this.requestTimeout);
+
+            Task<AccessToken> valueTaskTokenCredential = this.tokenCredential.GetTokenAsync(
+                this.tokenRequestContext,
+                singleRequestCancellationTokenSource.Token).AsTask();
+
+            valueTasks[1] = valueTaskTokenCredential;
+            await Task.WhenAny(valueTasks);
+
+            // Time out completed and the GetTokenAsync did not
+            if (valueTasks[0].IsCompleted && !valueTasks[1].IsCompleted)
             {
-                using CancellationTokenSource singleRequestCancellationTokenSource = new CancellationTokenSource(this.requestTimeout);
+                throw new OperationCanceledException($"TokenCredential.GetTokenAsync request timed out after {this.requestTimeout}");
+            }
 
-                Task[] valueTasks = new Task[2];
-                valueTasks[0] = Task.Delay(this.requestTimeout);
+            this.cachedAccessToken = await valueTaskTokenCredential;
 
-                Task<AccessToken> valueTaskTokenCredential = this.tokenCredential.GetTokenAsync(
-                    this.tokenRequestContext,
-                    singleRequestCancellationTokenSource.Token).AsTask();
-
-                valueTasks[1] = valueTaskTokenCredential;
-                await Task.WhenAny(valueTasks);
-
-                // Time out completed and the GetTokenAsync did not
-                if (valueTasks[0].IsCompleted && !valueTasks[1].IsCompleted)
-                {
-                    throw new OperationCanceledException($"TokenCredential.GetTokenAsync request timed out after {this.requestTimeout}");
-                }
-
-                this.cachedAccessToken = await valueTaskTokenCredential;
-
-                if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
-                {
-                    double totalSecondUntilExpire = (this.cachedAccessToken.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
-                    this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
-                }
-
-                return;
+            if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
+            {
+                double totalSecondUntilExpire = (this.cachedAccessToken.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
+                this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
             }
         }
 
@@ -324,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
 
                     DefaultTrace.TraceInformation("StartRefreshToken() - Invoking refresh");
 
-                    await this.RefreshCachedTokenWithRetryHelperAsync(EmptyCosmosDiagnosticsContext.Singleton);
+                    await this.RefreshCachedTokenWithRetryHelperAsync(NoOpTrace.Singleton);
                 }
                 catch (Exception ex)
                 {

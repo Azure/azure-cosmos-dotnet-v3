@@ -7,33 +7,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
 
     internal sealed class ChangeFeedPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>
     {
         private readonly IChangeFeedDataSource changeFeedDataSource;
-        private readonly int pageSize;
-        private readonly ChangeFeedMode changeFeedMode;
-        private readonly JsonSerializationFormat? jsonSerializationFormat;
+        private readonly ChangeFeedPaginationOptions changeFeedPaginationOptions;
 
         public ChangeFeedPartitionRangePageAsyncEnumerator(
             IChangeFeedDataSource changeFeedDataSource,
-            FeedRangeInternal range,
-            int pageSize,
-            ChangeFeedMode changeFeedMode,
-            JsonSerializationFormat? jsonSerializationFormat,
-            ChangeFeedState state,
+            FeedRangeState<ChangeFeedState> feedRangeState,
+            ChangeFeedPaginationOptions changeFeedPaginationOptions,
             CancellationToken cancellationToken)
-            : base(range, cancellationToken, state)
+            : base(feedRangeState, cancellationToken)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
-            this.changeFeedMode = changeFeedMode ?? throw new ArgumentNullException(nameof(changeFeedMode));
-            this.pageSize = pageSize;
-            this.jsonSerializationFormat = jsonSerializationFormat;
+            this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? throw new ArgumentNullException(nameof(changeFeedPaginationOptions));
         }
 
         public override ValueTask DisposeAsync() => default;
@@ -41,11 +32,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         protected override Task<TryCatch<ChangeFeedPage>> GetNextPageAsync(
             ITrace trace, 
             CancellationToken cancellationToken) => this.changeFeedDataSource.MonadicChangeFeedAsync(
-            this.State,
-            this.Range,
-            this.pageSize,
-            this.changeFeedMode,
-            this.jsonSerializationFormat,
+            this.FeedRangeState,
+            this.changeFeedPaginationOptions,
             trace,
             cancellationToken);
     }

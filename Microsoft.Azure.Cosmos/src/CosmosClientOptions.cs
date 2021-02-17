@@ -265,6 +265,21 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan? MaxRetryWaitTimeOnRateLimitedRequests { get; set; }
 
         /// <summary>
+        /// Gets or sets the boolean to only return the headers and status code in
+        /// the Cosmos DB response for write item operation like Create, Upsert, Patch and Replace.
+        /// Setting the option to false will cause the response to have a null resource. This reduces networking and CPU load by not sending
+        /// the resource back over the network and serializing it on the client.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is optimal for workloads where the returned resource is not used.</para>
+        /// <para>This option can be overriden by similar property in ItemRequestOptions and TransactionalBatchItemRequestOptions</para>
+        /// </remarks>
+        /// <seealso cref="CosmosClientBuilder.WithContentResponseOnWrite(bool)"/>
+        /// <seealso cref="ItemRequestOptions.EnableContentResponseOnWrite"/>
+        /// <seealso cref="TransactionalBatchItemRequestOptions.EnableContentResponseOnWrite"/>
+        public bool? EnableContentResponseOnWrite { get; set; }
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>
@@ -700,21 +715,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            switch (this.ConsistencyLevel.Value)
-            {
-                case Cosmos.ConsistencyLevel.BoundedStaleness:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.ConsistentPrefix:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.Eventual:
-                    return Documents.ConsistencyLevel.Eventual;
-                case Cosmos.ConsistencyLevel.Session:
-                    return Documents.ConsistencyLevel.Session;
-                case Cosmos.ConsistencyLevel.Strong:
-                    return Documents.ConsistencyLevel.Strong;
-                default:
-                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}");
-            }
+            return (Documents.ConsistencyLevel)this.ConsistencyLevel.Value;
         }
 
         internal static string GetAccountEndpoint(string connectionString)
