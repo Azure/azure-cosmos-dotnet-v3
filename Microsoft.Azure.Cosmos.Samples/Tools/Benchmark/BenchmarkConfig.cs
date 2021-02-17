@@ -57,6 +57,12 @@ namespace CosmosBenchmark
         [Option("pl", Required = false, HelpText = "Degree of parallism")]
         public int DegreeOfParallelism { get; set; } = -1;
 
+        [Option("tcp", Required = false, HelpText = "MaxRequestsPerTcpConnection")]
+        public int? MaxRequestsPerTcpConnection { get; set; } = null;
+
+        [Option(Required = false, HelpText = "MaxTcpConnectionsPerEndpoint")]
+        public int? MaxTcpConnectionsPerEndpoint { get; set; } = null;
+
         [Option(Required = false, HelpText = "Item template")]
         public string ItemTemplateFile { get; set; } = "Player.json";
 
@@ -157,7 +163,9 @@ namespace CosmosBenchmark
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ApplicationName = BenchmarkConfig.UserAgentSuffix,
-                MaxRetryAttemptsOnRateLimitedRequests = 0
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
+                MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
@@ -185,6 +193,8 @@ namespace CosmosBenchmark
                             {
                                 ConnectionMode = Microsoft.Azure.Documents.Client.ConnectionMode.Direct,
                                 ConnectionProtocol = Protocol.Tcp,
+                                MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
+                                MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                                 UserAgentSuffix = BenchmarkConfig.UserAgentSuffix,
                                 RetryOptions = new RetryOptions()
                                 {

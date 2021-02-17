@@ -85,11 +85,6 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return this.reader.Value.ToString();
         }
 
-        public override Utf8String GetUtf8StringValue()
-        {
-            return Utf8String.TranscodeUtf16(this.GetStringValue());
-        }
-
         public override uint GetUInt32Value()
         {
             return (uint)this.reader.Value;

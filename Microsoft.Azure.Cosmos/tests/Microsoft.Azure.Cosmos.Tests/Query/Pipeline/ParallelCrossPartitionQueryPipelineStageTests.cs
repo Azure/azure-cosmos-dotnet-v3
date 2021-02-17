@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -68,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -108,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -137,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
                     new FeedRangeEpk(new Documents.Routing.Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
                 },
-                pageSize: 10,
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
                 cancellationToken: default,
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     targetRanges: await documentContainer.GetFeedRangesAsync(
                         trace: NoOpTrace.Singleton,
                         cancellationToken: default),
-                    pageSize: 10,
+                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                     partitionKey: null,
                     maxConcurrency: 10,
                     cancellationToken: default,
