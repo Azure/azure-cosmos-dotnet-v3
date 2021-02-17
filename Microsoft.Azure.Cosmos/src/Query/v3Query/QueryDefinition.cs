@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.IO;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
@@ -109,6 +110,54 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Add parameters to the SQL query
+        /// </summary>
+        /// <param name="name">The name of the parameter.</param>
+        /// <param name="valueStream">The stream value for the parameter.</param>
+        /// <remarks>
+        /// If the same name is added again it will replace the original value
+        /// </remarks>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// QueryDefinition query = new QueryDefinition(
+        ///     "select * from t where t.Account = @account")
+        ///     .WithParameter("@account", streamValue);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
+        public QueryDefinition WithStreamParameter(string name, Stream valueStream)
+        {
+            // pack it into an internal type for identification.
+            SerializedParameterValue serializedParameterValue = new SerializedParameterValue
+            {
+                valueStream = valueStream
+            };
+
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
+            if (this.parameters == null)
+            {
+                this.parameters = new List<SqlParameter>();
+            }
+
+            // Required to maintain previous contract when backed by a dictionary.
+            int index = this.parameters.FindIndex(param => param.Name == name);
+            if (index != -1)
+            {
+                this.parameters.RemoveAt(index);
+            }
+
+            this.parameters.Add(new SqlParameter(name, serializedParameterValue));
+
+            return this;
+        }
+
+        /// <summary>
         /// Returns the names and values of parameters in this <see cref="QueryDefinition"/>.
         /// </summary>
         /// <returns>
@@ -163,5 +212,10 @@ namespace Microsoft.Azure.Cosmos
                 return this.GetEnumerator();
             }
         }
+    }
+
+    internal struct SerializedParameterValue
+    {
+        internal Stream valueStream;
     }
 }

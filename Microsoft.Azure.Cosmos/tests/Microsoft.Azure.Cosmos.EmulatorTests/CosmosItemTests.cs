@@ -852,6 +852,188 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task QueryStreamValueTest()
+        {
+            DateTime createDateTime = DateTime.UtcNow;
+
+            dynamic testItem1 = new
+            {
+                id = "testItem1",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                pk = "MyCustomStatus",
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+            };
+
+            dynamic testItem2 = new
+            {
+                id = "testItem2",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                pk = "MyCustomStatus",
+                taskNum = 4909,
+                createdDateTime = createDateTime,
+                statusCode = HttpStatusCode.Accepted,
+                itemIds = new int[] { 1, 5, 10 },
+            };
+
+            //with Custom Serializer.
+            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+            {
+                Converters = new List<JsonConverter>() { new CosmosSerializerHelper.FormatNumbersAsTextConverter() }
+            };
+
+            int toStreamCount = 0;
+            int fromStreamCount = 0;
+            CosmosSerializerHelper cosmosSerializerHelper = new CosmosSerializerHelper(
+                jsonSerializerSettings,
+                toStreamCallBack: (itemValue) =>
+                {
+                    Type itemType = itemValue?.GetType();
+                    if (itemValue == null
+                        || itemType == typeof(int)
+                        || itemType == typeof(double)
+                        || itemType == typeof(string)
+                        || itemType == typeof(DateTime)
+                        || itemType == typeof(HttpStatusCode)
+                        || itemType == typeof(int[]))
+                    {
+                        toStreamCount++;
+                    }
+                },
+                fromStreamCallback: (item) => fromStreamCount++);
+
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                Serializer = cosmosSerializerHelper
+            };
+
+            CosmosClient clientSerializer = TestCommon.CreateCosmosClient(options);
+            Container containerSerializer = clientSerializer.GetContainer(this.database.Id, this.Container.Id);          
+
+            List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
+            {
+                new QueryDefinition("select * from t where t.pk = @pk" )
+                .WithStreamParameter("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk)),
+                new QueryDefinition("select * from t where t.cost = @cost" )
+                .WithStreamParameter("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
+                new QueryDefinition("select * from t where t.taskNum = @taskNum" )
+                .WithStreamParameter("@taskNum", cosmosSerializerHelper.ToStream<dynamic>(testItem1.taskNum)),
+                new QueryDefinition("select * from t where t.totalCost = @totalCost" )
+                .WithStreamParameter("@totalCost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.totalCost)),
+                new QueryDefinition("select * from t where t.createdDateTime = @createdDateTime" )
+                .WithStreamParameter("@createdDateTime", cosmosSerializerHelper.ToStream<dynamic>(testItem1.createdDateTime)),
+                new QueryDefinition("select * from t where t.statusCode = @statusCode" )
+                .WithStreamParameter("@statusCode", cosmosSerializerHelper.ToStream<dynamic>(testItem1.statusCode)),
+                new QueryDefinition("select * from t where t.itemIds = @itemIds" )
+                .WithStreamParameter("@itemIds", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds)),
+                new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
+                    .WithStreamParameter("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))
+                    .WithStreamParameter("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
+            };
+
+            try
+            {
+                await containerSerializer.CreateItemAsync<dynamic>(testItem1);
+                await containerSerializer.CreateItemAsync<dynamic>(testItem2);
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+            {
+                // Ignore conflicts since the object already exists
+            }
+
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
+            {
+                toStreamCount = 0;
+                fromStreamCount = 0;
+
+                List<dynamic> allItems = new List<dynamic>();
+                int pageCount = 0;
+                using (FeedIterator<dynamic> feedIterator = containerSerializer.GetItemQueryIterator<dynamic>(
+                    queryDefinition: queryDefinition))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        // Only need once to verify correct serialization of the query definition
+                        FeedResponse<dynamic> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        Assert.AreEqual(response.Count, response.Count());
+                        allItems.AddRange(response);
+                        pageCount++;
+                    }
+                }
+
+                Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+
+                // There should be no call to custom serializer since the parameter values are already serialized.
+                Assert.AreEqual(0, toStreamCount, $"missing to stream call. Expected: 0 , Actual: {toStreamCount} for query:{queryDefinition.ToSqlQuerySpec().QueryText}");
+                Assert.AreEqual(pageCount, fromStreamCount);
+            }
+
+            // Standard Cosmos Serializer Used
+
+            CosmosClient clientStandardSerializer = TestCommon.CreateCosmosClient(useCustomSeralizer:false);
+            Container containerStandardSerializer = clientStandardSerializer.GetContainer(this.database.Id, this.Container.Id);
+
+            testItem1 = ToDoActivity.CreateRandomToDoActivity();
+            testItem1.pk = "myPk";
+            await containerStandardSerializer.CreateItemAsync(testItem1, new Cosmos.PartitionKey(testItem1.pk));
+
+            testItem2 = ToDoActivity.CreateRandomToDoActivity();
+            testItem2.pk = "myPk";
+            await containerStandardSerializer.CreateItemAsync(testItem2, new Cosmos.PartitionKey(testItem2.pk));
+            CosmosSerializer cosmosSerializer = containerStandardSerializer.Database.Client.ClientOptions.Serializer;
+
+            queryDefinitions = new List<QueryDefinition>()
+            {
+                new QueryDefinition("select * from t where t.pk = @pk" )
+                .WithStreamParameter("@pk", cosmosSerializer.ToStream(testItem1.pk)),
+                new QueryDefinition("select * from t where t.cost = @cost" )
+                .WithStreamParameter("@cost", cosmosSerializer.ToStream(testItem1.cost)),
+                new QueryDefinition("select * from t where t.taskNum = @taskNum" )
+                .WithStreamParameter("@taskNum", cosmosSerializer.ToStream(testItem1.taskNum)),
+                new QueryDefinition("select * from t where t.CamelCase = @CamelCase" )
+                .WithStreamParameter("@CamelCase", cosmosSerializer.ToStream(testItem1.CamelCase)),
+                new QueryDefinition("select * from t where t.valid = @valid" )
+                .WithStreamParameter("@valid", cosmosSerializer.ToStream(testItem1.valid)),
+                new QueryDefinition("select * from t where t.description = @description" )
+                .WithStreamParameter("@description", cosmosSerializer.ToStream(testItem1.description)),
+                new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
+                    .WithStreamParameter("@pk", cosmosSerializer.ToStream(testItem1.pk))
+                    .WithStreamParameter("@cost", cosmosSerializer.ToStream(testItem1.cost)),
+            };
+
+            foreach (QueryDefinition queryDefinition in queryDefinitions)
+            {
+                List<ToDoActivity> allItems = new List<ToDoActivity>();
+                int pageCount = 0;
+                using (FeedIterator<ToDoActivity> feedIterator = containerStandardSerializer.GetItemQueryIterator<ToDoActivity>(
+                    queryDefinition: queryDefinition))
+                {
+                    while (feedIterator.HasMoreResults)
+                    {
+                        // Only need once to verify correct serialization of the query definition
+                        FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync(this.cancellationToken);
+                        Assert.AreEqual(response.Count, response.Count());
+                        allItems.AddRange(response);
+                        pageCount++;
+                    }
+                }
+
+                Assert.AreEqual(2, allItems.Count, $"missing query results. Only found: {allItems.Count} items for query:{queryDefinition.ToSqlQuerySpec().QueryText}");                
+                Assert.AreEqual(pageCount, 1);
+
+
+                IReadOnlyList<(string Name, object Value)> parameters1 = queryDefinition.GetQueryParameters();
+                IReadOnlyList<(string Name, object Value)> parameters2 = queryDefinition.GetQueryParameters();
+
+                Assert.AreSame(parameters1, parameters2);
+            }           
+        }
+
+        [TestMethod]
         public async Task ItemIterator()
         {
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
