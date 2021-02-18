@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public ContainerBuilder(
            Database database,
            string name,
-           string partitionKeyPath = null)
+           string partitionKeyPath)
            : base(
                  string.IsNullOrEmpty(name) ? throw new ArgumentNullException(nameof(name)) : name,
                  string.IsNullOrEmpty(partitionKeyPath) ? throw new ArgumentNullException(nameof(partitionKeyPath)) : partitionKeyPath)
