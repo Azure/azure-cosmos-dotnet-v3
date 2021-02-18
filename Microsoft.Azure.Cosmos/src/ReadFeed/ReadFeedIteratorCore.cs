@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: cosmosException.DiagnosticsContext);
+                    trace: trace);
             }
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: cosmosException.DiagnosticsContext);
+                    trace: trace);
             }
 
             CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState> crossFeedRangePage = monadicPage.Result;
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 requestMessage: default,
                 headers: headers,
                 cosmosException: default,
-                diagnostics: page.Diagnostics)
+                trace: trace)
             {
                 Content = page.Content,
             };

@@ -715,21 +715,7 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            switch (this.ConsistencyLevel.Value)
-            {
-                case Cosmos.ConsistencyLevel.BoundedStaleness:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.ConsistentPrefix:
-                    return Documents.ConsistencyLevel.BoundedStaleness;
-                case Cosmos.ConsistencyLevel.Eventual:
-                    return Documents.ConsistencyLevel.Eventual;
-                case Cosmos.ConsistencyLevel.Session:
-                    return Documents.ConsistencyLevel.Session;
-                case Cosmos.ConsistencyLevel.Strong:
-                    return Documents.ConsistencyLevel.Strong;
-                default:
-                    throw new ArgumentException($"Unsupported ConsistencyLevel {this.ConsistencyLevel.Value}");
-            }
+            return (Documents.ConsistencyLevel)this.ConsistencyLevel.Value;
         }
 
         internal static string GetAccountEndpoint(string connectionString)

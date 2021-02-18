@@ -636,6 +636,23 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ClientEncryptionPolicy get_ClientEncryptionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IReadOnlyList`1[System.String] PartitionKeyPaths[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.String] PartitionKeyPaths;CanRead:True;CanWrite:True;System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.String, System.Collections.Generic.IReadOnlyList`1[System.String])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.String, System.Collections.Generic.IReadOnlyList`1[System.String]), Void .ctor(System.String, System.Collections.Generic.IReadOnlyList`1[System.String])]"
+        },
         "Void set_ChangeFeedPolicy(Microsoft.Azure.Cosmos.ChangeFeedPolicy)": {
           "Type": "Method",
           "Attributes": [],
@@ -645,6 +662,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_ClientEncryptionPolicy(Microsoft.Azure.Cosmos.ClientEncryptionPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_PartitionKeyPaths(System.Collections.Generic.IReadOnlyList`1[System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -661,6 +683,13 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosResponseFactory ResponseFactory;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.CosmosResponseFactory get_ResponseFactory();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] CreateAndInitializeAsync(System.String, Azure.Core.TokenCredential, System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], Microsoft.Azure.Cosmos.CosmosClientOptions, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.CosmosClient+<CreateAndInitializeAsync>))]": {
+          "Type": "Method",
+          "Attributes": [
+            "AsyncStateMachineAttribute"
+          ],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] CreateAndInitializeAsync(System.String, Azure.Core.TokenCredential, System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], Microsoft.Azure.Cosmos.CosmosClientOptions, System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)": {
           "Type": "Constructor",
@@ -869,6 +898,47 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T], System.Collections.Generic.IDictionary`2[System.Object,System.String]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.PartitionKeyBuilder;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.PartitionKey Build()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.PartitionKey Build();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(Boolean)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(Double)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(Double);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.PartitionKeyBuilder AddNoneType()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.PartitionKeyBuilder AddNoneType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.PartitionKeyBuilder AddNullValue()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.PartitionKeyBuilder AddNullValue();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
         }
       },
       "NestedTypes": {}

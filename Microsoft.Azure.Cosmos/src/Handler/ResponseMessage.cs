@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.IO;
     using System.Net;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -22,8 +24,8 @@ namespace Microsoft.Azure.Cosmos
         public ResponseMessage()
         {
             this.Headers = new Headers();
-            this.DiagnosticsContext = new CosmosDiagnosticsContextCore();
             this.CosmosException = null;
+            this.Trace = NoOpTrace.Singleton;
         }
 
         /// <summary>
@@ -45,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.Headers = new Headers();
-            this.DiagnosticsContext = requestMessage?.DiagnosticsContext ?? new CosmosDiagnosticsContextCore();
+            this.Trace = requestMessage?.Trace ?? NoOpTrace.Singleton;
 
             if (!string.IsNullOrEmpty(errorMessage))
             {
@@ -63,19 +65,26 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestMessage">The <see cref="Cosmos.RequestMessage"/> object</param>
         /// <param name="headers">The headers for the response.</param>
         /// <param name="cosmosException">The exception if the response is from an error.</param>
-        /// <param name="diagnostics">The diagnostics for the request</param>
+        /// <param name="trace">The trace for the request</param>
         internal ResponseMessage(
             HttpStatusCode statusCode,
             RequestMessage requestMessage,
             Headers headers,
             CosmosException cosmosException,
-            CosmosDiagnosticsContext diagnostics)
+            ITrace trace)
         {
             this.StatusCode = statusCode;
             this.RequestMessage = requestMessage;
             this.CosmosException = cosmosException;
             this.Headers = headers ?? new Headers();
-            this.DiagnosticsContext = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+            if (requestMessage != null && requestMessage.Trace != null)
+            {
+                this.Trace = requestMessage.Trace;
+            }
+            else
+            {
+                this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+            }
         }
 
         /// <summary>
@@ -122,9 +131,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
-        public virtual CosmosDiagnostics Diagnostics => this.DiagnosticsContext.Diagnostics;
+        public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
 
-        internal CosmosDiagnosticsContext DiagnosticsContext { get; }
+        internal ITrace Trace { get; set; }
 
         internal CosmosException CosmosException { get; }
 
@@ -196,6 +205,12 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.RequestMessage.Dispose();
                     this.RequestMessage = null;
+                }
+
+                if (this.Trace != null)
+                {
+                    this.Trace.Dispose();
+                    this.Trace = null;
                 }
             }
         }

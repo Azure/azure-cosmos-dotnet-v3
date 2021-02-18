@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.Layouts;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -34,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
             string id = null,
             Stream resourceStream = null,
             TransactionalBatchItemRequestOptions requestOptions = null,
-            CosmosDiagnosticsContext diagnosticsContext = null,
             CosmosClientContext cosmosClientContext = null)
         {
             this.OperationType = operationType;
@@ -43,7 +43,6 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
-            this.DiagnosticsContext = diagnosticsContext;
             this.ClientContext = cosmosClientContext;
         }
 
@@ -61,7 +60,6 @@ namespace Microsoft.Azure.Cosmos
             this.Id = id;
             this.ResourceStream = resourceStream;
             this.RequestOptions = requestOptions;
-            this.DiagnosticsContext = null;
             this.ClientContext = containerCore.ClientContext;
         }
 
@@ -78,8 +76,6 @@ namespace Microsoft.Azure.Cosmos
         public int OperationIndex { get; internal set; }
 
         internal ContainerInternal ContainerInternal { get; }
-
-        internal CosmosDiagnosticsContext DiagnosticsContext { get; set; }
 
         internal string PartitionKeyJson { get; set; }
 
@@ -108,6 +104,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="BatchAsyncStreamer"/>
         /// <seealso cref="BatchAsyncContainerExecutor"/>
         internal ItemBatchOperationContext Context { get; private set; }
+
+        internal ITrace Trace { get; set; }
 
         /// <summary>
         /// Disposes the current <see cref="ItemBatchOperation"/>.

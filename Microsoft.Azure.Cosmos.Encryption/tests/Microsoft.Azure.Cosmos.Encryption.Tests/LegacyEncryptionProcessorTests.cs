@@ -55,21 +55,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" }
             };
 
-            try
-            {
-                await EncryptionProcessor.EncryptAsync(
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                     testDoc.ToStream(),
                     LegacyEncryptionProcessorTests.mockEncryptor.Object,
                     encryptionOptionsWithInvalidPathToEncrypt,
                     new CosmosDiagnosticsContext(),
                     CancellationToken.None);
 
-                Assert.Fail("Invalid path to encrypt didn't result in exception.");
-            }
-            catch (ArgumentException ex)
-            {
-                Assert.AreEqual("PathsToEncrypt includes a path: '/Invalid' which was not found.", ex.Message);
-            }
+            JObject encryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(encryptedStream);
+
+            (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+                encryptedDoc,
+                LegacyEncryptionProcessorTests.mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
+                decryptedDoc,
+                testDoc,
+                1,
+                decryptionContext,
+                invalidPathsConfigured: true);
         }
 
         [TestMethod]
@@ -89,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
+                TestDoc.PathsToEncrypt.Count,
                 decryptionContext);
         }
 
@@ -108,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
+                TestDoc.PathsToEncrypt.Count,
                 decryptionContext);
         }
 
@@ -133,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             LegacyEncryptionProcessorTests.VerifyDecryptionSucceeded(
                 decryptedDoc,
                 testDoc,
+                TestDoc.PathsToEncrypt.Count,
                 decryptionContext);
         }
 
@@ -188,7 +197,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private static void VerifyDecryptionSucceeded(
             JObject decryptedDoc,
             TestDoc expectedDoc,
-            DecryptionContext decryptionContext)
+            int pathCount,
+            DecryptionContext decryptionContext,
+            bool invalidPathsConfigured = false)
         {
             Assert.AreEqual(expectedDoc.SensitiveStr, decryptedDoc.Property(nameof(TestDoc.SensitiveStr)).Value.Value<string>());
             Assert.AreEqual(expectedDoc.SensitiveInt, decryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<int>());
@@ -198,8 +209,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNotNull(decryptionContext.DecryptionInfoList);
             DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
             Assert.AreEqual(LegacyEncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
-            Assert.AreEqual(TestDoc.PathsToEncrypt.Count, decryptionInfo.PathsDecrypted.Count);
-            Assert.IsFalse(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            Assert.AreEqual(pathCount, decryptionInfo.PathsDecrypted.Count);
+
+            if (!invalidPathsConfigured)
+            {
+                Assert.IsFalse(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
+            else
+            {
+                Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
         }
     }
 }

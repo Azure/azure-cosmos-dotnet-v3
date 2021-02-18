@@ -150,6 +150,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ClientConsistencyTestAsync()
+        {
+            List<Cosmos.ConsistencyLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.ConsistencyLevel)).Cast<Cosmos.ConsistencyLevel>().ToList();
+           
+            foreach(Cosmos.ConsistencyLevel consistencyLevel in cosmosLevels)
+            {
+                RequestHandlerHelper handlerHelper = new RequestHandlerHelper();
+                using CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x => 
+                    x.WithConsistencyLevel(consistencyLevel).AddCustomHandlers(handlerHelper));
+                Container consistencyContainer = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
+
+                int requestCount = 0;
+                handlerHelper.UpdateRequestMessage = (request) => 
+                {
+                    Assert.AreEqual(consistencyLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
+                    requestCount++;
+                };
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                ItemResponse<ToDoActivity> response = await consistencyContainer.CreateItemAsync<ToDoActivity>(item: testItem);
+                response = await consistencyContainer.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+
+                Assert.AreEqual(2, requestCount);
+            }
+        }
+        
+        [TestMethod]
         public async Task NegativeCreateItemTest()
         {
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper();
@@ -186,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string exception = ce.ToString();
                 Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
                 string diagnostics = ce.Diagnostics.ToString();
-                Assert.IsTrue(diagnostics.Contains("\"SubStatusCode\":999999"));
+                Assert.IsTrue(diagnostics.Contains("999999"));
             }
         }
 
@@ -420,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 try
                 {
-                    await testContainer.GetNonePartitionKeyValueAsync(default(CancellationToken));
+                    await testContainer.GetNonePartitionKeyValueAsync(NoOpTrace.Singleton, default(CancellationToken));
                     Assert.Fail();
                 }
                 catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
@@ -438,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetNonePartitionKeyValueAsync(default);
+                await testContainer.GetNonePartitionKeyValueAsync(NoOpTrace.Singleton, default);
             }
 
             // expected once post create 
@@ -448,7 +475,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             count = 0;
             for (int i = 0; i < loopCount; i++)
             {
-                await testContainer.GetCachedRIDAsync(cancellationToken: default);
+                await testContainer.GetCachedRIDAsync(forceRefresh:false, NoOpTrace.Singleton, cancellationToken: default);
             }
 
             // Already cached by GetNonePartitionKeyValueAsync before
@@ -1190,7 +1217,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync();
                 IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
-                    new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true));
+                    new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true),
+                    NoOpTrace.Singleton,
+                    forceRefresh: false);
 
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.
                 Assert.IsTrue(ranges.Count > 1, " RUs of the container needs to be increased to ensure at least 2 partitions.");
@@ -2239,7 +2268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsTrue(cosmosException.Message.Contains("The read session is not available for the input session token."), cosmosException.Message);
                     string exception = cosmosException.ToString();
-                    Assert.IsTrue(exception.Contains("StorePhysicalAddress"), exception);
+                    Assert.IsTrue(exception.Contains("Point Operation Statistics"), exception);
                 }
             }
             finally
@@ -2404,7 +2433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
         {

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.IO;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -88,12 +89,9 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets detail on the completion status of the operation.
         /// </summary>
-        internal virtual SubStatusCodes SubStatusCode { get; set; }
+        internal virtual SubStatusCodes SubStatusCode { get; set; } 
 
-        /// <summary>
-        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
-        /// </summary>
-        internal virtual CosmosDiagnosticsContext DiagnosticsContext { get; set; }
+        internal ITrace Trace { get; set; }
 
         internal static Result ReadOperationResult(ReadOnlyMemory<byte> input, out TransactionalBatchOperationResult batchOperationResult)
         {
@@ -115,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Ensure the mandatory fields were populated
-            if (batchOperationResult.StatusCode == default(HttpStatusCode))
+            if (batchOperationResult.StatusCode == default)
             {
                 return Result.Failure;
             }
@@ -214,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage: null,
                 headers: headers,
                 cosmosException: null,
-                diagnostics: this.DiagnosticsContext ?? new CosmosDiagnosticsContextCore())
+                trace: this.Trace ?? NoOpTrace.Singleton)
             {
                 Content = this.ResourceStream
             };

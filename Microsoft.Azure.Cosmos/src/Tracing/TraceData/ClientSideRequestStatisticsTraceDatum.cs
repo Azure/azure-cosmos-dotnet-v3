@@ -1,19 +1,17 @@
-﻿//------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Documents;
 
-    internal sealed class CosmosClientSideRequestStatistics : CosmosDiagnosticsInternal, IClientSideRequestStatistics
+    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
-        public const string DefaultToStringMessage = "Please see CosmosDiagnostics";
         private readonly object lockObject = new object();
         private readonly long clientSideRequestStatisticsCreateTime;
 
@@ -22,28 +20,30 @@ namespace Microsoft.Azure.Cosmos
         private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
         private bool received429ResponseSinceLastStartRequest = false;
 
-        public CosmosClientSideRequestStatistics(CosmosDiagnosticsContext diagnosticsContext = null)
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
         {
-            this.RequestStartTimeUtc = DateTime.UtcNow;
+            this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
             this.EndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
+            this.RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
             this.ContactedReplicas = new List<Uri>();
+            this.StoreResponseStatisticsList = new List<StoreResponseStatistics>();
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContacted = new HashSet<Uri>();
-            this.DiagnosticsContext = diagnosticsContext ?? CosmosDiagnosticsContextCore.Create(requestOptions: null);
-            this.DiagnosticsContext.AddDiagnosticsInternal(this);
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
 
-        private DateTime RequestStartTimeUtc { get; }
+        public DateTime RequestStartTimeUtc { get; }
 
-        private DateTime? RequestEndTimeUtc { get; set; }
+        public DateTime? RequestEndTimeUtc { get; set; }
 
-        private Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
+        public Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
 
-        private readonly Dictionary<int, DateTime> RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
+        private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime { get; }
 
         public List<Uri> ContactedReplicas { get; set; }
+
+        public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
 
         public HashSet<Uri> FailedReplicas { get; }
 
@@ -63,8 +63,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public bool IsCpuOverloaded { get; private set; } = false;
-
-        public CosmosDiagnosticsContext DiagnosticsContext { get; }
 
         public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
 
@@ -146,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
                     this.RegionsContacted.Add(locationEndpoint);
                 }
 
-                this.DiagnosticsContext.AddDiagnosticsInternal(responseStatistics);
+                this.StoreResponseStatisticsList.Add(responseStatistics);
 
                 if (!this.received429ResponseSinceLastStartRequest &&
                     storeResult.StatusCode == StatusCodes.TooManyRequests)
@@ -167,7 +165,6 @@ namespace Microsoft.Azure.Cosmos
             lock (this.lockObject)
             {
                 this.EndpointToAddressResolutionStatistics.Add(identifier, resolutionStats);
-                this.DiagnosticsContext.AddDiagnosticsInternal(resolutionStats);
             }
 
             return identifier;
@@ -193,38 +190,68 @@ namespace Microsoft.Azure.Cosmos
                     this.RequestEndTimeUtc = responseTime;
                 }
 
-                this.EndpointToAddressResolutionStatistics[identifier].EndTime = responseTime;
+                AddressResolutionStatistics start = this.EndpointToAddressResolutionStatistics[identifier];
+
+                this.EndpointToAddressResolutionStatistics[identifier] = new AddressResolutionStatistics(
+                    start.StartTime,
+                    responseTime,
+                    start.TargetEndpoint);
             }
         }
 
-        /// <summary>
-        /// The new Cosmos Exception always includes the diagnostics and the
-        /// document client exception message. Some of the older document client exceptions
-        /// include the request statistics in the message causing a circle reference.
-        /// This always returns empty string to prevent the circle reference which
-        /// would cause the diagnostic string to grow exponentially.
-        /// </summary>
-        public override string ToString()
+        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
-            return DefaultToStringMessage;
+            traceDatumVisitor.Visit(this);
         }
 
-        /// <summary>
-        /// Please see ToString() documentation
-        /// </summary>
         public void AppendToBuilder(StringBuilder stringBuilder)
         {
-            stringBuilder.Append(DefaultToStringMessage);
+            throw new NotImplementedException();
         }
 
-        public override void Accept(CosmosDiagnosticsInternalVisitor visitor)
+        public readonly struct AddressResolutionStatistics
         {
-            visitor.Visit(this);
+            public AddressResolutionStatistics(
+                DateTime startTime,
+                DateTime endTime,
+                string targetEndpoint)
+            {
+                this.StartTime = startTime;
+                this.EndTime = endTime;
+                this.TargetEndpoint = targetEndpoint ?? throw new ArgumentNullException(nameof(startTime));
+            }
+
+            public DateTime StartTime { get; }
+            public DateTime? EndTime { get; }
+            public string TargetEndpoint { get; }
         }
 
-        public override TResult Accept<TResult>(CosmosDiagnosticsInternalVisitor<TResult> visitor)
+        public sealed class StoreResponseStatistics
         {
-            return visitor.Visit(this);
+            public StoreResponseStatistics(
+                DateTime? requestStartTime,
+                DateTime requestResponseTime,
+                StoreResult storeResult,
+                ResourceType resourceType,
+                OperationType operationType,
+                Uri locationEndpoint)
+            {
+                this.RequestStartTime = requestStartTime;
+                this.RequestResponseTime = requestResponseTime;
+                this.StoreResult = storeResult;
+                this.RequestResourceType = resourceType;
+                this.RequestOperationType = operationType;
+                this.LocationEndpoint = locationEndpoint;
+                this.IsSupplementalResponse = operationType == OperationType.Head || operationType == OperationType.HeadFeed;
+            }
+
+            public DateTime? RequestStartTime { get; }
+            public DateTime RequestResponseTime { get; }
+            public StoreResult StoreResult { get; }
+            public ResourceType RequestResourceType { get; }
+            public OperationType RequestOperationType { get; }
+            public Uri LocationEndpoint { get; }
+            public bool IsSupplementalResponse { get; }
         }
     }
 }

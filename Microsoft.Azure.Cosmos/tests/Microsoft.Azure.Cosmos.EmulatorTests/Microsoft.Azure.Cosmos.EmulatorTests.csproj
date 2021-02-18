@@ -24,6 +24,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BatchOperationsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BulkOperationsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ChangeFeedAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.MiscellanousAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.PointOperationsExceptionsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.QueryAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadFeedAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.1" />
@@ -47,6 +59,33 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.MiscellanousAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BulkOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.BatchOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadFeedAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.PointOperationsExceptionsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.QueryAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ChangeFeedAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\LinqAggregateFunctionBaselineTests.TestAny.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -223,6 +262,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Tracing\EndToEndTraceWriterBaselineTests.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Update="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSpecialMethods.xml">

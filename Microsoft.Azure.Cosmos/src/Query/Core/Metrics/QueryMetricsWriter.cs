@@ -32,14 +32,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             this.WriteTotalQueryExecutionTime(queryMetrics.BackendMetrics.TotalTime);
 
             // QueryPreparationTimes
-            this.WriteQueryPreparationTimes(queryMetrics.BackendMetrics.QueryPreparationTimes);
+            this.WriteQueryPreparationTime(queryMetrics.BackendMetrics.QueryPreparationTimes);
 
             this.WriteIndexLookupTime(queryMetrics.BackendMetrics.IndexLookupTime);
             this.WriteDocumentLoadTime(queryMetrics.BackendMetrics.DocumentLoadTime);
             this.WriteVMExecutionTime(queryMetrics.BackendMetrics.VMExecutionTime);
 
             // RuntimesExecutionTimes
-            this.WriteRuntimesExecutionTimes(queryMetrics.BackendMetrics.RuntimeExecutionTimes);
+            this.WriteRuntimeExecutionTime(queryMetrics.BackendMetrics.RuntimeExecutionTimes);
 
             this.WriteDocumentWriteTime(queryMetrics.BackendMetrics.DocumentWriteTime);
 #if false
@@ -70,31 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected abstract void WriteTotalQueryExecutionTime(TimeSpan totalQueryExecutionTime);
 
-        #region QueryPreparationTimes
-        private void WriteQueryPreparationTimes(QueryPreparationTimes queryPreparationTimes)
-        {
-            this.WriteBeforeQueryPreparationTimes();
-
-            this.WriteQueryCompilationTime(queryPreparationTimes.QueryCompilationTime);
-            this.WriteLogicalPlanBuildTime(queryPreparationTimes.LogicalPlanBuildTime);
-            this.WritePhysicalPlanBuildTime(queryPreparationTimes.PhysicalPlanBuildTime);
-            this.WriteQueryOptimizationTime(queryPreparationTimes.QueryOptimizationTime);
-
-            this.WriteAfterQueryPreparationTimes();
-        }
-
-        protected abstract void WriteBeforeQueryPreparationTimes();
-
-        protected abstract void WriteQueryCompilationTime(TimeSpan queryCompilationTime);
-
-        protected abstract void WriteLogicalPlanBuildTime(TimeSpan logicalPlanBuildTime);
-
-        protected abstract void WritePhysicalPlanBuildTime(TimeSpan physicalPlanBuildTime);
-
-        protected abstract void WriteQueryOptimizationTime(TimeSpan queryOptimizationTime);
-
-        protected abstract void WriteAfterQueryPreparationTimes();
-        #endregion
+        protected abstract void WriteQueryPreparationTime(QueryPreparationTimes queryPreparationTimes);
 
         protected abstract void WriteIndexLookupTime(TimeSpan indexLookupTime);
 
@@ -102,28 +78,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 
         protected abstract void WriteVMExecutionTime(TimeSpan vMExecutionTime);
 
-        #region RuntimeExecutionTimes
-        private void WriteRuntimesExecutionTimes(RuntimeExecutionTimes runtimeExecutionTimes)
-        {
-            this.WriteBeforeRuntimeExecutionTimes();
-
-            this.WriteQueryEngineExecutionTime(runtimeExecutionTimes.QueryEngineExecutionTime);
-            this.WriteSystemFunctionExecutionTime(runtimeExecutionTimes.SystemFunctionExecutionTime);
-            this.WriteUserDefinedFunctionExecutionTime(runtimeExecutionTimes.UserDefinedFunctionExecutionTime);
-
-            this.WriteAfterRuntimeExecutionTimes();
-        }
-
-        protected abstract void WriteBeforeRuntimeExecutionTimes();
-
-        protected abstract void WriteQueryEngineExecutionTime(TimeSpan queryEngineExecutionTime);
-
-        protected abstract void WriteSystemFunctionExecutionTime(TimeSpan systemFunctionExecutionTime);
-
-        protected abstract void WriteUserDefinedFunctionExecutionTime(TimeSpan userDefinedFunctionExecutionTime);
-
-        protected abstract void WriteAfterRuntimeExecutionTimes();
-        #endregion
+        protected abstract void WriteRuntimeExecutionTime(RuntimeExecutionTimes runtimeExecutionTimes);
 
         protected abstract void WriteDocumentWriteTime(TimeSpan documentWriteTime);
 

@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Query
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
@@ -17,9 +16,6 @@ namespace Microsoft.Azure.Cosmos.Query
 
     internal class CosmosQueryContextCore : CosmosQueryContext
     {
-        private readonly object diagnosticLock = new object();
-        private CosmosDiagnosticsContext diagnosticsContext;
-
         public CosmosQueryContextCore(
             CosmosQueryClient client,
             ResourceType resourceTypeEnum,
@@ -29,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.Query
             Guid correlatedActivityId,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
-            CosmosDiagnosticsContext diagnosticsContext,
             string containerResourceId = null)
             : base(
                 client,
@@ -42,24 +37,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery,
                 containerResourceId)
         {
-            this.diagnosticsContext = diagnosticsContext;
-        }
-
-        internal override IDisposable CreateDiagnosticScope(string name)
-        {
-            return this.diagnosticsContext.CreateScope(name);
-        }
-
-        internal CosmosDiagnosticsContext GetAndResetDiagnostics()
-        {
-            // Safely swap the current diagnostics for the new diagnostics.
-            lock (this.diagnosticLock)
-            {
-                CosmosDiagnosticsContext current = this.diagnosticsContext;
-                this.diagnosticsContext = CosmosDiagnosticsContext.Create(new RequestOptions());
-                current.GetOverallScope().Dispose();
-                return current;
-            }
         }
 
         internal override Task<TryCatch<QueryPage>> ExecuteQueryAsync(
@@ -83,7 +60,6 @@ namespace Microsoft.Azure.Cosmos.Query
                 feedRange: feedRange,
                 isContinuationExpected: isContinuationExpected,
                 pageSize: pageSize,
-                queryPageDiagnostics: this.AddQueryPageDiagnostic,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -105,18 +81,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 sqlQuerySpec,
                 partitionKey,
                 supportedQueryFeatures,
-                this.diagnosticsContext,
                 trace,
                 cancellationToken);
-        }
-
-        private void AddQueryPageDiagnostic(QueryPageDiagnostics queryPageDiagnostics)
-        {
-            // Prevent a swap while adding context
-            lock (this.diagnosticLock)
-            {
-                this.diagnosticsContext.AddDiagnosticsInternal(queryPageDiagnostics);
-            }
         }
     }
 }
