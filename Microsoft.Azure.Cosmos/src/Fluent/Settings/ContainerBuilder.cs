@@ -41,6 +41,25 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Creates an instance of ContainerBuilder .
+        /// </summary>
+        /// <param name="database"> The Microsoft.Azure.Cosmos.Database object.</param>
+        /// <param name="name"> Azure Cosmos container name to create. </param>
+        /// <param name="partitionKeyPath"> The path to the partition key. Example: /partitionKey </param>
+        public ContainerBuilder(
+           Database database,
+           string name,
+           string partitionKeyPath = null)
+           : base(
+                 string.IsNullOrEmpty(name) ? throw new ArgumentNullException(nameof(name)) : name,
+                 string.IsNullOrEmpty(partitionKeyPath) ? throw new ArgumentNullException(nameof(partitionKeyPath)) : partitionKeyPath)
+        {
+            this.database = database ?? throw new ArgumentNullException(nameof(database));
+            this.clientContext = null;
+            this.containerUri = UriFactory.CreateDocumentCollectionUri(this.database.Id, name);
+        }
+
+        /// <summary>
         /// Defines a Unique Key policy for this Azure Cosmos container.
         /// </summary>
         /// <returns>An instance of <see cref="UniqueKeyDefinition"/>.</returns>
@@ -103,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateAsync(
+        public virtual async Task<ContainerResponse> CreateAsync(
             ThroughputProperties throughputProperties,
             CancellationToken cancellationToken = default)
         {
@@ -122,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateIfNotExistsAsync(
+        public virtual async Task<ContainerResponse> CreateIfNotExistsAsync(
             ThroughputProperties throughputProperties,
             CancellationToken cancellationToken = default)
         {
@@ -141,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateAsync(
+        public virtual async Task<ContainerResponse> CreateAsync(
             int? throughput = null,
             CancellationToken cancellationToken = default)
         {
@@ -161,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>An asynchronous Task representing the creation of a <see cref="Container"/> based on the Fluent definition.</returns>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        public async Task<ContainerResponse> CreateIfNotExistsAsync(
+        public virtual async Task<ContainerResponse> CreateIfNotExistsAsync(
             int? throughput = null,
             CancellationToken cancellationToken = default)
         {
@@ -220,7 +239,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
             if (conflictResolutionPolicy.Mode == ConflictResolutionMode.Custom
                 && !string.IsNullOrEmpty(conflictResolutionPolicy.ResolutionProcedure))
             {
-                this.clientContext.ValidateResource(conflictResolutionPolicy.ResolutionProcedure);
+                if (this.clientContext != null)
+                {
+                    this.clientContext.ValidateResource(conflictResolutionPolicy.ResolutionProcedure);
+                }
+
                 conflictResolutionPolicy.ResolutionProcedure = UriFactory.CreateStoredProcedureUri(this.containerUri.ToString(), conflictResolutionPolicy.ResolutionProcedure).ToString();
             }
 
