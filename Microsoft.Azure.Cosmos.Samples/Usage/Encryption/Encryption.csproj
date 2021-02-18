@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <AssemblyName>Cosmos.Samples.Encryption</AssemblyName>
     <RootNamespace>Cosmos.Samples.Encryption</RootNamespace>
     <LangVersion>latest</LangVersion>

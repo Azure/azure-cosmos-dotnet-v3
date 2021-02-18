@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption</AssemblyName>
@@ -11,7 +11,7 @@
     <Company>Microsoft Corporation</Company>
     <Authors>Microsoft</Authors>
     <Description>This library provides an implementation for client-side encryption for Azure Cosmos's SQL API. For more information, refer to https://aka.ms/CosmosClientEncryption</Description>
-    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Copyright>� Microsoft Corporation. All rights reserved.</Copyright>
     <Title>Microsoft Azure Cosmos DB client-side encryption library</Title>
     <PackageId>Microsoft.Azure.Cosmos.Encryption</PackageId>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
