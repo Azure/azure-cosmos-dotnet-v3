@@ -135,26 +135,7 @@ namespace Microsoft.Azure.Cosmos
                 valueStream = valueStream
             };
 
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (this.parameters == null)
-            {
-                this.parameters = new List<SqlParameter>();
-            }
-
-            // Required to maintain previous contract when backed by a dictionary.
-            int index = this.parameters.FindIndex(param => param.Name == name);
-            if (index != -1)
-            {
-                this.parameters.RemoveAt(index);
-            }
-
-            this.parameters.Add(new SqlParameter(name, serializedParameterValue));
-
-            return this;
+            return this.WithParameter(name, serializedParameterValue);
         }
 
         /// <summary>
