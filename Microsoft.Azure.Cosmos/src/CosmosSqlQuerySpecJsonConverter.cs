@@ -74,6 +74,11 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer cosmosSerializer,
             CosmosSerializer propertiesSerializer)
         {
+            if (propertiesSerializer is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
+            {
+                propertiesSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer;
+            }
+
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
                 Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) }

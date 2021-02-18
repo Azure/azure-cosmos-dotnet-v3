@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// <![CDATA[
         /// QueryDefinition query = new QueryDefinition(
         ///     "select * from t where t.Account = @account")
-        ///     .WithParameter("@account", streamValue);
+        ///     .WithStreamParameter("@account", streamValue);
         /// ]]>
         /// </code>
         /// </example>

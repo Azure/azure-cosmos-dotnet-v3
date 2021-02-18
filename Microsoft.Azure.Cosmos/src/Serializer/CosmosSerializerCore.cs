@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.customSerializer = null;
                 // this would allow us to set the JsonConverter and inturn handle Serialized/Stream Query Parameter Value.
-                this.sqlQuerySpecSerializer = this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = null;
