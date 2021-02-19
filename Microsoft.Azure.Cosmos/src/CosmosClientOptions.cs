@@ -167,8 +167,7 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        TimeSpan? TokenCredentialBackgroundRefreshInterval
-        { get; set; }
+        TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
@@ -638,11 +637,12 @@ namespace Microsoft.Azure.Cosmos
             return cloneConfiguration;
         }
 
-        internal ConnectionPolicy GetConnectionPolicy()
+        internal virtual ConnectionPolicy GetConnectionPolicy()
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            UserAgentContainer userAgent = this.BuildUserAgentContainer();
+            UserAgentContainer userAgent = new UserAgentContainer();
+            this.SetUserAgentFeatures(userAgent);
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -800,30 +800,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual UserAgentContainer BuildUserAgentContainer()
-        {
-            UserAgentContainer userAgent = new UserAgentContainer();
-            this.PopulateUserAgentContainerInfo(userAgent);
-
-            return userAgent;
-        }
-
-        internal void PopulateUserAgentContainerInfo(UserAgentContainer userAgentContainer)
-        {
-            string features = this.GetUserAgentFeatures();
-
-            if (!string.IsNullOrEmpty(features))
-            {
-                userAgentContainer.SetFeatures(features.ToString());
-            }
-
-            if (!string.IsNullOrEmpty(this.ApplicationName))
-            {
-                userAgentContainer.Suffix = this.ApplicationName;
-            }
-        }
-
-        private string GetUserAgentFeatures()
+        internal void SetUserAgentFeatures(UserAgentContainer userAgent)
         {
             CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
             if (this.AllowBulkExecution)
@@ -836,12 +813,19 @@ namespace Microsoft.Azure.Cosmos
                 features |= CosmosClientOptionsFeatures.HttpClientFactory;
             }
 
-            if (features == CosmosClientOptionsFeatures.NoFeatures)
+            if (features != CosmosClientOptionsFeatures.NoFeatures)
             {
-                return null;
+                string featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
+                if (!string.IsNullOrEmpty(featureString))
+                {
+                    userAgent.SetFeatures(featureString);
+                }
             }
 
-            return Convert.ToString((int)features, 2).PadLeft(8, '0');
+            if (!string.IsNullOrEmpty(this.ApplicationName))
+            {
+                userAgent.Suffix = this.ApplicationName;
+            }
         }
 
         /// <summary>

@@ -170,11 +170,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private sealed class MacUserAgentStringClientOptions : CosmosClientOptions
         {
-            internal override Cosmos.UserAgentContainer BuildUserAgentContainer()
+            internal override ConnectionPolicy GetConnectionPolicy()
             {
+                ConnectionPolicy connectionPolicy = base.GetConnectionPolicy();
                 MacOsUserAgentContainer userAgent = new MacOsUserAgentContainer();
-                this.PopulateUserAgentContainerInfo(userAgent);
-                return userAgent;
+                
+                this.SetUserAgentFeatures(userAgent);
+
+                connectionPolicy.UserAgentContainer = userAgent;
+
+                return connectionPolicy;
             }
         }
 
