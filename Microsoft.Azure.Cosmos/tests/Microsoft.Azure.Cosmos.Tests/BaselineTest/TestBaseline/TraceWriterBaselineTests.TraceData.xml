@@ -28,7 +28,7 @@
             [Point Operation Statistics]
             Activity ID: 00000000-0000-0000-0000-000000000000
             Status Code: OK/WriteForbidden
-            Response Time: 2020-01-02T03:04:05.0060000
+            Response Time: 03:04:05:006
             Request Charge: 4
             Request URI: http://localhost.com
             Session Tokens: RequestSessionToken / ResponseSessionToken
@@ -195,8 +195,8 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats]
-            Start Time: 0001-01-01T00:00:00.0000000
-            End Time: 9999-12-31T23:59:59.9999999
+            Start Time: 12:00:00:000
+            End Time: 11:59:59:999
             Contacted Replicas
               http://someuri1.com/: 1
               http://someuri2.com/: 1
@@ -207,15 +207,15 @@
               http://someuri1.com/
               http://someuri2.com/
             Address Resolution Statistics
-            ┌──────────────────────┬──────────────────────┬────────────────────────────────────┐
-            │Start Time (utc)      │End Time (utc)        │Endpoint                            │
-            ├──────────────────────┼──────────────────────┼────────────────────────────────────┤
-            │  1/1/0001 12:00:00 AM│12/31/9999 11:59:59 PM│                http://localhost.com│
-            │  1/1/0001 12:00:00 AM│12/31/9999 11:59:59 PM│                http://localhost.com│
-            └──────────────────────┴──────────────────────┴────────────────────────────────────┘
+            ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
+            │Start Time (utc)│End Time (utc)│Endpoint                                          │
+            ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
+            │    12:00:00:000│  11:59:59:999│                              http://localhost.com│
+            │    12:00:00:000│  11:59:59:999│                              http://localhost.com│
+            └────────────────┴──────────────┴──────────────────────────────────────────────────┘
             Store Response Statistics
-              Start Time: 0001-01-01T00:00:00.0000000
-              End Time: 9999-12-31T23:59:59.9999999
+              Start Time: 12:00:00:000
+              End Time: 11:59:59:999
               Resource Type: Document
               Operation Type: Query
               Store Result
