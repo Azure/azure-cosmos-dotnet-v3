@@ -4440,10 +4440,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition WithParameter(System.String, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.QueryDefinition WithStreamParameter(System.String, System.IO.Stream)": {
+        "Microsoft.Azure.Cosmos.QueryDefinition WithParameterStream(System.String, System.IO.Stream)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition WithStreamParameter(System.String, System.IO.Stream);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition WithParameterStream(System.String, System.IO.Stream);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Object]] GetQueryParameters()": {
           "Type": "Method",
