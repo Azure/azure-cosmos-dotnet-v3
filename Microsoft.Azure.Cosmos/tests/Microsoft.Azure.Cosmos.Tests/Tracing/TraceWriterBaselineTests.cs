@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net.Http;
@@ -518,10 +519,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         public override Output ExecuteTest(Input input)
         {
-            string text = TraceWriter.TraceToText(input.Trace);
-            string json = TraceWriter.TraceToJson(input.Trace);
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("th-TH", false);
+            try
+            {
+                string text = TraceWriter.TraceToText(input.Trace);
+                string json = TraceWriter.TraceToJson(input.Trace);
 
-            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
+                return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+            }
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
