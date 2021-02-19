@@ -45,6 +45,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         Pagination, 
 
         /// <summary>
+        /// Component that handles materializing a POCO.
+        /// </summary>
+        Poco,
+
+        /// <summary>
         /// Component that handles client side aggregation of distributed query results.
         /// </summary>
         Query, 
