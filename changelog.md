@@ -3,8 +3,24 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-- [#2191](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2191) & [#796](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/796) Query: Expose query parameters
+### <a name="3.17.0-Preview"/> [3.17.0-Preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0-Preview) - 2021-02-15
+
+#### Added
+- [#1870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1870) Batch API: Adds Session token support
+- [#1952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1952) & [#1648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1658) (Preview) Subpartitioning: Adds support for subpartitioning
+- [#2122](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2122) (Preview) Change Feed: Adds Full Fidelity support
+- [#2145](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2145) EnableContentResponseOnWrite: Adds client level support via CosmosClientOptions and CosmosClientBuilder 
+- [#2166](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2166) QueryRequestOption: Adds optimization to avoid duplicating QueryRequestOption
+- [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097) & [#2204](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2204) & [#2213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2213) CosmosDiagnostics: Refactored to use ITrace as the default implementation
+- [#2206](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2206) LINQ : Adds User Defined Function Translation Support (Thanks to dpiessens)
+- [#2210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2210) QueryDefinition: Adds API to get query parameters (Thanks to thomaslevesque)
+
+#### Fixed
+- [#2168](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2168) Query: Fixes a regression in Take operator where it drains the entire query instead of stopping a the take count. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) and reported in issue [#1979](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1979)
+- [#2129](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2129) CosmosDiagnostics: Fixes memory leak caused by pagination library holding on to all diagnostics. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) and reported in issue [#2087](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2087)
+- [#2103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2103) Query: Fixes ORDER BY undefined (and mixed type primitives) continuation token support. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
+- [#2124](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2124) Bulk: Fixes retry logic to handle RequestEntityTooLarge exceptions caused by the underlying batch request being to large. Introduced in [#741](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/741)
+- [#2198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2198) CosmosClientOptions: Fixes a bug causing ConsistentPrefix to be convert to BoundedStaleness. Introduced in 3.1.0 PR [#541](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/541) and reported in issue [#2196](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2196)
 
 ### <a name="3.16.0"/> [3.16.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.16.0) - 2021-01-12
 
