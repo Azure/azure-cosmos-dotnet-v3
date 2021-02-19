@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Encryption.EmulatorTests.LegacyEncryptionTests;
     using DataEncryptionKey = Custom.DataEncryptionKey;
+    using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
 
     [TestClass]
     public class MdeEncryptionTests
@@ -300,8 +301,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
 
             // rewrap Mde to Mde with Option
-
-            // rewrap from Mde Algo to  Legacy algo should fail
             dekId = "rewrapMdeAlgoDekToMdeAlgoDek";
 
             dekProperties = await MdeEncryptionTests.CreateDekAsync(MdeEncryptionTests.dekProvider, dekId);
@@ -478,6 +477,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.CreateItemAsync(MdeEncryptionTests.encryptionContainer, unknownDek, TestDoc.PathsToEncrypt);
+                Assert.Fail("CreateItem should've failed for an unknown DEK. ");
             }
             catch (ArgumentException ex)
             {
@@ -762,7 +762,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = MdeEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
-               ChangeFeedStartFrom.Beginning());
+               ChangeFeedStartFrom.Beginning(),
+               ChangeFeedMode.Incremental);
             
             while (changeIterator.HasMoreResults)
             {
@@ -1363,7 +1364,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental);
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
