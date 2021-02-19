@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                if (this.HttpClientFactory != null && value != ConnectionPolicy.Default.MaxConnectionLimit )
+                if (this.HttpClientFactory != null && value != ConnectionPolicy.Default.MaxConnectionLimit)
                 {
                     throw new ArgumentException($"{nameof(this.httpClientFactory)} can not be set along with {nameof(this.GatewayModeMaxConnectionLimit)}. This must be set on the HttpClientHandler.MaxConnectionsPerServer property.");
                 }
@@ -167,7 +167,8 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
+        TimeSpan? TokenCredentialBackgroundRefreshInterval
+        { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
@@ -642,7 +643,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             UserAgentContainer userAgent = this.BuildUserAgentContainer();
-            
+
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
@@ -799,22 +800,27 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal UserAgentContainer BuildUserAgentContainer()
+        internal virtual UserAgentContainer BuildUserAgentContainer()
         {
             UserAgentContainer userAgent = new UserAgentContainer();
+            this.PopulateUserAgentContainerInfo(userAgent);
+
+            return userAgent;
+        }
+
+        internal void PopulateUserAgentContainerInfo(UserAgentContainer userAgentContainer)
+        {
             string features = this.GetUserAgentFeatures();
 
             if (!string.IsNullOrEmpty(features))
             {
-                userAgent.SetFeatures(features.ToString());
-            }
-            
-            if (!string.IsNullOrEmpty(this.ApplicationName))
-            {
-                userAgent.Suffix = this.ApplicationName;
+                userAgentContainer.SetFeatures(features.ToString());
             }
 
-            return userAgent;
+            if (!string.IsNullOrEmpty(this.ApplicationName))
+            {
+                userAgentContainer.Suffix = this.ApplicationName;
+            }
         }
 
         private string GetUserAgentFeatures()
@@ -834,7 +840,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 return null;
             }
-            
+
             return Convert.ToString((int)features, 2).PadLeft(8, '0');
         }
 
