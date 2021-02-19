@@ -917,21 +917,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<QueryDefinition> queryDefinitions = new List<QueryDefinition>()
             {
                 new QueryDefinition("select * from t where t.pk = @pk" )
-                .WithStreamParameter("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk)),
+                .WithParameterStream("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk)),
                 new QueryDefinition("select * from t where t.cost = @cost" )
-                .WithStreamParameter("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
+                .WithParameterStream("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
                 new QueryDefinition("select * from t where t.taskNum = @taskNum" )
-                .WithStreamParameter("@taskNum", cosmosSerializerHelper.ToStream<dynamic>(testItem1.taskNum)),
+                .WithParameterStream("@taskNum", cosmosSerializerHelper.ToStream<dynamic>(testItem1.taskNum)),
                 new QueryDefinition("select * from t where t.totalCost = @totalCost" )
-                .WithStreamParameter("@totalCost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.totalCost)),
+                .WithParameterStream("@totalCost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.totalCost)),
                 new QueryDefinition("select * from t where t.createdDateTime = @createdDateTime" )
-                .WithStreamParameter("@createdDateTime", cosmosSerializerHelper.ToStream<dynamic>(testItem1.createdDateTime)),
+                .WithParameterStream("@createdDateTime", cosmosSerializerHelper.ToStream<dynamic>(testItem1.createdDateTime)),
                 new QueryDefinition("select * from t where t.statusCode = @statusCode" )
-                .WithStreamParameter("@statusCode", cosmosSerializerHelper.ToStream<dynamic>(testItem1.statusCode)),
+                .WithParameterStream("@statusCode", cosmosSerializerHelper.ToStream<dynamic>(testItem1.statusCode)),
                 new QueryDefinition("select * from t where t.itemIds = @itemIds" )
-                .WithStreamParameter("@itemIds", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds)),
+                .WithParameterStream("@itemIds", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds)),
                 new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
-                    .WithStreamParameter("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))
+                    .WithParameterStream("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))
                     .WithStreamParameter("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
             };
 
@@ -989,19 +989,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             queryDefinitions = new List<QueryDefinition>()
             {
                 new QueryDefinition("select * from t where t.pk = @pk" )
-                .WithStreamParameter("@pk", cosmosSerializer.ToStream(testItem1.pk)),
+                .WithParameterStream("@pk", cosmosSerializer.ToStream(testItem1.pk)),
                 new QueryDefinition("select * from t where t.cost = @cost" )
-                .WithStreamParameter("@cost", cosmosSerializer.ToStream(testItem1.cost)),
+                .WithParameterStream("@cost", cosmosSerializer.ToStream(testItem1.cost)),
                 new QueryDefinition("select * from t where t.taskNum = @taskNum" )
-                .WithStreamParameter("@taskNum", cosmosSerializer.ToStream(testItem1.taskNum)),
+                .WithParameterStream("@taskNum", cosmosSerializer.ToStream(testItem1.taskNum)),
                 new QueryDefinition("select * from t where t.CamelCase = @CamelCase" )
-                .WithStreamParameter("@CamelCase", cosmosSerializer.ToStream(testItem1.CamelCase)),
+                .WithParameterStream("@CamelCase", cosmosSerializer.ToStream(testItem1.CamelCase)),
                 new QueryDefinition("select * from t where t.valid = @valid" )
-                .WithStreamParameter("@valid", cosmosSerializer.ToStream(testItem1.valid)),
+                .WithParameterStream("@valid", cosmosSerializer.ToStream(testItem1.valid)),
                 new QueryDefinition("select * from t where t.description = @description" )
-                .WithStreamParameter("@description", cosmosSerializer.ToStream(testItem1.description)),
+                .WithParameterStream("@description", cosmosSerializer.ToStream(testItem1.description)),
                 new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
-                    .WithStreamParameter("@pk", cosmosSerializer.ToStream(testItem1.pk))
+                    .WithParameterStream("@pk", cosmosSerializer.ToStream(testItem1.pk))
                     .WithStreamParameter("@cost", cosmosSerializer.ToStream(testItem1.cost)),
             };
 

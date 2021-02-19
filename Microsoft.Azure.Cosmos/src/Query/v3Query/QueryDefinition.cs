@@ -110,24 +110,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Add parameters to the SQL query
+        /// Add parameters with Stream Value to the SQL query.       
         /// </summary>
         /// <param name="name">The name of the parameter.</param>
         /// <param name="valueStream">The stream value for the parameter.</param>
         /// <remarks>
-        /// If the same name is added again it will replace the original value
-        /// </remarks>
+        /// UseCase : This is useful in cases like running a Query on Encrypted Values, where the value is generated post serialization and then encrypted 
+        /// and we don't want to change the cipher value due to a call to serializer again.
+        /// If the same name is added again it will replace the original value.
+        /// </remarks>        
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
         /// QueryDefinition query = new QueryDefinition(
         ///     "select * from t where t.Account = @account")
-        ///     .WithStreamParameter("@account", streamValue);
+        ///     .WithParameterStream("@account", streamValue);
         /// ]]>
         /// </code>
         /// </example>
         /// <returns>An instance of <see cref="QueryDefinition"/>.</returns>
-        public QueryDefinition WithStreamParameter(string name, Stream valueStream)
+        public QueryDefinition WithParameterStream(string name, Stream valueStream)
         {
             // pack it into an internal type for identification.
             SerializedParameterValue serializedParameterValue = new SerializedParameterValue
