@@ -249,6 +249,27 @@
       "FailedReplicas": [
         "http://someuri1.com/",
         "http://someuri2.com/"
+      ],
+      "AddressResolutionStatistics": [
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "TargetEndpoint": "http://localhost.com"
+        },
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "TargetEndpoint": "http://localhost.com"
+        }
+      ],
+      "StoreResponseStatistics": [
+        {
+          "ResponseTimeUTC": "9999-12-31T23:59:59.9999999",
+          "ResourceType": "Document",
+          "OperationType": "Query",
+          "LocationEndpoint": "http://someuri1.com/",
+          "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null"
+        }
       ]
     }
   },

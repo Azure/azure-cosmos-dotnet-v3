@@ -207,7 +207,79 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteJsonUriArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
+                this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
+                this.jsonWriter.WriteArrayStart();
+
+                foreach (ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                {
+                    VisitAddressResolutionStatistics(stat, this.jsonWriter);
+                }
+
+                this.jsonWriter.WriteArrayEnd();
+
+                this.jsonWriter.WriteFieldName("StoreResponseStatistics");
+                this.jsonWriter.WriteArrayStart();
+
+                foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics stat in clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList)
+                {
+                    VisitStoreResponseStatistics(stat, this.jsonWriter);
+                }
+
+                this.jsonWriter.WriteArrayEnd();
+
                 this.jsonWriter.WriteObjectEnd();
+            }
+
+            private static void VisitAddressResolutionStatistics(
+                ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics addressResolutionStatistics,
+                IJsonWriter jsonWriter)
+            {
+                jsonWriter.WriteObjectStart();
+
+                jsonWriter.WriteFieldName("StartTimeUTC");
+                jsonWriter.WriteStringValue(addressResolutionStatistics.StartTime.ToString("o", CultureInfo.InvariantCulture));
+
+                jsonWriter.WriteFieldName("EndTimeUTC");
+                if (addressResolutionStatistics.EndTime.HasValue)
+                {
+                    jsonWriter.WriteStringValue(addressResolutionStatistics.EndTime.Value.ToString("o", CultureInfo.InvariantCulture));
+                }
+                else
+                {
+                    jsonWriter.WriteStringValue("EndTime Never Set.");
+                }
+
+                jsonWriter.WriteFieldName("TargetEndpoint");
+                jsonWriter.WriteStringValue(addressResolutionStatistics.TargetEndpoint);
+
+                jsonWriter.WriteObjectEnd();
+            }
+
+            private static void VisitStoreResponseStatistics(
+                ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStatistics,
+                IJsonWriter jsonWriter)
+            {
+                jsonWriter.WriteObjectStart();
+
+                jsonWriter.WriteFieldName("ResponseTimeUTC");
+                jsonWriter.WriteStringValue(storeResponseStatistics.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
+
+                jsonWriter.WriteFieldName("ResourceType");
+                jsonWriter.WriteStringValue(storeResponseStatistics.RequestResourceType.ToString());
+
+                jsonWriter.WriteFieldName("OperationType");
+                jsonWriter.WriteStringValue(storeResponseStatistics.RequestOperationType.ToString());
+
+                jsonWriter.WriteFieldName("LocationEndpoint");
+                jsonWriter.WriteStringValue(storeResponseStatistics.LocationEndpoint.ToString());
+
+                if (storeResponseStatistics.StoreResult != null)
+                {
+                    jsonWriter.WriteFieldName("StoreResult");
+                    jsonWriter.WriteStringValue(storeResponseStatistics.StoreResult.ToString());
+                }
+
+                jsonWriter.WriteObjectEnd();
             }
 
             public void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum)
