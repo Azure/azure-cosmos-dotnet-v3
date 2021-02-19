@@ -932,7 +932,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithParameterStream("@itemIds", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds)),
                 new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
                     .WithParameterStream("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))
-                    .WithStreamParameter("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
+                    .WithParameterStream("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
             };
 
             try
@@ -1002,7 +1002,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithParameterStream("@description", cosmosSerializer.ToStream(testItem1.description)),
                 new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
                     .WithParameterStream("@pk", cosmosSerializer.ToStream(testItem1.pk))
-                    .WithStreamParameter("@cost", cosmosSerializer.ToStream(testItem1.cost)),
+                    .WithParameterStream("@cost", cosmosSerializer.ToStream(testItem1.cost)),
             };
 
             foreach (QueryDefinition queryDefinition in queryDefinitions)
