@@ -227,11 +227,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
             if (conflictResolutionPolicy.Mode == ConflictResolutionMode.Custom
                 && !string.IsNullOrEmpty(conflictResolutionPolicy.ResolutionProcedure))
             {
-                if (this.clientContext != null)
-                {
-                    this.clientContext.ValidateResource(conflictResolutionPolicy.ResolutionProcedure);
-                }
-
+                this.clientContext.ValidateResource(conflictResolutionPolicy.ResolutionProcedure);
                 conflictResolutionPolicy.ResolutionProcedure = UriFactory.CreateStoredProcedureUri(this.containerUri.ToString(), conflictResolutionPolicy.ResolutionProcedure).ToString();
             }
 
