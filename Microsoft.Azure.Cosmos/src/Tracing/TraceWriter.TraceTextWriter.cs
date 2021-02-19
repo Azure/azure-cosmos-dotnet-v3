@@ -176,14 +176,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.Write("Component");
                 writer.Write(space);
 
-#if INTERNAL
                 writer.Write(trace.CallerInfo.MemberName);
+
                 writer.Write('@');
-                writer.Write(trace.CallerInfo.FilePath.Split('\\').Last());
+                writer.Write(GetFileNameFromPath(trace.CallerInfo.FilePath));
                 writer.Write(':');
                 writer.Write(trace.CallerInfo.LineNumber);
                 writer.Write(space);
-#endif
 
                 writer.Write(trace.StartTime.ToString("hh:mm:ss:fff"));
                 writer.Write(space);

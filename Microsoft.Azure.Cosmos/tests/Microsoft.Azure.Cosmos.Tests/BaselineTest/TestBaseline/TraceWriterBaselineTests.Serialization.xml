@@ -11,12 +11,17 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller information": {
+    "member name": "MemberName",
+    "file name": "FilePath",
+    "line number": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -37,7 +42,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [QueryMetrics]
             Retrieved Document Count                 :           2,000             
@@ -75,6 +80,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller information": {
+    "member name": "MemberName",
+    "file name": "FilePath",
+    "line number": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -99,13 +109,18 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller information": {
+    "member name": "MemberName",
+    "file name": "FilePath",
+    "line number": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -114,6 +129,11 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -139,8 +159,8 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             (
                 [QueryMetrics]
                 Retrieved Document Count                 :           2,000             
@@ -178,6 +198,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller information": {
+    "member name": "MemberName",
+    "file name": "FilePath",
+    "line number": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -186,6 +211,11 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
@@ -216,14 +246,19 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller information": {
+    "member name": "MemberName",
+    "file name": "FilePath",
+    "line number": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -232,6 +267,11 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -241,6 +281,11 @@
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -271,8 +316,8 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       (
     │           [QueryMetrics]
     │           Retrieved Document Count                 :           2,000             
@@ -305,7 +350,7 @@
     │               Index Impact Score: IndexImpactScore
     │               ---
     │       )
-    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             (
                 [QueryMetrics]
                 Retrieved Document Count                 :           2,000             
@@ -343,6 +388,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller information": {
+    "member name": "MemberName",
+    "file name": "FilePath",
+    "line number": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -351,6 +401,11 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
@@ -362,6 +417,11 @@
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {
@@ -432,19 +492,24 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    │   ├── Child1Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    │   └── Child1Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-        ├── Child2Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-        ├── Child2Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-        └── Child2Child3(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   ├── Child1Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   └── Child1Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        ├── Child2Child1(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        ├── Child2Child2(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Child2Child3(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller information": {
+    "member name": "MemberName",
+    "file name": "FilePath",
+    "line number": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {},
@@ -453,6 +518,11 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -461,6 +531,11 @@
           "name": "Child1Child1",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
+          "caller information": {
+            "member name": "MemberName",
+            "file name": "FilePath",
+            "line number": 42
+          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -470,6 +545,11 @@
           "name": "Child1Child2",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
+          "caller information": {
+            "member name": "MemberName",
+            "file name": "FilePath",
+            "line number": 42
+          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -481,6 +561,11 @@
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
+      "caller information": {
+        "member name": "MemberName",
+        "file name": "FilePath",
+        "line number": 42
+      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -489,6 +574,11 @@
           "name": "Child2Child1",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
+          "caller information": {
+            "member name": "MemberName",
+            "file name": "FilePath",
+            "line number": 42
+          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -498,6 +588,11 @@
           "name": "Child2Child2",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
+          "caller information": {
+            "member name": "MemberName",
+            "file name": "FilePath",
+            "line number": 42
+          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
@@ -507,6 +602,11 @@
           "name": "Child2Child3",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
+          "caller information": {
+            "member name": "MemberName",
+            "file name": "FilePath",
+            "line number": 42
+          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
