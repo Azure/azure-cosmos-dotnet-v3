@@ -897,8 +897,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                 testHandlerHitCount++;
-                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
-                response.Content = request.Content;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
                 return Task.FromResult(response);
             });
 

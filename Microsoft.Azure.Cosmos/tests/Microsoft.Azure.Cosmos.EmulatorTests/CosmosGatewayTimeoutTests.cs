@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 bool isQueryRequestFound = false;
                 httpClientHandler.RequestCallBack = (request, cancellationToken) =>
                 {
-                    if(request.Headers.TryGetValues(HttpConstants.HttpHeaders.IsQueryPlanRequest, out IEnumerable<string> isQueryPlan) &&
+                    if (request.Headers.TryGetValues(HttpConstants.HttpHeaders.IsQueryPlanRequest, out IEnumerable<string> isQueryPlan) &&
                         isQueryPlan.FirstOrDefault() == bool.TrueString)
                     {
                         Assert.IsFalse(isQueryRequestFound, "Should only call get query plan once.");
@@ -140,11 +140,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class HttpClientHandlerHelper : DelegatingHandler
         {
-            public HttpClientHandlerHelper(): base (new HttpClientHandler())
+            public HttpClientHandlerHelper() : base(new HttpClientHandler())
             {
             }
 
-            public Action<HttpRequestMessage, CancellationToken> RequestCallBack { get; set;}
+            public Action<HttpRequestMessage, CancellationToken> RequestCallBack { get; set; }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
