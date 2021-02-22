@@ -731,7 +731,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [TestMethod]
         public async Task ValidateExceptionForMonadicChangeFeedAsync()
         {
-            Mock<CosmosDiagnosticsContext> mockDiagnosticsContext = new Mock<CosmosDiagnosticsContext>();
             CosmosException dummyException = new CosmosException(
                 message: "dummy",
                 statusCode: HttpStatusCode.TooManyRequests,
@@ -743,7 +742,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 requestMessage: null,
                 headers: null,
                 cosmosException: dummyException,
-                diagnostics: mockDiagnosticsContext.Object);
+                trace: NoOpTrace.Singleton);
 
             Mock<CosmosClientContext> mockCosmosClientContext = new Mock<CosmosClientContext>();
             mockCosmosClientContext.Setup(
@@ -756,17 +755,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     It.IsAny<Microsoft.Azure.Cosmos.FeedRange>(),
                     It.IsAny<Stream>(),
                     It.IsAny<Action<RequestMessage>>(),
-                    It.IsAny<CosmosDiagnosticsContext>(),
                     It.IsAny<ITrace>(),
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult(message));
             Mock<ContainerInternal> mockContainerInternal = new Mock<ContainerInternal>();
-            mockContainerInternal.SetupGet(container => container.ClientContext).Returns(mockCosmosClientContext.Object);
+            mockContainerInternal.SetupGet(container1 => container1.ClientContext).Returns(mockCosmosClientContext.Object);
             Mock<CosmosQueryClient> mockCosmosQueryClient = new Mock<CosmosQueryClient>();
             NetworkAttachedDocumentContainer container = new NetworkAttachedDocumentContainer(
                 mockContainerInternal.Object,
-                mockCosmosQueryClient.Object,
-                mockDiagnosticsContext.Object);
+                mockCosmosQueryClient.Object);
 
             FeedRangeState<ChangeFeedState> state = new FeedRangeState<ChangeFeedState>();
             ChangeFeedPaginationOptions options = new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental);
