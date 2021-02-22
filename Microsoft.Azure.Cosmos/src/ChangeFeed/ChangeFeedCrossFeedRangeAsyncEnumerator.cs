@@ -54,11 +54,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         this.jsonSerializationFormatOptions),
                     successPage.RequestCharge,
                     successPage.ActivityId,
-                    state),
+                    state,
+                    successPage.AdditionalHeaders),
                 Pagination.ChangeFeedNotModifiedPage notModifiedPage => ChangeFeedPage.CreateNotModifiedPage(
                      notModifiedPage.RequestCharge,
                      notModifiedPage.ActivityId,
-                     state),
+                     state,
+                     notModifiedPage.AdditionalHeaders),
                 _ => throw new InvalidOperationException($"Unknown type: {innerChangeFeedPage.Page.GetType()}"),
             };
 

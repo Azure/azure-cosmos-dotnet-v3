@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Handler which selects the pipeline for the requested resource operation
@@ -24,15 +25,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.pointOperationHandler = pointOperationHandler ?? throw new ArgumentNullException(nameof(pointOperationHandler));
         }
 
-        public override async Task<ResponseMessage> SendAsync(
+        public override Task<ResponseMessage> SendAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
         {
             RequestHandler targetHandler = request.IsPartitionKeyRangeHandlerRequired ? this.documentFeedHandler : this.pointOperationHandler;
-            using (request.DiagnosticsContext.CreateRequestHandlerScopeScope(targetHandler))
-            {
-                return await targetHandler.SendAsync(request, cancellationToken);
-            }
+            return targetHandler.SendAsync(request, cancellationToken);
         }
     }
 }

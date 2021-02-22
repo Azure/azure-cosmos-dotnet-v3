@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression VisitMethodCallScalar(MethodCallExpression methodCallExpression, TranslationContext context)
         {
             // Check if it is a UDF method call
-            if (methodCallExpression.Method.Equals(typeof(UserDefinedFunctionProvider).GetMethod("Invoke")))
+            if (methodCallExpression.Method.Equals(typeof(CosmosLinq).GetMethod("InvokeUserDefinedFunction")))
             {
                 string udfName = ((ConstantExpression)methodCallExpression.Arguments[0]).Value as string;
                 if (string.IsNullOrEmpty(udfName))

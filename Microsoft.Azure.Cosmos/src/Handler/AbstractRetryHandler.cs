@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal abstract class AbstractRetryHandler : RequestHandler
@@ -19,60 +20,55 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
-            request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
+            using (ITrace childTrace = request.Trace.StartChild("Send Async", TraceComponent.RequestHandler, TraceLevel.Info))
+            {
+                request.Trace = childTrace;
+                IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
+                request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
-            try
-            {
-                return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: () =>
-                    {
-                        return base.SendAsync(request, cancellationToken);
-                    },
-                    callShouldRetry: (cosmosResponseMessage, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-                    },
-                    callShouldRetryException: (exception, token) =>
-                    {
-                        return retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
-                    },
-                    diagnosticsContext: request.DiagnosticsContext,
-                    cancellationToken: cancellationToken);
-            }
-            catch (DocumentClientException ex)
-            {
-                return ex.ToCosmosResponseMessage(request);
-            }
-            catch (CosmosException ex)
-            {
-                return ex.ToCosmosResponseMessage(request);
-            }
-            catch (AggregateException ex)
-            {
-                // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
-                // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
-                // is removed this catch can be safely removed.
-                AggregateException innerExceptions = ex.Flatten();
-                Exception docClientException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
-                if (docClientException != null)
+                try
                 {
-                    return ((DocumentClientException)docClientException).ToCosmosResponseMessage(request);
+                    return await RetryHandler.ExecuteHttpRequestAsync(
+                        callbackMethod: (trace) => base.SendAsync(request, cancellationToken),
+                        callShouldRetry: (cosmosResponseMessage, trace, token) => retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
+                        callShouldRetryException: (exception, trace, token) => retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken),
+                        trace: request.Trace,
+                        cancellationToken: cancellationToken);
                 }
+                catch (DocumentClientException ex)
+                {
+                    return ex.ToCosmosResponseMessage(request);
+                }
+                catch (CosmosException ex)
+                {
+                    return ex.ToCosmosResponseMessage(request);
+                }
+                catch (AggregateException ex)
+                {
+                    // TODO: because the SDK underneath this path uses ContinueWith or task.Result we need to catch AggregateExceptions here
+                    // in order to ensure that underlying DocumentClientExceptions get propagated up correctly. Once all ContinueWith and .Result 
+                    // is removed this catch can be safely removed.
+                    AggregateException innerExceptions = ex.Flatten();
+                    Exception docClientException = innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is DocumentClientException);
+                    if (docClientException != null)
+                    {
+                        return ((DocumentClientException)docClientException).ToCosmosResponseMessage(request);
+                    }
 
-                throw;
-            }
-            finally
-            {
-                request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
-            }
+                    throw;
+                }
+                finally
+                {
+                    request.OnBeforeSendRequestActions -= retryPolicyInstance.OnBeforeSendRequest;
+                }
+            } 
         }
 
         private static async Task<ResponseMessage> ExecuteHttpRequestAsync(
-           Func<Task<ResponseMessage>> callbackMethod,
-           Func<ResponseMessage, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
-           Func<Exception, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
-           CosmosDiagnosticsContext diagnosticsContext,
+           Func<ITrace, Task<ResponseMessage>> callbackMethod,
+           Func<ResponseMessage, ITrace, CancellationToken, Task<ShouldRetryResult>> callShouldRetry,
+           Func<Exception, ITrace, CancellationToken, Task<ShouldRetryResult>> callShouldRetryException,
+           ITrace trace,
            CancellationToken cancellationToken)
         {
             while (true)
@@ -82,13 +78,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 try
                 {
-                    ResponseMessage cosmosResponseMessage = await callbackMethod();
+                    ResponseMessage cosmosResponseMessage = await callbackMethod(trace);
                     if (cosmosResponseMessage.IsSuccessStatusCode)
                     {
                         return cosmosResponseMessage;
                     }
 
-                    result = await callShouldRetry(cosmosResponseMessage, cancellationToken);
+                    result = await callShouldRetry(cosmosResponseMessage, trace, cancellationToken);
 
                     if (!result.ShouldRetry)
                     {
@@ -97,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
                 catch (HttpRequestException httpRequestException)
                 {
-                    result = await callShouldRetryException(httpRequestException, cancellationToken);
+                    result = await callShouldRetryException(httpRequestException, trace, cancellationToken);
                     if (!result.ShouldRetry)
                     {
                         // Today we don't translate request exceptions into status codes since this was an error before

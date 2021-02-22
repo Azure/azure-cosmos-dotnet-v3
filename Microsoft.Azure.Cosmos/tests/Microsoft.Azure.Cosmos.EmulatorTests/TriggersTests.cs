@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString(),
                 cancellationToken: this.cancellationToken);
 
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 cancellationToken: this.cancellationToken);
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id = Guid.NewGuid().ToString(),
                 cost = 9001,
                 description = "trigger_test_item",
-                status = "Done",
+                pk = "Done",
                 taskNum = 1
             };
 
