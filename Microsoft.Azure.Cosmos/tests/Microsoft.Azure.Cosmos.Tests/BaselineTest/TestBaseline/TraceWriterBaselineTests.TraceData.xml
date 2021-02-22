@@ -49,6 +49,7 @@
       "SubStatusCode": 3,
       "RequestCharge": 4,
       "RequestUri": "http://localhost.com",
+      "ErrorMessage": null,
       "RequestSessionToken": "RequestSessionToken",
       "ResponseSessionToken": "ResponseSessionToken"
     }
@@ -101,12 +102,15 @@
   "data": {
     "Point Operation Statistics Default": {
       "Id": "PointOperationStatistics",
-      "ActivityId": "<null>",
+      "ActivityId": null,
       "ResponseTimeUtc": "0001-01-01T00:00:00",
       "StatusCode": 0,
       "SubStatusCode": 0,
       "RequestCharge": 0,
-      "RequestUri": "<null>"
+      "RequestUri": null,
+      "ErrorMessage": null,
+      "RequestSessionToken": null,
+      "ResponseSessionToken": null
     }
   },
   "children": []
@@ -437,21 +441,21 @@
       "Id": "AggregatedClientSideRequestStatistics",
       "ContactedReplicas": [],
       "RegionsContacted": [
-        "<null>"
+        null
       ],
       "FailedReplicas": [
-        "<null>"
+        null
       ],
       "AddressResolutionStatistics": [
         {
           "StartTimeUTC": "0001-01-01T00:00:00",
           "EndTimeUTC": "EndTime Never Set.",
-          "TargetEndpoint": "<null>"
+          "TargetEndpoint": null
         },
         {
           "StartTimeUTC": "0001-01-01T00:00:00",
           "EndTimeUTC": "EndTime Never Set.",
-          "TargetEndpoint": "<null>"
+          "TargetEndpoint": null
         }
       ],
       "StoreResponseStatistics": [
@@ -459,7 +463,7 @@
           "ResponseTimeUTC": "0001-01-01T00:00:00",
           "ResourceType": "Database",
           "OperationType": "Create",
-          "LocationEndpoint": "<null>",
+          "LocationEndpoint": null,
           "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null"
         }
       ]
