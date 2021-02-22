@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
     using Microsoft.Data.Encryption.Cryptography;
@@ -802,6 +803,54 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             catch (ArgumentException)
             {
             }
+        }
+
+        [TestMethod]
+        public async Task VerifyKekRevoke()
+        {
+            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("revokedKek", "revokedKek-metadata");
+            
+            await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
+               "keywithRevokedKek",
+               revokedKekmetadata);
+
+            ClientEncryptionIncludedPath pathwithRevokedKek = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_NestedObjectFormatL1",
+                ClientEncryptionKeyId = "keywithRevokedKek",
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { pathwithRevokedKek };
+
+            ClientEncryptionPolicy clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);       
+
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
+
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+
+            // make sure you cache it in.
+            await encryptionContainer.InitializeEncryptionAsync();
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = MdeEncryptionTests.testEncryptionKeyStoreProvider;
+            testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+            // try creating it and it should fail as it has been revoked.
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            }
+            catch(RequestFailedException)
+            {
+                // for unwrap to succeed 
+                testEncryptionKeyStoreProvider.RevokeAccessSet = false;
+                // lets rewrap it.
+                await database.RewrapClientEncryptionKeyAsync("keywithRevokedKek", MdeEncryptionTests.metadata1);
+                
+                testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+                // Should fail but will try to fetch the lastest from the Backend and updates the cache.
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+                testEncryptionKeyStoreProvider.RevokeAccessSet = false;
+            }            
         }
 
         [TestMethod]
@@ -1627,18 +1676,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {"tempmetadata2", 2},
             };
 
+            public bool RevokeAccessSet { get; set; }
             public Dictionary<string, int> WrapKeyCallsCount { get; set; }
             public Dictionary<string, int> UnWrapKeyCallsCount { get; set; }
             public TestEncryptionKeyStoreProvider()
             {
                 this.WrapKeyCallsCount = new Dictionary<string, int>();
                 this.UnWrapKeyCallsCount = new Dictionary<string, int>();
+                this.RevokeAccessSet = false;
             }
 
             public override string ProviderName => "TESTKEYSTORE_VAULT";
 
             public override byte[] UnwrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] encryptedKey)
             {
+                if (masterKeyPath.Equals("revokedKek-metadata") && this.RevokeAccessSet)
+                {
+                    throw new RequestFailedException((int)HttpStatusCode.Forbidden, "Forbidden");
+                }
+
                 if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
                 {
                     this.UnWrapKeyCallsCount[masterKeyPath] = 1;
