@@ -841,19 +841,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+                Assert.Fail("Create Item should have failed.");
             }
             catch(RequestFailedException)
-            {
-                // for unwrap to succeed 
-                testEncryptionKeyStoreProvider.RevokeAccessSet = false;
-                // lets rewrap it.
-                await database.RewrapClientEncryptionKeyAsync("keywithRevokedKek", MdeEncryptionTests.metadata1);
-                
-                testEncryptionKeyStoreProvider.RevokeAccessSet = true;
-                // Should fail but will try to fetch the lastest from the Backend and updates the cache.
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                testEncryptionKeyStoreProvider.RevokeAccessSet = false;
-            }            
+            {               
+            }
+
+            // for unwrap to succeed 
+            testEncryptionKeyStoreProvider.RevokeAccessSet = false;
+            // lets rewrap it.
+            await database.RewrapClientEncryptionKeyAsync("keywithRevokedKek", MdeEncryptionTests.metadata2);
+
+            testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+            // Should fail but will try to fetch the lastest from the Backend and updates the cache.
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            testEncryptionKeyStoreProvider.RevokeAccessSet = false;
         }
 
         [TestMethod]
@@ -1702,7 +1704,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     this.UnWrapKeyCallsCount[masterKeyPath] = 1;
                 }
-                else if(masterKeyPath.Equals("tempmetadata1"))
+                else
                 {
                     this.UnWrapKeyCallsCount[masterKeyPath]++;
                 }
