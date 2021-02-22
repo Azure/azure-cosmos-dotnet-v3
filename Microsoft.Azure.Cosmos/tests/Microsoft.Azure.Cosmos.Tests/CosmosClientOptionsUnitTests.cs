@@ -246,7 +246,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             string userAgentSuffix = "testSuffix";
             cosmosClientOptions.ApplicationName = userAgentSuffix;
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-            UserAgentContainer userAgentContainer = cosmosClientOptions.BuildUserAgentContainer();
+            Cosmos.UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer();
+            cosmosClientOptions.SetUserAgentFeatures(userAgentContainer);
             Assert.AreEqual(userAgentSuffix, userAgentContainer.Suffix);
             Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
             Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
