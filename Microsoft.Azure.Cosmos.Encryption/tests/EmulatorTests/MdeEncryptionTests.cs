@@ -1030,7 +1030,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
-            Assert.AreEqual(1, unwrapcount);
+            Assert.AreEqual(2, unwrapcount);
         }
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             Container container,
@@ -1702,7 +1702,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     this.UnWrapKeyCallsCount[masterKeyPath] = 1;
                 }
-                else if(masterKeyPath.Equals("key1"))
+                else if(masterKeyPath.Equals("tempmetadata1"))
                 {
                     this.UnWrapKeyCallsCount[masterKeyPath]++;
                 }
