@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue("PointOperationStatistics");
 
                 this.jsonWriter.WriteFieldName("ActivityId");
-                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ActivityId);
+                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ActivityId ?? "<null>");
 
                 this.jsonWriter.WriteFieldName("ResponseTimeUtc");
                 this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture));
@@ -173,7 +173,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteNumber64Value(pointOperationStatisticsTraceDatum.RequestCharge);
 
                 this.jsonWriter.WriteFieldName("RequestUri");
-                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.RequestUri);
+                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.RequestUri ?? "<null>");
 
                 if (!string.IsNullOrEmpty(pointOperationStatisticsTraceDatum.ErrorMessage))
                 {
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 jsonWriter.WriteFieldName("TargetEndpoint");
-                jsonWriter.WriteStringValue(addressResolutionStatistics.TargetEndpoint);
+                jsonWriter.WriteStringValue(addressResolutionStatistics.TargetEndpoint ?? "<null>");
 
                 jsonWriter.WriteObjectEnd();
             }
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteStringValue(storeResponseStatistics.RequestOperationType.ToString());
 
                 jsonWriter.WriteFieldName("LocationEndpoint");
-                jsonWriter.WriteStringValue(storeResponseStatistics.LocationEndpoint.ToString());
+                jsonWriter.WriteStringValue(storeResponseStatistics.LocationEndpoint?.ToString() ?? "<null>");
 
                 if (storeResponseStatistics.StoreResult != null)
                 {
@@ -301,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 {
                     foreach (Uri contactedReplica in uris)
                     {
-                        this.jsonWriter.WriteStringValue(contactedReplica.ToString());
+                        this.jsonWriter.WriteStringValue(contactedReplica?.ToString() ?? "<null>");
                     }
                 }
 
@@ -326,6 +326,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     for (int i = 0; i < totalCount; i++)
                     {
                         Uri contactedReplica = uris[i];
+                        if (contactedReplica == null)
+                        {
+                            continue;
+                        }
+
                         if (contactedReplica.Equals(previous))
                         {
                             duplicateCount++;
@@ -345,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             this.jsonWriter.WriteFieldName("Count");
                             this.jsonWriter.WriteNumber64Value(duplicateCount);
                             this.jsonWriter.WriteFieldName("Uri");
-                            this.jsonWriter.WriteStringValue(contactedReplica.ToString());
+                            this.jsonWriter.WriteStringValue(contactedReplica?.ToString() ?? "<null>");
                             this.jsonWriter.WriteObjectEnd();
                         }
 
