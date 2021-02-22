@@ -806,8 +806,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        public async Task VerifyKekRevoke()
+        public async Task VerifyKekRevokeHandling()
         {
+            // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
+            // The Dek should be rewrapped if the KEK is revoked.
+            // When an access to KeyVault fails, the Dek is fetched from the backend(force refresh to update the stale DEK) and cache is updated.
             EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("revokedKek", "revokedKek-metadata");
             
             await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
