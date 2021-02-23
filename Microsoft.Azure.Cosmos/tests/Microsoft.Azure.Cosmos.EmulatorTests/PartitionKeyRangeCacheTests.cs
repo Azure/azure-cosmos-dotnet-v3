@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -27,13 +28,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerInternal testContainer = (ContainerInlineCore)testClient.GetContainer(dbName, containerName);
 
             // Populate the RID cache.
-            string cachedRidAsync = await testContainer.GetCachedRIDAsync(forceRefresh: false);
+            string cachedRidAsync = await testContainer.GetCachedRIDAsync(forceRefresh: false, trace: NoOpTrace.Singleton, cancellationToken: default);
 
             // Delete the container (using resource client).
             await container.DeleteContainerAsync();
 
             // Because the RID is cached, this will now try to resolve the collection routing map.
-            Assert.AreEqual(cachedRidAsync, await testContainer.GetCachedRIDAsync(forceRefresh: false));
+            Assert.AreEqual(cachedRidAsync, await testContainer.GetCachedRIDAsync(forceRefresh: false, trace: NoOpTrace.Singleton, cancellationToken: default));
             CosmosException notFoundException = await Assert.ThrowsExceptionAsync<CosmosException>(() => testContainer.GetRoutingMapAsync(cancellationToken: default));
             Assert.AreEqual(HttpStatusCode.NotFound, notFoundException.StatusCode);
 
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CollectionRoutingMap collectionRoutingMap = await testContainer.GetRoutingMapAsync(cancellationToken: default);
             Assert.IsNotNull(collectionRoutingMap);
-            Assert.AreNotEqual(cachedRidAsync, await testContainer.GetCachedRIDAsync(forceRefresh: false));
+            Assert.AreNotEqual(cachedRidAsync, await testContainer.GetCachedRIDAsync(forceRefresh: false, trace: NoOpTrace.Singleton, cancellationToken: default));
 
             // Delete the container (using resource client).
             await container.DeleteContainerAsync();

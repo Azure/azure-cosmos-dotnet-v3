@@ -159,6 +159,8 @@ namespace CosmosBenchmark
                 runSummary.Container = config.Container;
                 runSummary.AccountName = config.EndPoint;
                 runSummary.pk = config.ResultsPartitionKeyValue;
+                runSummary.MaxTcpConnectionsPerEndpoint = config.MaxTcpConnectionsPerEndpoint;
+                runSummary.MaxRequestsPerTcpConnection = config.MaxRequestsPerTcpConnection;
 
                 string consistencyLevel = config.ConsistencyLevel;
                 if (string.IsNullOrWhiteSpace(consistencyLevel))

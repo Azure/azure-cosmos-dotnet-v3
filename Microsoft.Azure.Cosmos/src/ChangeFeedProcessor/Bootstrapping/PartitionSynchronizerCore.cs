@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class PartitionSynchronizerCore : PartitionSynchronizer
@@ -47,7 +48,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
         public override async Task CreateMissingLeasesAsync()
         {
-            IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(this.containerRid, FeedRangeEpk.FullRange.Range, forceRefresh: true);
+            IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                this.containerRid, 
+                FeedRangeEpk.FullRange.Range, 
+                NoOpTrace.Singleton, 
+                forceRefresh: true);
             DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri, ranges.Count);
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
@@ -68,7 +73,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
             DefaultTrace.TraceInformation("Lease {0} is gone due to split or merge", leaseToken);
 
-            IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(this.containerRid, ((FeedRangeEpk)lease.FeedRange).Range, forceRefresh: true);
+            IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
+                this.containerRid, 
+                ((FeedRangeEpk)lease.FeedRange).Range, 
+                NoOpTrace.Singleton, 
+                forceRefresh: true);
             if (overlappingRanges.Count == 0)
             {
                 DefaultTrace.TraceError("Lease {0} is gone but we failed to find at least one child range", leaseToken);

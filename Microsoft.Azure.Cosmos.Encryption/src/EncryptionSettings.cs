@@ -102,15 +102,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             if (ex.Status == (int)HttpStatusCode.Forbidden)
                             {
                                 clientEncryptionKeyProperties = await encryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                                clientEncryptionKeyId: propertyToEncrypt.ClientEncryptionKeyId,
-                                container: encryptionProcessor.Container,
-                                cancellationToken: cancellationToken,
-                                shouldForceRefresh: true);
+                                    clientEncryptionKeyId: propertyToEncrypt.ClientEncryptionKeyId,
+                                    container: encryptionProcessor.Container,
+                                    cancellationToken: cancellationToken,
+                                    shouldForceRefresh: true);
 
                                 protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
-                                clientEncryptionKeyProperties,
-                                encryptionProcessor.EncryptionKeyStoreProvider,
-                                propertyToEncrypt.ClientEncryptionKeyId);
+                                    clientEncryptionKeyProperties,
+                                    encryptionProcessor.EncryptionKeyStoreProvider,
+                                    propertyToEncrypt.ClientEncryptionKeyId);
                             }
                         }
 

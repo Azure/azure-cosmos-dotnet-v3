@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
@@ -69,19 +70,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // Client Encryption key Id is unique within a Database.
             string cacheKey = container.Database.Id + "/" + clientEncryptionKeyId;
 
-            try
-            {
-                return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
+            return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
                      cacheKey,
                      null,
                      async () => await this.FetchClientEncryptionKeyPropertiesAsync(container, clientEncryptionKeyId, cancellationToken),
                      cancellationToken,
                      forceRefresh: shouldForceRefresh);
-            }
-            catch
-            {
-                throw;
-            }
         }
 
         internal async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
@@ -98,7 +92,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             catch (CosmosException ex)
             {
-                throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
 
