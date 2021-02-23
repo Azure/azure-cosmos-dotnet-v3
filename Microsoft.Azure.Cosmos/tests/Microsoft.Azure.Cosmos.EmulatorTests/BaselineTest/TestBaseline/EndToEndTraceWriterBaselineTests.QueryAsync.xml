@@ -126,10 +126,10 @@
   "name": "Root Trace",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file name": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -139,10 +139,10 @@
       "name": "Create Query Pipeline",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Query",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -152,10 +152,10 @@
           "name": "Get Container Properties",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Transport",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -165,10 +165,10 @@
               "name": "Get Collection Cache",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Routing",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -181,10 +181,10 @@
           "name": "Service Interop Query Plan",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Query",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -195,10 +195,10 @@
           "name": "Get Partition Key Ranges",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Routing",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -211,10 +211,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -224,10 +224,10 @@
           "name": "Prefetching",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -238,10 +238,10 @@
           "name": "[,05C1CFFFFFFFF8) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -251,10 +251,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -264,10 +264,10 @@
                   "name": "[,05C1CFFFFFFFF8) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -279,10 +279,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -292,10 +292,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -306,10 +306,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -320,10 +320,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -333,10 +333,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -346,10 +346,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -359,10 +359,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -372,10 +372,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -385,10 +385,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -414,10 +414,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -436,10 +436,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -449,10 +449,10 @@
           "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -462,10 +462,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -475,10 +475,10 @@
                   "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -490,10 +490,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -503,10 +503,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -517,10 +517,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -531,10 +531,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -544,10 +544,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -557,10 +557,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -570,10 +570,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -583,10 +583,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -596,10 +596,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -625,10 +625,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -647,10 +647,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -660,10 +660,10 @@
           "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -673,10 +673,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -686,10 +686,10 @@
                   "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -701,10 +701,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -714,10 +714,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -728,10 +728,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -742,10 +742,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -755,10 +755,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -768,10 +768,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -781,10 +781,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -794,10 +794,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -807,10 +807,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -836,10 +836,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -858,10 +858,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -871,10 +871,10 @@
           "name": "[05C1E7FFFFFFFA,FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -884,10 +884,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -897,10 +897,10 @@
                   "name": "[05C1E7FFFFFFFA,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -912,10 +912,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -925,10 +925,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -939,10 +939,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -953,10 +953,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -966,10 +966,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -979,10 +979,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -992,10 +992,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -1005,10 +1005,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -1018,10 +1018,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -1047,10 +1047,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1200,10 +1200,10 @@
   "name": "Root Trace",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file name": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -1213,10 +1213,10 @@
       "name": "Create Query Pipeline",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Query",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1226,10 +1226,10 @@
           "name": "Get Container Properties",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Transport",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1239,10 +1239,10 @@
               "name": "Get Collection Cache",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Routing",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1255,10 +1255,10 @@
           "name": "Service Interop Query Plan",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Query",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1269,10 +1269,10 @@
           "name": "Get Partition Key Ranges",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Routing",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1285,10 +1285,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1298,10 +1298,10 @@
           "name": "Prefetching",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1312,10 +1312,10 @@
           "name": "[,05C1CFFFFFFFF8) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1325,10 +1325,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1338,10 +1338,10 @@
                   "name": "[,05C1CFFFFFFFF8) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1353,10 +1353,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1366,10 +1366,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1380,10 +1380,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1394,10 +1394,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1407,10 +1407,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -1420,10 +1420,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -1433,10 +1433,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -1446,10 +1446,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -1459,10 +1459,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -1488,10 +1488,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1510,10 +1510,10 @@
       "name": "POCO Materialization",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Poco",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1524,10 +1524,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1537,10 +1537,10 @@
           "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1550,10 +1550,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1563,10 +1563,10 @@
                   "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1578,10 +1578,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1591,10 +1591,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1605,10 +1605,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1619,10 +1619,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1632,10 +1632,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -1645,10 +1645,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -1658,10 +1658,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -1671,10 +1671,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -1684,10 +1684,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -1713,10 +1713,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1735,10 +1735,10 @@
       "name": "POCO Materialization",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Poco",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1749,10 +1749,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1762,10 +1762,10 @@
           "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1775,10 +1775,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1788,10 +1788,10 @@
                   "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1803,10 +1803,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1816,10 +1816,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1830,10 +1830,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1844,10 +1844,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1857,10 +1857,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -1870,10 +1870,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -1883,10 +1883,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -1896,10 +1896,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -1909,10 +1909,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -1938,10 +1938,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1960,10 +1960,10 @@
       "name": "POCO Materialization",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Poco",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1974,10 +1974,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1987,10 +1987,10 @@
           "name": "[05C1E7FFFFFFFA,FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2000,10 +2000,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2013,10 +2013,10 @@
                   "name": "[05C1E7FFFFFFFA,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2028,10 +2028,10 @@
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2041,10 +2041,10 @@
                           "name": "Get Collection Cache",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2055,10 +2055,10 @@
                           "name": "Try Get Overlapping Ranges",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Routing",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2069,10 +2069,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2082,10 +2082,10 @@
                               "name": "Send Async",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2095,10 +2095,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -2108,10 +2108,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -2121,10 +2121,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -2134,10 +2134,10 @@
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "Transport",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -2163,10 +2163,10 @@
                       "name": "Get Cosmos Element Response",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Json",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2185,10 +2185,10 @@
       "name": "POCO Materialization",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Poco",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2332,10 +2332,10 @@
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file name": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -2345,10 +2345,10 @@
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2358,10 +2358,10 @@
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Query",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2371,10 +2371,10 @@
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2384,10 +2384,10 @@
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Routing",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2400,10 +2400,10 @@
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Query",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2414,10 +2414,10 @@
               "name": "Get Partition Key Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Routing",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2430,10 +2430,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2443,10 +2443,10 @@
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2457,10 +2457,10 @@
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2470,10 +2470,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2483,10 +2483,10 @@
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2498,10 +2498,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2511,10 +2511,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2525,10 +2525,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2539,10 +2539,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2552,10 +2552,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -2565,10 +2565,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -2578,10 +2578,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -2591,10 +2591,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -2604,10 +2604,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -2633,10 +2633,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2657,10 +2657,10 @@
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2670,10 +2670,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2683,10 +2683,10 @@
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2696,10 +2696,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2709,10 +2709,10 @@
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2724,10 +2724,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2737,10 +2737,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2751,10 +2751,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2765,10 +2765,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2778,10 +2778,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -2791,10 +2791,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -2804,10 +2804,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -2817,10 +2817,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -2830,10 +2830,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -2859,10 +2859,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2883,10 +2883,10 @@
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2896,10 +2896,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2909,10 +2909,10 @@
               "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2922,10 +2922,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2935,10 +2935,10 @@
                       "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2950,10 +2950,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -2963,10 +2963,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2977,10 +2977,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -2991,10 +2991,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3004,10 +3004,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -3017,10 +3017,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -3030,10 +3030,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -3043,10 +3043,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -3056,10 +3056,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -3085,10 +3085,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -3109,10 +3109,10 @@
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3122,10 +3122,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3135,10 +3135,10 @@
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3148,10 +3148,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -3161,10 +3161,10 @@
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -3176,10 +3176,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -3189,10 +3189,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3203,10 +3203,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3217,10 +3217,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3230,10 +3230,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -3243,10 +3243,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -3256,10 +3256,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -3269,10 +3269,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -3282,10 +3282,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -3311,10 +3311,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -3472,10 +3472,10 @@
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file name": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -3485,10 +3485,10 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3498,10 +3498,10 @@
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Query",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3511,10 +3511,10 @@
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3524,10 +3524,10 @@
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Routing",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -3540,10 +3540,10 @@
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Query",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3554,10 +3554,10 @@
               "name": "Get Partition Key Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Routing",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3570,10 +3570,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3583,10 +3583,10 @@
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3597,10 +3597,10 @@
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3610,10 +3610,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -3623,10 +3623,10 @@
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -3638,10 +3638,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -3651,10 +3651,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3665,10 +3665,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3679,10 +3679,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3692,10 +3692,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -3705,10 +3705,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -3718,10 +3718,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -3731,10 +3731,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -3744,10 +3744,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -3773,10 +3773,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -3795,10 +3795,10 @@
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Poco",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3811,10 +3811,10 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3824,10 +3824,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3837,10 +3837,10 @@
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3850,10 +3850,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -3863,10 +3863,10 @@
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -3878,10 +3878,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -3891,10 +3891,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3905,10 +3905,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3919,10 +3919,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -3932,10 +3932,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -3945,10 +3945,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -3958,10 +3958,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -3971,10 +3971,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -3984,10 +3984,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -4013,10 +4013,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -4035,10 +4035,10 @@
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Poco",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -4051,10 +4051,10 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -4064,10 +4064,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -4077,10 +4077,10 @@
               "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -4090,10 +4090,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -4103,10 +4103,10 @@
                       "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -4118,10 +4118,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -4131,10 +4131,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -4145,10 +4145,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -4159,10 +4159,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -4172,10 +4172,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -4185,10 +4185,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -4198,10 +4198,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -4211,10 +4211,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -4224,10 +4224,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -4253,10 +4253,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -4275,10 +4275,10 @@
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Poco",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -4291,10 +4291,10 @@
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file name": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -4304,10 +4304,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -4317,10 +4317,10 @@
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file name": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -4330,10 +4330,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file name": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -4343,10 +4343,10 @@
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file name": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -4358,10 +4358,10 @@
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -4371,10 +4371,10 @@
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -4385,10 +4385,10 @@
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "Routing",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -4399,10 +4399,10 @@
                               "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "component": "RequestHandler",
-                              "caller information": {
-                                "member name": "MemberName",
-                                "file name": "FilePath",
-                                "line number": 42
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
@@ -4412,10 +4412,10 @@
                                   "name": "Send Async",
                                   "id": "00000000-0000-0000-0000-000000000000",
                                   "component": "RequestHandler",
-                                  "caller information": {
-                                    "member name": "MemberName",
-                                    "file name": "FilePath",
-                                    "line number": 42
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
                                   },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
@@ -4425,10 +4425,10 @@
                                       "name": "Send Async",
                                       "id": "00000000-0000-0000-0000-000000000000",
                                       "component": "RequestHandler",
-                                      "caller information": {
-                                        "member name": "MemberName",
-                                        "file name": "FilePath",
-                                        "line number": 42
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
                                       },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
@@ -4438,10 +4438,10 @@
                                           "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
                                           "component": "RequestHandler",
-                                          "caller information": {
-                                            "member name": "MemberName",
-                                            "file name": "FilePath",
-                                            "line number": 42
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
@@ -4451,10 +4451,10 @@
                                               "name": "Send Async",
                                               "id": "00000000-0000-0000-0000-000000000000",
                                               "component": "RequestHandler",
-                                              "caller information": {
-                                                "member name": "MemberName",
-                                                "file name": "FilePath",
-                                                "line number": 42
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
                                               },
                                               "start time": "12:00:00:000",
                                               "duration in milliseconds": 0,
@@ -4464,10 +4464,10 @@
                                                   "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                                   "id": "00000000-0000-0000-0000-000000000000",
                                                   "component": "Transport",
-                                                  "caller information": {
-                                                    "member name": "MemberName",
-                                                    "file name": "FilePath",
-                                                    "line number": 42
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
                                                   },
                                                   "start time": "12:00:00:000",
                                                   "duration in milliseconds": 0,
@@ -4493,10 +4493,10 @@
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Json",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file name": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -4515,10 +4515,10 @@
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Poco",
-          "caller information": {
-            "member name": "MemberName",
-            "file name": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
