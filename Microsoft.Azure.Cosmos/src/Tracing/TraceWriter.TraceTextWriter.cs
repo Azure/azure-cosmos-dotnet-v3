@@ -321,12 +321,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine($"Activity ID: {pointOperationStatisticsTraceDatum.ActivityId}");
+                    stringBuilder.AppendLine($"Activity ID: {pointOperationStatisticsTraceDatum.ActivityId ?? "<null>"}");
                     stringBuilder.AppendLine($"Status Code: {pointOperationStatisticsTraceDatum.StatusCode}/{pointOperationStatisticsTraceDatum.SubStatusCode}");
                     stringBuilder.AppendLine($"Response Time: {pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture)}");
                     stringBuilder.AppendLine($"Request Charge: {pointOperationStatisticsTraceDatum.RequestCharge}");
-                    stringBuilder.AppendLine($"Request URI: {pointOperationStatisticsTraceDatum.RequestUri}");
-                    stringBuilder.AppendLine($"Session Tokens: {pointOperationStatisticsTraceDatum.RequestSessionToken} / {pointOperationStatisticsTraceDatum.ResponseSessionToken}");
+                    stringBuilder.AppendLine($"Request URI: {pointOperationStatisticsTraceDatum.RequestUri ?? "<null>"}");
+                    stringBuilder.AppendLine($"Session Tokens: {pointOperationStatisticsTraceDatum.RequestSessionToken ?? "<null>"} / {pointOperationStatisticsTraceDatum.ResponseSessionToken ?? "<null>"}");
                     if (pointOperationStatisticsTraceDatum.ErrorMessage != null)
                     {
                         stringBuilder.AppendLine($"Error Message: {pointOperationStatisticsTraceDatum.ErrorMessage}");
@@ -348,6 +348,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     Dictionary<Uri, int> uriAndCounts = new Dictionary<Uri, int>();
                     foreach (Uri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
+                        if (uri == null)
+                        {
+                            continue;
+                        }
+
                         if (!uriAndCounts.TryGetValue(uri, out int count))
                         {
                             count = 0;
@@ -358,19 +363,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     foreach (KeyValuePair<Uri, int> uriAndCount in uriAndCounts)
                     {
-                        stringBuilder.AppendLine($"{space}{uriAndCount.Key}: {uriAndCount.Value}");
+                        stringBuilder.AppendLine($"{space}{uriAndCount.Key?.ToString() ?? "<null>"}: {uriAndCount.Value}");
                     }
 
                     stringBuilder.AppendLine("Failed to Contact Replicas");
                     foreach (Uri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
                     {
-                        stringBuilder.AppendLine($"{space}{failedToContactReplica}");
+                        stringBuilder.AppendLine($"{space}{failedToContactReplica?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
                     foreach (Uri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
-                        stringBuilder.AppendLine($"{space}{regionContacted}");
+                        stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Address Resolution Statistics");
@@ -408,8 +413,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         if (stat.StoreResult != null)
                         {
                             stringBuilder.AppendLine($"{space}Store Result");
-                            stringBuilder.AppendLine($"{space}{space}Activity Id: {stat.StoreResult.ActivityId}");
-                            stringBuilder.AppendLine($"{space}{space}Store Physical Address: {stat.StoreResult.StorePhysicalAddress}");
+                            stringBuilder.AppendLine($"{space}{space}Activity Id: {stat.StoreResult.ActivityId ?? "<null>"}");
+                            stringBuilder.AppendLine($"{space}{space}Store Physical Address: {stat.StoreResult.StorePhysicalAddress?.ToString() ?? "<null>"}");
                             stringBuilder.AppendLine($"{space}{space}Status Code: {stat.StoreResult.StatusCode}/{stat.StoreResult.SubStatusCode}");
                             stringBuilder.AppendLine($"{space}{space}Is Valid: {stat.StoreResult.IsValid}");
                             stringBuilder.AppendLine($"{space}{space}LSN Info");
@@ -418,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}{space}Global LSN: {stat.StoreResult.GlobalCommittedLSN}");
                             stringBuilder.AppendLine($"{space}{space}{space}Quorum Acked LSN: {stat.StoreResult.QuorumAckedLSN}");
                             stringBuilder.AppendLine($"{space}{space}{space}Using LSN: {stat.StoreResult.UsingLocalLSN}");
-                            stringBuilder.AppendLine($"{space}{space}Session Token: {stat.StoreResult.SessionToken.ConvertToString()}");
+                            stringBuilder.AppendLine($"{space}{space}Session Token: {stat.StoreResult.SessionToken?.ConvertToString() ?? "<null>"}");
                             stringBuilder.AppendLine($"{space}{space}Quorum Info");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
