@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
         private readonly string continuationToken;
-        private readonly CosmosSerializationOptions serializationOptions;
+        private readonly CosmosLinqSerializerOptions linqSerializationOptions;
 
         public CosmosLinqQuery(
            ContainerInternal container,
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution,
-           CosmosSerializationOptions serializationOptions = null)
+           CosmosLinqSerializerOptions linqSerializationOptions = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.Expression = expression ?? Expression.Constant(this);
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
             this.correlatedActivityId = Guid.NewGuid();
-            this.serializationOptions = serializationOptions;
+            this.linqSerializationOptions = linqSerializationOptions;
 
             this.queryProvider = new CosmosLinqQueryProvider(
               container,
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Linq
               cosmosQueryRequestOptions,
               this.allowSynchronousQueryExecution,
               this.queryClient.OnExecuteScalarQueryCallback,
-              this.serializationOptions);
+              this.linqSerializationOptions);
         }
 
         public CosmosLinqQuery(
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Linq
           string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution,
-          CosmosSerializationOptions serializationOptions = null)
+          CosmosLinqSerializerOptions linqSerializerOptions = null)
             : this(
               container,
               responseFactory,
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Linq
               cosmosQueryRequestOptions,
               null,
               allowSynchronousQueryExecution,
-              serializationOptions)
+              linqSerializerOptions)
         {
         }
 
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public override string ToString()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
             if (querySpec != null)
             {
                 return JsonConvert.SerializeObject(querySpec);
@@ -144,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions, parameters);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
             return QueryDefinition.CreateFromQuerySpec(querySpec);
         }
 
@@ -201,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
 
             return this.container.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: querySpec,
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private FeedIterator<T> CreateFeedIterator(bool isContinuationExpected)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
 
             FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExpected);
             return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(

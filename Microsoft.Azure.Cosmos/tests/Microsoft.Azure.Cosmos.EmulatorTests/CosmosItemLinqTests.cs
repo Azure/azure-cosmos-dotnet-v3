@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using System;
@@ -424,12 +425,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
             // NamingPolicy - CamelCase set
-            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, CosmosPropertyNamingPolicy.CamelCase);
+            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            };
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
             IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 2);
 
             // Override camelcase client with default
-            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true, null, null, CosmosPropertyNamingPolicy.Default);
+            linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
+            };
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 0);
 

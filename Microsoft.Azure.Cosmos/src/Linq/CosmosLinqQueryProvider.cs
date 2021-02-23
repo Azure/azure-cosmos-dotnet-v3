@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq.Expressions;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary> 
     /// This class serve as LINQ query provider implementing IQueryProvider.
@@ -23,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly bool allowSynchronousQueryExecution;
         private readonly Action<IQueryable> onExecuteScalarQueryCallback;
         private readonly string continuationToken;
-        private readonly CosmosSerializationOptions serializationOptions;
+        private readonly CosmosLinqSerializerOptions linqSerializerOptions;
 
         public CosmosLinqQueryProvider(
            ContainerInternal container,
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Linq
            QueryRequestOptions cosmosQueryRequestOptions,
            bool allowSynchronousQueryExecution,
            Action<IQueryable> onExecuteScalarQueryCallback = null,
-           CosmosSerializationOptions serializationOptions = null)
+           CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             this.container = container;
             this.responseFactory = responseFactory;
@@ -42,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.cosmosQueryRequestOptions = cosmosQueryRequestOptions;
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
             this.onExecuteScalarQueryCallback = onExecuteScalarQueryCallback;
-            this.serializationOptions = serializationOptions;
+            this.linqSerializerOptions = linqSerializerOptions;
         }
 
         public IQueryable<TElement> CreateQuery<TElement>(Expression expression)
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution,
-                this.serializationOptions);
+                this.linqSerializerOptions);
         }
 
         public IQueryable CreateQuery(Expression expression)
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution,
-                this.serializationOptions);
+                this.linqSerializerOptions);
         }
 
         public TResult Execute<TResult>(Expression expression)
@@ -86,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution,
-                this.serializationOptions);
+                this.linqSerializerOptions);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
             return cosmosLINQQuery.ToList().FirstOrDefault();
         }
@@ -103,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.continuationToken,
                 this.cosmosQueryRequestOptions,
                 this.allowSynchronousQueryExecution,
-                this.serializationOptions);
+                this.linqSerializerOptions);
             this.onExecuteScalarQueryCallback?.Invoke(cosmosLINQQuery);
             return cosmosLINQQuery.ToList().FirstOrDefault();
         }
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 this.cosmosQueryRequestOptions,
                 expression,
                 this.allowSynchronousQueryExecution,
-                this.serializationOptions);
+                this.linqSerializerOptions);
             return TaskHelper.RunInlineIfNeededAsync(() => cosmosLINQQuery.AggregateResultAsync(cancellationToken));
         }
     }
