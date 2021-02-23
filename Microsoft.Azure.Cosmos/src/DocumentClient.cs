@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -1354,6 +1355,17 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return builder.ToString();
+        }
+
+        internal void RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+        {
+            clientConfigurationTraceDatum.ConnectionConfig["rntbd"] = string.Format(CultureInfo.InvariantCulture,
+                                                      "(cto: {0}, icto: {1}, mrpc: {2}, mcpe: {3}, ed: {4})",
+                                                      this.openConnectionTimeoutInSeconds,
+                                                      this.idleConnectionTimeoutInSeconds,
+                                                      this.maxRequestsPerRntbdChannel,
+                                                      this.maxRntbdChannels,
+                                                      this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery);
         }
 
         private void ThrowIfDisposed()

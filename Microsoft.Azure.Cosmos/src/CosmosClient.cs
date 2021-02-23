@@ -98,6 +98,9 @@ namespace Microsoft.Azure.Cosmos
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
 
+        private static readonly object clientCountLock = new object();
+        internal static int numberOfClients = 0;
+
         static CosmosClient()
         {
             #if PREVIEW
@@ -216,6 +219,11 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
+
+            lock (clientCountLock)
+            {
+                numberOfClients++;
+            }
         }
 
         /// <summary>
@@ -260,6 +268,11 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
+
+            lock (clientCountLock)
+            {
+                numberOfClients++;
+            }
         }
 
         /// <summary>

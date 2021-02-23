@@ -292,6 +292,32 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteObjectEnd();
             }
 
+            public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+            {
+                this.jsonWriter.WriteObjectStart();
+                this.jsonWriter.WriteFieldName("Id");
+                this.jsonWriter.WriteStringValue("ClientConfiguration");
+
+                this.jsonWriter.WriteFieldName("Client Created Time Utc");
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
+
+                this.jsonWriter.WriteFieldName("NumberOfClients");
+                this.jsonWriter.WriteInt64Value(clientConfigurationTraceDatum.NumberOfClients);
+
+                this.jsonWriter.WriteFieldName("ConnectionConfig");
+                this.jsonWriter.WriteObjectStart();
+                foreach (string connectionType in clientConfigurationTraceDatum.ConnectionConfig.Keys)
+                {
+                    this.jsonWriter.WriteFieldName(connectionType);
+                    this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ConnectionConfig[connectionType]);
+                }
+                this.jsonWriter.WriteObjectEnd();
+
+                this.jsonWriter.WriteFieldName("ConsistencyConfig");
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ConsistencyConfig);
+                this.jsonWriter.WriteObjectEnd();
+            }
+
             private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);

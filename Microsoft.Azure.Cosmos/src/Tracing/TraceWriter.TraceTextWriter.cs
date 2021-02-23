@@ -449,6 +449,23 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.toStringValue = stringBuilder.ToString();
                 }
 
+                public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine("Client Configuration");
+                    stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Number Of Clients: {clientConfigurationTraceDatum.NumberOfClients}");
+                    stringBuilder.AppendLine("Connection Config:");
+                    foreach (string connectionType in clientConfigurationTraceDatum.ConnectionConfig.Keys)
+                    {
+                        stringBuilder.AppendLine($"{space}{connectionType}: {clientConfigurationTraceDatum.ConnectionConfig[connectionType]}");
+                    }
+
+                    stringBuilder.AppendLine($"Consistency Config: {clientConfigurationTraceDatum.ConsistencyConfig}");
+
+                    this.toStringValue = stringBuilder.ToString();
+                }
+
                 public override string ToString()
                 {
                     return this.toStringValue;
