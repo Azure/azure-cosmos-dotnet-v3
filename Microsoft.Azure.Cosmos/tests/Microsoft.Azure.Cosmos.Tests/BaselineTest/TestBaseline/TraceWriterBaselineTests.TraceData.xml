@@ -3,22 +3,22 @@
     <Input>
       <Description>Point Operation Statistics</Description>
       <Setup><![CDATA[
-    TraceForBaselineTesting rootTrace;
-    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
-    {
-        PointOperationStatisticsTraceDatum datum = new PointOperationStatisticsTraceDatum(
-            activityId: Guid.Empty.ToString(),
-            responseTimeUtc: new DateTime(2020, 1, 2, 3, 4, 5, 6),
-            statusCode: System.Net.HttpStatusCode.OK,
-            subStatusCode: Documents.SubStatusCodes.WriteForbidden,
-            requestCharge: 4,
-            errorMessage: null,
-            method: HttpMethod.Post,
-            requestUri: "http://localhost.com",
-            requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
-            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
-        rootTrace.AddDatum("Point Operation Statistics", datum);
-    }
+        TraceForBaselineTesting rootTrace;
+        using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+        {
+            PointOperationStatisticsTraceDatum datum = new PointOperationStatisticsTraceDatum(
+                activityId: Guid.Empty.ToString(),
+                responseTimeUtc: new DateTime(2020, 1, 2, 3, 4, 5, 6),
+                statusCode: System.Net.HttpStatusCode.OK,
+                subStatusCode: Documents.SubStatusCodes.WriteForbidden,
+                requestCharge: 4,
+                errorMessage: null,
+                method: HttpMethod.Post,
+                requestUri: "http://localhost.com",
+                requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
+                responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
+            rootTrace.AddDatum("Point Operation Statistics", datum);
+        }
 ]]></Setup>
     </Input>
     <Output>
@@ -28,7 +28,7 @@
             [Point Operation Statistics]
             Activity ID: 00000000-0000-0000-0000-000000000000
             Status Code: OK/WriteForbidden
-            Response Time: 2020-01-02T03:04:05.0060000
+            Response Time: 03:04:05:006
             Request Charge: 4
             Request URI: http://localhost.com
             Session Tokens: RequestSessionToken / ResponseSessionToken
@@ -49,8 +49,68 @@
       "SubStatusCode": 3,
       "RequestCharge": 4,
       "RequestUri": "http://localhost.com",
+      "ErrorMessage": null,
       "RequestSessionToken": "RequestSessionToken",
       "ResponseSessionToken": "ResponseSessionToken"
+    }
+  },
+  "children": []
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Point Operation Statistics Default</Description>
+      <Setup><![CDATA[
+        TraceForBaselineTesting rootTrace;
+        using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+        {
+            PointOperationStatisticsTraceDatum datum = new PointOperationStatisticsTraceDatum(
+                activityId: default,
+                responseTimeUtc: default,
+                statusCode: default,
+                subStatusCode: default,
+                requestCharge: default,
+                errorMessage: default,
+                method: default,
+                requestUri: default,
+                requestSessionToken: default,
+                responseSessionToken: default);
+            rootTrace.AddDatum("Point Operation Statistics Default", datum);
+        }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        (
+            [Point Operation Statistics Default]
+            Activity ID: <null>
+            Status Code: 0/Unknown
+            Response Time: 12:00:00:000
+            Request Charge: 0
+            Request URI: <null>
+            Session Tokens: <null> / <null>
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {
+    "Point Operation Statistics Default": {
+      "Id": "PointOperationStatistics",
+      "ActivityId": null,
+      "ResponseTimeUtc": "0001-01-01T00:00:00",
+      "StatusCode": 0,
+      "SubStatusCode": 0,
+      "RequestCharge": 0,
+      "RequestUri": null,
+      "ErrorMessage": null,
+      "RequestSessionToken": null,
+      "ResponseSessionToken": null
     }
   },
   "children": []
@@ -126,58 +186,58 @@
     <Input>
       <Description>Client Side Request Stats</Description>
       <Setup><![CDATA[
-    TraceForBaselineTesting rootTrace;
-    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
-    {
-        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+        TraceForBaselineTesting rootTrace;
+        using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
 
-        Uri uri1 = new Uri("http://someUri1.com");
-        Uri uri2 = new Uri("http://someUri2.com");
+            Uri uri1 = new Uri("http://someUri1.com");
+            Uri uri2 = new Uri("http://someUri2.com");
 
-        datum.ContactedReplicas.Add(uri1);
-        datum.ContactedReplicas.Add(uri2);
+            datum.ContactedReplicas.Add(uri1);
+            datum.ContactedReplicas.Add(uri2);
 
-        ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
-            DateTime.MinValue,
-            DateTime.MaxValue,
-            "http://localhost.com");
-        datum.EndpointToAddressResolutionStatistics["asdf"] = mockStatistics;
-        datum.EndpointToAddressResolutionStatistics["asdf2"] = mockStatistics;
+            ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                "http://localhost.com");
+            datum.EndpointToAddressResolutionStatistics["asdf"] = mockStatistics;
+            datum.EndpointToAddressResolutionStatistics["asdf2"] = mockStatistics;
 
-        datum.FailedReplicas.Add(uri1);
-        datum.FailedReplicas.Add(uri2);
+            datum.FailedReplicas.Add(uri1);
+            datum.FailedReplicas.Add(uri2);
 
-        datum.RegionsContacted.Add(uri1);
-        datum.RegionsContacted.Add(uri2);
+            datum.RegionsContacted.Add(uri1);
+            datum.RegionsContacted.Add(uri2);
 
-        datum.RequestEndTimeUtc = DateTime.MaxValue;
+            datum.RequestEndTimeUtc = DateTime.MaxValue;
 
-        StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
-            DateTime.MinValue,
-            DateTime.MaxValue,
-            new Documents.StoreResult(
-                storeResponse: new StoreResponse(),
-                exception: null,
-                partitionKeyRangeId: 42.ToString(),
-                lsn: 1337,
-                quorumAckedLsn: 23,
-                requestCharge: 3.14,
-                currentReplicaSetSize: 4,
-                currentWriteQuorum: 3,
-                isValid: true,
-                storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
-                globalCommittedLSN: 1234,
-                numberOfReadRegions: 13,
-                itemLSN: 15,
-                sessionToken: new SimpleSessionToken(42),
-                usingLocalLSN: true,
-                activityId: Guid.Empty.ToString()),
-            ResourceType.Document,
-            OperationType.Query,
-            uri1);
-        datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
-        rootTrace.AddDatum("Client Side Request Stats", datum);
-    }
+            StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                new Documents.StoreResult(
+                    storeResponse: new StoreResponse(),
+                    exception: null,
+                    partitionKeyRangeId: 42.ToString(),
+                    lsn: 1337,
+                    quorumAckedLsn: 23,
+                    requestCharge: 3.14,
+                    currentReplicaSetSize: 4,
+                    currentWriteQuorum: 3,
+                    isValid: true,
+                    storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
+                    globalCommittedLSN: 1234,
+                    numberOfReadRegions: 13,
+                    itemLSN: 15,
+                    sessionToken: new SimpleSessionToken(42),
+                    usingLocalLSN: true,
+                    activityId: Guid.Empty.ToString()),
+                ResourceType.Document,
+                OperationType.Query,
+                uri1);
+            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+            rootTrace.AddDatum("Client Side Request Stats", datum);
+        }
 ]]></Setup>
     </Input>
     <Output>
@@ -185,8 +245,8 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats]
-            Start Time: 0001-01-01T00:00:00.0000000
-            End Time: 9999-12-31T23:59:59.9999999
+            Start Time: 12:00:00:000
+            End Time: 11:59:59:999
             Contacted Replicas
               http://someuri1.com/: 1
               http://someuri2.com/: 1
@@ -197,15 +257,15 @@
               http://someuri1.com/
               http://someuri2.com/
             Address Resolution Statistics
-            ┌──────────────────────┬──────────────────────┬────────────────────────────────────┐
-            │Start Time (utc)      │End Time (utc)        │Endpoint                            │
-            ├──────────────────────┼──────────────────────┼────────────────────────────────────┤
-            │  1/1/0001 12:00:00 AM│12/31/9999 11:59:59 PM│                http://localhost.com│
-            │  1/1/0001 12:00:00 AM│12/31/9999 11:59:59 PM│                http://localhost.com│
-            └──────────────────────┴──────────────────────┴────────────────────────────────────┘
+            ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
+            │Start Time (utc)│End Time (utc)│Endpoint                                          │
+            ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
+            │    12:00:00:000│  11:59:59:999│                              http://localhost.com│
+            │    12:00:00:000│  11:59:59:999│                              http://localhost.com│
+            └────────────────┴──────────────┴──────────────────────────────────────────────────┘
             Store Response Statistics
-              Start Time: 0001-01-01T00:00:00.0000000
-              End Time: 9999-12-31T23:59:59.9999999
+              Start Time: 12:00:00:000
+              End Time: 11:59:59:999
               Resource Type: Document
               Operation Type: Query
               Store Result
@@ -249,6 +309,163 @@
       "FailedReplicas": [
         "http://someuri1.com/",
         "http://someuri2.com/"
+      ],
+      "AddressResolutionStatistics": [
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "TargetEndpoint": "http://localhost.com"
+        },
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "TargetEndpoint": "http://localhost.com"
+        }
+      ],
+      "StoreResponseStatistics": [
+        {
+          "ResponseTimeUTC": "9999-12-31T23:59:59.9999999",
+          "ResourceType": "Document",
+          "OperationType": "Query",
+          "LocationEndpoint": "http://someuri1.com/",
+          "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null"
+        }
+      ]
+    }
+  },
+  "children": []
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Client Side Request Stats Default</Description>
+      <Setup><![CDATA[
+        TraceForBaselineTesting rootTrace;
+        using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            datum.ContactedReplicas.Add(default);
+
+            ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
+                default,
+                default,
+                targetEndpoint: "asdf");
+            datum.EndpointToAddressResolutionStatistics["asdf"] = default;
+            datum.EndpointToAddressResolutionStatistics["asdf2"] = default;
+
+            datum.FailedReplicas.Add(default);
+
+            datum.RegionsContacted.Add(default);
+
+            datum.RequestEndTimeUtc = default;
+
+            StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
+                requestStartTime: default,
+                requestResponseTime: default,
+                new Documents.StoreResult(
+                    storeResponse: new StoreResponse(),
+                    exception: default,
+                    partitionKeyRangeId: default,
+                    lsn: default,
+                    quorumAckedLsn: default,
+                    requestCharge: default,
+                    currentReplicaSetSize: default,
+                    currentWriteQuorum: default,
+                    isValid: default,
+                    storePhysicalAddress: default,
+                    globalCommittedLSN: default,
+                    numberOfReadRegions: default,
+                    itemLSN: default,
+                    sessionToken: default,
+                    usingLocalLSN: default,
+                    activityId: default),
+                resourceType: default,
+                operationType: default,
+                locationEndpoint: default); ;
+            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+            rootTrace.AddDatum("Client Side Request Stats Default", datum);
+        }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+        (
+            [Client Side Request Stats Default]
+            Start Time: 12:00:00:000
+            Contacted Replicas
+            Failed to Contact Replicas
+              <null>
+            Regions Contacted
+              <null>
+            Address Resolution Statistics
+            ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
+            │Start Time (utc)│End Time (utc)│Endpoint                                          │
+            ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
+            │    12:00:00:000│   NO END TIME│                                                  │
+            │    12:00:00:000│   NO END TIME│                                                  │
+            └────────────────┴──────────────┴──────────────────────────────────────────────────┘
+            Store Response Statistics
+            {space}Start Time Not Found
+              End Time: 12:00:00:000
+              Resource Type: Database
+              Operation Type: Create
+              Store Result
+                Activity Id: <null>
+                Store Physical Address: <null>
+                Status Code: 0/Unknown
+                Is Valid: False
+                LSN Info
+                  LSN: 0
+                  Item LSN: 0
+                  Global LSN: 0
+                  Quorum Acked LSN: 0
+                  Using LSN: False
+                Session Token: <null>
+                Quorum Info
+                  Current Replica Set Size: 0
+                  Current Write Quorum: 0
+                Is Client CPU Overloaded: False
+                Exception
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "component": "Unknown",
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Side Request Stats Default": {
+      "Id": "AggregatedClientSideRequestStatistics",
+      "ContactedReplicas": [],
+      "RegionsContacted": [
+        null
+      ],
+      "FailedReplicas": [
+        null
+      ],
+      "AddressResolutionStatistics": [
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "EndTime Never Set.",
+          "TargetEndpoint": null
+        },
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "EndTime Never Set.",
+          "TargetEndpoint": null
+        }
+      ],
+      "StoreResponseStatistics": [
+        {
+          "ResponseTimeUTC": "0001-01-01T00:00:00",
+          "ResourceType": "Database",
+          "OperationType": "Create",
+          "LocationEndpoint": null,
+          "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null"
+        }
       ]
     }
   },
