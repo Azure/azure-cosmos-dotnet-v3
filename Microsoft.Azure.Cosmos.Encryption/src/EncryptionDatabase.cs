@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.EncryptionCosmosClient = encryptionCosmosClient;
         }
 
-        internal EncryptionCosmosClient EncryptionCosmosClient { get; private set; }
+        internal EncryptionCosmosClient EncryptionCosmosClient { get; }
 
         public override string Id => this.database.Id;
 
@@ -49,15 +49,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ContainerResponse> containerResponse = this.database.CreateContainerAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 containerProperties,
                 throughputProperties,
                 requestOptions,
                 cancellationToken);
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
-                await containerResponse,
-                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
+                containerResponse,
+                new EncryptionContainer(containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -68,15 +68,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ContainerResponse> containerResponse = this.database.CreateContainerAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 containerProperties,
                 throughput,
                 requestOptions,
                 cancellationToken);
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
-                await containerResponse,
-                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
+                containerResponse,
+                new EncryptionContainer(containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ContainerResponse> containerResponse = this.database.CreateContainerAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                 id,
                 partitionKeyPath,
                 throughput,
@@ -96,8 +96,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
-                await containerResponse,
-                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
+                containerResponse,
+                new EncryptionContainer(containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -108,15 +108,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ContainerResponse> containerResponse = this.database.CreateContainerIfNotExistsAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerIfNotExistsAsync(
                 containerProperties,
                 throughputProperties,
                 requestOptions,
                 cancellationToken);
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
-                await containerResponse,
-                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
+                containerResponse,
+                new EncryptionContainer(containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -127,15 +127,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ContainerResponse> containerResponse = this.database.CreateContainerIfNotExistsAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerIfNotExistsAsync(
                 containerProperties,
                 throughput,
                 requestOptions,
                 cancellationToken);
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
-                await containerResponse,
-                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
+                containerResponse,
+                new EncryptionContainer(containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ContainerResponse> containerResponse = this.database.CreateContainerIfNotExistsAsync(
+            ContainerResponse containerResponse = await this.database.CreateContainerIfNotExistsAsync(
                 id,
                 partitionKeyPath,
                 throughput,
@@ -155,8 +155,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             EncryptionContainerResponse encryptionContainerResponse = new EncryptionContainerResponse(
-                await containerResponse,
-                new EncryptionContainer(await containerResponse, this.EncryptionCosmosClient));
+                containerResponse,
+                new EncryptionContainer(containerResponse, this.EncryptionCosmosClient));
 
             return encryptionContainerResponse;
         }

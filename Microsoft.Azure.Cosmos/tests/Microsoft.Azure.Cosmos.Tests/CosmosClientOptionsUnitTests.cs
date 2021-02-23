@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -50,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int maxTcpConnectionsPerEndpoint = 65535;
             Cosmos.PortReuseMode portReuseMode = Cosmos.PortReuseMode.PrivatePortPool;
             IWebProxy webProxy = new TestWebProxy();
+            Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -77,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(clientOptions.LimitToEndpoint);
             Assert.IsFalse(clientOptions.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(clientOptions.HttpClientFactory);
+            Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
@@ -91,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.EnableEndpointDiscovery);
             Assert.IsFalse(policy.EnableTcpConnectionEndpointRediscovery);
             Assert.IsNull(policy.HttpClientFactory);
+            Assert.AreNotEqual(Cosmos.ConsistencyLevel.Session, clientOptions.ConsistencyLevel);
 
             cosmosClientBuilder.WithApplicationRegion(region)
                 .WithConnectionModeGateway(maxConnections, webProxy)
@@ -100,7 +104,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithApiType(apiType)
                 .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                 .WithBulkExecution(true)
-                .WithSerializerOptions(cosmosSerializerOptions);
+                .WithSerializerOptions(cosmosSerializerOptions)
+                .WithConsistencyLevel(consistencyLevel);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -121,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
             Assert.IsTrue(object.ReferenceEquals(webProxy, clientOptions.WebProxy));
             Assert.IsTrue(clientOptions.AllowBulkExecution);
+            Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy();
@@ -133,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(policy.UseMultipleWriteLocations);
             Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, policy.RetryOptions.MaxRetryAttemptsOnThrottledRequests);
             Assert.AreEqual((int)maxRetryWaitTime.TotalSeconds, policy.RetryOptions.MaxRetryWaitTimeInSeconds);
+            Assert.AreEqual((Documents.ConsistencyLevel)consistencyLevel, clientOptions.GetDocumentsConsistencyLevel());
 
             IReadOnlyList<string> preferredLocations = new List<string>() { Regions.AustraliaCentral, Regions.AustraliaCentral2 };
             //Verify Direct Mode settings
@@ -168,6 +175,32 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(portReuseMode, policy.PortReuseMode);
             Assert.IsTrue(policy.EnableTcpConnectionEndpointRediscovery);
             CollectionAssert.AreEqual(preferredLocations.ToArray(), policy.PreferredLocations.ToArray());
+        }
+
+        [TestMethod]
+        public void VerifyConsisentencyLevels()
+        {
+            List<Cosmos.ConsistencyLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.ConsistencyLevel)).Cast<Cosmos.ConsistencyLevel>().ToList();
+            List<Documents.ConsistencyLevel> documentLevels = Enum.GetValues(typeof(Documents.ConsistencyLevel)).Cast<Documents.ConsistencyLevel>().ToList();
+            CollectionAssert.AreEqual(cosmosLevels, documentLevels, new EnumComparer(), "Document consistency level is different from cosmos consistency level");
+
+            foreach (Cosmos.ConsistencyLevel consistencyLevel in cosmosLevels)
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = consistencyLevel
+                };
+
+                Assert.AreEqual((int)consistencyLevel, (int)cosmosClientOptions.GetDocumentsConsistencyLevel());
+                Assert.AreEqual(consistencyLevel.ToString(), cosmosClientOptions.GetDocumentsConsistencyLevel().ToString());
+            }
+
+            CosmosClientOptions cosmosClientOptionsNull = new CosmosClientOptions()
+            {
+                ConsistencyLevel = null
+            };
+
+            Assert.IsNull(cosmosClientOptionsNull.GetDocumentsConsistencyLevel());
         }
 
         [TestMethod]
@@ -440,6 +473,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             public bool IsBypassed(Uri host)
             {
                 return false;
+            }
+        }
+
+        private class EnumComparer : IComparer
+        {
+            public int Compare(object x, object y)
+            {
+                if ((int)x == (int)y &&
+                    string.Equals(x.ToString(), y.ToString()))
+                {
+                    return 0;
+                }
+
+                return 1;
             }
         }
     }

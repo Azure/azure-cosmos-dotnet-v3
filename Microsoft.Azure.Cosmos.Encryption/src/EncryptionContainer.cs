@@ -24,6 +24,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal EncryptionCosmosClient EncryptionCosmosClient { get; }
 
+        private bool isEncryptionContainerCacheInitDone;
+
+        private static readonly SemaphoreSlim CacheInitSema = new SemaphoreSlim(1, 1);
+
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
         /// </summary>
@@ -42,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.CosmosSerializer = this.Database.Client.ClientOptions.Serializer;
+            this.isEncryptionContainerCacheInitDone = false;
         }
 
         public override string Id => this.Container.Id;
@@ -51,6 +56,32 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Scripts.Scripts Scripts => this.Container.Scripts;
 
         public override Database Database => this.Container.Database;
+
+        internal async Task<bool> InitEncryptionContainerCacheIfNotInitAsync(CancellationToken cancellationToken)
+        {
+            if (await CacheInitSema.WaitAsync(-1))
+            {
+                if (!this.isEncryptionContainerCacheInitDone)
+                {
+                    try
+                    {
+                        await this.InitContainerCacheAsync(cancellationToken);
+                        return this.isEncryptionContainerCacheInitDone = true;
+                    }
+                    finally
+                    {
+                        CacheInitSema.Release(1);
+                    }
+                }
+                else
+                {
+                    CacheInitSema.Release(1);
+                    return this.isEncryptionContainerCacheInitDone;
+                }
+            }
+
+            return this.isEncryptionContainerCacheInitDone;
+        }
 
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
@@ -658,22 +689,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator(
                 this.Container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
+                    changeFeedMode,
                     changeFeedRequestOptions),
                 this.EncryptionProcessor);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
+                    changeFeedMode,
                     changeFeedRequestOptions),
                 this.ResponseFactory);
         }

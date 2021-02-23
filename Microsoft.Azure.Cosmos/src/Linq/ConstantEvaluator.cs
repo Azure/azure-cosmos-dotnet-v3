@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             if (methodCallExpression != null)
             {
                 Type type = methodCallExpression.Method.DeclaringType;
-                if (type == typeof(Enumerable) || type == typeof(Queryable) || type == typeof(UserDefinedFunctionProvider))
+                if (type == typeof(Enumerable) || type == typeof(Queryable) || type == typeof(CosmosLinq))
                 {
                     return false;
                 }

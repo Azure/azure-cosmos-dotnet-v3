@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="name"> Query Paramerter Name. </param>
         /// <param name="value"> Query Paramerter Value.</param>
         /// <param name="path"> Encrypted Property Path. </param>
-        /// <typeparam name="T"> Type of item.</typeparam>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> QueryDefinition with encrypted parameters. </returns>
         /// <example>
@@ -42,10 +41,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// ]]>
         /// </code>
         /// </example>
-        public static async Task<QueryDefinition> AddParameterAsync<T>(
+        public static async Task<QueryDefinition> AddParameterAsync(
             this QueryDefinition queryDefinition,
             string name,
-            T value,
+            object value,
             string path,
             CancellationToken cancellationToken = default)
         {
@@ -76,8 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (queryDefinition is EncryptionQueryDefinition encryptionQueryDefinition)
             {
                 EncryptionContainer encryptionContainer = (EncryptionContainer)encryptionQueryDefinition.Container;
-                Stream valueStream = encryptionContainer.CosmosSerializer.ToStream<T>(value);
-                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
+                Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
 
                 // not really required, but will have things setup for subsequent queries or operations on this Container.
                 await encryptionContainer.EncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
@@ -100,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
+                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
                 (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
 
                 byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);

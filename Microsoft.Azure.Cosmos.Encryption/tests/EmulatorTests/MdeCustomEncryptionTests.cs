@@ -15,14 +15,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Encryption.EmulatorTests.LegacyEncryptionTests;
-    using DataEncryptionKey = Microsoft.Azure.Cosmos.Encryption.Custom.DataEncryptionKey;
     using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
+    using DataEncryptionKey = Custom.DataEncryptionKey;
 
     [TestClass]
     public class MdeCustomEncryptionTests
@@ -142,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 await MdeCustomEncryptionTests.CreateDekAsync(dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
-                Assert.Fail();
+                Assert.Fail("CreateDataEncryptionKeyAsync should not have succeeded. ");
             }
             catch (InvalidOperationException ex)
             {
@@ -166,6 +164,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testDoc,
                 new PartitionKey(testDoc.PK),
                 MdeCustomEncryptionTests.GetRequestOptions(MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
+                Assert.Fail("CreateItemAsync should not have succeeded. ");
             }
             catch(InvalidOperationException ex)
             {
@@ -176,20 +175,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionCreateItemUsingLegacyAlgoWithMdeDek()
         {
-            TestDoc testDoc = TestDoc.Create(null);
-
-            try
-            {
-                ItemResponse<TestDoc> createResponse = await MdeCustomEncryptionTests.encryptionContainer.CreateItemAsync(
-                testDoc,
-                new PartitionKey(testDoc.PK),
-                MdeCustomEncryptionTests.GetRequestOptions(MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
-                VerifyExpectedDocResponse(testDoc, createResponse);
-            }
-            catch (ArgumentException ex)
-            {
-                Assert.AreEqual(" Using 'AEAes256CbcHmacSha256Randomized' algorithm, With incompatible Data Encryption Key which is initialized with MdeAeadAes256CbcHmac256Randomized", ex.Message);
-            }
+            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.dekId);
         }
 
         [TestMethod]
@@ -237,6 +224,108 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
+        }
+
+        [TestMethod]
+        public async Task EncryptionRewrapLegacyDekToMdeWrap()
+        {
+            string dekId = "rewrapLegacyAlgoDektoMdeAlgoDek";
+            DataEncryptionKeyProperties dataEncryptionKeyProperties;
+
+            dataEncryptionKeyProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
+
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata1.Value + MdeCustomEncryptionTests.metadataUpdateSuffix,
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
+
+            // use it to create item with Legacy Algo
+            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            // validate key with new Algo
+            testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+                dekId,
+                MdeCustomEncryptionTests.metadata2,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+
+            dataEncryptionKeyProperties = MdeCustomEncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
+
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata2,
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
+
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
+            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dataEncryptionKeyProperties, readProperties);
+
+            // validate key
+            testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            // rewrap from Mde Algo to  Legacy algo should fail
+            dekId = "rewrapMdeAlgoDekToLegacyAlgoDek";
+
+            DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata1,
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            try
+            {
+                await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+                    dekId,
+                    MdeCustomEncryptionTests.metadata2,
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+
+                Assert.Fail("RewrapDataEncryptionKeyAsync should not have succeeded. ");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.AreEqual("Rewrap operation with EncryptionAlgorithm 'AEAes256CbcHmacSha256Randomized' is not supported on Data Encryption Keys which are configured with 'MdeAeadAes256CbcHmac256Randomized'. ", ex.Message);
+            }
+
+            // rewrap Mde to Mde with Option
+
+            // rewrap from Mde Algo to  Legacy algo should fail
+            dekId = "rewrapMdeAlgoDekToMdeAlgoDek";
+
+            dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata1,
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+               dekId,
+               MdeCustomEncryptionTests.metadata2,
+               CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+
+            dataEncryptionKeyProperties = MdeCustomEncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
+
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata2,
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
         }
 
         [TestMethod]
@@ -674,7 +763,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = MdeCustomEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
-               ChangeFeedStartFrom.Beginning());
+               ChangeFeedStartFrom.Beginning(),
+               ChangeFeedMode.Incremental);
             
             while (changeIterator.HasMoreResults)
             {
@@ -1275,7 +1365,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental);
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
@@ -1471,13 +1562,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Container container,
             string dekId,
             List<string> pathsToEncrypt,
-            string partitionKey = null)
+            string partitionKey = null,
+            bool legacyAlgo = false)
         {
             TestDoc testDoc = TestDoc.Create(partitionKey);
             ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                MdeCustomEncryptionTests.GetRequestOptions(dekId, pathsToEncrypt));
+                MdeCustomEncryptionTests.GetRequestOptions(dekId, pathsToEncrypt, legacyAlgo: legacyAlgo));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
             return createResponse;

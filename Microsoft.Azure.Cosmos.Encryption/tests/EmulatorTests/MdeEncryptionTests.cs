@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption;
     using Microsoft.Data.Encryption.Cryptography;
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_ArrayFormat",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_NestedObjectFormatL1",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_IntArray",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_IntFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -96,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_DecimalFormat",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
                 new ClientEncryptionIncludedPath()
@@ -104,7 +105,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Path = "/Sensitive_DateFormat",
                     ClientEncryptionKeyId = "key1",
                     EncryptionType = CosmosEncryptionType.Deterministic,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_BoolFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_FloatFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+                
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ArrayMultiTypes",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+               
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntMultiDimArray",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
             };
 
@@ -122,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             ClientEncryptionKeyResponse clientEncrytionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                    cekId,
-                   CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
                    encryptionKeyWrapMetadata);
 
             Assert.AreEqual(HttpStatusCode.Created, clientEncrytionKeyResponse.StatusCode);
@@ -307,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
-                       CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                       DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
                        metadata1);
                 Assert.Fail("CreateClientEncryptionKeyAsync should have failed due to restrictions");
             }
@@ -338,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/",
                 ClientEncryptionKeyId = "unknownKey",
                 EncryptionType = Encryption.CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>  { unknownKeyConfigured };
@@ -369,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/id",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = "unsupported",
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             try
@@ -432,6 +465,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                          .WithParameter("@thePK", expectedDoc.PK),
                 expectedDoc: expectedDoc);
 
+            expectedDoc.Sensitive_IntMultiDimArray = null;
+            expectedDoc.Sensitive_ArrayMultiTypes = null;
             expectedDoc.Sensitive_NestedObjectFormatL1 = null;
             expectedDoc.Sensitive_ArrayFormat = null;
             expectedDoc.Sensitive_DecimalFormat = 0;
@@ -453,6 +488,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
+            // string/int
             QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
 
@@ -472,10 +508,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 queryDefinition:withEncryptedParameter,
                 expectedDoc: expectedDoc);
 
+            // bool and float type
 
-            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
+                    "SELECT * FROM c where c.Sensitive_BoolFormat = @Sensitive_BoolFormat AND c.Sensitive_FloatFormat = @Sensitive_FloatFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_BoolFormat",
+                    testDoc1.Sensitive_BoolFormat,
+                    "/Sensitive_BoolFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_FloatFormat",
+                    testDoc1.Sensitive_FloatFormat,
+                    "/Sensitive_FloatFormat");
+
+            expectedDoc = new TestDoc(testDoc1);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                MdeEncryptionTests.encryptionContainer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
 
             // with encrypted and non encrypted properties
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            
             withEncryptedParameter =
                     MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where c.NonSensitive = @NonSensitive AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
@@ -674,47 +730,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionRestrictedProperties()
         {
+            // restricted path id
             ClientEncryptionIncludedPath restrictedPathId = new ClientEncryptionIncludedPath()
             {
                 Path = "/id",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { restrictedPathId };
-            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);           
-
-            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
-
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
-
             try
             {
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                Assert.Fail("Expected item creation with id specified to be encrypted to fail.");
+                ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);
             }
-            catch (InvalidOperationException ex)
+            catch (ArgumentException ex)
             {
-                Assert.AreEqual("Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath includes an invalid path: '/id'. ", ex.Message);
-            }
-
+                Assert.AreEqual("Invalid path '/id'.", ex.Message);
+            }          
+            
+            // restricted path PK
             ClientEncryptionIncludedPath restrictedPathPk = new ClientEncryptionIncludedPath()
             {
                 Path = "/PK",
                 ClientEncryptionKeyId = "key2",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
-
 
             Collection<ClientEncryptionIncludedPath> pathsRestrictedPathPk = new Collection<ClientEncryptionIncludedPath> { restrictedPathPk };
             ClientEncryptionPolicy clientEncryptionPolicyPk = new ClientEncryptionPolicy(pathsRestrictedPathPk);
 
-            containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyPk };
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyPk };
 
-            encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainer.InitializeEncryptionAsync();
 
             try
@@ -726,12 +775,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
             }
 
+            // duplicate paths in policy.
             ClientEncryptionIncludedPath pathdup1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_StringFormat",
                 ClientEncryptionKeyId = "key2",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
             ClientEncryptionIncludedPath pathdup2 = new ClientEncryptionIncludedPath()
@@ -739,7 +789,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Path = "/Sensitive_StringFormat",
                 ClientEncryptionKeyId = "key1",
                 EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
 
@@ -748,12 +798,64 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 ClientEncryptionPolicy clientEncryptionPolicyWithDupPaths = new ClientEncryptionPolicy(pathsWithDups);
-                containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithDupPaths };
-                encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("Client Encryption Policy Creation Should have Failed.");
             }
             catch (ArgumentException)
             {
             }
+        }
+
+        [TestMethod]
+        public async Task VerifyKekRevokeHandling()
+        {
+            // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
+            // The Dek should be rewrapped if the KEK is revoked.
+            // When an access to KeyVault fails, the Dek is fetched from the backend(force refresh to update the stale DEK) and cache is updated.
+            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("revokedKek", "revokedKek-metadata");
+            
+            await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
+               "keywithRevokedKek",
+               revokedKekmetadata);
+
+            ClientEncryptionIncludedPath pathwithRevokedKek = new ClientEncryptionIncludedPath()
+            {
+                Path = "/Sensitive_NestedObjectFormatL1",
+                ClientEncryptionKeyId = "keywithRevokedKek",
+                EncryptionType = CosmosEncryptionType.Deterministic,
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { pathwithRevokedKek };
+
+            ClientEncryptionPolicy clientEncryptionPolicyWithRevokedKek = new ClientEncryptionPolicy(paths);       
+
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
+
+            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+
+            // make sure you cache it in.
+            await encryptionContainer.InitializeEncryptionAsync();
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = MdeEncryptionTests.testEncryptionKeyStoreProvider;
+            testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+            // try creating it and it should fail as it has been revoked.
+            try
+            {
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+                Assert.Fail("Create Item should have failed.");
+            }
+            catch(RequestFailedException)
+            {               
+            }
+
+            // for unwrap to succeed 
+            testEncryptionKeyStoreProvider.RevokeAccessSet = false;
+            // lets rewrap it.
+            await database.RewrapClientEncryptionKeyAsync("keywithRevokedKek", MdeEncryptionTests.metadata2);
+
+            testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+            // Should fail but will try to fetch the lastest from the Backend and updates the cache.
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            testEncryptionKeyStoreProvider.RevokeAccessSet = false;
         }
 
         [TestMethod]
@@ -901,6 +1003,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
             await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
+
+            // Query on container with Custom Serializer.
+            QueryDefinition withEncryptedParameter = encryptionContainerWithCustomSerializer.CreateQueryDefinition(
+                   "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_StringFormat",
+                    doc1ToReplace.Sensitive_StringFormat,
+                    "/Sensitive_StringFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_IntFormat",
+                    doc1ToReplace.Sensitive_IntFormat,
+                    "/Sensitive_IntFormat");
+
+            TestDoc expectedDoc = new TestDoc(doc1ToReplaceCreateResponse);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                encryptionContainerWithCustomSerializer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
         }
 
         [TestMethod]
@@ -910,7 +1032,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
-            Assert.AreEqual(3, unwrapcount);
+            Assert.AreEqual(2, unwrapcount);
         }
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             Container container,
@@ -999,7 +1121,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental);
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
@@ -1166,6 +1289,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.AreEqual(expectedDoc.Sensitive_IntArray, verifyDoc.Sensitive_IntArray);
             }
 
+            if (expectedDoc.Sensitive_IntMultiDimArray != null)
+            {
+                for (int i = 0; i < expectedDoc.Sensitive_IntMultiDimArray.GetLength(0); i++)
+                {
+                    for (int j = 0; j < expectedDoc.Sensitive_IntMultiDimArray.GetLength(1); j++)
+                    {
+                        Assert.AreEqual(expectedDoc.Sensitive_IntMultiDimArray[i, j], verifyDoc.Sensitive_IntMultiDimArray[i, j]);
+                    }
+                }
+            }
+
+            if (expectedDoc.Sensitive_ArrayMultiTypes != null)
+            {
+                for (int i = 0; i < expectedDoc.Sensitive_ArrayMultiTypes.GetLength(0); i++)
+                {
+                    for (int j = 0; j < expectedDoc.Sensitive_ArrayMultiTypes.GetLength(1); j++)
+                    {
+                        Assert.AreEqual(
+                        expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0,
+                        verifyDoc.Sensitive_ArrayMultiTypes[i, j].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0);
+                        Assert.AreEqual(
+                            expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0,
+                            verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0);
+
+                        for (int l = 0; l < expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType.Length; l++)
+                        {
+                            Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[l],
+                                verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[l]);
+                        }
+
+                        Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_ArrayMultiTypeDecimalFormat,
+                            verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_ArrayMultiTypeDecimalFormat);
+
+                        for (int k = 0; k < expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_IntArrayMultiType.Length; k++)
+                        {
+                            Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[k],
+                                verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[k]);
+                        }
+                    }
+                }
+            }
+
             if (expectedDoc.Sensitive_NestedObjectFormatL1 != null)
             {
                 Assert.AreEqual(expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_IntFormatL1, verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_IntFormatL1);
@@ -1242,7 +1407,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public int[] Sensitive_IntArray { get; set; }
 
+            public int[,] Sensitive_IntMultiDimArray { get; set; }
+
             public Sensitive_ArrayData[] Sensitive_ArrayFormat { get; set; }
+
+            public Sensitive_ArrayMultiType[,] Sensitive_ArrayMultiTypes { get; set; }
 
             public Sensitive_NestedObjectL1 Sensitive_NestedObjectFormatL1 { get; set; }
 
@@ -1254,6 +1423,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 public int Sensitive_ArrayIntFormat { get; set; }
                 public decimal Sensitive_ArrayDecimalFormat { get; set; }
+            }
+
+            public class Sensitive_ArrayMultiType
+            {
+                public Sensitive_NestedObjectL0 Sensitive_NestedObjectFormatL0 { get; set; }
+                public string[] Sensitive_StringArrayMultiType { get; set; }
+                public decimal Sensitive_ArrayMultiTypeDecimalFormat { get; set; }
+                public int[] Sensitive_IntArrayMultiType { get; set; }                
             }
 
             public class Sensitive_ArrayDataWithObject
@@ -1271,11 +1448,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public class Sensitive_NestedObjectL1
             {
-                public int[] Sensitive_IntArrayL1 { get; set; }
-                public int Sensitive_IntFormatL1 { get; set; }
-                public decimal Sensitive_DecimalFormatL1 { get; set; }
-                public Sensitive_ArrayData[] Sensitive_ArrayFormatL1 { get; set; }
                 public Sensitive_NestedObjectL2 Sensitive_NestedObjectFormatL2 { get; set; }
+                public int Sensitive_IntFormatL1 { get; set; }
+                public int[] Sensitive_IntArrayL1 { get; set; }                
+                public decimal Sensitive_DecimalFormatL1 { get; set; }
+                public Sensitive_ArrayData[] Sensitive_ArrayFormatL1 { get; set; }                
             }
 
             public class Sensitive_NestedObjectL2
@@ -1308,6 +1485,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 this.Sensitive_ArrayFormat = other.Sensitive_ArrayFormat;
                 this.Sensitive_IntArray = other.Sensitive_IntArray;
                 this.Sensitive_NestedObjectFormatL1 = other.Sensitive_NestedObjectFormatL1;
+                this.Sensitive_ArrayMultiTypes = other.Sensitive_ArrayMultiTypes;
             }
 
             public override bool Equals(object obj)
@@ -1324,7 +1502,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.Sensitive_BoolFormat == doc.Sensitive_BoolFormat
                        && this.Sensitive_FloatFormat == doc.Sensitive_FloatFormat
                        && this.Sensitive_IntArray == doc.Sensitive_IntArray
-                       && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1;
+                       && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1
+                       && this.Sensitive_ArrayMultiTypes != doc.Sensitive_ArrayMultiTypes;
             }
 
             public bool EqualsExceptEncryptedProperty(object obj)
@@ -1349,6 +1528,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 hashCode = (hashCode * -1521134295) + EqualityComparer<bool>.Default.GetHashCode(this.Sensitive_BoolFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<float>.Default.GetHashCode(this.Sensitive_FloatFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Object>.Default.GetHashCode(this.Sensitive_NestedObjectFormatL1);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<Object>.Default.GetHashCode(this.Sensitive_ArrayMultiTypes);
                 return hashCode;
             }
 
@@ -1362,7 +1542,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_StringFormat = Guid.NewGuid().ToString(),
                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
                     Sensitive_DecimalFormat = 472.3108m,
-                    Sensitive_IntArray = new int[1] { 999 },
+                    Sensitive_IntArray = new int[2] { 999, 1000 },
+                    Sensitive_IntMultiDimArray = new [,] { { 1,2},{ 2,3}, { 4,5} },
                     Sensitive_IntFormat = 1965,
                     Sensitive_BoolFormat = true,
                     Sensitive_FloatFormat = 8923.124f,
@@ -1372,6 +1553,57 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                         {
                             Sensitive_ArrayIntFormat = 1111,
                             Sensitive_ArrayDecimalFormat = 1111.11m
+                        }
+                    },
+                    Sensitive_ArrayMultiTypes = new Sensitive_ArrayMultiType[,]
+                    {
+                        {
+                        new Sensitive_ArrayMultiType()
+                            {
+                                Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                                {
+                                    Sensitive_IntFormatL0 = 888,
+                                    Sensitive_DecimalFormatL0 = 888.1m,
+                                },
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata1a", "verysensitivedata1a"},
+                                Sensitive_ArrayMultiTypeDecimalFormat = 10.2m,
+                                Sensitive_IntArrayMultiType = new int[2] { 999, 1000 }
+                            },
+                         new Sensitive_ArrayMultiType()
+                            {
+                                Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                                {
+                                    Sensitive_IntFormatL0 = 888,
+                                    Sensitive_DecimalFormatL0 = 888.1m,
+                                },
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata1b", "verysensitivedata1b"},
+                                Sensitive_ArrayMultiTypeDecimalFormat = 12.2m,
+                                Sensitive_IntArrayMultiType = new int[2] { 888, 1010 }
+                            }
+                        },
+                        {
+                         new Sensitive_ArrayMultiType()
+                            {
+                                Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                                {
+                                    Sensitive_IntFormatL0 = 111,
+                                    Sensitive_DecimalFormatL0 = 222.3m,
+                                },
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata2a", "verysensitivedata2a"},
+                                Sensitive_ArrayMultiTypeDecimalFormat = 9876.2m,
+                                Sensitive_IntArrayMultiType = new int[2] { 1, 2 }
+                            },
+                          new Sensitive_ArrayMultiType()
+                            {
+                                Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                                {
+                                    Sensitive_IntFormatL0 = 878,
+                                    Sensitive_DecimalFormatL0 = 188.1m,
+                                },
+                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata2b", "verysensitivedata2b"},
+                                Sensitive_ArrayMultiTypeDecimalFormat = 14.2m,
+                                Sensitive_IntArrayMultiType = new int[2] { 929, 1050 }
+                            }
                         }
                     },
                     Sensitive_NestedObjectFormatL1 = new Sensitive_NestedObjectL1()
@@ -1449,18 +1681,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {"tempmetadata2", 2},
             };
 
+            public bool RevokeAccessSet { get; set; }
             public Dictionary<string, int> WrapKeyCallsCount { get; set; }
             public Dictionary<string, int> UnWrapKeyCallsCount { get; set; }
             public TestEncryptionKeyStoreProvider()
             {
                 this.WrapKeyCallsCount = new Dictionary<string, int>();
                 this.UnWrapKeyCallsCount = new Dictionary<string, int>();
+                this.RevokeAccessSet = false;
             }
 
             public override string ProviderName => "TESTKEYSTORE_VAULT";
 
             public override byte[] UnwrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] encryptedKey)
             {
+                if (masterKeyPath.Equals("revokedKek-metadata") && this.RevokeAccessSet)
+                {
+                    throw new RequestFailedException((int)HttpStatusCode.Forbidden, "Forbidden");
+                }
+
                 if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
                 {
                     this.UnWrapKeyCallsCount[masterKeyPath] = 1;

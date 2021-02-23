@@ -39,6 +39,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (container is EncryptionContainer encryptionContainer)
+            {
+                await encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken);
+            }
+
+            return container;
+        }
+
+        internal static async Task InitContainerCacheAsync(
+            this Container container,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             if (container is EncryptionContainer encryptionContainer)
             {
                 EncryptionCosmosClient encryptionCosmosClient = encryptionContainer.EncryptionCosmosClient;
@@ -58,12 +72,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 shouldForceRefresh: false);
                     }
                 }
-
-                return encryptionContainer;
             }
             else
             {
-                throw new InvalidOperationException($"Invalid {container} used for this operation.This operation requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                throw new InvalidOperationException($"Invalid {container} used for this operation. This operation requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
         }
 

@@ -11,16 +11,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
     /// </summary>
     internal interface ITraceDatumVisitor
     {
-        /// <summary>
-        /// Visits a <see cref="CosmosDiagnosticsTraceDatum"/> instance.
-        /// </summary>
-        /// <param name="cosmosDiagnosticsTraceDatum">The datum to visit.</param>
-        void Visit(CosmosDiagnosticsTraceDatum cosmosDiagnosticsTraceDatum);
-
-        /// <summary>
-        /// Visits a <see cref="QueryMetricsTraceDatum"/> instance.
-        /// </summary>
-        /// <param name="queryMetricsTraceDatum">The datum to visit.</param>
         void Visit(QueryMetricsTraceDatum queryMetricsTraceDatum);
+        void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum);
+        void Visit(ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum);
+        void Visit(CpuHistoryTraceDatum cpuHistoryTraceDatum);
     }
 }
