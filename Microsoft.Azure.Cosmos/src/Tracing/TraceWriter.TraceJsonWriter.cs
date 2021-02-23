@@ -39,16 +39,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.WriteFieldName("component");
                 writer.WriteStringValue(trace.Component.ToString());
 
-                writer.WriteFieldName("caller information");
+                writer.WriteFieldName("caller info");
                 writer.WriteObjectStart();
 
-                writer.WriteFieldName("member name");
+                writer.WriteFieldName("member");
                 writer.WriteStringValue(trace.CallerInfo.MemberName);
 
-                writer.WriteFieldName("file name");
+                writer.WriteFieldName("file");
                 writer.WriteStringValue(GetFileNameFromPath(trace.CallerInfo.FilePath));
 
-                writer.WriteFieldName("line number");
+                writer.WriteFieldName("line");
                 writer.WriteNumber64Value(trace.CallerInfo.LineNumber);
 
                 writer.WriteObjectEnd();
