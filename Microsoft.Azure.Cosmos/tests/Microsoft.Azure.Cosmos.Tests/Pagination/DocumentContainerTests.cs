@@ -7,6 +7,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.IO;
+    using System.Net;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -21,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Moq;
 
     [TestClass]
     public abstract class DocumentContainerTests
@@ -721,6 +726,57 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                 Assert.AreEqual(numItemsToInsert, sumChildCount);
             }
+        }
+
+        [TestMethod]
+        public async Task ValidateExceptionForMonadicChangeFeedAsync()
+        {
+            CosmosException dummyException = new CosmosException(
+                message: "dummy",
+                statusCode: HttpStatusCode.TooManyRequests,
+                subStatusCode: 3200,
+                activityId: "fakeId",
+                requestCharge: 1.0);
+            ResponseMessage message = new ResponseMessage(
+                statusCode: HttpStatusCode.TooManyRequests,
+                requestMessage: null,
+                headers: null,
+                cosmosException: dummyException,
+                trace: NoOpTrace.Singleton);
+
+            Mock<CosmosClientContext> mockCosmosClientContext = new Mock<CosmosClientContext>();
+            mockCosmosClientContext.Setup(
+                context => context.ProcessResourceOperationStreamAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<ResourceType>(),
+                    It.IsAny<OperationType>(),
+                    It.IsAny<RequestOptions>(),
+                    It.IsAny<ContainerInternal>(),
+                    It.IsAny<Microsoft.Azure.Cosmos.FeedRange>(),
+                    It.IsAny<Stream>(),
+                    It.IsAny<Action<RequestMessage>>(),
+                    It.IsAny<ITrace>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(message));
+            Mock<ContainerInternal> mockContainerInternal = new Mock<ContainerInternal>();
+            mockContainerInternal.SetupGet(container1 => container1.ClientContext).Returns(mockCosmosClientContext.Object);
+            Mock<CosmosQueryClient> mockCosmosQueryClient = new Mock<CosmosQueryClient>();
+            NetworkAttachedDocumentContainer container = new NetworkAttachedDocumentContainer(
+                mockContainerInternal.Object,
+                mockCosmosQueryClient.Object);
+
+            FeedRangeState<ChangeFeedState> state = new FeedRangeState<ChangeFeedState>();
+            ChangeFeedPaginationOptions options = new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental);
+            TryCatch<ChangeFeedPage> result = await container.MonadicChangeFeedAsync(
+                state,
+                options,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            Assert.IsNotNull(result.Exception);
+            CosmosException ex = result.Exception.InnerException as CosmosException;
+            Assert.IsNotNull(ex);
+            Assert.AreSame(dummyException, ex);
         }
 
         private readonly struct DrainFunctions<TState>
