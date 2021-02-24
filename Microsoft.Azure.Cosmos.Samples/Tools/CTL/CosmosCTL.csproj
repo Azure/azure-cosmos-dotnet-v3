@@ -20,7 +20,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
-    <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
+    <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
 </Project>
