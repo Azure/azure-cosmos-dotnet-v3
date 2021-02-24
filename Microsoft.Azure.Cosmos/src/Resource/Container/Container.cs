@@ -1033,7 +1033,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
-        /// <param name="cosmosLinqSerializerOptions">(Optional) The options to configure Linq Serializer Properties. This overrides properties in CosmosSerializerOptions while creating client</param>
+        /// <param name="linqSerializerOptions">(Optional) The options to configure Linq Serializer Properties. This overrides properties in CosmosSerializerOptions while creating client</param>
         /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
         /// 1. This example below shows LINQ query generation and blocked execution.
@@ -1105,7 +1105,7 @@ namespace Microsoft.Azure.Cosmos
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
-            CosmosLinqSerializerOptions cosmosLinqSerializerOptions = null);
+            CosmosLinqSerializerOptions linqSerializerOptions = null);
 
         /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.

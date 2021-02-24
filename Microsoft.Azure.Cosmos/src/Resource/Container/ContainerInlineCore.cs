@@ -353,13 +353,13 @@ namespace Microsoft.Azure.Cosmos
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
-            CosmosLinqSerializerOptions cosmosLinqSerializerOptions = null)
+            CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             return base.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
                 requestOptions,
-                cosmosLinqSerializerOptions);
+                linqSerializerOptions);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(

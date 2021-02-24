@@ -433,13 +433,13 @@ namespace Microsoft.Azure.Cosmos
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
-            CosmosLinqSerializerOptions cosmosLinqSerializerOptions = null)
+            CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             requestOptions ??= new QueryRequestOptions();
 
-            if (cosmosLinqSerializerOptions == null && this.ClientContext.ClientOptions.SerializerOptions != null)
+            if (linqSerializerOptions == null && this.ClientContext.ClientOptions.SerializerOptions != null)
             {
-                cosmosLinqSerializerOptions = new CosmosLinqSerializerOptions
+                linqSerializerOptions = new CosmosLinqSerializerOptions
                 {
                     PropertyNamingPolicy = this.ClientContext.ClientOptions.SerializerOptions.PropertyNamingPolicy
                 };
@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions,
                 allowSynchronousQueryExecution,
-                cosmosLinqSerializerOptions);
+                linqSerializerOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
