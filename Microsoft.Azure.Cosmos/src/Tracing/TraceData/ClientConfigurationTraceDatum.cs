@@ -6,16 +6,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.Text;
-    using Microsoft.Azure.Documents;
 
     internal sealed class ClientConfigurationTraceDatum : TraceDatum
     {
         public ClientConfigurationTraceDatum(CosmosClientContext cosmosClientContext, DateTime startTime)
         {
             this.ClientCreatedDateTimeUtc = startTime;
+            this.ConnectionConfig = new Dictionary<string, string>();
             this.RecordClientConfig(cosmosClientContext);
         }
 
@@ -48,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                 cosmosClientContext.ClientOptions.AllowBulkExecution);
 
             this.ConsistencyConfig = string.Format(CultureInfo.InvariantCulture,
-                                    "(consistency: {0}, mm: {1}, prgns:[{2}])",
+                                    "(consistency: {0}, mm: {1}, prgns:['{2}'])",
                                     cosmosClientContext.ClientOptions.ConsistencyLevel.GetValueOrDefault(),
                                     cosmosClientContext.DocumentClient.ConnectionPolicy.UseMultipleWriteLocations,
                                     this.PreferredRegionsInternal(cosmosClientContext.ClientOptions.ApplicationPreferredRegions));
