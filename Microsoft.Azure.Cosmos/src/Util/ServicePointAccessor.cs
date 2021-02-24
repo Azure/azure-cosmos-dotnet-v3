@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
         private ServicePointAccessor(ServicePoint servicePoint)
         {
             this.servicePoint = servicePoint ?? throw new ArgumentNullException(nameof(servicePoint));
+            this.TryDisableUseNagleAlgorithm();
         }
 
         internal static ServicePointAccessor FindServicePoint(Uri endpoint)
@@ -33,6 +34,22 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.servicePoint.ConnectionLimit;
             set => this.TrySetConnectionLimit(value);
+        }
+
+        /// <summary>
+        /// Disable Nagle for HTTP requests.
+        /// This improves latency/throughput for Gateway operations on.net Framework
+        /// </summary>
+        private void TryDisableUseNagleAlgorithm()
+        {
+            try
+            {
+                this.servicePoint.UseNagleAlgorithm = false;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                DefaultTrace.TraceWarning("ServicePoint.set_UseNagleAlgorithm - Platform does not support feature.");
+            }
         }
 
         private void TrySetConnectionLimit(int connectionLimit)
