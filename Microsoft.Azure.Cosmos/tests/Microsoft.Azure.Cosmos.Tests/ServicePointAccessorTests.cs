@@ -23,5 +23,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             ServicePoint servicePoint = ServicePointManager.FindServicePoint(ServicePointAccessorTests.uri);
             Assert.AreEqual(limit, servicePoint.ConnectionLimit);
         }
+
+        [TestMethod]
+        public void ServicePointAccessor_DisableNagle()
+        {
+            ServicePointAccessor accessor = ServicePointAccessor.FindServicePoint(ServicePointAccessorTests.uri);
+            Assert.IsNotNull(accessor);
+            ServicePoint servicePoint = ServicePointManager.FindServicePoint(ServicePointAccessorTests.uri);
+            Assert.IsFalse(servicePoint.UseNagleAlgorithm);
+        }
     }
 }
