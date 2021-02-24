@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -16,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionDatabase(Database database, EncryptionCosmosClient encryptionCosmosClient)
         {
-            this.database = database;
-            this.EncryptionCosmosClient = encryptionCosmosClient;
+            this.database = database ?? throw new ArgumentNullException(nameof(database));
+            this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
         }
 
         internal EncryptionCosmosClient EncryptionCosmosClient { get; }

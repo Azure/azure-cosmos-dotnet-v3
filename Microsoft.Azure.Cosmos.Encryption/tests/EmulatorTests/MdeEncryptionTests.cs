@@ -833,8 +833,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
 
-            // make sure you cache it in.
-            await encryptionContainer.InitializeEncryptionAsync();
             TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = MdeEncryptionTests.testEncryptionKeyStoreProvider;
             testEncryptionKeyStoreProvider.RevokeAccessSet = true;
             // try creating it and it should fail as it has been revoked.

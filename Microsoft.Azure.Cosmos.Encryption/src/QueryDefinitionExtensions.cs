@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (string.IsNullOrWhiteSpace(name))
             {
-                throw new ArgumentNullException("Name cannot be Null or Empty. ");
+                throw new ArgumentNullException(nameof(name));
             }
 
             if (value == null)
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(value));
             }
 
-            QueryDefinition withEncryptedValues = queryDefinition;
+            QueryDefinition queryDefinitionwithEncryptedValues = queryDefinition;
 
             if (queryDefinition is EncryptionQueryDefinition encryptionQueryDefinition)
             {
@@ -89,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (settings == null)
                 {
                     // property not encrypted.
-                    withEncryptedValues.WithParameter(name, value);
-                    return withEncryptedValues;
+                    queryDefinitionwithEncryptedValues.WithParameter(name, value);
+                    return queryDefinitionwithEncryptedValues;
                 }
 
                 if (settings.EncryptionType == EncryptionType.Randomized)
@@ -111,9 +111,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
                 cipherTextWithTypeMarker[0] = (byte)typeMarker;
                 Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                withEncryptedValues.WithParameter(name, cipherTextWithTypeMarker);
+                queryDefinitionwithEncryptedValues.WithParameter(name, cipherTextWithTypeMarker);
 
-                return withEncryptedValues;
+                return queryDefinitionwithEncryptedValues;
             }
             else
             {

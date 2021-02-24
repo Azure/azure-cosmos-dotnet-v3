@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
         }
 
-        internal EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
+        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
         /// <summary>
         /// Gets or Adds ClientEncryptionPolicy. The Cache gets seeded initially either via InitializeEncryptionAsync call on the container,
@@ -44,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default,
             bool shouldForceRefresh = false)
         {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
             // container Id is unique within a Database.
             string cacheKey = container.Database.Id + "/" + container.Id;
 
@@ -67,6 +72,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken = default,
             bool shouldForceRefresh = false)
         {
+            if (container == null)
+            {
+                throw new ArgumentNullException(nameof(container));
+            }
+
             // Client Encryption key Id is unique within a Database.
             string cacheKey = container.Database.Id + "/" + clientEncryptionKeyId;
 
@@ -117,10 +127,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
                 await this.cosmosClient.CreateDatabaseAsync(
-                id,
-                throughput,
-                requestOptions,
-                cancellationToken),
+                    id,
+                    throughput,
+                    requestOptions,
+                    cancellationToken),
                 this);
 
             return encryptionDatabaseResponse;
@@ -134,10 +144,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
                 await this.cosmosClient.CreateDatabaseAsync(
-                id,
-                throughputProperties,
-                requestOptions,
-                cancellationToken),
+                    id,
+                    throughputProperties,
+                    requestOptions,
+                    cancellationToken),
                 this);
 
             return encryptionDatabaseResponse;
@@ -151,10 +161,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
                 await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
-                id,
-                throughputProperties,
-                requestOptions,
-                cancellationToken),
+                    id,
+                    throughputProperties,
+                    requestOptions,
+                    cancellationToken),
                 this);
 
             return encryptionDatabaseResponse;
@@ -168,10 +178,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             EncryptionDatabaseResponse encryptionDatabaseResponse = new EncryptionDatabaseResponse(
                 await this.cosmosClient.CreateDatabaseIfNotExistsAsync(
-                id,
-                throughput,
-                requestOptions,
-                cancellationToken),
+                    id,
+                    throughput,
+                    requestOptions,
+                    cancellationToken),
                 this);
 
             return encryptionDatabaseResponse;

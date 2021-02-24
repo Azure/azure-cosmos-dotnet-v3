@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// CosmosClient cosmosClient = new CosmosClient();
-        /// cosmosClient.WithEncryption();
+        /// cosmosClient.WithEncryption(azureKeyVaultKeyStoreProvider);
         /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
         /// ]]>
         /// </code>
@@ -65,11 +65,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
                     {
-                        ClientEncryptionKeyProperties clientEncryptionKeyProperties = await encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                                clientEncryptionKeyId: clientEncryptionKeyId,
-                                container: container,
-                                cancellationToken: cancellationToken,
-                                shouldForceRefresh: false);
+                        await encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                            clientEncryptionKeyId: clientEncryptionKeyId,
+                            container: container,
+                            cancellationToken: cancellationToken,
+                            shouldForceRefresh: false);
                     }
                 }
             }

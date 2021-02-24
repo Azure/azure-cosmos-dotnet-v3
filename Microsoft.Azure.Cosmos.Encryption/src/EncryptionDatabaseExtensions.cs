@@ -51,11 +51,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             string encryptionAlgorithm = dataEncryptionKeyAlgorithm.ToString();
 
-            if (string.IsNullOrWhiteSpace(encryptionAlgorithm))
-            {
-                throw new ArgumentNullException(nameof(encryptionAlgorithm));
-            }
-
             if (!string.Equals(encryptionAlgorithm, DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()))
             {
                 throw new ArgumentException($"Invalid Encryption Algorithm '{encryptionAlgorithm}' passed. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");

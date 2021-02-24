@@ -14,15 +14,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionContainer : Container
     {
-        internal Container Container { get; private set; }
+        public Container Container { get; private set; }
 
         public CosmosSerializer CosmosSerializer { get; }
 
         public CosmosResponseFactory ResponseFactory { get; }
 
-        internal EncryptionProcessor EncryptionProcessor { get; }
+        public EncryptionProcessor EncryptionProcessor { get; }
 
-        internal EncryptionCosmosClient EncryptionCosmosClient { get; }
+        public EncryptionCosmosClient EncryptionCosmosClient { get; }
 
         private bool isEncryptionContainerCacheInitDone;
 
@@ -57,8 +57,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override Database Database => this.Container.Database;
 
-        internal async Task<bool> InitEncryptionContainerCacheIfNotInitAsync(CancellationToken cancellationToken)
+        internal async Task InitEncryptionContainerCacheIfNotInitAsync(CancellationToken cancellationToken)
         {
+            if (this.isEncryptionContainerCacheInitDone)
+            {
+                return;
+            }
+
             if (await CacheInitSema.WaitAsync(-1))
             {
                 if (!this.isEncryptionContainerCacheInitDone)
@@ -66,7 +71,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     try
                     {
                         await this.InitContainerCacheAsync(cancellationToken);
-                        return this.isEncryptionContainerCacheInitDone = true;
+                        await this.EncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync();
+                        this.isEncryptionContainerCacheInitDone = true;
                     }
                     finally
                     {
@@ -76,11 +82,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 else
                 {
                     CacheInitSema.Release(1);
-                    return this.isEncryptionContainerCacheInitDone;
                 }
             }
-
-            return this.isEncryptionContainerCacheInitDone;
         }
 
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(

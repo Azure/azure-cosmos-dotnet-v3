@@ -33,11 +33,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Gets the provider that allows interaction with the master keys.
         /// </summary>
-        internal EncryptionKeyStoreProvider EncryptionKeyStoreProvider => this.EncryptionCosmosClient.EncryptionKeyStoreProvider;
+        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider => this.EncryptionCosmosClient.EncryptionKeyStoreProvider;
 
-        internal ClientEncryptionPolicy ClientEncryptionPolicy { get; private set; }
+        public ClientEncryptionPolicy ClientEncryptionPolicy { get; private set; }
 
-        internal EncryptionCosmosClient EncryptionCosmosClient { get; }
+        public EncryptionCosmosClient EncryptionCosmosClient { get; }
 
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
             new JsonSerializerSettings()
@@ -124,6 +124,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             this.EncryptionKeyStoreProvider,
                             clientEncryptionKeyId);
                     }
+                    else
+                    {
+                        throw;
+                    }
                 }
 
                 settingsByDekId[clientEncryptionKeyId] = new EncryptionSettings
@@ -171,6 +175,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <returns>Task to await.</returns>
         internal async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default)
         {
+            if (this.isEncryptionSettingsInitDone)
+            {
+                return;
+            }
+
             if (await CacheInitSema.WaitAsync(-1))
             {
                 if (!this.isEncryptionSettingsInitDone)

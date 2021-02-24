@@ -112,6 +112,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                     encryptionProcessor.EncryptionKeyStoreProvider,
                                     propertyToEncrypt.ClientEncryptionKeyId);
                             }
+                            else
+                            {
+                                throw;
+                            }
                         }
 
                         EncryptionSettings encryptionSettings = new EncryptionSettings
