@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net.Http;
@@ -276,26 +277,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             //  Point Operation Statistics
             //----------------------------------------------------------------
             {
-                startLineNumber = GetLineNumber();
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
-                    PointOperationStatisticsTraceDatum datum = new PointOperationStatisticsTraceDatum(
-                        activityId: Guid.Empty.ToString(),
-                        responseTimeUtc: new DateTime(2020, 1, 2, 3, 4, 5, 6),
-                        statusCode: System.Net.HttpStatusCode.OK,
-                        subStatusCode: Documents.SubStatusCodes.WriteForbidden,
-                        requestCharge: 4,
-                        errorMessage: null,
-                        method: HttpMethod.Post,
-                        requestUri: "http://localhost.com",
-                        requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
-                        responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
-                    rootTrace.AddDatum("Point Operation Statistics", datum);
-                }
-                endLineNumber = GetLineNumber();
+                    startLineNumber = GetLineNumber();
+                    TraceForBaselineTesting rootTrace;
+                    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                    {
+                        PointOperationStatisticsTraceDatum datum = new PointOperationStatisticsTraceDatum(
+                            activityId: Guid.Empty.ToString(),
+                            responseTimeUtc: new DateTime(2020, 1, 2, 3, 4, 5, 6),
+                            statusCode: System.Net.HttpStatusCode.OK,
+                            subStatusCode: Documents.SubStatusCodes.WriteForbidden,
+                            requestCharge: 4,
+                            errorMessage: null,
+                            method: HttpMethod.Post,
+                            requestUri: "http://localhost.com",
+                            requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
+                            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
+                        rootTrace.AddDatum("Point Operation Statistics", datum);
+                    }
+                    endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Point Operation Statistics", rootTrace, startLineNumber, endLineNumber));
+                    inputs.Add(new Input("Point Operation Statistics", rootTrace, startLineNumber, endLineNumber));
+                }
+
+                {
+                    startLineNumber = GetLineNumber();
+                    TraceForBaselineTesting rootTrace;
+                    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                    {
+                        PointOperationStatisticsTraceDatum datum = new PointOperationStatisticsTraceDatum(
+                            activityId: default,
+                            responseTimeUtc: default,
+                            statusCode: default,
+                            subStatusCode: default,
+                            requestCharge: default,
+                            errorMessage: default,
+                            method: default,
+                            requestUri: default,
+                            requestSessionToken: default,
+                            responseSessionToken: default);
+                        rootTrace.AddDatum("Point Operation Statistics Default", datum);
+                    }
+                    endLineNumber = GetLineNumber();
+
+                    inputs.Add(new Input("Point Operation Statistics Default", rootTrace, startLineNumber, endLineNumber));
+                }
             }
             //----------------------------------------------------------------
 
@@ -324,62 +350,116 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             //  Client Side Request Stats
             //----------------------------------------------------------------
             {
-                startLineNumber = GetLineNumber();
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
-                    ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+                    startLineNumber = GetLineNumber();
+                    TraceForBaselineTesting rootTrace;
+                    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                    {
+                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
 
-                    Uri uri1 = new Uri("http://someUri1.com");
-                    Uri uri2 = new Uri("http://someUri2.com");
+                        Uri uri1 = new Uri("http://someUri1.com");
+                        Uri uri2 = new Uri("http://someUri2.com");
 
-                    datum.ContactedReplicas.Add(uri1);
-                    datum.ContactedReplicas.Add(uri2);
+                        datum.ContactedReplicas.Add(uri1);
+                        datum.ContactedReplicas.Add(uri2);
 
-                    ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
-                        DateTime.MinValue,
-                        DateTime.MaxValue,
-                        "http://localhost.com");
-                    datum.EndpointToAddressResolutionStatistics["asdf"] = mockStatistics;
-                    datum.EndpointToAddressResolutionStatistics["asdf2"] = mockStatistics;
+                        ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            "http://localhost.com");
+                        datum.EndpointToAddressResolutionStatistics["asdf"] = mockStatistics;
+                        datum.EndpointToAddressResolutionStatistics["asdf2"] = mockStatistics;
 
-                    datum.FailedReplicas.Add(uri1);
-                    datum.FailedReplicas.Add(uri2);
+                        datum.FailedReplicas.Add(uri1);
+                        datum.FailedReplicas.Add(uri2);
 
-                    datum.RegionsContacted.Add(uri1);
-                    datum.RegionsContacted.Add(uri2);
+                        datum.RegionsContacted.Add(uri1);
+                        datum.RegionsContacted.Add(uri2);
 
-                    datum.RequestEndTimeUtc = DateTime.MaxValue;
+                        datum.RequestEndTimeUtc = DateTime.MaxValue;
 
-                    StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
-                        DateTime.MinValue,
-                        DateTime.MaxValue,
-                        new Documents.StoreResult(
-                            storeResponse: new StoreResponse(),
-                            exception: null,
-                            partitionKeyRangeId: 42.ToString(),
-                            lsn: 1337,
-                            quorumAckedLsn: 23,
-                            requestCharge: 3.14,
-                            currentReplicaSetSize: 4,
-                            currentWriteQuorum: 3,
-                            isValid: true,
-                            storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
-                            globalCommittedLSN: 1234,
-                            numberOfReadRegions: 13,
-                            itemLSN: 15,
-                            sessionToken: new SimpleSessionToken(42),
-                            usingLocalLSN: true,
-                            activityId: Guid.Empty.ToString()),
-                        ResourceType.Document,
-                        OperationType.Query,
-                        uri1);
-                    datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
-                    rootTrace.AddDatum("Client Side Request Stats", datum);
+                        StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            new Documents.StoreResult(
+                                storeResponse: new StoreResponse(),
+                                exception: null,
+                                partitionKeyRangeId: 42.ToString(),
+                                lsn: 1337,
+                                quorumAckedLsn: 23,
+                                requestCharge: 3.14,
+                                currentReplicaSetSize: 4,
+                                currentWriteQuorum: 3,
+                                isValid: true,
+                                storePhysicalAddress: new Uri("http://storephysicaladdress.com"),
+                                globalCommittedLSN: 1234,
+                                numberOfReadRegions: 13,
+                                itemLSN: 15,
+                                sessionToken: new SimpleSessionToken(42),
+                                usingLocalLSN: true,
+                                activityId: Guid.Empty.ToString()),
+                            ResourceType.Document,
+                            OperationType.Query,
+                            uri1);
+                        datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+                        rootTrace.AddDatum("Client Side Request Stats", datum);
+                    }
+                    endLineNumber = GetLineNumber();
+
+                    inputs.Add(new Input("Client Side Request Stats", rootTrace, startLineNumber, endLineNumber));
                 }
-                endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Client Side Request Stats", rootTrace, startLineNumber, endLineNumber));
+                {
+                    startLineNumber = GetLineNumber();
+                    TraceForBaselineTesting rootTrace;
+                    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                    {
+                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+                        datum.ContactedReplicas.Add(default);
+
+                        ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
+                            default,
+                            default,
+                            targetEndpoint: "asdf");
+                        datum.EndpointToAddressResolutionStatistics["asdf"] = default;
+                        datum.EndpointToAddressResolutionStatistics["asdf2"] = default;
+
+                        datum.FailedReplicas.Add(default);
+
+                        datum.RegionsContacted.Add(default);
+
+                        datum.RequestEndTimeUtc = default;
+
+                        StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
+                            requestStartTime: default,
+                            requestResponseTime: default,
+                            new Documents.StoreResult(
+                                storeResponse: new StoreResponse(),
+                                exception: default,
+                                partitionKeyRangeId: default,
+                                lsn: default,
+                                quorumAckedLsn: default,
+                                requestCharge: default,
+                                currentReplicaSetSize: default,
+                                currentWriteQuorum: default,
+                                isValid: default,
+                                storePhysicalAddress: default,
+                                globalCommittedLSN: default,
+                                numberOfReadRegions: default,
+                                itemLSN: default,
+                                sessionToken: default,
+                                usingLocalLSN: default,
+                                activityId: default),
+                            resourceType: default,
+                            operationType: default,
+                            locationEndpoint: default); ;
+                        datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+                        rootTrace.AddDatum("Client Side Request Stats Default", datum);
+                    }
+                    endLineNumber = GetLineNumber();
+
+                    inputs.Add(new Input("Client Side Request Stats Default", rootTrace, startLineNumber, endLineNumber));
+                }
             }
             //----------------------------------------------------------------
 
@@ -518,10 +598,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         public override Output ExecuteTest(Input input)
         {
-            string text = TraceWriter.TraceToText(input.Trace);
-            string json = TraceWriter.TraceToJson(input.Trace);
+            CultureInfo originalCulture = CultureInfo.CurrentCulture;
+            CultureInfo.CurrentCulture = new CultureInfo("th-TH", false);
+            try
+            {
+                string text = TraceWriter.TraceToText(input.Trace);
+                string json = TraceWriter.TraceToJson(input.Trace);
 
-            return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
+                return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = originalCulture;
+            }
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(

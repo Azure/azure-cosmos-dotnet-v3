@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.ReadFeed
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
     #if INTERNAL
@@ -21,12 +23,14 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             CosmosArray documents,
             double requestCharge,  
             string activityId, 
-            ReadFeedCrossFeedRangeState? state)
+            ReadFeedCrossFeedRangeState? state,
+            ImmutableDictionary<string, string> additionalHeaders)
         {
             this.Documents = documents ?? throw new ArgumentNullException(nameof(documents));
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
             this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
             this.State = state;
+            this.AdditionalHeaders = additionalHeaders;
         }
 
         public CosmosArray Documents { get; }
@@ -36,5 +40,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
         public string ActivityId { get; }
 
         public ReadFeedCrossFeedRangeState? State { get; }
+
+        public ImmutableDictionary<string, string> AdditionalHeaders { get; }
     }
 }
