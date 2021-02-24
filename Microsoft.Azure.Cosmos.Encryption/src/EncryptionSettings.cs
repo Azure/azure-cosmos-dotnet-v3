@@ -181,8 +181,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionType = encryptionType,
                 EncryptionSettingTimeToLive = settingsForKey.EncryptionSettingTimeToLive,
                 AeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
-                settingsForKey.DataEncryptionKey,
-                encryptionType),
+                    settingsForKey.DataEncryptionKey,
+                    encryptionType),
             };
         }
     }

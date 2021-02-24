@@ -344,19 +344,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return input;
             }
 
-            foreach (ClientEncryptionIncludedPath path in this.ClientEncryptionPolicy.IncludedPaths)
-            {
-                if (string.IsNullOrWhiteSpace(path.Path) || path.Path[0] != '/' || path.Path.LastIndexOf('/') != 0)
-                {
-                    throw new InvalidOperationException($"Invalid path {path.Path ?? string.Empty}, {nameof(path)}. ");
-                }
-
-                if (string.Equals(path.Path.Substring(1), "id"))
-                {
-                    throw new InvalidOperationException($"{path} includes an invalid path: '{path.Path}'. ");
-                }
-            }
-
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
             foreach (ClientEncryptionIncludedPath pathToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
@@ -622,6 +609,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
+
+            // UTF-8 Encoding
             SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             return propertyValue.Type switch
@@ -639,6 +628,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             TypeMarker typeMarker)
         {
             SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
+
+            // UTF-8 Encoding
             SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
 
             return typeMarker switch
