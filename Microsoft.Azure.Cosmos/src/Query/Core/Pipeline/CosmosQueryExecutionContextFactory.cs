@@ -201,6 +201,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                     documentContainer,
                                     inputParameters,
                                     targetRanges,
+                                    trace,
                                     cancellationToken);
                             }
                         }
@@ -294,6 +295,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     documentContainer,
                     inputParameters,
                     targetRanges,
+                    trace,
                     cancellationToken);
             }
             else
@@ -335,6 +337,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     inputParameters,
                     partitionedQueryExecutionInfo,
                     targetRanges,
+                    trace,
                     cancellationToken);
             }
 
@@ -345,6 +348,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             DocumentContainer documentContainer,
             InputParameters inputParameters,
             List<Documents.PartitionKeyRange> targetRanges,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             // Return a parallel context, since we still want to be able to handle splits and concurrency / buffering.
@@ -363,6 +367,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     pageSizeHint: inputParameters.MaxItemCount),
                 partitionKey: inputParameters.PartitionKey,
                 maxConcurrency: inputParameters.MaxConcurrency,
+                trace: trace,
                 cancellationToken: cancellationToken,
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
@@ -373,6 +378,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             InputParameters inputParameters,
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
             List<Documents.PartitionKeyRange> targetRanges, 
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             QueryInfo queryInfo = partitionedQueryExecutionInfo.QueryInfo;
@@ -421,6 +427,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     pageSizeHint: (int)optimalPageSize),
                 maxConcurrency: inputParameters.MaxConcurrency,
                 requestContinuationToken: inputParameters.InitialUserContinuationToken,
+                trace: trace,
                 requestCancellationToken: cancellationToken);
         }
 

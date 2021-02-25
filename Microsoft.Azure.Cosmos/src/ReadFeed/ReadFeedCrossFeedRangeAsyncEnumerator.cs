@@ -11,23 +11,34 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
 
-    internal sealed class ReadFeedCrossFeedRangeAsyncEnumerator : IAsyncEnumerator<TryCatch<ReadFeedPage>>
+    internal sealed class ReadFeedCrossFeedRangeAsyncEnumerator : ITraceableAsyncEnumerator<TryCatch<ReadFeedPage>>
     {
         private readonly CrossPartitionReadFeedAsyncEnumerator enumerator;
+        private readonly ITrace trace;
 
-        public ReadFeedCrossFeedRangeAsyncEnumerator(CrossPartitionReadFeedAsyncEnumerator enumerator)
+        public ReadFeedCrossFeedRangeAsyncEnumerator(
+            CrossPartitionReadFeedAsyncEnumerator enumerator,
+            ITrace trace)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
+            this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
         public TryCatch<ReadFeedPage> Current { get; private set; }
 
         public ValueTask DisposeAsync() => this.enumerator.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
-            if (!await this.enumerator.MoveNextAsync())
+            return this.MoveNextAsync(this.trace);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (!await this.enumerator.MoveNextAsync(trace))
             {
                 return false;
             }

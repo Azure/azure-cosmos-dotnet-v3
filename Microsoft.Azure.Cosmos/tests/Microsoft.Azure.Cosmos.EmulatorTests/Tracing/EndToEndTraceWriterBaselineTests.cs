@@ -9,11 +9,15 @@
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
@@ -21,9 +25,9 @@
     [VisualStudio.TestTools.UnitTesting.TestClass]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
     {
-        public static CosmosClient client;
-        public static Database database;
-        public static Container container;
+        private static CosmosClient client;
+        private static Database database;
+        private static ContainerInternal container;
 
         [ClassInitialize()]
         public static void ClassInit(TestContext context)
@@ -35,7 +39,7 @@
                     cancellationToken: default)
                 .Result
                 .Database;
-            container = database
+            container = (ContainerInternal)database
                 .CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/id",
@@ -158,6 +162,61 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("ReadFeed Public API Typed", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  ReadFeed with ITraceableAsyncEnumerable 
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+
+
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                {
+                    ITraceableAsyncEnumerable<TryCatch<ReadFeedPage>> asyncEnumerable = container.GetReadFeedAsyncEnumerable(
+                        state: ReadFeedCrossFeedRangeState.CreateFromBeginning(),
+                        trace: rootTrace);
+
+                    await foreach (TryCatch<ReadFeedPage> monadicPage in asyncEnumerable)
+                    {
+                        monadicPage.ThrowIfFailed();
+                    }
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("ReadFeed with ITraceableAsyncEnumerable", rootTrace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  ReadFeed with ITraceableAsyncEnumerator
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+
+
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                {
+                    ITraceableAsyncEnumerable<TryCatch<ReadFeedPage>> asyncEnumerable = container.GetReadFeedAsyncEnumerable(
+                        state: ReadFeedCrossFeedRangeState.CreateFromBeginning(),
+                        trace: NoOpTrace.Singleton);
+
+                    ITraceableAsyncEnumerator<TryCatch<ReadFeedPage>> asyncEnumerator = asyncEnumerable.GetAsyncEnumerator(
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+
+
+                    while (await asyncEnumerator.MoveNextAsync(rootTrace))
+                    {
+                        asyncEnumerator.Current.ThrowIfFailed();
+                    }
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("ReadFeed with ITraceableAsyncEnumerator", rootTrace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -292,6 +351,71 @@
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("ChangeFeed Public API Typed", traceForest, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  ChangeFeed with ITraceableAsyncEnumerable 
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+
+
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                {
+                    ITraceableAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = container.GetChangeFeedAsyncEnumerable(
+                        state: ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                        changeFeedMode: ChangeFeedMode.Incremental,
+                        trace: rootTrace);
+
+                    await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
+                    {
+                        monadicPage.ThrowIfFailed();
+                        if (monadicPage.Result.NotModified)
+                        {
+                            break;
+                        }
+                    }
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("ChangeFeed with ITraceableAsyncEnumerable", rootTrace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  ChangeFeed with ITraceableAsyncEnumerator
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+
+
+                Trace rootTrace;
+                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                {
+                    ITraceableAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = container.GetChangeFeedAsyncEnumerable(
+                        state: ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                        changeFeedMode: ChangeFeedMode.Incremental,
+                        trace: NoOpTrace.Singleton);
+
+                    ITraceableAsyncEnumerator<TryCatch<ChangeFeedPage>> asyncEnumerator = asyncEnumerable.GetAsyncEnumerator(
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+
+
+                    while (await asyncEnumerator.MoveNextAsync(rootTrace))
+                    {
+                        asyncEnumerator.Current.ThrowIfFailed();
+                        if (asyncEnumerator.Current.Result.NotModified)
+                        {
+                            break;
+                        }
+                    }
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("ChangeFeed with ITraceableAsyncEnumerator", rootTrace, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 

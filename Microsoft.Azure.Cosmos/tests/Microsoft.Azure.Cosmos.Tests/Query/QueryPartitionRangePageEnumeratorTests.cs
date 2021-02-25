@@ -99,6 +99,7 @@
                             feedRangeState: feedRangeState,
                             partitionKey: null,
                             queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                            trace: NoOpTrace.Singleton,
                             cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -140,6 +141,7 @@
                         feedRangeState: feedRangeState,
                         partitionKey: null,
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: default));
             }
 
@@ -157,6 +159,7 @@
                     feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                     partitionKey: null,
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
             }
         }

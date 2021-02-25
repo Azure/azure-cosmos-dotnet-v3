@@ -185,6 +185,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
                             additionalHeaders),
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: default);
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);

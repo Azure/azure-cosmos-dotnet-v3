@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
     using Microsoft.Azure.Documents;
 
     internal abstract class ContainerInternal : Container
@@ -97,14 +98,16 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellation);
 
-        public abstract IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+        public abstract ITraceableAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+            ChangeFeedRequestOptions changeFeedRequestOptions = null,
+            ITrace trace = null);
 
-        public abstract IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+        public abstract ITraceableAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
             ReadFeedCrossFeedRangeState state,
-            QueryRequestOptions requestOptions = null);
+            QueryRequestOptions requestOptions = null,
+            ITrace trace = null);
 
         /// <summary>
         /// Throw an exception if the partition key is null or empty string
@@ -140,9 +143,9 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
         public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
+            Cosmos.PartitionKey partitionKey,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default(CancellationToken));
 #endif
 
 #if !PREVIEW

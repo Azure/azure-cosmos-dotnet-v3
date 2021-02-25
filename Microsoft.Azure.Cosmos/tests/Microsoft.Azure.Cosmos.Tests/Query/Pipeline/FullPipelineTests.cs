@@ -354,6 +354,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 GetQueryPlan(query),
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                trace: NoOpTrace.Singleton,
                 requestCancellationToken: default,
                 requestContinuationToken: state);
 

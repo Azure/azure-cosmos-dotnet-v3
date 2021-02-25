@@ -17,8 +17,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
         private readonly PartitionRangePageAsyncEnumerator<TPage, TState> enumerator;
         private TryCatch<TPage>? bufferedPage;
 
-        public BufferedPartitionRangePageAsyncEnumerator(PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, CancellationToken cancellationToken)
-            : base(enumerator.FeedRangeState, cancellationToken)
+        public BufferedPartitionRangePageAsyncEnumerator(
+            PartitionRangePageAsyncEnumerator<TPage, TState> enumerator, 
+            ITrace trace,
+            CancellationToken cancellationToken)
+            : base(enumerator.FeedRangeState, trace, cancellationToken)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
         }

@@ -24,8 +24,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             PartitionKey? partitionKey,
             QueryPaginationOptions queryPagingationOptions,
             string filter,
+            ITrace trace,
             CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            : base(feedRangeState, trace, cancellationToken)
         {
             this.StartOfPageState = feedRangeState.State;
             this.innerEnumerator = new InnerEnumerator(
@@ -35,9 +36,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 partitionKey,
                 queryPagingationOptions,
                 filter,
+                trace,
                 cancellationToken);
             this.bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>(
                 this.innerEnumerator,
+                trace,
                 cancellationToken);
         }
 
@@ -72,8 +75,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PartitionKey? partitionKey,
                 QueryPaginationOptions queryPaginationOptions,
                 string filter,
+                ITrace trace,
                 CancellationToken cancellationToken)
-                : base(feedRangeState, cancellationToken)
+                : base(feedRangeState, trace, cancellationToken)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));

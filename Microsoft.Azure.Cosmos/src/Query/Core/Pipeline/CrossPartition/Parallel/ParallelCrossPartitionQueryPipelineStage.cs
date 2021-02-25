@@ -142,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             QueryPaginationOptions queryPaginationOptions,
             int maxConcurrency,
             CosmosElement continuationToken,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (targetRanges == null)
@@ -164,10 +165,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState> crossPartitionPageEnumerator = new CrossPartitionRangePageAsyncEnumerator<QueryPage, QueryState>(
                 documentContainer,
-                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction(documentContainer, sqlQuerySpec, queryPaginationOptions, partitionKey, cancellationToken),
+                ParallelCrossPartitionQueryPipelineStage.MakeCreateFunction( 
+                    documentContainer, 
+                    sqlQuerySpec, 
+                    queryPaginationOptions, 
+                    partitionKey, 
+                    trace,
+                    cancellationToken),
                 comparer: Comparer.Singleton,
                 maxConcurrency,
                 state: state,
+                trace: trace,
                 cancellationToken: cancellationToken);
 
             ParallelCrossPartitionQueryPipelineStage stage = new ParallelCrossPartitionQueryPipelineStage(crossPartitionPageEnumerator, cancellationToken);
@@ -250,12 +258,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             QueryPaginationOptions queryPaginationOptions,
             Cosmos.PartitionKey? partitionKey,
+            ITrace trace,
             CancellationToken cancellationToken) => (FeedRangeState<QueryState> feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
                 queryPaginationOptions,
+                trace,
                 cancellationToken);
 
         public void SetCancellationToken(CancellationToken cancellationToken)

@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens;
         private readonly QueryPaginationOptions queryPaginationOptions;
         private readonly int maxConcurrency;
+        private readonly ITrace trace;
 
         private CancellationToken cancellationToken;
         private QueryState state;
@@ -76,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             int maxConcurrency,
             IEnumerable<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens,
             QueryState state,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
@@ -85,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException($"{nameof(maxConcurrency)} must be a non negative number.") : maxConcurrency;
             this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
             this.state = state ?? InitializingQueryState;
+            this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
             this.cancellationToken = cancellationToken;
         }
 
@@ -327,6 +330,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     partitionKey: null,
                     uninitializedEnumerator.QueryPaginationOptions,
                     uninitializedEnumerator.Filter,
+                    this.trace,
                     this.cancellationToken);
                 this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
             }
@@ -549,6 +553,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             QueryPaginationOptions queryPaginationOptions,
             int maxConcurrency,
             CosmosElement continuationToken,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             // TODO (brchon): For now we are not honoring non deterministic ORDER BY queries, since there is a bug in the continuation logic.
@@ -601,6 +606,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         partitionKey,
                         queryPaginationOptions,
                         TrueFilter,
+                        trace,
                         cancellationToken), (OrderByContinuationToken)null))
                     .ToList();
             }
@@ -664,6 +670,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             partitionKey,
                             queryPaginationOptions,
                             filter,
+                            trace,
                             cancellationToken);
 
                         enumeratorsAndTokens.Add((remoteEnumerator, token));
@@ -678,6 +685,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 maxConcurrency,
                 enumeratorsAndTokens,
                 continuationToken == null ? null : new QueryState(continuationToken),
+                trace,
                 cancellationToken);
             return TryCatch<IQueryPipelineStage>.FromResult(stage);
         }

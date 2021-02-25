@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class ContainerInlineCore : ContainerCore
@@ -442,19 +443,21 @@ namespace Microsoft.Azure.Cosmos
             return base.GetReadFeedIterator(queryDefinition, queryRequestOptions, resourceLink, resourceType, continuationToken, pageSize);
         }
 
-        public override IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+        public override ITraceableAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = default)
+            ChangeFeedRequestOptions changeFeedRequestOptions = default,
+            ITrace trace = default)
         {
-            return base.GetChangeFeedAsyncEnumerable(state, changeFeedMode, changeFeedRequestOptions);
+            return base.GetChangeFeedAsyncEnumerable(state, changeFeedMode, changeFeedRequestOptions, trace);
         }
 
-        public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
+        public override ITraceableAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
             ReadFeedCrossFeedRangeState state,
-            QueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null,
+            ITrace trace = null)
         {
-            return base.GetReadFeedAsyncEnumerable(state, requestOptions);
+            return base.GetReadFeedAsyncEnumerable(state, requestOptions, trace);
         }
 
         public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(

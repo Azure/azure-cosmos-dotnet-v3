@@ -11,27 +11,37 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
 
-    internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerator : IAsyncEnumerator<TryCatch<ChangeFeedPage>>
+    internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerator : ITraceableAsyncEnumerator<TryCatch<ChangeFeedPage>>
     {
         private readonly CrossPartitionChangeFeedAsyncEnumerator enumerator;
         private readonly JsonSerializationFormatOptions jsonSerializationFormatOptions;
+        private readonly ITrace trace;
 
         public ChangeFeedCrossFeedRangeAsyncEnumerator(
             CrossPartitionChangeFeedAsyncEnumerator enumerator,
-            JsonSerializationFormatOptions jsonSerializationFormatOptions)
+            JsonSerializationFormatOptions jsonSerializationFormatOptions,
+            ITrace trace)
         {
             this.enumerator = enumerator ?? throw new ArgumentNullException(nameof(enumerator));
             this.jsonSerializationFormatOptions = jsonSerializationFormatOptions;
+            this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
         }
 
         public TryCatch<ChangeFeedPage> Current { get; private set; }
 
         public ValueTask DisposeAsync() => this.enumerator.DisposeAsync();
 
-        public async ValueTask<bool> MoveNextAsync()
+        public ValueTask<bool> MoveNextAsync()
         {
-            if (!await this.enumerator.MoveNextAsync())
+            return this.MoveNextAsync(this.trace);
+        }
+
+        public async ValueTask<bool> MoveNextAsync(ITrace trace)
+        {
+            if (!await this.enumerator.MoveNextAsync(trace))
             {
                 throw new InvalidOperationException("Change Feed should always be able to move next.");
             }

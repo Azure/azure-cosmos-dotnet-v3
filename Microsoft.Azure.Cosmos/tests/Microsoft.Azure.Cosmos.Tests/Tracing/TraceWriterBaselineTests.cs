@@ -431,6 +431,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     documentContainer,
                     new CrossFeedRangeState<ReadFeedState>(ReadFeedCrossFeedRangeState.CreateFromBeginning().FeedRangeStates),
                     new ReadFeedPaginationOptions(pageSizeHint: 10),
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 int numChildren = 1; // One extra since we need to read one past the last user page to get the null continuation.
@@ -464,6 +465,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     new ChangeFeedPaginationOptions(
                         ChangeFeedMode.Incremental,
                         pageSizeHint: int.MaxValue),
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 int numChildren = 0;
@@ -597,6 +599,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 GetQueryPlan(query),
                 new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                trace: NoOpTrace.Singleton,
                 requestCancellationToken: default,
                 requestContinuationToken: state);
 

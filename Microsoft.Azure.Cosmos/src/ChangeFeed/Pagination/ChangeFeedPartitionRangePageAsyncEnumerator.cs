@@ -20,8 +20,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             IChangeFeedDataSource changeFeedDataSource,
             FeedRangeState<ChangeFeedState> feedRangeState,
             ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            : base(feedRangeState, trace, cancellationToken)
         {
             this.changeFeedDataSource = changeFeedDataSource ?? throw new ArgumentNullException(nameof(changeFeedDataSource));
             this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? throw new ArgumentNullException(nameof(changeFeedPaginationOptions));

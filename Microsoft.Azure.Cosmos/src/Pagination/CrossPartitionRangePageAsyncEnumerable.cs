@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
 
-    internal sealed class CrossPartitionRangePageAsyncEnumerable<TPage, TState> : IAsyncEnumerable<TryCatch<CrossFeedRangePage<TPage, TState>>>
+    internal sealed class CrossPartitionRangePageAsyncEnumerable<TPage, TState> : ITraceableAsyncEnumerable<TryCatch<CrossFeedRangePage<TPage, TState>>>
         where TPage : Page<TState>
         where TState : State
     {
@@ -35,13 +37,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public IAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>> GetAsyncEnumerator(CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            return this.GetAsyncEnumerator(NoOpTrace.Singleton, cancellationToken: default);
+        }
 
+        public ITraceableAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>> GetAsyncEnumerator(
+            ITrace trace, 
+            CancellationToken cancellationToken)
+        {
             return new CrossPartitionRangePageAsyncEnumerator<TPage, TState>(
                 this.feedRangeProvider,
                 this.createPartitionRangeEnumerator,
                 this.comparer,
                 this.maxConcurrency,
+                trace,
                 cancellationToken,
                 this.state);
         }

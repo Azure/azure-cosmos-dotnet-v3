@@ -15,11 +15,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Collections;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
 
     /// <summary>
     /// Coordinates draining pages from multiple <see cref="PartitionRangePageAsyncEnumerator{TPage, TState}"/>, while maintaining a global sort order and handling repartitioning (splits, merge).
     /// </summary>
-    internal sealed class CrossPartitionRangePageAsyncEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>>
+    internal sealed class CrossPartitionRangePageAsyncEnumerator<TPage, TState> : ITraceableAsyncEnumerator<TryCatch<CrossFeedRangePage<TPage, TState>>>
         where TPage : Page<TState>
         where TState : State
     {
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             CreatePartitionRangePageAsyncEnumerator<TPage, TState> createPartitionRangeEnumerator,
             IComparer<PartitionRangePageAsyncEnumerator<TPage, TState>> comparer,
             int? maxConcurrency,
+            ITrace trace,
             CancellationToken cancellationToken,
             CrossFeedRangeState<TState> state = default)
         {
@@ -66,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     FeedRangeState<TState> feedRangeState = rangeAndStates.Span[i];
                     PartitionRangePageAsyncEnumerator<TPage, TState> enumerator = createPartitionRangeEnumerator(feedRangeState);
-                    BufferedPartitionRangePageAsyncEnumerator<TPage, TState> bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator, cancellationToken);
+                    BufferedPartitionRangePageAsyncEnumerator<TPage, TState> bufferedEnumerator = new BufferedPartitionRangePageAsyncEnumerator<TPage, TState>(enumerator, trace, cancellationToken);
                     bufferedEnumerators.Add(bufferedEnumerator);
                 }
 

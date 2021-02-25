@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 queryInfo: new QueryInfo() { },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 maxConcurrency: 10,
+                trace: NoOpTrace.Singleton,
                 requestCancellationToken: default,
                 requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);

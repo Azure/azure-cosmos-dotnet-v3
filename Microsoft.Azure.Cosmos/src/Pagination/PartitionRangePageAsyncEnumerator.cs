@@ -10,19 +10,25 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
 
     /// <summary>
     /// Has the ability to page through a partition range.
     /// </summary>
-    internal abstract class PartitionRangePageAsyncEnumerator<TPage, TState> : IAsyncEnumerator<TryCatch<TPage>>
+    internal abstract class PartitionRangePageAsyncEnumerator<TPage, TState> : ITraceableAsyncEnumerator<TryCatch<TPage>>
         where TPage : Page<TState>
         where TState : State
     {
+        private readonly ITrace trace;
         private CancellationToken cancellationToken;
 
-        protected PartitionRangePageAsyncEnumerator(FeedRangeState<TState> feedRangeState, CancellationToken cancellationToken)
+        protected PartitionRangePageAsyncEnumerator(
+            FeedRangeState<TState> feedRangeState,
+            ITrace trace,
+            CancellationToken cancellationToken)
         {
             this.FeedRangeState = feedRangeState;
+            this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
             this.cancellationToken = cancellationToken;
         }
 
@@ -36,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public ValueTask<bool> MoveNextAsync()
         {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
+            return this.MoveNextAsync(this.trace);
         }
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)

@@ -157,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                         documentContainer,
                         new CrossFeedRangeState<ReadFeedState>(monadicReadFeedState.Result.FeedRangeStates),
                         readFeedPaginationOptions,
+                        NoOpTrace.Singleton,
                         cancellationToken));
             }
 

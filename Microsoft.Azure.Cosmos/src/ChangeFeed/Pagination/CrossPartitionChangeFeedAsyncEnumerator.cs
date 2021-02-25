@@ -11,18 +11,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
 
-    internal sealed class CrossPartitionChangeFeedAsyncEnumerator : IAsyncEnumerator<TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>>
+    internal sealed class CrossPartitionChangeFeedAsyncEnumerator : ITraceableAsyncEnumerator<TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>>
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator;
         private readonly CancellationToken cancellationToken;
+        private readonly ITrace trace;
         private TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>? bufferedException;
 
         private CrossPartitionChangeFeedAsyncEnumerator(
             CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.crossPartitionEnumerator = crossPartitionEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionEnumerator));
+            this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
             this.cancellationToken = cancellationToken;
         }
 
@@ -32,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 
         public ValueTask<bool> MoveNextAsync()
         {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
+            return this.MoveNextAsync(this.trace);
         }
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
@@ -133,6 +137,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             IDocumentContainer documentContainer,
             CrossFeedRangeState<ChangeFeedState> state,
             ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             changeFeedPaginationOptions ??= ChangeFeedPaginationOptions.Default;
@@ -147,14 +152,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 CrossPartitionChangeFeedAsyncEnumerator.MakeCreateFunction(
                     documentContainer,
                     changeFeedPaginationOptions,
+                    trace,
                     cancellationToken),
                 comparer: default /* this uses a regular queue instead of prioirty queue */,
                 maxConcurrency: default,
+                trace,
                 cancellationToken,
                 state);
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = new CrossPartitionChangeFeedAsyncEnumerator(
                 crossPartitionEnumerator,
+                trace,
                 cancellationToken);
 
             return enumerator;
@@ -163,10 +171,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         private static CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> MakeCreateFunction(
             IChangeFeedDataSource changeFeedDataSource,
             ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ITrace trace,
             CancellationToken cancellationToken) => (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
                 changeFeedDataSource,
                 feedRangeState,
                 changeFeedPaginationOptions,
+                trace,
                 cancellationToken);
     }
 }

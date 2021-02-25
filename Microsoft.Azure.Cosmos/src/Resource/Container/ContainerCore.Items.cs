@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -554,10 +555,11 @@ namespace Microsoft.Azure.Cosmos
             return new BatchCore(this, partitionKey);
         }
 
-        public override IAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
+        public override ITraceableAsyncEnumerable<TryCatch<ChangeFeed.ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions = default)
+            ChangeFeedRequestOptions changeFeedRequestOptions = default,
+            ITrace trace = default)
         {
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
@@ -600,7 +602,8 @@ namespace Microsoft.Azure.Cosmos
                 documentContainer,
                 state,
                 changeFeedPaginationOptions,
-                changeFeedRequestOptions?.JsonSerializationFormatOptions);
+                changeFeedRequestOptions?.JsonSerializationFormatOptions,
+                trace ?? NoOpTrace.Singleton);
         }
 
         public override FeedIterator GetStandByFeedIterator(
@@ -743,9 +746,10 @@ namespace Microsoft.Azure.Cosmos
             return feedIterator;
         }
 
-        public override IAsyncEnumerable<TryCatch<ReadFeed.ReadFeedPage>> GetReadFeedAsyncEnumerable(
+        public override ITraceableAsyncEnumerable<TryCatch<ReadFeed.ReadFeedPage>> GetReadFeedAsyncEnumerable(
             ReadFeedCrossFeedRangeState state,
-            QueryRequestOptions queryRequestOptions = default)
+            QueryRequestOptions queryRequestOptions = default,
+            ITrace trace = default)
         {
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 this,
@@ -766,7 +770,8 @@ namespace Microsoft.Azure.Cosmos
             return new ReadFeedCrossFeedRangeAsyncEnumerable(
                 documentContainer,
                 state,
-                readFeedPaginationOptions);
+                readFeedPaginationOptions,
+                trace);
         }
 
         // Extracted partition key might be invalid as CollectionCache might be stale.

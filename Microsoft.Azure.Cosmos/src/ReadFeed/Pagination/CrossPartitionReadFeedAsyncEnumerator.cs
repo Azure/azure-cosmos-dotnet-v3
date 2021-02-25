@@ -12,18 +12,22 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.AsyncEnumerable;
     using Microsoft.Azure.Documents;
 
-    internal sealed class CrossPartitionReadFeedAsyncEnumerator : IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>>
+    internal sealed class CrossPartitionReadFeedAsyncEnumerator : ITraceableAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>>
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> crossPartitionEnumerator;
+        private readonly ITrace trace;
         private CancellationToken cancellationToken;
 
         private CrossPartitionReadFeedAsyncEnumerator(
             CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> crossPartitionEnumerator,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.crossPartitionEnumerator = crossPartitionEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionEnumerator));
+            this.trace = trace ?? throw new ArgumentNullException(nameof(trace));
             this.cancellationToken = cancellationToken;
         }
 
@@ -31,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
 
         public ValueTask<bool> MoveNextAsync()
         {
-            return this.MoveNextAsync(NoOpTrace.Singleton);
+            return this.MoveNextAsync(this.trace);
         }
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
@@ -70,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             IDocumentContainer documentContainer,
             CrossFeedRangeState<ReadFeedState> crossFeedRangeState,
             ReadFeedPaginationOptions readFeedPaginationOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (documentContainer == null)
@@ -101,14 +106,17 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 CrossPartitionReadFeedAsyncEnumerator.MakeCreateFunction(
                     documentContainer,
                     readFeedPaginationOptions,
+                    trace,
                     cancellationToken),
                 comparer: comparer,
                 maxConcurrency: default,
+                trace,
                 cancellationToken,
                 crossFeedRangeState);
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = new CrossPartitionReadFeedAsyncEnumerator(
                 crossPartitionEnumerator,
+                trace,
                 cancellationToken);
 
             return enumerator;
@@ -117,10 +125,12 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         private static CreatePartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> MakeCreateFunction(
             IReadFeedDataSource readFeedDataSource,
             ReadFeedPaginationOptions readFeedPaginationOptions,
+            ITrace trace,
             CancellationToken cancellationToken) => (FeedRangeState<ReadFeedState> feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                 readFeedDataSource,
                 feedRangeState,
                 readFeedPaginationOptions,
+                trace,
                 cancellationToken);
 
         private sealed class PartitionRangePageAsyncEnumeratorComparerForward : IComparer<PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>>

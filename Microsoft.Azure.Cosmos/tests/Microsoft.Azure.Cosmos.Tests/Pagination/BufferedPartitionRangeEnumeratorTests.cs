@@ -107,6 +107,7 @@
                             inMemoryCollection,
                             feedRangeState: feedRangeState,
                             readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            trace: NoOpTrace.Singleton,
                             cancellationToken: default));
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -128,7 +129,9 @@
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: default),
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                 int count = 0;
@@ -172,7 +175,9 @@
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: default),
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
                     if ((random.Next() % 2) == 0)
@@ -211,7 +216,9 @@
                             documentContainer,
                             feedRangeState: feedRangeState,
                             readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                            trace: NoOpTrace.Singleton,
                             cancellationToken: default),
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: default));
 
             public override IAsyncEnumerator<TryCatch<ReadFeedPage>> CreateEnumerator(
@@ -223,7 +230,9 @@
                             new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
                             state ?? ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: default),
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 
             private async Task BufferMoreInBackground(BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator)

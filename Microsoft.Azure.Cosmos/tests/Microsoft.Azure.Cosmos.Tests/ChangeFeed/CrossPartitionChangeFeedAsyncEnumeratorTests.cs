@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
             Assert.IsTrue(await enumerator.MoveNextAsync());
@@ -53,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
             // First page should be true and skip the 304 not modified
@@ -81,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
             int globalCount = await (useContinuations
@@ -104,6 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Time(DateTime.UtcNow))
                     }),
                 ChangeFeedPaginationOptions.Default,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
             for (int i = 0; i < numItems; i++)
@@ -142,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
             Assert.AreEqual(0, await (useContinuations
@@ -211,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     documentContainer,
                     enumerator.Current.Result.State,
                     ChangeFeedPaginationOptions.Default,
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
             }
 

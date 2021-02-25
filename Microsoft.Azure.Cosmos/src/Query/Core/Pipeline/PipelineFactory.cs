@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal static class PipelineFactory
     {
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             QueryPaginationOptions queryPaginationOptions,
             int maxConcurrency,
             CosmosElement requestContinuationToken,
+            ITrace trace,
             CancellationToken requestCancellationToken)
         {
             if (documentContainer == null)
@@ -77,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken,
+                    trace: trace,
                     cancellationToken: cancellationToken);
             }
             else
@@ -89,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     partitionKey: partitionKey,
                     maxConcurrency: maxConcurrency,
                     continuationToken: continuationToken,
+                    trace: trace,
                     cancellationToken: cancellationToken);
             }
 

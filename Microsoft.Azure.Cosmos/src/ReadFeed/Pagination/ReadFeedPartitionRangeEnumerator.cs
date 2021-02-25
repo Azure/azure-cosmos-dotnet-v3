@@ -21,8 +21,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             IReadFeedDataSource readFeedDataSource,
             FeedRangeState<ReadFeedState> feedRangeState,
             ReadFeedPaginationOptions readFeedPaginationOptions,
+            ITrace trace,
             CancellationToken cancellationToken)
-            : base(feedRangeState, cancellationToken)
+            : base(feedRangeState, trace, cancellationToken)
         {
             this.readFeedDataSource = readFeedDataSource ?? throw new ArgumentNullException(nameof(readFeedDataSource));
             this.readFeedPaginationOptions = readFeedPaginationOptions;
