@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Trace = processMessageAsyncTrace;
 
                 processMessageAsyncTrace.AddDatum("User Agent", this.client.ClientContext.UserAgent);
-                
+                processMessageAsyncTrace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
                 DocumentServiceResponse response = request.OperationType == OperationType.Upsert
                         ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
                         : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);

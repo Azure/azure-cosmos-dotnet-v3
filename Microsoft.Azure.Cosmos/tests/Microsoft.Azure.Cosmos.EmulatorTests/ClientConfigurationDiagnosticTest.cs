@@ -3,6 +3,8 @@
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -38,7 +40,10 @@
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response.Diagnostics);
-            Assert.AreEqual(((CosmosTraceDiagnostics)response.Diagnostics).Value.Data.Count, 1);
+            ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+            Assert.AreEqual(trace.Data.Count, 1);
+            ClientConfigurationTraceDatum clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
+            Assert.AreEqual(clientConfigurationTraceDatum.NumberOfClients, 1);
         }
     }
 }

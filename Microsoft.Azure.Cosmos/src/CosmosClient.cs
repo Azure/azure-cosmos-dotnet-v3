@@ -99,8 +99,7 @@ namespace Microsoft.Azure.Cosmos
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
 
-        private static readonly object clientCountLock = new object();
-        internal static int numberOfClients = 0;
+        internal static int numberOfClients;
 
         static CosmosClient()
         {
@@ -221,10 +220,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 clientOptions);
 
-            lock (clientCountLock)
-            {
-                numberOfClients++;
-            }
+            Interlocked.Increment(ref numberOfClients);
 
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
@@ -272,10 +268,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 clientOptions);
 
-            lock (clientCountLock)
-            {
-                numberOfClients++;
-            }
+            Interlocked.Increment(ref numberOfClients);
 
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }

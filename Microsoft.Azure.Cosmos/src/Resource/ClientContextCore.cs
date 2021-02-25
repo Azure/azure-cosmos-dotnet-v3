@@ -206,7 +206,6 @@ namespace Microsoft.Azure.Cosmos
 
             using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
-                trace.AddDatum("Client Configuration", this.Client.ClientConfigurationTraceDatum);
                 return await this.RunWithDiagnosticsHelperAsync(
                     trace,
                     task);

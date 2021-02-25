@@ -460,12 +460,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine("Client Configuration");
                     stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
                     stringBuilder.AppendLine($"Number Of Clients: {clientConfigurationTraceDatum.NumberOfClients}");
+                    stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgent}");
                     stringBuilder.AppendLine("Connection Config:");
-                    foreach (string connectionType in clientConfigurationTraceDatum.ConnectionConfig.Keys)
-                    {
-                        stringBuilder.AppendLine($"{space}{connectionType}: {clientConfigurationTraceDatum.ConnectionConfig[connectionType]}");
-                    }
-
+                    stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'rntbd': {clientConfigurationTraceDatum.RntbdConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'other': {clientConfigurationTraceDatum.OtherConnectionConfig}");
                     stringBuilder.AppendLine($"Consistency Config: {clientConfigurationTraceDatum.ConsistencyConfig}");
 
                     this.toStringValue = stringBuilder.ToString();

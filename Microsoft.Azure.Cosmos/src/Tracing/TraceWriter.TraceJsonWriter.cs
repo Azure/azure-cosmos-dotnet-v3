@@ -307,19 +307,24 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
 
                 this.jsonWriter.WriteFieldName("NumberOfClients");
-                this.jsonWriter.WriteInt64Value(clientConfigurationTraceDatum.NumberOfClients);
-
+                this.jsonWriter.WriteNumber64Value(clientConfigurationTraceDatum.NumberOfClients);
+                this.jsonWriter.WriteFieldName("User Agent");
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.UserAgent);
+                
                 this.jsonWriter.WriteFieldName("ConnectionConfig");
                 this.jsonWriter.WriteObjectStart();
-                foreach (string connectionType in clientConfigurationTraceDatum.ConnectionConfig.Keys)
-                {
-                    this.jsonWriter.WriteFieldName(connectionType);
-                    this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ConnectionConfig[connectionType]);
-                }
+
+                this.jsonWriter.WriteFieldName("gw");
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.GatewayConnectionConfig.ToString());
+                this.jsonWriter.WriteFieldName("rntbd");
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.RntbdConnectionConfig.ToString());
+                this.jsonWriter.WriteFieldName("other");
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.OtherConnectionConfig.ToString());
+
                 this.jsonWriter.WriteObjectEnd();
 
                 this.jsonWriter.WriteFieldName("ConsistencyConfig");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ConsistencyConfig);
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ConsistencyConfig.ToString());
                 this.jsonWriter.WriteObjectEnd();
             }
 

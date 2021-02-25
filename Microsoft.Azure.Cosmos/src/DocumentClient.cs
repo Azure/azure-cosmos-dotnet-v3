@@ -1359,13 +1359,11 @@ namespace Microsoft.Azure.Cosmos
 
         internal void RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
         {
-            clientConfigurationTraceDatum.ConnectionConfig["rntbd"] = string.Format(CultureInfo.InvariantCulture,
-                                                      "(cto: {0}, icto: {1}, mrpc: {2}, mcpe: {3}, ed: {4})",
-                                                      this.openConnectionTimeoutInSeconds,
-                                                      this.idleConnectionTimeoutInSeconds,
-                                                      this.maxRequestsPerRntbdChannel,
-                                                      this.maxRntbdChannels,
-                                                      this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery);
+            clientConfigurationTraceDatum.RntbdConnectionConfig = new RntbdConnectionConfig(this.openConnectionTimeoutInSeconds,
+                                                                    this.idleConnectionTimeoutInSeconds,
+                                                                    this.maxRequestsPerRntbdChannel,
+                                                                    this.maxRntbdChannels,
+                                                                    this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery);
         }
 
         private void ThrowIfDisposed()
