@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                     cosmosClientContext.ClientOptions.ApplicationPreferredRegions);
 
             this.NumberOfClients = CosmosClient.numberOfClients;
-            this.UserAgent = this.UserAgent;
+            this.UserAgent = cosmosClientContext.UserAgent;
         }
     }
 

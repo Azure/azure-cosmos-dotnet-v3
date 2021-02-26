@@ -44,6 +44,36 @@
             Assert.AreEqual(trace.Data.Count, 1);
             ClientConfigurationTraceDatum clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
             Assert.AreEqual(clientConfigurationTraceDatum.NumberOfClients, 1);
+            Assert.IsNotNull(clientConfigurationTraceDatum.UserAgent);
         }
+
+        [TestMethod]
+        public void CleintConfigWithOptionsTest()
+        {
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                RequestTimeout = TimeSpan.FromSeconds(50),
+                OpenTcpConnectionTimeout = TimeSpan.FromSeconds(30),
+                GatewayModeMaxConnectionLimit = 20,
+                MaxRequestsPerTcpConnection = 30,
+                MaxTcpConnectionsPerEndpoint = 30,
+                LimitToEndpoint = true,
+                ConsistencyLevel = ConsistencyLevel.Session
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(options);
+            RntbdConnectionConfig tcpconfig = cosmosClient.ClientConfigurationTraceDatum.RntbdConnectionConfig;
+            Assert.AreEqual(tcpconfig.ConnectionTimeout, 30);
+            Assert.AreEqual(tcpconfig.IdleConnectionTimeout, -1);
+            Assert.AreEqual(tcpconfig.MaxRequestsPerChannel, 30);
+            Assert.AreEqual(tcpconfig.TcpEndpointRediscovery, false);
+
+            GatewayConnectionConfig gwConfig = cosmosClient.ClientConfigurationTraceDatum.GatewayConnectionConfig;
+            Assert.AreEqual(gwConfig.RequestTimeout, 50);
+            Assert.AreEqual(gwConfig.MaxConnectionLimit, 20);
+
+            ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;
+            Assert.AreEqual(consistencyConfig.ConsistencyLevel, ConsistencyLevel.Session);
+        } 
     }
 }
