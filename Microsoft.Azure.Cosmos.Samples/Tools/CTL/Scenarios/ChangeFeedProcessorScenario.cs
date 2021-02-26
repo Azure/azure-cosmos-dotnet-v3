@@ -61,7 +61,7 @@ namespace CosmosCTL
             GaugeOptions leaseGauge = new GaugeOptions { Name = "#Leases created", Context = loggingContextIdentifier };
 
             string leaseContainerId = Guid.NewGuid().ToString();
-            Container leaseContainer = await cosmosClient.GetDatabase(config.Database).CreateContainerAsync(leaseContainerId, "/id", config.Throughput);
+            Container leaseContainer = await cosmosClient.GetDatabase(config.Database).CreateContainerAsync(leaseContainerId, "/id");
             logger.LogInformation("Created lease container {0}", leaseContainerId);
 
             try
