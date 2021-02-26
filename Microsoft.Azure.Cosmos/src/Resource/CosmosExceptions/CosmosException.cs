@@ -21,29 +21,20 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosException(
             HttpStatusCode statusCode,
             string message,
-            int subStatusCode,
             string stackTrace,
-            string activityId,
-            double requestCharge,
-            TimeSpan? retryAfter,
             Headers headers,
             ITrace trace,
             Error error,
             Exception innerException)
             : base(CosmosException.GetMessageHelper(
                 statusCode,
-                subStatusCode,
-                message,
-                activityId), innerException)
+                headers,
+                message), innerException)
         {
             this.ResponseBody = message;
             this.stackTrace = stackTrace;
-            this.ActivityId = activityId;
             this.StatusCode = statusCode;
-            this.SubStatusCode = subStatusCode;
-            this.RetryAfter = retryAfter;
-            this.RequestCharge = requestCharge;
-            this.Headers = headers;
+            this.Headers = headers ?? new Headers();
             this.Error = error;
             this.Trace = trace;
         }
@@ -65,12 +56,19 @@ namespace Microsoft.Azure.Cosmos
             : base(message)
         {
             this.stackTrace = null;
-            this.SubStatusCode = subStatusCode;
             this.StatusCode = statusCode;
-            this.RequestCharge = requestCharge;
-            this.ActivityId = activityId;
-            this.Headers = new Headers();
+            this.ResponseBody = message;
             this.Trace = NoOpTrace.Singleton;
+            this.Headers = new Headers()
+            {
+                SubStatusCode = (SubStatusCodes)subStatusCode,
+                RequestCharge = requestCharge,
+            };
+
+            if (!string.IsNullOrEmpty(activityId))
+            {
+                this.Headers.ActivityId = activityId;
+            }
         }
 
         /// <summary>
@@ -88,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the request completion sub status code from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The request completion status code</value>
-        public virtual int SubStatusCode { get; }
+        public virtual int SubStatusCode => Headers.GetIntValueOrDefault(this.Headers.SubStatusCodeLiteral);
 
         /// <summary>
         /// Gets the request charge for this request from the Azure Cosmos DB service.
@@ -96,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The request charge measured in request units.
         /// </value>
-        public virtual double RequestCharge { get; }
+        public virtual double RequestCharge => this.Headers.RequestCharge;
 
         /// <summary>
         /// Gets the activity ID for the request from the Azure Cosmos DB service.
@@ -104,12 +102,12 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The activity ID for the request.
         /// </value>
-        public virtual string ActivityId { get; }
+        public virtual string ActivityId => this.Headers.ActivityId;
 
         /// <summary>
         /// Gets the retry after time. This tells how long a request should wait before doing a retry.
         /// </summary>
-        public virtual TimeSpan? RetryAfter { get; }
+        public virtual TimeSpan? RetryAfter => this.Headers.RetryAfter;
 
         /// <summary>
         /// Gets the response headers
@@ -184,28 +182,23 @@ namespace Microsoft.Azure.Cosmos
                  cosmosException: this,
                  statusCode: this.StatusCode,
                  trace: this.Trace);
-            if (this.SubStatusCode != 0)
-            {
-                responseMessage.Headers.SubStatusCode = (SubStatusCodes)this.SubStatusCode;
-            }
 
             return responseMessage;
         }
 
         private static string GetMessageHelper(
             HttpStatusCode statusCode,
-            int subStatusCode,
-            string responseBody,
-            string activityId)
+            Headers headers,
+            string responseBody)
         {
             StringBuilder stringBuilder = new StringBuilder();
 
             stringBuilder.Append($"Response status code does not indicate success: ");
             stringBuilder.Append($"{statusCode} ({(int)statusCode})");
             stringBuilder.Append("; Substatus: ");
-            stringBuilder.Append(subStatusCode);
+            stringBuilder.Append(headers?.SubStatusCodeLiteral ?? "0" );
             stringBuilder.Append("; ActivityId: ");
-            stringBuilder.Append(activityId ?? string.Empty);
+            stringBuilder.Append(headers?.ActivityId ?? string.Empty);
             stringBuilder.Append("; Reason: (");
             stringBuilder.Append(responseBody ?? string.Empty);
             stringBuilder.Append(");");
