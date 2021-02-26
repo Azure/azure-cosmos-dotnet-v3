@@ -97,7 +97,7 @@ namespace CosmosCTL
                     {
                         if (lease.LeaseToken != null)
                         {
-                            logger.LogInformation($"Lease for range {lease.LeaseToken}");
+                            logger.LogInformation($"Lease for range {lease.LeaseToken} - {lease.FeedRange.EffectiveRange.Min} - {lease.FeedRange.EffectiveRange.Max}");
                             ranges.Add(lease.FeedRange.EffectiveRange);
                             leaseTotal++;
                         }
