@@ -7,26 +7,21 @@ namespace CosmosCTL
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using App.Metrics;
     using App.Metrics.Counter;
     using App.Metrics.Gauge;
-    using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal class ChangeFeedProcessorScenario : ICTLScenario
     {
         private static readonly int DefaultDocumentFieldCount = 5;
         private static readonly int DefaultDataFieldSize = 20;
         private static readonly string DataFieldValue = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, DefaultDataFieldSize);
-
-        private readonly Random random = new Random();
 
         private InitializationResult initializationResult;
 
@@ -65,17 +60,19 @@ namespace CosmosCTL
             CounterOptions documentCounter = new CounterOptions { Name = "#Documents received", Context = loggingContextIdentifier };
             GaugeOptions leaseGauge = new GaugeOptions { Name = "#Leases created", Context = loggingContextIdentifier };
 
-            Container leaseContainer = await cosmosClient.GetDatabase(config.Database).CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            string leaseContainerId = Guid.NewGuid().ToString();
+            Container leaseContainer = await cosmosClient.GetDatabase(config.Database).CreateContainerAsync(leaseContainerId, "/id", config.Throughput);
+            logger.LogInformation("Created lease container {0}", leaseContainerId);
 
             try
             {
                 ChangeFeedProcessor changeFeedProcessor = cosmosClient.GetContainer(config.Database, config.Collection)
-                    .GetChangeFeedProcessorBuilder<SimpleItem>("ctlProcessor", 
+                    .GetChangeFeedProcessorBuilder<SimpleItem>("ctlProcessor",
                     (IReadOnlyCollection<SimpleItem> docs, CancellationToken token) =>
-                        {
-                            metrics.Measure.Counter.Increment(documentCounter, docs.Count);
-                            return Task.CompletedTask;
-                        })
+                    {
+                        metrics.Measure.Counter.Increment(documentCounter, docs.Count);
+                        return Task.CompletedTask;
+                    })
                     .WithLeaseContainer(leaseContainer)
                     .WithInstanceName(Guid.NewGuid().ToString())
                     .WithStartTime(DateTime.MinValue.ToUniversalTime())
@@ -108,7 +105,7 @@ namespace CosmosCTL
                 }
 
                 string previousMin = "";
-                foreach(FeedRange sortedRange in ranges.OrderBy(range => range.Min))
+                foreach (FeedRange sortedRange in ranges.OrderBy(range => range.Min))
                 {
                     if (previousMin != sortedRange.Min)
                     {
