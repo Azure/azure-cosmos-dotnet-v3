@@ -1505,7 +1505,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │           ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1537,7 +1537,7 @@
     │                                                       [Client Side Request Stats]
     │                                                       Redacted To Not Change The Baselines From Run To Run
     │                                                   )
-    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │           └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1556,7 +1556,7 @@
     │                                                   [Client Side Request Stats]
     │                                                   Redacted To Not Change The Baselines From Run To Run
     │                                               )
-    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │           └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1575,7 +1575,7 @@
     │                                                   [Client Side Request Stats]
     │                                                   Redacted To Not Change The Baselines From Run To Run
     │                                               )
-    └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
             └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
                 └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -1606,7 +1606,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -1860,7 +1860,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -1990,7 +1990,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -2120,7 +2120,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -2273,7 +2273,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
-    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -2306,7 +2306,7 @@
     │   │                                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                               )
     │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
-    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -2326,7 +2326,7 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
-    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
     │   │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -2346,7 +2346,7 @@
     │   │                                               Redacted To Not Change The Baselines From Run To Run
     │   │                                           )
     │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  12:00:00:000  0.00 milliseconds  
-    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  12:00:00:000  0.00 milliseconds  
         │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
         │       └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  12:00:00:000  0.00 milliseconds  
@@ -2378,7 +2378,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -2641,7 +2641,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -2780,7 +2780,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
@@ -2919,7 +2919,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
       "data": {},
