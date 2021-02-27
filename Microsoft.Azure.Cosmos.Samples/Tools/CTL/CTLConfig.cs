@@ -110,8 +110,7 @@ namespace CosmosCTL
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ApplicationName = CTLConfig.UserAgentSuffix,
-                MaxRetryAttemptsOnRateLimitedRequests = 0
+                ApplicationName = CTLConfig.UserAgentSuffix
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
