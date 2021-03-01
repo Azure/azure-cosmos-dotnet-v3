@@ -110,6 +110,11 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
+        // Client initialization lock
+        private readonly SemaphoreSlim ensureValidClientSemaphore = new SemaphoreSlim(1, int.MaxValue);
+        private readonly Action disposeCosmosClient = null;
+        private Func<Exception> ensureValidClientException = null;
+
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
@@ -140,7 +145,6 @@ namespace Microsoft.Azure.Cosmos
         //Private state.
         private bool isSuccessfullyInitialized;
         private bool isDisposed;
-        private object initializationSyncLock;  // guards initializeTask
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
@@ -372,7 +376,8 @@ namespace Microsoft.Azure.Cosmos
                       ISessionContainer sessionContainer = null,
                       bool? enableCpuMonitor = null,
                       Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                      IStoreClientFactory storeClientFactory = null)
+                      IStoreClientFactory storeClientFactory = null,
+                      Action disposeCosmosClientCallBack = null)
             : this(serviceEndpoint,
                 AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
                 sendingRequestEventArgs,
@@ -407,6 +412,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
+        /// <param name="disposeCosmosClient">Function to dispose of the cosmos client. This used if the client initialization failed.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -430,7 +436,8 @@ namespace Microsoft.Azure.Cosmos
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null)
+                              IStoreClientFactory storeClientFactory = null,
+                              Action disposeCosmosClient = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -449,6 +456,7 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse += receivedResponseEventArgs;
             }
 
+            this.disposeCosmosClient = disposeCosmosClient;
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
 
@@ -886,8 +894,6 @@ namespace Microsoft.Azure.Cosmos
             // Setup the proxy to be  used based on connection mode.
             // For gateway: GatewayProxy.
             // For direct: WFStoreProxy [set in OpenAsync()].
-            this.initializationSyncLock = new object();
-
             this.eventSource = DocumentClientEventSource.Instance;
 
             this.initializeTask = TaskHelper.InlineIfPossibleAsync(
@@ -1366,49 +1372,84 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual async Task EnsureValidClientAsync()
         {
+            // If the client failed initialization throw the custom
+            // exception.
+            if (this.ensureValidClientException != null)
+            {
+                throw this.ensureValidClientException();
+            }
+
             this.ThrowIfDisposed();
 
+            // If the client is already initialized return
             if (this.isSuccessfullyInitialized)
             {
                 return;
             }
 
-            // If the initialization task failed, we should retry initialization.
-            // We may end up throwing the same exception but this will ensure that we dont have a
-            // client which is unusable and can resume working if it failed initialization once.
-            // If we have to reinitialize the client, it needs to happen in thread safe manner so that
-            // we dont re-initalize the task again for each incoming call.
-            Task initTask = null;
+            // First operation will take a lock. After the first operation
+            // it will allow all the operation through by releasing int.max locks
+            // This means that if 100 operations all are waiting it will allow all 100 through in parallel
+            // they will just return the cached results.
+            await this.ensureValidClientSemaphore.WaitAsync();
 
-            lock (this.initializationSyncLock)
+            // Use the cached results if the initialization is already done
+            if (this.isSuccessfullyInitialized)
             {
-                initTask = this.initializeTask;
-            }
-
-            try
-            {
-                await initTask;
-                this.isSuccessfullyInitialized = true;
+                this.ensureValidClientSemaphore.Release();
                 return;
             }
-            catch (Exception e)
+
+            if (this.ensureValidClientException != null)
             {
-                DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
+                this.ensureValidClientSemaphore.Release();
+                throw this.ensureValidClientException();
             }
 
-            lock (this.initializationSyncLock)
+            // This is only done for the first operation. All future operations will use the above flags
+            try
             {
-                // if the task has not been updated by another caller, update it
-                if (object.ReferenceEquals(this.initializeTask, initTask))
+                // If the initialization task failed, we should retry initialization.
+                // We may end up throwing the same exception but this will ensure that we dont have a
+                // client which is unusable and can resume working if it failed initialization once.
+                // If we have to reinitialize the client, it needs to happen in thread safe manner so that
+                // we dont re-initalize the task again for each incoming call.
+                try
                 {
-                    this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
+                    await this.initializeTask;
+                    this.isSuccessfullyInitialized = true;
+                    return;
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
                 }
 
-                initTask = this.initializeTask;
+                try
+                {
+                    await this.GetInitializationTaskAsync(storeClientFactory: null);
+                    this.isSuccessfullyInitialized = true;
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceWarning("initializeTask retry failed {0}", e.ToString());
+                    // Setup a factory to create object disposed exceptions. This is necessary if the user
+                    // does concurrent request on the client initialization to avoid race condition of multiple
+                    // tasks sharing the same exception.
+                    string message = $"CosmosClient initialization failed with: {e}";
+                    this.ensureValidClientException = () => new ObjectDisposedException(message);
+
+                    // Both initialization attempts failed. Dispose of the CosmosClient.
+                    this.disposeCosmosClient?.Invoke();
+                    throw;
+                }
+            }
+            finally
+            {
+                // Release the max to allow all the blocked tasks through to use the cached results
+                this.ensureValidClientSemaphore.Release(int.MaxValue);
             }
 
-            await initTask;
-            this.isSuccessfullyInitialized = true;
         }
 
         #region Create Impl
@@ -1684,7 +1725,7 @@ namespace Microsoft.Azure.Cosmos
             if (options == null || options.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
@@ -3058,18 +3099,18 @@ namespace Microsoft.Azure.Cosmos
             if ((options == null) || (options.PartitionKey == null))
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
             return await TaskHelper.InlineIfPossible(
                 () => this.ReplaceDocumentPrivateAsync(
-                    documentLink, 
-                    document, 
-                    options, 
-                    requestRetryPolicy, 
-                    cancellationToken), 
-                requestRetryPolicy, 
+                    documentLink,
+                    document,
+                    options,
+                    requestRetryPolicy,
+                    cancellationToken),
+                requestRetryPolicy,
                 cancellationToken);
         }
 
@@ -5639,7 +5680,7 @@ namespace Microsoft.Azure.Cosmos
             if (options == null || options.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 

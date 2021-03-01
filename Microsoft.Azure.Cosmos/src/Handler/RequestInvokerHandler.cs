@@ -73,6 +73,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
                 if (isError)
                 {
+                    // Client initialization failed so dispose of the client to prevent future requests
+                    this.client.Dispose();
                     return errorResponse;
                 }
 
