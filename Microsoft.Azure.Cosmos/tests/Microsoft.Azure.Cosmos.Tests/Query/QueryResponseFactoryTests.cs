@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Query
         public void CosmosException()
         {
             CosmosException cosmosException = CosmosExceptionFactory.CreateBadRequestException(
-                message: "asdf");
+                message: "asdf",
+                 new Headers());
             QueryResponseCore queryResponse = QueryResponseFactory.CreateFromException(cosmosException);
             Assert.AreEqual(HttpStatusCode.BadRequest, queryResponse.StatusCode);
             Assert.IsNotNull(queryResponse.CosmosException);
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query
             CosmosException cosmosException;
             try
             {
-                throw CosmosExceptionFactory.CreateBadRequestException("InternalServerTestMessage");
+                throw CosmosExceptionFactory.CreateBadRequestException("InternalServerTestMessage", new Headers());
             }
             catch (CosmosException ce)
             {
