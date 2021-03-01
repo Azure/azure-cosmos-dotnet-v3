@@ -612,12 +612,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Simulate a race condition which results in a 409
                     return CosmosExceptionFactory.Create(
                         statusCode: HttpStatusCode.Conflict,
-                        subStatusCode: default,
                         message: "Fake 409 conflict",
                         stackTrace: string.Empty,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: response.Headers.RequestCharge,
-                        retryAfter: default,
                         headers: response.Headers,
                         error: default,
                         innerException: default,

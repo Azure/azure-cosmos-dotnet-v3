@@ -75,7 +75,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                     throw CosmosExceptionFactory.CreateBadRequestException(
                         message: tryGetQueryPlan.Exception.ToString(),
-                        stackTrace: tryGetQueryPlan.Exception.StackTrace);
+                        headers: new Headers(),
+                        stackTrace: tryGetQueryPlan.Exception.StackTrace,
+                        trace: trace);
                 }
 
                 return tryGetQueryPlan.Result;
