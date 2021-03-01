@@ -41,8 +41,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -57,8 +55,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -73,8 +69,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -89,8 +83,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -105,8 +97,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -121,8 +111,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -137,8 +125,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -153,8 +139,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -169,8 +153,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -185,8 +167,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -201,8 +181,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -217,8 +195,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -233,8 +209,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -249,8 +223,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -265,8 +237,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -281,8 +251,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -297,8 +265,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -313,8 +279,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -329,8 +293,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -345,8 +307,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -361,8 +321,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -377,8 +335,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -393,8 +349,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -409,8 +363,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -425,8 +377,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -441,8 +391,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -457,8 +405,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -473,8 +419,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -489,8 +433,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -505,8 +447,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -521,8 +461,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -537,8 +475,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -553,8 +489,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -569,8 +503,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -585,8 +517,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -601,8 +531,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -617,8 +545,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -633,8 +559,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -649,8 +573,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -665,8 +587,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -681,8 +601,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -697,8 +615,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -713,8 +629,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -729,8 +643,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -745,8 +657,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -761,8 +671,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -777,8 +685,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -793,8 +699,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -809,8 +713,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -825,8 +727,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -841,8 +741,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -857,8 +755,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -873,8 +769,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -889,8 +783,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -905,8 +797,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -921,8 +811,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -937,8 +825,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -953,8 +839,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -969,8 +853,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -985,8 +867,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1001,8 +881,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1017,8 +895,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1033,8 +909,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1049,8 +923,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1065,8 +937,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1081,8 +951,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1097,8 +965,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1113,8 +979,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1129,8 +993,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1145,8 +1007,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1161,8 +1021,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1177,8 +1035,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1193,8 +1049,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1209,8 +1063,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1225,8 +1077,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1241,8 +1091,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1257,8 +1105,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1273,8 +1119,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1289,8 +1133,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1305,8 +1147,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1321,8 +1161,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1337,8 +1175,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1353,8 +1189,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1369,8 +1203,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1385,8 +1217,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1401,8 +1231,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1417,8 +1245,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1433,8 +1259,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1449,8 +1273,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1465,8 +1287,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1481,8 +1301,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1497,8 +1315,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1513,8 +1329,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1529,8 +1343,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1545,8 +1357,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1561,8 +1371,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1577,8 +1385,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1593,8 +1399,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1609,8 +1413,6 @@
     │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
     │   │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
     │   │                               (
-    │   │                                   [User Agent]
-    │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                                   [Client Side Request Stats]
     │   │                                   Redacted To Not Change The Baselines From Run To Run
     │   │                               )
@@ -1625,8 +1427,6 @@
         │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  12:00:00:000  0.00 milliseconds  
         │                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  12:00:00:000  0.00 milliseconds  
         │                               (
-        │                                   [User Agent]
-        │                                   Redacted To Not Change The Baselines From Run To Run
         │                                   [Client Side Request Stats]
         │                                   Redacted To Not Change The Baselines From Run To Run
         │                               )
@@ -1712,7 +1512,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -1812,7 +1611,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -1912,7 +1710,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2012,7 +1809,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2112,7 +1908,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2212,7 +2007,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2312,7 +2106,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2412,7 +2205,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2512,7 +2304,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2612,7 +2403,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2712,7 +2502,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2812,7 +2601,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -2912,7 +2700,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3012,7 +2799,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3112,7 +2898,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3212,7 +2997,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3312,7 +3096,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3412,7 +3195,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3512,7 +3294,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3612,7 +3393,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3712,7 +3492,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3812,7 +3591,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -3912,7 +3690,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4012,7 +3789,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4112,7 +3888,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4212,7 +3987,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4312,7 +4086,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4412,7 +4185,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4512,7 +4284,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4612,7 +4383,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4712,7 +4482,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4812,7 +4581,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -4912,7 +4680,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5012,7 +4779,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5112,7 +4878,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5212,7 +4977,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5312,7 +5076,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5412,7 +5175,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5512,7 +5274,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5612,7 +5373,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5712,7 +5472,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5812,7 +5571,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -5912,7 +5670,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6012,7 +5769,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6112,7 +5868,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6212,7 +5967,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6312,7 +6066,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6412,7 +6165,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6512,7 +6264,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6612,7 +6363,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6712,7 +6462,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6812,7 +6561,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -6912,7 +6660,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7012,7 +6759,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7112,7 +6858,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7212,7 +6957,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7312,7 +7056,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7412,7 +7155,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7512,7 +7254,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7612,7 +7353,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7712,7 +7452,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7812,7 +7551,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -7912,7 +7650,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8012,7 +7749,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8112,7 +7848,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8212,7 +7947,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8312,7 +8046,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8412,7 +8145,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8512,7 +8244,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8612,7 +8343,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8712,7 +8442,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8812,7 +8541,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -8912,7 +8640,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9012,7 +8739,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9112,7 +8838,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9212,7 +8937,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9312,7 +9036,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9412,7 +9135,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9512,7 +9234,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9612,7 +9333,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9712,7 +9432,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9812,7 +9531,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -9912,7 +9630,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10012,7 +9729,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10112,7 +9828,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10212,7 +9927,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10312,7 +10026,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10412,7 +10125,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10512,7 +10224,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10612,7 +10323,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10712,7 +10422,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10812,7 +10521,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -10912,7 +10620,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -11012,7 +10719,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -11112,7 +10818,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -11212,7 +10917,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -11312,7 +11016,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -11412,7 +11115,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -11512,7 +11214,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
@@ -11612,7 +11313,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
                                   },
                                   "children": []
