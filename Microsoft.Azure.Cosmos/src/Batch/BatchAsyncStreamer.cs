@@ -102,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
             this.retrier = retrier;
             this.timerWheel = timerWheel;
             this.serializerCore = serializerCore;
+            this.clientContext = clientContext;
             this.currentBatcher = this.CreateBatchAsyncBatcher();
             this.ResetTimer();
 
@@ -109,7 +110,6 @@ namespace Microsoft.Azure.Cosmos
             this.oldPartitionMetric = new BatchPartitionMetric();
             this.partitionMetric = new BatchPartitionMetric();
             this.maxDegreeOfConcurrency = maxDegreeOfConcurrency;
-            this.clientContext = clientContext;
 
             this.StartCongestionControlTimer();
         }
