@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Collections.Generic;
     using System.Globalization;
     using System.Net;
+    using Newtonsoft.Json;
 
     internal sealed class ClientConfigurationTraceDatum : TraceDatum
     {
@@ -66,19 +67,27 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.MaxConnectionLimit = maxConnectionLimit;
             this.RequestTimeout = (int)requestTimeout.TotalSeconds;
             this.IsWebProxyConfigured = webProxy != null;
+            this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
+                                "(cps:{0}, rto:{1}, p:{2})",
+                                maxConnectionLimit,
+                                (int)requestTimeout.TotalSeconds,
+                                webProxy != null));
         }
 
         public int MaxConnectionLimit { get; }
         public int RequestTimeout { get; }
         public bool IsWebProxyConfigured { get; }
 
+        private readonly Lazy<string> lazyString;
+
         public override string ToString()
         {
-            return string.Format(CultureInfo.InvariantCulture,
-                                "(cps:{0}, rto:{1}, p:{2})",
-                                this.MaxConnectionLimit,
-                                this.RequestTimeout,
-                                this.IsWebProxyConfigured);
+            return this.lazyString.Value;
+        }
+
+        public string ToJsonString()
+        {
+            return JsonConvert.SerializeObject(this);
         }
     }
 
@@ -96,6 +105,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.MaxRequestsPerChannel = maxRequestsPerChannel;
             this.MaxRequestsPerEndpoint = maxRequestsPerEndpoint;
             this.TcpEndpointRediscovery = tcpEndpointRediscovery;
+            this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
+                                "(cto: {0}, icto: {1}, mrpc: {2}, mcpe: {3}, erd: {4})",
+                                connectionTimeout,
+                                idleConnectionTimeout,
+                                maxRequestsPerChannel,
+                                maxRequestsPerEndpoint,
+                                tcpEndpointRediscovery));
         }
 
         public int ConnectionTimeout { get; }
@@ -104,15 +120,16 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public int MaxRequestsPerEndpoint { get; }
         public bool TcpEndpointRediscovery { get; }
 
+        private readonly Lazy<string> lazyString;
+
         public override string ToString()
         {
-            return string.Format(CultureInfo.InvariantCulture,
-                                "(cto: {0}, icto: {1}, mrpc: {2}, mcpe: {3}, erd: {4})",
-                                this.ConnectionTimeout,
-                                this.IdleConnectionTimeout,
-                                this.MaxRequestsPerChannel,
-                                this.MaxRequestsPerEndpoint,
-                                this.TcpEndpointRediscovery);
+            return this.lazyString.Value;
+        }
+
+        public string ToJsonString()
+        {
+            return JsonConvert.SerializeObject(this);
         }
     }
 
@@ -124,17 +141,25 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             this.EnableEndpointDiscovery = enableEndpointDiscovery;
             this.AllowBulkExecution = allowBulkExecution;
+            this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
+                                 "(ed:{0}, be:{1})",
+                                 enableEndpointDiscovery,
+                                 allowBulkExecution));
         }
 
         public bool EnableEndpointDiscovery { get; }
         public bool AllowBulkExecution { get; }
 
+        private readonly Lazy<string> lazyString;
+
         public override string ToString()
         {
-            return string.Format(CultureInfo.InvariantCulture,
-                                 "(ed:{0}, be:{1})",
-                                 this.EnableEndpointDiscovery,
-                                 this.AllowBulkExecution);
+            return this.lazyString.Value;
+        }
+
+        public string ToJsonString()
+        {
+            return JsonConvert.SerializeObject(this);
         }
     }
 
@@ -148,22 +173,30 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.ConsistencyLevel = consistencyLevel.GetValueOrDefault();
             this.MultipleWriteLocationsEnabled = multipleWriteLocationsEnabled;
             this.PreferredRegions = preferredRegions;
+            this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
+                                "(consistency: {0}, mm: {1}, prgns:[{2}])",
+                                consistencyLevel.GetValueOrDefault(),
+                                multipleWriteLocationsEnabled,
+                                ConsistencyConfig.PreferredRegionsInternal(preferredRegions)));
         }
 
         public ConsistencyLevel ConsistencyLevel { get; }
         public bool MultipleWriteLocationsEnabled { get; }
         public IReadOnlyList<string> PreferredRegions { get; }
 
+        private readonly Lazy<string> lazyString;
+
         public override string ToString()
         {
-            return string.Format(CultureInfo.InvariantCulture,
-                                "(consistency: {0}, mm: {1}, prgns:[{2}])",
-                                this.ConsistencyLevel,
-                                this.MultipleWriteLocationsEnabled,
-                                this.PreferredRegionsInternal(this.PreferredRegions));
+            return this.lazyString.Value;
         }
 
-        private string PreferredRegionsInternal(IReadOnlyList<string> applicationPreferredRegions)
+        public string ToJsonString()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
+
+        private static string PreferredRegionsInternal(IReadOnlyList<string> applicationPreferredRegions)
         {
             if (applicationPreferredRegions == null)
             {

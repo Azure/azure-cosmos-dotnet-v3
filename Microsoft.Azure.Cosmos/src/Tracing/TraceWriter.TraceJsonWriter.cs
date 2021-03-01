@@ -300,8 +300,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
             {
                 this.jsonWriter.WriteObjectStart();
-                this.jsonWriter.WriteFieldName("Id");
-                this.jsonWriter.WriteStringValue("ClientConfiguration");
 
                 this.jsonWriter.WriteFieldName("Client Created Time Utc");
                 this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
