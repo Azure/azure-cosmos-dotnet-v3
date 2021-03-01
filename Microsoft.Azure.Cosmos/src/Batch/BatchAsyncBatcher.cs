@@ -115,12 +115,12 @@ namespace Microsoft.Azure.Cosmos
         {
             await this.clientContext.OperationHelperAsync("Batch Dispatch Async",
                         requestOptions: null,
-                        task: (trace) => this.DispatchAsync(trace, partitionMetric, cancellationToken),
+                        task: (trace) => this.DispatchHelperAsync(trace, partitionMetric, cancellationToken),
                         traceComponent: TraceComponent.Batch,
                         traceLevel: Tracing.TraceLevel.Info);
         }
 
-        public virtual async Task<object> DispatchAsync(
+        private async Task<object> DispatchHelperAsync(
             ITrace trace,
             BatchPartitionMetric partitionMetric,
             CancellationToken cancellationToken = default)
