@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceUri = ((ContainerInlineCore)container).LinkUri;
+            this.ResourceUri = this.GenerateLinkUri(container);
             if (resourcePartitionKey == null)
             {
                 this.InternalResourcePartitionKey = null;
@@ -55,10 +56,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceUri = ((ContainerInlineCore)container).ClientContext.CreateLink(
-                    parentLink: ((ContainerInlineCore)container).LinkUri,
-                    uriPathSegment: Paths.DocumentsPathSegment,
-                    id: itemId);
+            this.ResourceUri = this.GenerateLinkUri(container, itemId);
             this.InternalResourcePartitionKey = resourcePartitionKey.InternalKey;
         }
 
@@ -133,6 +131,28 @@ namespace Microsoft.Azure.Cosmos
                     this.InternalResourcePartitionKey = value.Value.InternalKey;
                 }
             }
+        }
+
+        private string GenerateLinkUri(Container container, string itemId = null)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append(Paths.DatabasesPathSegment);
+            stringBuilder.Append("/");
+            stringBuilder.Append(Uri.EscapeUriString(container.Database.Id));
+            stringBuilder.Append("/");
+            stringBuilder.Append(Paths.CollectionsPathSegment);
+            stringBuilder.Append("/");
+            stringBuilder.Append(Uri.EscapeUriString(container.Id));
+
+            if (itemId != null)
+            {
+                stringBuilder.Append("/");
+                stringBuilder.Append(Paths.DocumentsPathSegment);
+                stringBuilder.Append("/");
+                stringBuilder.Append(Uri.EscapeUriString(itemId));
+            }
+
+            return stringBuilder.ToString();
         }
 
         /// <summary>
