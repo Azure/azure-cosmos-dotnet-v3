@@ -337,7 +337,8 @@ namespace Microsoft.Azure.Cosmos
                 documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
-                changeFeedRequestOptions: changeFeedRequestOptions);
+                changeFeedRequestOptions: changeFeedRequestOptions,
+                clientContext: this.ClientContext);
         }
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
@@ -365,7 +366,8 @@ namespace Microsoft.Azure.Cosmos
                 documentContainer: documentContainer,
                 changeFeedStartFrom: changeFeedStartFrom,
                 changeFeedMode: changeFeedMode,
-                changeFeedRequestOptions: changeFeedRequestOptions);
+                changeFeedRequestOptions: changeFeedRequestOptions,
+                clientContext: this.ClientContext);
 
             return new FeedIteratorCore<T>(
                 changeFeedIteratorCore,

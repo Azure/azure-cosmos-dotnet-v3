@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer: null,
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
         }
 
         [TestMethod]
@@ -43,7 +44,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer: Mock.Of<IDocumentContainer>(),
                 changeFeedMode: null,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
         }
 
         [DataTestMethod]
@@ -59,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 {
                     PageSizeHint = maxItemCount
                 },
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
         }
 
         [TestMethod]
@@ -69,7 +72,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 Mock.Of<IDocumentContainer>(),
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
         }
 
@@ -83,7 +87,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer,
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
 
             int count = 0;
             while (changeFeedIteratorCore.HasMoreResults)
@@ -109,7 +114,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer,
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
 
             ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
             Assert.AreEqual(HttpStatusCode.NotModified, responseMessage.StatusCode);
@@ -134,7 +140,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer,
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
 
             int count = 0;
             int numIterations = 500;
@@ -175,7 +182,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer,
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                Mock.Of<CosmosClientContext>());
 
             int seed = new Random().Next();
             Random random = new Random(seed);
