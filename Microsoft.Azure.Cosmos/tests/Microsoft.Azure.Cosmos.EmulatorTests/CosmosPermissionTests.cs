@@ -306,6 +306,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //create permission
             string permissionId = Guid.NewGuid().ToString();
             PermissionProperties permissionProperties = new PermissionProperties(permissionId, PermissionMode.Read, container, partitionKey, itemId);
+            Assert.AreEqual(permissionProperties.ResourceUri, $"dbs/{container.Database.Id}/colls/{container.Id}/docs/{itemId}");
             PermissionResponse permissionResponse = await user.CreatePermissionAsync(permissionProperties);
             PermissionProperties permission = permissionResponse.Resource;
             Assert.AreEqual(HttpStatusCode.Created, userResponse.StatusCode);
