@@ -55,8 +55,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void ValidateCustomUserAgentHeader()
         {
             const string suffix = " MyCustomUserAgent/1.0";
-            ConnectionPolicy policy = new ConnectionPolicy();
-            policy.UserAgentSuffix = suffix;
+            ConnectionPolicy policy = new ConnectionPolicy
+            {
+                UserAgentSuffix = suffix
+            };
             Assert.IsTrue(policy.UserAgentContainer.UserAgent.EndsWith(suffix));
 
             byte[] expectedUserAgentUTF8 = Encoding.UTF8.GetBytes(policy.UserAgentContainer.UserAgent);

@@ -138,8 +138,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 count += documents.Count;
 
                 await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                IReadOnlyList<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
-                FeedRangeEpk rangeToSplit = ranges[random.Next(0, ranges.Count)];
+                IReadOnlyList<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
+                FeedRangeEpkRange rangeToSplit = ranges[random.Next(0, ranges.Count)];
                 await documentContainer.SplitAsync(rangeToSplit, cancellationToken: default);
             }
 

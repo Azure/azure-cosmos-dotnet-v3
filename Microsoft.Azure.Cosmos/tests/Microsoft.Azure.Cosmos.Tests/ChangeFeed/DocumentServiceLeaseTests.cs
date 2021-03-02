@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ContinuationToken = "continuation",
                 Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
                 Properties = new Dictionary<string, string> { { "key", "value" } },
-                FeedRange = new FeedRangePartitionKeyRange("0")
+                FeedRange = new FeedRangePhysicalPartitionKeyRange("0")
             };
 
             string serialized = JsonConvert.SerializeObject(originalLease);
@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 ContinuationToken = "continuation",
                 Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
                 Properties = new Dictionary<string, string> { { "key", "value" } },
-                FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false))
+                FeedRange = new FeedRangeEpkRange("AA", "BB")
             };
 
             string serialized = JsonConvert.SerializeObject(originalLease);

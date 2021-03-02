@@ -21,16 +21,16 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [TestMethod]
         public void FeedRangeEPK_Range()
         {
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk feedRangeEPK = new FeedRangeEpk(range);
-            Assert.AreEqual(range, feedRangeEPK.Range);
+            FeedRangeEpkRange feedRangeEPK = new FeedRangeEpkRange("AA", "BB");
+            Assert.AreEqual("AA", feedRangeEPK.StartEpkInclusive);
+            Assert.AreEqual("BB", feedRangeEPK.EndEpkExclusive);
         }
 
         [TestMethod]
         public void FeedRangePK_PK()
         {
             PartitionKey partitionKey = new PartitionKey("test");
-            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
+            FeedRangeLogicalPartitionKey feedRangePartitionKey = new FeedRangeLogicalPartitionKey(partitionKey);
             Assert.AreEqual(partitionKey, feedRangePartitionKey.PartitionKey);
         }
 
@@ -38,18 +38,17 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangePKRangeId_PKRange()
         {
             string pkRangeId = Guid.NewGuid().ToString();
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(pkRangeId);
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(pkRangeId);
             Assert.AreEqual(pkRangeId, feedRangePartitionKeyRange.PartitionKeyRangeId);
         }
 
         [TestMethod]
         public async Task FeedRangeEPK_GetEffectiveRangesAsync()
         {
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk FeedRangeEpk = new FeedRangeEpk(range);
-            List<Documents.Routing.Range<string>> ranges = await FeedRangeEpk.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null);
+            FeedRangeEpkRange feedRangeEpk = new FeedRangeEpkRange("AA", "BB");
+            List<Documents.Routing.Range<string>> ranges = await feedRangeEpk.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null);
             Assert.AreEqual(1, ranges.Count);
-            Assert.AreEqual(range, ranges[0]);
+            Assert.AreEqual(feedRangeEpk.Range, ranges[0]);
         }
 
         [TestMethod]
@@ -58,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Documents.PartitionKeyDefinition partitionKeyDefinition = new Documents.PartitionKeyDefinition();
             partitionKeyDefinition.Paths.Add("/id");
             PartitionKey partitionKey = new PartitionKey("test");
-            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
+            FeedRangeLogicalPartitionKey feedRangePartitionKey = new FeedRangeLogicalPartitionKey(partitionKey);
             Documents.Routing.Range<string> range = Documents.Routing.Range<string>.GetPointRange(partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
             List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKey.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, partitionKeyDefinition);
             Assert.AreEqual(1, ranges.Count);
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public async Task FeedRangePKRangeId_GetEffectiveRangesAsync()
         {
             Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = "AA", MaxExclusive = "BB" };
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
                 .Setup(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<bool>()))
@@ -86,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public async Task FeedRangePKRangeId_GetEffectiveRangesAsync_Refresh()
         {
             Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = "AA", MaxExclusive = "BB" };
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
                 .SetupSequence(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<bool>()))
@@ -104,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public async Task FeedRangePKRangeId_GetEffectiveRangesAsync_Null()
         {
             Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = "AA", MaxExclusive = "BB" };
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
                 .SetupSequence(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.Is<bool>(b => true)))
@@ -120,13 +119,13 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
             Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = range.Min, MaxExclusive = range.Max };
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
                 .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.Is<Documents.Routing.Range<string>>(s => s == range), It.IsAny<ITrace>(), It.IsAny<bool>()))
                 .ReturnsAsync(new List<Documents.PartitionKeyRange>() { partitionKeyRange });
 
-            FeedRangeEpk FeedRangeEpk = new FeedRangeEpk(range);
+            FeedRangeEpkRange FeedRangeEpk = new FeedRangeEpkRange(range.Min, range.Max);
             IEnumerable<string> pkRanges = await FeedRangeEpk.GetPartitionKeyRangesAsync(routingProvider, null, null, default);
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
@@ -145,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
                 .ReturnsAsync(new List<Documents.PartitionKeyRange>() { partitionKeyRange });
 
-            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
+            FeedRangeLogicalPartitionKey feedRangePartitionKey = new FeedRangeLogicalPartitionKey(partitionKey);
             IEnumerable<string> pkRanges = await feedRangePartitionKey.GetPartitionKeyRangesAsync(routingProvider, null, partitionKeyDefinition, default(CancellationToken));
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
@@ -155,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public async Task FeedRangePKRangeId_GetPartitionKeyRangesAsync()
         {
             Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = "AA", MaxExclusive = "BB" };
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(partitionKeyRange.Id);
             IEnumerable<string> pkRanges = await feedRangePartitionKeyRange.GetPartitionKeyRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null, default(CancellationToken));
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
@@ -164,10 +163,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [TestMethod]
         public void FeedRangeEPK_ToJsonFromJson()
         {
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
+            FeedRangeEpkRange feedRangeEpk = new FeedRangeEpkRange("AA", "BB");
             string representation = feedRangeEpk.ToJsonString();
-            FeedRangeEpk feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEpk;
+            FeedRangeEpkRange feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEpkRange;
             Assert.IsNotNull(feedRangeEPKDeserialized);
             Assert.AreEqual(feedRangeEpk.Range.Min, feedRangeEPKDeserialized.Range.Min);
             Assert.AreEqual(feedRangeEpk.Range.Max, feedRangeEPKDeserialized.Range.Max);
@@ -177,9 +175,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangePK_ToJsonFromJson()
         {
             PartitionKey partitionKey = new PartitionKey("test");
-            FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
+            FeedRangeLogicalPartitionKey feedRangePartitionKey = new FeedRangeLogicalPartitionKey(partitionKey);
             string representation = feedRangePartitionKey.ToJsonString();
-            FeedRangePartitionKey feedRangePartitionKeyDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangePartitionKey;
+            FeedRangeLogicalPartitionKey feedRangePartitionKeyDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeLogicalPartitionKey;
             Assert.IsNotNull(feedRangePartitionKeyDeserialized);
             Assert.AreEqual(feedRangePartitionKey.PartitionKey.ToJsonString(), feedRangePartitionKeyDeserialized.PartitionKey.ToJsonString());
         }
@@ -188,9 +186,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void FeedRangePKRangeId_ToJsonFromJson()
         {
             string pkRangeId = Guid.NewGuid().ToString();
-            FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(pkRangeId);
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(pkRangeId);
             string representation = feedRangePartitionKeyRange.ToJsonString();
-            FeedRangePartitionKeyRange feedRangePartitionKeyRangeDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangePartitionKeyRange;
+            FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRangeDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangePhysicalPartitionKeyRange;
             Assert.IsNotNull(feedRangePartitionKeyRangeDeserialized);
             Assert.AreEqual(feedRangePartitionKeyRange.PartitionKeyRangeId, feedRangePartitionKeyRangeDeserialized.PartitionKeyRangeId);
         }

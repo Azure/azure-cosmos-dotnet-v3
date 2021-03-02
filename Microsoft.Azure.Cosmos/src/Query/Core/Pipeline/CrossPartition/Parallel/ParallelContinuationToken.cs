@@ -14,7 +14,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
     /// <summary>
     /// A composite continuation token that has both backend continuation token and partition range information. 
     /// </summary>
-    internal sealed class ParallelContinuationToken : IPartitionedToken
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif 
+        sealed class ParallelContinuationToken : IPartitionedToken
     {
         private static class PropertyNames
         {

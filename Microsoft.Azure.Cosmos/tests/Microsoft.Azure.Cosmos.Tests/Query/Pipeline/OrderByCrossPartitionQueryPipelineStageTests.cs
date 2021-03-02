@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
-                targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
+                targetRanges: new List<FeedRangeEpkRange>() { new FeedRangeEpkRange("A", "B") },
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
                 {
@@ -180,10 +180,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
-                targetRanges: new List<FeedRangeEpk>()
+                targetRanges: new List<FeedRangeEpkRange>()
                 {
-                    new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
-                    new FeedRangeEpk(new Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
+                    new FeedRangeEpkRange("A", "B"),
+                    new FeedRangeEpkRange("B", "C"),
                 },
                 partitionKey: null,
                 orderByColumns: new List<OrderByColumn>()
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         // Split
                         await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                        List<FeedRangeEpkRange> ranges = await inMemoryCollection.GetFeedRangesAsync(
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
                         FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         // Merge
                         await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                        List<FeedRangeEpkRange> ranges = await inMemoryCollection.GetFeedRangesAsync(
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
                         if (ranges.Count > 1)

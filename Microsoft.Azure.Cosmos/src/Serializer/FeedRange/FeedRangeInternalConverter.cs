@@ -18,9 +18,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool CanConvert(Type objectType)
         {
-            return objectType == typeof(FeedRangeEpk)
-                || objectType == typeof(FeedRangePartitionKey)
-                || objectType == typeof(FeedRangePartitionKeyRange);
+            return objectType == typeof(FeedRangeEpkRange)
+                || objectType == typeof(FeedRangeLogicalPartitionKey)
+                || objectType == typeof(FeedRangePhysicalPartitionKeyRange);
         }
 
         public override object ReadJson(
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     Documents.Routing.Range<string> completeRange = (Documents.Routing.Range<string>)rangeJsonConverter.ReadJson(rangeJToken.CreateReader(), typeof(Documents.Routing.Range<string>), null, serializer);
-                    return new FeedRangeEpk(completeRange);
+                    return new FeedRangeEpkRange(completeRange.Min, completeRange.Max);
                 }
                 catch (JsonSerializationException)
                 {
@@ -78,12 +78,12 @@ namespace Microsoft.Azure.Cosmos
                     throw new JsonReaderException();
                 }
 
-                return new FeedRangePartitionKey(partitionKey);
+                return new FeedRangeLogicalPartitionKey(partitionKey);
             }
 
             if (jObject.TryGetValue(FeedRangeInternalConverter.PartitionKeyRangeIdPropertyName, out JToken pkRangeJToken))
             {
-                return new FeedRangePartitionKeyRange(pkRangeJToken.Value<string>());
+                return new FeedRangePhysicalPartitionKeyRange(pkRangeJToken.Value<string>());
             }
 
             throw new JsonReaderException();
@@ -94,21 +94,21 @@ namespace Microsoft.Azure.Cosmos
             object value,
             JsonSerializer serializer)
         {
-            if (value is FeedRangeEpk feedRangeEpk)
+            if (value is FeedRangeEpkRange feedRangeEpk)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.RangePropertyName);
                 rangeJsonConverter.WriteJson(writer, feedRangeEpk.Range, serializer);
                 return;
             }
 
-            if (value is FeedRangePartitionKey feedRangePartitionKey)
+            if (value is FeedRangeLogicalPartitionKey feedRangePartitionKey)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.PartitionKeyPropertyName);
                 writer.WriteValue(feedRangePartitionKey.PartitionKey.ToJsonString());
                 return;
             }
 
-            if (value is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+            if (value is FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.PartitionKeyRangeIdPropertyName);
                 writer.WriteValue(feedRangePartitionKeyRange.PartitionKeyRangeId);

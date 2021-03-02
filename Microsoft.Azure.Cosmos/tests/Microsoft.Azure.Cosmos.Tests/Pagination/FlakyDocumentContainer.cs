@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRange2,
                 cancellationToken);
 
-        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
+        public Task<TryCatch<List<FeedRangeEpkRange>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             ITrace trace,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetChildRangeAsync(
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 trace,
                 cancellationToken);
 
-        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
+        public Task<TryCatch<List<FeedRangeEpkRange>>> MonadicGetFeedRangesAsync(
             ITrace trace,
             CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
                 trace,

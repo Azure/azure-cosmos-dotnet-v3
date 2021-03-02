@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
                         cancellationToken: cancellationToken);
                     await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                         containerRid,
-                        FeedRangeEpk.FullRange.Range,
+                        FeedRangeEpkRange.FullRange.Range,
                         NoOpTrace.Singleton, 
                         forceRefresh: true);
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);

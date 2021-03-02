@@ -87,14 +87,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 IOrderedEnumerable<FeedRangeState<QueryState>> feedRangeStates = crossPartitionState
                     .Value
                     .ToArray()
-                    .OrderBy(tuple => ((FeedRangeEpk)tuple.FeedRange).Range.Min);
+                    .OrderBy(tuple => ((FeedRangeEpkRange)tuple.FeedRange).Range.Min);
 
                 List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
                 {
                     FeedRangeState<QueryState> firstState = feedRangeStates.First();
                     ParallelContinuationToken firstParallelContinuationToken = new ParallelContinuationToken(
                         token: firstState.State != null ? ((CosmosString)firstState.State.Value).Value : null,
-                        range: ((FeedRangeEpk)firstState.FeedRange).Range);
+                        range: ((FeedRangeEpkRange)firstState.FeedRange).Range);
 
                     activeParallelContinuationTokens.Add(firstParallelContinuationToken);
                 }
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                     {
                         ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
                             token: feedRangeState.State != null ? ((CosmosString)feedRangeState.State.Value).Value : null,
-                            range: ((FeedRangeEpk)feedRangeState.FeedRange).Range);
+                            range: ((FeedRangeEpkRange)feedRangeState.FeedRange).Range);
 
                         activeParallelContinuationTokens.Add(parallelContinuationToken);
                     }
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
-            IReadOnlyList<FeedRangeEpk> targetRanges,
+            IReadOnlyList<FeedRangeEpkRange> targetRanges,
             Cosmos.PartitionKey? partitionKey,
             QueryPaginationOptions queryPaginationOptions,
             int maxConcurrency,
@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
         private static TryCatch<CrossFeedRangeState<QueryState>> MonadicExtractState(
             CosmosElement continuationToken,
-            IReadOnlyList<FeedRangeEpk> ranges)
+            IReadOnlyList<FeedRangeEpkRange> ranges)
         {
             if (continuationToken == null)
             {
@@ -224,16 +224,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             PartitionMapping<ParallelContinuationToken> partitionMapping = partitionMappingMonad.Result;
             List<FeedRangeState<QueryState>> feedRangeStates = new List<FeedRangeState<QueryState>>();
 
-            List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken>>()
+            List<IReadOnlyDictionary<FeedRangeEpkRange, ParallelContinuationToken>> rangesToInitialize = new List<IReadOnlyDictionary<FeedRangeEpkRange, ParallelContinuationToken>>()
             {
                 // Skip all the partitions left of the target range, since they have already been drained fully.
                 partitionMapping.TargetMapping,
                 partitionMapping.MappingRightOfTarget,
             };
 
-            foreach (IReadOnlyDictionary<FeedRangeEpk, ParallelContinuationToken> rangeToInitalize in rangesToInitialize)
+            foreach (IReadOnlyDictionary<FeedRangeEpkRange, ParallelContinuationToken> rangeToInitalize in rangesToInitialize)
             {
-                foreach (KeyValuePair<FeedRangeEpk, ParallelContinuationToken> kvp in rangeToInitalize)
+                foreach (KeyValuePair<FeedRangeEpkRange, ParallelContinuationToken> kvp in rangeToInitalize)
                 {
                     FeedRangeState<QueryState> feedRangeState = new FeedRangeState<QueryState>(kvp.Key, kvp.Value?.Token != null ? new QueryState(CosmosString.Create(kvp.Value.Token)) : null);
                     feedRangeStates.Add(feedRangeState);
@@ -279,8 +279,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
                 // Either both don't have results or both do.
                 return string.CompareOrdinal(
-                    ((FeedRangeEpk)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
-                    ((FeedRangeEpk)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
+                    ((FeedRangeEpkRange)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
+                    ((FeedRangeEpkRange)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
             }
         }
     }

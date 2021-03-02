@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
                         OperationType.Batch,
                         this.batchOptions,
                         this.container,
-                        serverRequest.PartitionKey.HasValue ? new FeedRangePartitionKey(serverRequest.PartitionKey.Value) : null,
+                        serverRequest.PartitionKey.HasValue ? new FeedRangeLogicalPartitionKey(serverRequest.PartitionKey.Value) : null,
                         serverRequestPayload,
                         requestMessage =>
                         {

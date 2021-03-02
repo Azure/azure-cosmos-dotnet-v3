@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = "0",
                 ContinuationToken = continuation,
                 Owner = Guid.NewGuid().ToString(),
-                FeedRange = new FeedRangeEpk(range)
+                FeedRange = new FeedRangeEpkRange(range.Min, range.Max)
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                It.IsAny<string>()), Times.Exactly(2));
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.IsAny<FeedRangeEpk>(),
+               It.IsAny<FeedRangeEpkRange>(),
                It.IsAny<string>()), Times.Never);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = "AA-BB",
                 ContinuationToken = continuation,
                 Owner = Guid.NewGuid().ToString(),
-                FeedRange = new FeedRangeEpk(range)
+                FeedRange = new FeedRangeEpkRange(range.Min, range.Max)
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
@@ -135,19 +135,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                It.IsAny<string>()), Times.Never);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.IsAny<FeedRangeEpk>(),
+               It.IsAny<FeedRangeEpkRange>(),
                It.IsAny<string>()), Times.Exactly(3));
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.Is<FeedRangeEpk>(epk => epk.Range.Min == range.Min && epk.Range.Max == resultingRanges[0].MaxExclusive),
+               It.Is<FeedRangeEpkRange>(epk => epk.Range.Min == range.Min && epk.Range.Max == resultingRanges[0].MaxExclusive),
                It.Is<string>(c => c == continuation)), Times.Once);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.Is<FeedRangeEpk>(epk => epk.Range.Min == resultingRanges[1].MinInclusive && epk.Range.Max == resultingRanges[1].MaxExclusive),
+               It.Is<FeedRangeEpkRange>(epk => epk.Range.Min == resultingRanges[1].MinInclusive && epk.Range.Max == resultingRanges[1].MaxExclusive),
                It.Is<string>(c => c == continuation)), Times.Once);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.Is<FeedRangeEpk>(epk => epk.Range.Min == resultingRanges[2].MinInclusive && epk.Range.Max == range.Max),
+               It.Is<FeedRangeEpkRange>(epk => epk.Range.Min == resultingRanges[2].MinInclusive && epk.Range.Max == range.Max),
                It.Is<string>(c => c == continuation)), Times.Once);
         }
 
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = "0",
                 ContinuationToken = continuation,
                 Owner = Guid.NewGuid().ToString(),
-                FeedRange = new FeedRangeEpk(range)
+                FeedRange = new FeedRangeEpkRange(range.Min, range.Max)
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
@@ -201,11 +201,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                It.IsAny<string>()), Times.Never);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.IsAny<FeedRangeEpk>(),
+               It.IsAny<FeedRangeEpkRange>(),
                It.IsAny<string>()), Times.Once);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.Is<FeedRangeEpk>(epKRange => epKRange.Range.Min == range.Min && epKRange.Range.Max == range.Max),
+               It.Is<FeedRangeEpkRange>(epKRange => epKRange.Range.Min == range.Min && epKRange.Range.Max == range.Max),
                It.Is<string>(c => c == continuation)), Times.Once);
         }
 
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = "AA-BB",
                 ContinuationToken = continuation,
                 Owner = Guid.NewGuid().ToString(),
-                FeedRange = new FeedRangeEpk(range)
+                FeedRange = new FeedRangeEpkRange(range.Min, range.Max)
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                It.IsAny<string>()), Times.Never);
 
             leaseManager.Verify(l => l.CreateLeaseIfNotExistAsync(
-               It.IsAny<FeedRangeEpk>(),
+               It.IsAny<FeedRangeEpkRange>(),
                It.IsAny<string>()), Times.Never);
         }
 
@@ -402,13 +402,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 {
                     LeaseToken = "AA-BB",
                     Owner = Guid.NewGuid().ToString(),
-                    FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false))
+                    FeedRange = new FeedRangeEpkRange("AA", "BB")
                 },
                 new DocumentServiceLeaseCoreEpk()
                 {
                     LeaseToken = "BB-CC",
                     Owner = Guid.NewGuid().ToString(),
-                    FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "CC", true, false))
+                    FeedRange = new FeedRangeEpkRange("BB", "CC")
                 }
             };
 

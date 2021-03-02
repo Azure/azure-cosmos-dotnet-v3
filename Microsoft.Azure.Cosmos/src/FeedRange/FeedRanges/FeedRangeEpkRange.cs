@@ -12,30 +12,42 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    /// <summary>
-    /// FeedRange that represents an effective partition key range.
-    /// </summary>
-    internal sealed class FeedRangeEpk : FeedRangeInternal
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+        sealed class FeedRangeEpkRange : FeedRangeInternal
     {
-        public static readonly FeedRangeEpk FullRange = new FeedRangeEpk(new Documents.Routing.Range<string>(
+        public static readonly FeedRangeEpkRange FullRange = new FeedRangeEpkRange(
             Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-            isMinInclusive: true,
-            isMaxInclusive: false));
+            Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey);
 
-        public FeedRangeEpk(Documents.Routing.Range<string> range)
+        public FeedRangeEpkRange(string startEpkInclusive, string endEpkExclusive)
         {
-            this.Range = range ?? throw new ArgumentNullException(nameof(range));
+            this.StartEpkInclusive = startEpkInclusive ?? throw new ArgumentNullException(nameof(startEpkInclusive));
+            this.EndEpkExclusive = endEpkExclusive ?? throw new ArgumentNullException(nameof(endEpkExclusive));
         }
 
-        public Documents.Routing.Range<string> Range { get; }
+        public string StartEpkInclusive { get; }
+
+        public string EndEpkExclusive { get; }
+
+        public Documents.Routing.Range<string> Range => new Documents.Routing.Range<string>(this.StartEpkInclusive, this.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false);
 
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition)
         {
-            return Task.FromResult(new List<Documents.Routing.Range<string>>() { this.Range });
+            return Task.FromResult(
+                new List<Documents.Routing.Range<string>>() 
+                { 
+                    new Documents.Routing.Range<string>(this.StartEpkInclusive, this.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false) 
+                });
         }
 
         internal override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -45,8 +57,8 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
-                containerRid, 
-                this.Range,
+                containerRid,
+                new Documents.Routing.Range<string>(this.StartEpkInclusive, this.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false),
                 NoOpTrace.Singleton,
                 forceRefresh: false);
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
@@ -79,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             TArg argument,
             CancellationToken cancellationToken) => visitor.VisitAsync(this, argument, cancellationToken);
 
-        public override string ToString() => this.Range.ToString();
+        public override string ToString() => new Documents.Routing.Range<string>(this.StartEpkInclusive, this.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false).ToString();
 
         internal override TResult Accept<TResult>(IFeedRangeTransformer<TResult> transformer)
         {
@@ -88,24 +100,20 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool Equals(object obj)
         {
-            return this.Equals(obj as FeedRangeEpk);
+            return this.Equals(obj as FeedRangeEpkRange);
         }
 
-        public bool Equals(FeedRangeEpk other)
+        public bool Equals(FeedRangeEpkRange other)
         {
             return (other != null)
-                && this.Range.Min.Equals(other.Range.Min)
-                && this.Range.Max.Equals(other.Range.Max)
-                && this.Range.IsMinInclusive.Equals(other.Range.IsMinInclusive)
-                && this.Range.IsMaxInclusive.Equals(other.Range.IsMaxInclusive);
+                && this.StartEpkInclusive.Equals(other.StartEpkInclusive)
+                && this.EndEpkExclusive.Equals(other.EndEpkExclusive);
         }
 
         public override int GetHashCode()
         {
-            return this.Range.Min.GetHashCode()
-                ^ this.Range.Max.GetHashCode()
-                ^ this.Range.IsMinInclusive.GetHashCode()
-                ^ this.Range.IsMaxInclusive.GetHashCode();
+            return this.StartEpkInclusive.GetHashCode()
+                ^ this.EndEpkExclusive.GetHashCode();
         }
     }
 }

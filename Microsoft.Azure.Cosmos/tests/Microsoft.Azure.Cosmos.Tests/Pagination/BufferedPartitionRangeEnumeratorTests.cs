@@ -89,7 +89,7 @@
                 (HashSet<string> parentIdentifiers, ReadFeedState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
-                await inMemoryCollection.SplitAsync(new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"), cancellationToken: default);
+                await inMemoryCollection.SplitAsync(new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: "0"), cancellationToken: default);
 
                 // Try To read from the partition that is gone.
                 await enumerator.MoveNextAsync();
@@ -101,7 +101,7 @@
                 {
                     PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState> enumerable = new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                         feedRangeState: new FeedRangeState<ReadFeedState>(
-                            new FeedRangePartitionKeyRange(partitionKeyRangeId: partitionKeyRangeId.ToString()),
+                            new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: partitionKeyRangeId.ToString()),
                             state),
                         (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                             inMemoryCollection,
@@ -125,7 +125,7 @@
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
-                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                            new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: "0"),
                             ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default),
@@ -169,7 +169,7 @@
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
-                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                            new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: "0"),
                             ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default),
@@ -204,7 +204,7 @@
                 IDocumentContainer documentContainer,
                 ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     feedRangeState: new FeedRangeState<ReadFeedState>( 
-                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                        new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: "0"),
                         state ?? ReadFeedState.Beginning()),
                     (feedRangeState) => new BufferedPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                         new ReadFeedPartitionRangeEnumerator(
@@ -220,7 +220,7 @@
                     new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: new FeedRangeState<ReadFeedState>(
-                            new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                            new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: "0"),
                             state ?? ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                         cancellationToken: default),

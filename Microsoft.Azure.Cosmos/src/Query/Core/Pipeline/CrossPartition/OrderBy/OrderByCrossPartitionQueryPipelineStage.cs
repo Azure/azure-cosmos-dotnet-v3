@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     OrderByContinuationToken modifiedToken = new OrderByContinuationToken(
                         new ParallelContinuationToken(
                             ((CosmosString)uninitializedEnumerator.FeedRangeState.State.Value).Value,
-                            ((FeedRangeEpk)uninitializedEnumerator.FeedRangeState.FeedRange).Range),
+                            ((FeedRangeEpkRange)uninitializedEnumerator.FeedRangeState.FeedRange).Range),
                         token.OrderByItems,
                         token.Rid,
                         itemsLeftToSkip,
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         {
             this.cancellationToken.ThrowIfCancellationRequested();
 
-            IReadOnlyList<FeedRangeEpk> childRanges = await this.documentContainer.GetChildRangeAsync(
+            IReadOnlyList<FeedRangeEpkRange> childRanges = await this.documentContainer.GetChildRangeAsync(
                 uninitializedEnumerator.FeedRangeState.FeedRange,
                 trace,
                 this.cancellationToken);
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                             new ParallelContinuationToken(
                                 token: ((CosmosString)currentEnumerator.FeedRangeState.State.Value).Value,
-                                range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
+                                range: ((FeedRangeEpkRange)currentEnumerator.FeedRangeState.FeedRange).Range),
                             orderByQueryResult.OrderByItems,
                             orderByQueryResult.Rid,
                             skipCount: 0,
@@ -436,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     new ParallelContinuationToken(
                         token: currentEnumerator.StartOfPageState != null ? ((CosmosString)currentEnumerator.StartOfPageState.Value).Value : null,
-                        range: ((FeedRangeEpk)currentEnumerator.FeedRangeState.FeedRange).Range),
+                        range: ((FeedRangeEpkRange)currentEnumerator.FeedRangeState.FeedRange).Range),
                     orderByQueryResult.OrderByItems,
                     orderByQueryResult.Rid,
                     skipCount: skipCount,
@@ -543,7 +543,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
-            IReadOnlyList<FeedRangeEpk> targetRanges,
+            IReadOnlyList<FeedRangeEpkRange> targetRanges,
             Cosmos.PartitionKey? partitionKey,
             IReadOnlyList<OrderByColumn> orderByColumns,
             QueryPaginationOptions queryPaginationOptions,
@@ -639,7 +639,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 // right of target partition has filter expression >= value, 
                 // and target partition takes the previous filter from continuation (or true if no continuation)
                 (string leftFilter, string targetFilter, string rightFilter) = OrderByCrossPartitionQueryPipelineStage.GetFormattedFilters(columnAndItems);
-                List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)> tokenMappingAndFilters = new List<(IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken>, string)>()
+                List<(IReadOnlyDictionary<FeedRangeEpkRange, OrderByContinuationToken>, string)> tokenMappingAndFilters = new List<(IReadOnlyDictionary<FeedRangeEpkRange, OrderByContinuationToken>, string)>()
                 {
                     { (partitionMapping.MappingLeftOfTarget, leftFilter) },
                     { (partitionMapping.TargetMapping, targetFilter) },
@@ -647,15 +647,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 };
 
                 enumeratorsAndTokens = new List<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>();
-                foreach ((IReadOnlyDictionary<FeedRangeEpk, OrderByContinuationToken> tokenMapping, string filter) in tokenMappingAndFilters)
+                foreach ((IReadOnlyDictionary<FeedRangeEpkRange, OrderByContinuationToken> tokenMapping, string filter) in tokenMappingAndFilters)
                 {
                     SqlQuerySpec rewrittenQueryForOrderBy = new SqlQuerySpec(
                         sqlQuerySpec.QueryText.Replace(oldValue: FormatPlaceHolder, newValue: filter),
                         sqlQuerySpec.Parameters);
 
-                    foreach (KeyValuePair<FeedRangeEpk, OrderByContinuationToken> kvp in tokenMapping)
+                    foreach (KeyValuePair<FeedRangeEpkRange, OrderByContinuationToken> kvp in tokenMapping)
                     {
-                        FeedRangeEpk range = kvp.Key;
+                        FeedRangeEpkRange range = kvp.Key;
                         OrderByContinuationToken token = kvp.Value;
                         OrderByQueryPartitionRangePageAsyncEnumerator remoteEnumerator = new OrderByQueryPartitionRangePageAsyncEnumerator(
                             documentContainer,
@@ -683,7 +683,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         }
 
         private static TryCatch<PartitionMapper.PartitionMapping<OrderByContinuationToken>> MonadicGetOrderByContinuationTokenMapping(
-            IReadOnlyList<FeedRangeEpk> partitionKeyRanges,
+            IReadOnlyList<FeedRangeEpkRange> partitionKeyRanges,
             CosmosElement continuationToken,
             int numOrderByItems)
         {

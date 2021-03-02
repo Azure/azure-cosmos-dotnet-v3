@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: operationType,
                 requestOptions: requestOptions,
                 cosmosContainerCore: cosmosContainerCore,
-                feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
+                feedRange: partitionKey.HasValue ? new FeedRangeLogicalPartitionKey(partitionKey.Value) : null,
                 streamPayload: streamPayload,
                 requestEnricher: requestEnricher,
                 trace: trace,

@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     internal interface IFeedRangeTransformer<TResult>
     {
-        TResult Visit(FeedRangePartitionKey feedRange);
+        TResult Visit(FeedRangeLogicalPartitionKey feedRange);
 
-        TResult Visit(FeedRangePartitionKeyRange feedRange);
+        TResult Visit(FeedRangePhysicalPartitionKeyRange feedRange);
 
-        TResult Visit(FeedRangeEpk feedRange);
+        TResult Visit(FeedRangeEpkRange feedRange);
     }
 }

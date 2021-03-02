@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     internal interface IFeedRangeVisitor
     {
-        public abstract void Visit(FeedRangePartitionKey feedRange);
+        public abstract void Visit(FeedRangeLogicalPartitionKey feedRange);
 
-        public abstract void Visit(FeedRangePartitionKeyRange feedRange);
+        public abstract void Visit(FeedRangePhysicalPartitionKeyRange feedRange);
 
-        public abstract void Visit(FeedRangeEpk feedRange);
+        public abstract void Visit(FeedRangeEpkRange feedRange);
     }
 }

@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
             // We sadly need to check the partition key, since a user can set a partition key in the request options with a different continuation token.
             // In the future the partition filtering and continuation information needs to be a tightly bounded contract (like cross feed range state).
-            FeedRangeInternal feedRange = this.partitionKey.HasValue ? new FeedRangePartitionKey(this.partitionKey.Value) : this.FeedRangeState.FeedRange;
+            FeedRangeInternal feedRange = this.partitionKey.HasValue ? new FeedRangeLogicalPartitionKey(this.partitionKey.Value) : this.FeedRangeState.FeedRange;
             return this.queryDataSource.MonadicQueryAsync(
               sqlQuerySpec: this.sqlQuerySpec,
               feedRangeState: new FeedRangeState<QueryState>(feedRange, this.FeedRangeState.State),

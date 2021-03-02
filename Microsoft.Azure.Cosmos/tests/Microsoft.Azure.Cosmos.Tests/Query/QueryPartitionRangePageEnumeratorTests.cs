@@ -76,7 +76,7 @@
                 (HashSet<string> parentIdentifiers, QueryState state) = await this.PartialDrainAsync(enumerator, numIterations: 3);
 
                 // Split the partition
-                await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
+                await documentContainer.SplitAsync(new FeedRangePhysicalPartitionKeyRange("0"), cancellationToken: default);
 
                 // Try To read from the partition that is gone.
                 await enumerator.MoveNextAsync();
@@ -86,10 +86,10 @@
                 HashSet<string> childIdentifiers = new HashSet<string>();
 
                 await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default);
-                foreach (FeedRangeEpk range in ranges)
+                foreach (FeedRangeEpkRange range in ranges)
                 {
                     IAsyncEnumerable<TryCatch<QueryPage>> enumerable = new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
                         feedRangeState: new FeedRangeState<QueryState>(range, state),
@@ -128,7 +128,7 @@
                 IDocumentContainer documentContainer,
                 QueryState state = null)
             {
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                List<FeedRangeEpkRange> ranges = documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
@@ -147,7 +147,7 @@
                 IDocumentContainer documentContainer,
                 QueryState state = default)
             {
-                List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
+                List<FeedRangeEpkRange> ranges = documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton, 
                     cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);

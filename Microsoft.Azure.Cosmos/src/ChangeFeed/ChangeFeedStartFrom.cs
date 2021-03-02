@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from this moment onward.</returns>
         public static ChangeFeedStartFrom Now()
         {
-            return Now(FeedRangeEpk.FullRange);
+            return Now(FeedRangeEpkRange.FullRange);
         }
 
         /// <summary>
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from some point in time onward.</returns>
         public static ChangeFeedStartFrom Time(DateTime dateTimeUtc)
         {
-            return Time(dateTimeUtc, FeedRangeEpk.FullRange);
+            return Time(dateTimeUtc, FeedRangeEpkRange.FullRange);
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A <see cref="ChangeFeedStartFrom"/> that tells the ChangeFeed operation to start reading changes from the beginning of time.</returns>
         public static ChangeFeedStartFrom Beginning()
         {
-            return Beginning(FeedRangeEpk.FullRange);
+            return Beginning(FeedRangeEpkRange.FullRange);
         }
 
         /// <summary>

@@ -9,10 +9,10 @@ namespace Microsoft.Azure.Cosmos
 
     internal interface IFeedRangeAsyncVisitor<TResult, TArg>
     {
-        public abstract Task<TResult> VisitAsync(FeedRangePartitionKey feedRange, TArg argument, CancellationToken cancellationToken);
+        public abstract Task<TResult> VisitAsync(FeedRangeLogicalPartitionKey feedRange, TArg argument, CancellationToken cancellationToken);
 
-        public abstract Task<TResult> VisitAsync(FeedRangePartitionKeyRange feedRange, TArg argument, CancellationToken cancellationToken);
+        public abstract Task<TResult> VisitAsync(FeedRangePhysicalPartitionKeyRange feedRange, TArg argument, CancellationToken cancellationToken);
 
-        public abstract Task<TResult> VisitAsync(FeedRangeEpk feedRange, TArg argument, CancellationToken cancellationToken);
+        public abstract Task<TResult> VisitAsync(FeedRangeEpkRange feedRange, TArg argument, CancellationToken cancellationToken);
     }
 }

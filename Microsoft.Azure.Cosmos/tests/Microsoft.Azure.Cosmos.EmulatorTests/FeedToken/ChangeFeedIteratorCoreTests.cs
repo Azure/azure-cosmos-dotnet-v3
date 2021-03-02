@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             FeedIterator<ToDoActivity> feedIterator = itemsCore.GetChangeFeedIterator<ToDoActivity>(
                 ChangeFeedStartFrom.Beginning(
-                    new FeedRangePartitionKey(
+                    new FeedRangeLogicalPartitionKey(
                         new PartitionKey(pkToRead))),
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions()

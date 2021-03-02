@@ -308,7 +308,8 @@ namespace Microsoft.Azure.Cosmos
             List<FeedRange> feedTokens = new List<FeedRange>(partitionKeyRanges.Count);
             foreach (PartitionKeyRange partitionKeyRange in partitionKeyRanges)
             {
-                feedTokens.Add(new FeedRangeEpk(partitionKeyRange.ToRange()));
+                Documents.Routing.Range<string> range = partitionKeyRange.ToRange();
+                feedTokens.Add(new FeedRangeEpkRange(range.Min, range.Max));
             }
 
             return feedTokens;

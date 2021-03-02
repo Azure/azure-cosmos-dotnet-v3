@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
+                targetRanges: new List<FeedRangeEpkRange>() { new FeedRangeEpkRange("A", "B") },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
                 maxConcurrency: 10,
@@ -133,10 +133,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<FeedRangeEpk>() 
+                targetRanges: new List<FeedRangeEpkRange>() 
                 {
-                    new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
-                    new FeedRangeEpk(new Documents.Routing.Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
+                    new FeedRangeEpkRange("A", "B"),
+                    new FeedRangeEpkRange("B", "C"),
                 },
                 queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
                 partitionKey: null,
@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         // Split
                         await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                        List<FeedRangeEpkRange> ranges = await inMemoryCollection.GetFeedRangesAsync(
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
                         FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     {
                         // Merge
                         await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                        List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                        List<FeedRangeEpkRange> ranges = await inMemoryCollection.GetFeedRangesAsync(
                             trace: NoOpTrace.Singleton,
                             cancellationToken: default);
                         if (ranges.Count > 1)

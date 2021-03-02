@@ -671,7 +671,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 ExecutionEnvironment.Compute,
                 documentContainer,
                 new SqlQuerySpec(query),
-                new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                new List<FeedRangeEpkRange>() { FeedRangeEpkRange.FullRange },
                 partitionKey: null,
                 GetQueryPlan(query),
                 new QueryPaginationOptions(pageSizeHint: 10),

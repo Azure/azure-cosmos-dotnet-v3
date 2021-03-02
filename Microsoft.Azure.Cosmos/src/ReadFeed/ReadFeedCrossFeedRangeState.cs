@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             public static readonly ReadFeedCrossFeedRangeState Beginning = new ReadFeedCrossFeedRangeState(
                 new List<FeedRangeState<ReadFeedState>>()
                 {
-                    new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
+                    new FeedRangeState<ReadFeedState>(FeedRangeEpkRange.FullRange, ReadFeedState.Beginning())
                 });
         }
 
@@ -44,7 +44,15 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             // All the split and merge methods will call that constructor to avoid additional allocations.
         }
 
-        internal ReadFeedCrossFeedRangeState(ReadOnlyMemory<FeedRangeState<ReadFeedState>> feedRangeStates)
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+        public
+#else
+        internal
+#endif
+            ReadFeedCrossFeedRangeState(ReadOnlyMemory<FeedRangeState<ReadFeedState>> feedRangeStates)
         {
             if (feedRangeStates.IsEmpty)
             {
@@ -54,7 +62,15 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             this.FeedRangeStates = feedRangeStates;
         }
 
-        internal ReadOnlyMemory<FeedRangeState<ReadFeedState>> FeedRangeStates { get; }
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+        public
+#else
+        internal
+#endif
+            ReadOnlyMemory<FeedRangeState<ReadFeedState>> FeedRangeStates { get; }
 
         public ReadFeedCrossFeedRangeState Merge(ReadFeedCrossFeedRangeState first)
         {
@@ -231,7 +247,15 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 return CreateFromCosmosElement(monadicCosmosElement.Result);
             }
 
-            internal static TryCatch<ReadFeedCrossFeedRangeState> CreateFromCosmosElement(CosmosElement cosmosElement)
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+            public
+#else
+            internal
+#endif
+                static TryCatch<ReadFeedCrossFeedRangeState> CreateFromCosmosElement(CosmosElement cosmosElement)
             {
                 if (cosmosElement == null)
                 {
@@ -265,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
         public static ReadFeedCrossFeedRangeState CreateFromBeginning()
         {
-            return CreateFromBeginning(FeedRangeEpk.FullRange);
+            return CreateFromBeginning(FeedRangeEpkRange.FullRange);
         }
 
         public static ReadFeedCrossFeedRangeState CreateFromBeginning(FeedRange feedRange)
@@ -275,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 throw new ArgumentException($"{nameof(feedRange)} needs to be a {nameof(FeedRangeInternal)}.");
             }
 
-            if (feedRange.Equals(FeedRangeEpk.FullRange))
+            if (feedRange.Equals(FeedRangeEpkRange.FullRange))
             {
                 return FullRangeStatesSingletons.Beginning;
             }
@@ -289,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
         public static ReadFeedCrossFeedRangeState CreateFromContinuation(CosmosElement continuation)
         {
-            return CreateFromContinuation(continuation, FeedRangeEpk.FullRange);
+            return CreateFromContinuation(continuation, FeedRangeEpkRange.FullRange);
         }
 
         public static ReadFeedCrossFeedRangeState CreateFromContinuation(CosmosElement continuation, FeedRange feedRange)

@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 LeaseToken = "0",
                 Owner = Guid.NewGuid().ToString(),
-                FeedRange = new FeedRangePartitionKeyRange("0")
+                FeedRange = new FeedRangePhysicalPartitionKeyRange("0")
             };
 
             Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 HostName = Guid.NewGuid().ToString()
             };
 
-            FeedRangeEpk feedRangeEpk = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false));
+            FeedRangeEpkRange feedRangeEpk = new FeedRangeEpkRange("AA", "BB");
 
             Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
 
@@ -97,8 +97,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.IsNotNull(epkBasedLease);
             Assert.AreEqual(continuation, afterAcquire.ContinuationToken);
-            Assert.AreEqual(feedRangeEpk.Range.Min, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Min);
-            Assert.AreEqual(feedRangeEpk.Range.Max, ((FeedRangeEpk)epkBasedLease.FeedRange).Range.Max);
+            Assert.AreEqual(feedRangeEpk.Range.Min, ((FeedRangeEpkRange)epkBasedLease.FeedRange).Range.Min);
+            Assert.AreEqual(feedRangeEpk.Range.Max, ((FeedRangeEpkRange)epkBasedLease.FeedRange).Range.Max);
         }
 
         [TestMethod]
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseId = Guid.NewGuid().ToString(),
                 LeaseToken = "0",
                 Owner = Guid.NewGuid().ToString(),
-                FeedRange = new FeedRangePartitionKeyRange("0")
+                FeedRange = new FeedRangePhysicalPartitionKeyRange("0")
             };
 
             Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             {
                 LeaseToken = "0",
                 Owner = Guid.NewGuid().ToString(),
-                FeedRange = new FeedRangePartitionKeyRange("0")
+                FeedRange = new FeedRangePhysicalPartitionKeyRange("0")
             };
 
             Mock<DocumentServiceLeaseUpdater> mockUpdater = new Mock<DocumentServiceLeaseUpdater>();

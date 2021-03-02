@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task EmptyContainerTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 0);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
             TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(ranges[0], ChangeFeedState.Beginning()),
                 changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromBeginingTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             // Should get back the all the documents inserted so far
             ChangeFeedState resumeState;
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromTimeTestAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
 
             DateTime now = DateTime.UtcNow;
             // No changes let
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task StartFromNowAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 10);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
 
             ChangeFeedState resumeState;
             // No changes starting from now
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             // Should get back only the document with the partition key.
             TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
-                feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKey(new Cosmos.PartitionKey(0)), ChangeFeedState.Beginning()),
+                feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangeLogicalPartitionKey(new Cosmos.PartitionKey(0)), ChangeFeedState.Beginning()),
                 changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: int.MaxValue),
                 NoOpTrace.Singleton,
                 cancellationToken: default);
@@ -213,8 +213,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
 
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
-            FeedRangeEpk range = ranges[0];
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            FeedRangeEpkRange range = ranges[0];
 
             PartitionKeyHashRange hashRange = new PartitionKeyHashRange(PartitionKeyHash.Parse(range.Range.Min), PartitionKeyHash.Parse(range.Range.Max));
             PartitionKeyHashRanges hashRanges = PartitionKeyHashRangeSplitterAndMerger.SplitRange(hashRange, rangeCount: 2);
@@ -225,12 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 // Should get back only the document within the epk range.
                 TryCatch<ChangeFeedPage> monadicChangeFeedPage = await documentContainer.MonadicChangeFeedAsync(
                     feedRangeState: new FeedRangeState<ChangeFeedState>(
-                        new FeedRangeEpk(
-                            new Documents.Routing.Range<string>(
-                                min: value.StartInclusive.Value.ToString(),
-                                max: value.EndExclusive.Value.ToString(),
-                                isMinInclusive: true,
-                                isMaxInclusive: false)),
+                        new FeedRangeEpkRange(value.StartInclusive.Value.ToString(), value.EndExclusive.Value.ToString()),
                         ChangeFeedState.Beginning()),
                     changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: int.MaxValue),
                     NoOpTrace.Singleton,
@@ -263,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         public async Task ReadChangesAcrossSplitsAsync()
         {
             IDocumentContainer documentContainer = await this.CreateDocumentContainerAsync(numItems: 100);
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(trace: NoOpTrace.Singleton, cancellationToken: default);
             long numRecords = (await documentContainer.ReadFeedAsync(
                 feedRangeState: new FeedRangeState<ReadFeedState>(ranges[0], ReadFeedState.Beginning()),
                 readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: int.MaxValue),
@@ -273,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             await documentContainer.SplitAsync(ranges[0], cancellationToken: default);
             await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
-            List<FeedRangeEpk> children = await documentContainer.GetChildRangeAsync(ranges[0], trace: NoOpTrace.Singleton, cancellationToken: default);
+            List<FeedRangeEpkRange> children = await documentContainer.GetChildRangeAsync(ranges[0], trace: NoOpTrace.Singleton, cancellationToken: default);
 
             long sumOfChildCounts = 0;
             foreach (FeedRangeInternal child in children)

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 else
                 {
                     // Fan out to all partitions with default state
-                    List<FeedRangeEpk> ranges = await feedRangeProvider.GetFeedRangesAsync(trace, token);
+                    List<FeedRangeEpkRange> ranges = await feedRangeProvider.GetFeedRangesAsync(trace, token);
 
                     List<FeedRangeState<TState>> rangesAndStatesBuilder = new List<FeedRangeState<TState>>(ranges.Count);
                     foreach (FeedRangeInternal range in ranges)
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (IsSplitException(exception))
                     {
                         // Handle split
-                        List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
+                        List<FeedRangeEpkRange> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
                             currentPaginator.FeedRangeState.FeedRange,
                             childTrace,
                             this.cancellationToken);

@@ -99,11 +99,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             throw new NotImplementedException();
         }
 
-        public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
+        public Task<TryCatch<List<FeedRangeEpkRange>>> MonadicGetFeedRangesAsync(
             ITrace trace,
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpk.FullRange, trace, cancellationToken);
+            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(FeedRangeEpkRange.FullRange, trace, cancellationToken);
 
-        public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
+        public async Task<TryCatch<List<FeedRangeEpkRange>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -121,17 +121,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     feedRange,
                     forceRefresh: false,
                     trace);
-                return TryCatch<List<FeedRangeEpk>>.FromResult(
-                    overlappingRanges.Select(range => new FeedRangeEpk(
-                        new Documents.Routing.Range<string>(
-                            min: range.MinInclusive,
-                            max: range.MaxExclusive,
-                            isMinInclusive: true,
-                            isMaxInclusive: false))).ToList());
+                return TryCatch<List<FeedRangeEpkRange>>.FromResult(
+                    overlappingRanges.Select(range => new FeedRangeEpkRange(startEpkInclusive: range.MinInclusive, endEpkExclusive: range.MaxExclusive)).ToList());
             }
             catch (Exception ex)
             {
-                return TryCatch<List<FeedRangeEpk>>.FromException(ex);
+                return TryCatch<List<FeedRangeEpkRange>>.FromException(ex);
             }
         }
 
@@ -148,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
                     _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
                         this.container.LinkUri,
-                        FeedRangeEpk.FullRange.Range,
+                        FeedRangeEpkRange.FullRange.Range,
                         forceRefresh: true);
 
                     return TryCatch.FromResult();

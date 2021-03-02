@@ -352,12 +352,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 targetRanges: targetRanges
-                    .Select(range => new FeedRangeEpk(
-                        new Documents.Routing.Range<string>(
-                            min: range.MinInclusive,
-                            max: range.MaxExclusive,
-                            isMinInclusive: true,
-                            isMaxInclusive: false)))
+                    .Select(range => new FeedRangeEpkRange(startEpkInclusive: range.MinInclusive, endEpkExclusive: range.MaxExclusive))
                     .ToList(),
                 queryPaginationOptions: new QueryPaginationOptions(
                     pageSizeHint: inputParameters.MaxItemCount),
@@ -408,12 +403,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 documentContainer: documentContainer,
                 sqlQuerySpec: inputParameters.SqlQuerySpec,
                 targetRanges: targetRanges
-                    .Select(range => new FeedRangeEpk(
-                        new Documents.Routing.Range<string>(
-                            min: range.MinInclusive,
-                            max: range.MaxExclusive,
-                            isMinInclusive: true,
-                            isMaxInclusive: false)))
+                    .Select(range => new FeedRangeEpkRange(startEpkInclusive: range.MinInclusive, endEpkExclusive: range.MaxExclusive))
                     .ToList(),
                 partitionKey: inputParameters.PartitionKey,
                 queryInfo: partitionedQueryExecutionInfo.QueryInfo,

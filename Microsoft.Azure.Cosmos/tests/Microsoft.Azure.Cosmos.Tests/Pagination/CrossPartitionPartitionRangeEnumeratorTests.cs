@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         {
                             // Split
                             await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                            List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                            List<FeedRangeEpkRange> ranges = await inMemoryCollection.GetFeedRangesAsync(
                                 trace: NoOpTrace.Singleton,
                                 cancellationToken: default);
                             FeedRangeInternal randomRangeToSplit = ranges[random.Next(0, ranges.Count)];
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         {
                             // Merge
                             await inMemoryCollection.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
-                            List<FeedRangeEpk> ranges = await inMemoryCollection.GetFeedRangesAsync(
+                            List<FeedRangeEpkRange> ranges = await inMemoryCollection.GetFeedRangesAsync(
                                 trace: NoOpTrace.Singleton,
                                 cancellationToken: default);
                             if (ranges.Count > 1)
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]
                         {
-                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
+                            new FeedRangeState<ReadFeedState>(FeedRangeEpkRange.FullRange, ReadFeedState.Beginning())
                         }));
             }
 
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     state: state ?? new CrossFeedRangeState<ReadFeedState>(
                         new FeedRangeState<ReadFeedState>[]
                         {
-                            new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
+                            new FeedRangeState<ReadFeedState>(FeedRangeEpkRange.FullRange, ReadFeedState.Beginning())
                         }));
 
                 return enumerator;
@@ -192,8 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                     // Either both don't have results or both do.
                     return string.CompareOrdinal(
-                        ((FeedRangeEpk)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
-                        ((FeedRangeEpk)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
+                        ((FeedRangeEpkRange)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
+                        ((FeedRangeEpkRange)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
                 }
             }
         }

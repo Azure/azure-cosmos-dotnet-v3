@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void LogicalPartitionKey()
         {
             Cosmos.PartitionKey somePartitionKey = new Cosmos.PartitionKey(42);
-            FeedRangeInternal feedRange = new FeedRangePartitionKey(somePartitionKey);
+            FeedRangeInternal feedRange = new FeedRangeLogicalPartitionKey(somePartitionKey);
             AssertRoundTrip(feedRange);
         }
 
@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         public void PhysicalPartitionKeyRangeId()
         {
             int physicalPkRangeId = 0;
-            FeedRangeInternal feedRange = new FeedRangePartitionKeyRange(physicalPkRangeId.ToString());
+            FeedRangeInternal feedRange = new FeedRangePhysicalPartitionKeyRange(physicalPkRangeId.ToString());
             AssertRoundTrip(feedRange);
         }
 
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 isMinInclusive: true, 
                 isMaxInclusive: false);
 
-            FeedRangeInternal feedRange = new FeedRangeEpk(range);
+            FeedRangeInternal feedRange = new FeedRangeEpkRange(range.Min, range.Max);
             AssertRoundTrip(feedRange);
         }
 

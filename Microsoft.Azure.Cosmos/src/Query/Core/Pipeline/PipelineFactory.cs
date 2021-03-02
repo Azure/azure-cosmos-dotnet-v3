@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             ExecutionEnvironment executionEnvironment,
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
-            IReadOnlyList<FeedRangeEpk> targetRanges,
+            IReadOnlyList<FeedRangeEpkRange> targetRanges,
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
             QueryPaginationOptions queryPaginationOptions,

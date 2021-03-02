@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The feed range that spans the partition.</returns>
         public static FeedRange FromPartitionKey(PartitionKey partitionKey)
         {
-            return new FeedRangePartitionKey(partitionKey);
+            return new FeedRangeLogicalPartitionKey(partitionKey);
         }
     }
 }

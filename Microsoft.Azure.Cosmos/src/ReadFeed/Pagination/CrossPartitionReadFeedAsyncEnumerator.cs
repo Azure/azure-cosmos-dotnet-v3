@@ -137,21 +137,21 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 }
 
                 // Order does not matter for logical partition keys, since they are vacously split proof.
-                if (partitionRangePageEnumerator1.FeedRangeState.FeedRange is FeedRangePartitionKey)
+                if (partitionRangePageEnumerator1.FeedRangeState.FeedRange is FeedRangeLogicalPartitionKey)
                 {
                     return -1;
                 }
 
                 // Order does not matter for logical partition keys, since they are vacously split proof.
-                if (partitionRangePageEnumerator2.FeedRangeState.FeedRange is FeedRangePartitionKey)
+                if (partitionRangePageEnumerator2.FeedRangeState.FeedRange is FeedRangeLogicalPartitionKey)
                 {
                     return -1;
                 }
 
                 // Either both don't have results or both do.
                 return string.CompareOrdinal(
-                    ((FeedRangeEpk)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
-                    ((FeedRangeEpk)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
+                    ((FeedRangeEpkRange)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
+                    ((FeedRangeEpkRange)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
             }
         }
 

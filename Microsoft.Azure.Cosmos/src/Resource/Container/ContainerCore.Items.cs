@@ -721,7 +721,7 @@ namespace Microsoft.Azure.Cosmos
                     clientContext: this.ClientContext,
                     sqlQuerySpec: queryDefinition.ToSqlQuerySpec(),
                     continuationToken: continuationToken,
-                    feedRangeInternal: FeedRangeEpk.FullRange,
+                    feedRangeInternal: FeedRangeEpkRange.FullRange,
                     queryRequestOptions: queryRequestOptions,
                     resourceLink: resourceLink,
                     isContinuationExpected: false,

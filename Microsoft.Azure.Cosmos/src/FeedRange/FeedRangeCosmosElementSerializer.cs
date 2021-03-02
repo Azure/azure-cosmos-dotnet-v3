@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                                 new FormatException($"failed to parse logical partition key value: {stringValueProperty.Value}."));
                         }
 
-                        feedRange = new FeedRangePartitionKey(partitionKey);
+                        feedRange = new FeedRangeLogicalPartitionKey(partitionKey);
                     }
                     break;
 
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos
                                 new FormatException($"expected string value property for physical partition key feed range: {cosmosElement}."));
                         }
 
-                        feedRange = new FeedRangePartitionKeyRange(stringValueProperty.Value);
+                        feedRange = new FeedRangePhysicalPartitionKeyRange(stringValueProperty.Value);
                     }
                     break;
 
@@ -99,12 +99,9 @@ namespace Microsoft.Azure.Cosmos
                                 new FormatException($"expected string value property for max effective partition key value: {cosmosElement}."));
                         }
 
-                        feedRange = new FeedRangeEpk(
-                            new Documents.Routing.Range<string>(
-                                min: minPartitionKeyValue.Value,
-                                max: maxPartitionKeyValue.Value,
-                                isMinInclusive: true,
-                                isMaxInclusive: false));
+                        feedRange = new FeedRangeEpkRange(
+                            startEpkInclusive: minPartitionKeyValue.Value,
+                            endEpkExclusive: maxPartitionKeyValue.Value);
                     }
                     break;
 
@@ -137,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             {
             }
 
-            public CosmosElement Visit(FeedRangePartitionKey feedRange)
+            public CosmosElement Visit(FeedRangeLogicalPartitionKey feedRange)
             {
                 return CosmosObject.Create(new Dictionary<string, CosmosElement>()
                 {
@@ -146,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
                 });
             }
 
-            public CosmosElement Visit(FeedRangePartitionKeyRange feedRange)
+            public CosmosElement Visit(FeedRangePhysicalPartitionKeyRange feedRange)
             {
                 return CosmosObject.Create(new Dictionary<string, CosmosElement>()
                 {
@@ -155,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 });
             }
 
-            public CosmosElement Visit(FeedRangeEpk feedRange)
+            public CosmosElement Visit(FeedRangeEpkRange feedRange)
             {
                 return CosmosObject.Create(new Dictionary<string, CosmosElement>()
                 {
@@ -165,8 +162,8 @@ namespace Microsoft.Azure.Cosmos
                         CosmosObject.Create(
                             new Dictionary<string, CosmosElement>()
                             {
-                                { MinPropertyName, CosmosString.Create(feedRange.Range.Min) },
-                                { MaxPropertyName, CosmosString.Create(feedRange.Range.Max) },
+                                { MinPropertyName, CosmosString.Create(feedRange.StartEpkInclusive) },
+                                { MaxPropertyName, CosmosString.Create(feedRange.EndEpkExclusive) },
                             })
                     }
                 });

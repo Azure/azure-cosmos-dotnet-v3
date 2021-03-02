@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     if (feedRange != null)
                     {
-                        if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
+                        if (feedRange is FeedRangeLogicalPartitionKey feedRangePartitionKey)
                         {
                             if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
                             {
@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 request.Headers.PartitionKey = feedRangePartitionKey.PartitionKey.ToJsonString();
                             }
                         }
-                        else if (feedRange is FeedRangeEpk feedRangeEpk)
+                        else if (feedRange is FeedRangeEpkRange feedRangeEpk)
                         {
                             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionFromCache.ResourceId,
-                                feedRangeEpk.Range,
+                                new Documents.Routing.Range<string>(feedRangeEpk.StartEpkInclusive, feedRangeEpk.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false),
                                 childTrace,
                                 forceRefresh: false);
                             if (overlappingRanges == null)
@@ -224,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 // In this case it means we have encountered a split and 
                                 // we need to bubble that up to the higher layers to update their datastructures
                                 CosmosException goneException = new CosmosException(
-                                    message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                                    message: $"Epk Range: {feedRangeEpk} is gone.",
                                     statusCode: System.Net.HttpStatusCode.Gone,
                                     subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                                     activityId: Guid.NewGuid().ToString(),
@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             else
                             {
                                 Range<string> singleRange = overlappingRanges[0].ToRange();
-                                if ((singleRange.Min == feedRangeEpk.Range.Min) && (singleRange.Max == feedRangeEpk.Range.Max))
+                                if ((singleRange.Min == feedRangeEpk.StartEpkInclusive) && (singleRange.Max == feedRangeEpk.EndEpkExclusive))
                                 {
                                     // 2) The EpkRange spans exactly one physical partition
                                     // In this case we can route to the physical pkrange id
@@ -249,12 +249,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     // pass the epk range headers to filter within partition
                                     request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
                                     request.Headers[HttpConstants.HttpHeaders.ReadFeedKeyType] = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
-                                    request.Headers[HttpConstants.HttpHeaders.StartEpk] = feedRangeEpk.Range.Min;
-                                    request.Headers[HttpConstants.HttpHeaders.EndEpk] = feedRangeEpk.Range.Max;
+                                    request.Headers[HttpConstants.HttpHeaders.StartEpk] = feedRangeEpk.StartEpkInclusive;
+                                    request.Headers[HttpConstants.HttpHeaders.EndEpk] = feedRangeEpk.EndEpkExclusive;
                                 }
                             }
                         }
-                        else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+                        else if (feedRange is FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange)
                         {
                             request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId);
                         }

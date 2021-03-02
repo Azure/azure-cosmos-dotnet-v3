@@ -637,7 +637,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         MaxConcurrency = 1,
                         MaxItemCount = 1,
                     },
-                    feedRangeInternal: new FeedRangePartitionKeyRange("0"), // filtering on a PkRangeId.
+                    feedRangeInternal: new FeedRangePhysicalPartitionKeyRange("0"), // filtering on a PkRangeId.
                     continuationToken: null);
 
                 Assert.IsTrue(tryExecuteQueryResult is ContainerInternal.QueryPlanIsSupportedResult);

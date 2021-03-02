@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
             this.container = container ?? throw new ArgumentNullException(nameof(container));
         }
 
-        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangePartitionKey feedRange, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeLogicalPartitionKey feedRange, CancellationToken cancellationToken = default)
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyDefinition);
         }
 
-        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangePartitionKeyRange feedRange, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangePhysicalPartitionKeyRange feedRange, CancellationToken cancellationToken = default)
         {
             // Migration from PKRangeId scenario
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKeyDefinition: null);
         }
 
-        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEpk feedRange, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEpkRange feedRange, CancellationToken cancellationToken = default)
         {
             Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh: false,
                     NoOpTrace.Singleton, 
                     cancellationToken: cancellationToken),
-                range: feedRange.Range,
+                range: new Documents.Routing.Range<string>(feedRange.StartEpkInclusive, feedRange.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false),
                 trace: NoOpTrace.Singleton,
                 forceRefresh: false);
             return pkRanges.Select(pkRange => pkRange.ToRange()).ToList();

@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     changeFeedMode: ChangeFeedMode.Incremental,
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
-                FeedRangeEpk FeedRangeEpk = feedRange as FeedRangeEpk;
+                FeedRangeEpkRange FeedRangeEpk = feedRange as FeedRangeEpkRange;
 
                 // Construct the continuation's range, using PKRangeId + ETag
                 List<dynamic> ct = new List<dynamic>()
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     count += response.Count;
                     string migratedContinuation = firstResponse.ContinuationToken;
                     Assert.IsTrue(FeedRangeContinuation.TryParse(migratedContinuation, out FeedRangeContinuation feedRangeContinuation));
-                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEpk);
+                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEpkRange);
                 }
             }
 

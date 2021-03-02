@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 operationType: operationType,
                 requestOptions: null,
-                feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
+                feedRange: partitionKey.HasValue ? new FeedRangeLogicalPartitionKey(partitionKey.Value) : null,
                 cosmosContainerCore: this.cosmosContainerCore,
                 streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
                 requestEnricher: (requestMessage) =>

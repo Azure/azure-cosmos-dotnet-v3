@@ -55,19 +55,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
 
             string leaseToken = partitionKeyRange.Id;
+            Documents.Routing.Range<string> range = partitionKeyRange.ToRange();
             DocumentServiceLeaseCore documentServiceLease = new DocumentServiceLeaseCore
             {
                 LeaseId = leaseToken,
                 LeaseToken = leaseToken,
                 ContinuationToken = continuationToken,
-                FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
+                FeedRange = new FeedRangeEpkRange(range.Min, range.Max)
             };
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
         public override Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(
-            FeedRangeEpk feedRange,
+            FeedRangeEpkRange feedRange,
             string continuationToken)
         {
             if (feedRange == null)
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 throw new ArgumentNullException(nameof(feedRange));
             }
 
-            string leaseToken = $"{feedRange.Range.Min}-{feedRange.Range.Max}";
+            string leaseToken = $"{feedRange.StartEpkInclusive}-{feedRange.EndEpkExclusive}";
             DocumentServiceLeaseCoreEpk documentServiceLease = new DocumentServiceLeaseCoreEpk
             {
                 LeaseId = leaseToken,

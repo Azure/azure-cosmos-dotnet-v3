@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// </summary>
         /// <param name="feedRange">Feed range for the lease.</param>
         /// <param name="continuationToken">Continuation token if it exists.</param>
-        public abstract Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(FeedRangeEpk feedRange, string continuationToken);
+        public abstract Task<DocumentServiceLease> CreateLeaseIfNotExistAsync(FeedRangeEpkRange feedRange, string continuationToken);
 
         /// <summary>
         /// Delete the lease.

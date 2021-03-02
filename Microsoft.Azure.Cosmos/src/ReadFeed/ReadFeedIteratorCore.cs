@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                         // Backward compatible with old format
                         feedRangeContinuation = new FeedRangeCompositeContinuation(
                             containerRid: string.Empty,
-                            FeedRangeEpk.FullRange,
+                            FeedRangeEpkRange.FullRange,
                             new List<Documents.Routing.Range<string>>()
                             {
                                 new Documents.Routing.Range<string>(
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                     // need to massage it a little
                     List<CosmosElement> feedRangeStates = new List<CosmosElement>();
                     string oldContinuationFormat = feedRangeContinuation.ToString();
-                    if (feedRangeContinuation.FeedRange is FeedRangePartitionKey feedRangePartitionKey)
+                    if (feedRangeContinuation.FeedRange is FeedRangeLogicalPartitionKey feedRangePartitionKey)
                     {
                         CosmosObject cosmosObject = CosmosObject.Parse(oldContinuationFormat);
                         CosmosArray continuations = (CosmosArray)cosmosObject["Continuation"];
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                             string max = ((CosmosString)rangeObject["max"]).Value;
                             CosmosElement token = continuationObject["token"];
 
-                            FeedRangeInternal feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false));
+                            FeedRangeInternal feedRange = new FeedRangeEpkRange(min, max);
                             ReadFeedState state;
                             if (token is CosmosNull)
                             {
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 FeedRange feedRange;
                 if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
                 {
-                    feedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
+                    feedRange = new FeedRangeLogicalPartitionKey(this.queryRequestOptions.PartitionKey.Value);
                 }
                 else if ((this.queryRequestOptions != null) && (this.queryRequestOptions.FeedRange != null))
                 {
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 }
                 else
                 {
-                    feedRange = FeedRangeEpk.FullRange;
+                    feedRange = FeedRangeEpkRange.FullRange;
                 }
 
                 monadicReadFeedState = TryCatch<ReadFeedCrossFeedRangeState>.FromResult(ReadFeedCrossFeedRangeState.CreateFromBeginning(feedRange));
@@ -251,14 +251,14 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 for (int i = 0; i < crossFeedRangeState.Value.Length; i++)
                 {
                     FeedRangeState<ReadFeedState> feedRangeState = crossFeedRangeState.Value.Span[i];
-                    FeedRangeEpk feedRange;
-                    if (feedRangeState.FeedRange is FeedRangeEpk feedRangeEpk)
+                    FeedRangeEpkRange feedRange;
+                    if (feedRangeState.FeedRange is FeedRangeEpkRange feedRangeEpk)
                     {
                         feedRange = feedRangeEpk;
                     }
                     else
                     {
-                        feedRange = FeedRangeEpk.FullRange;
+                        feedRange = FeedRangeEpkRange.FullRange;
                     }
 
                     ReadFeedState readFeedState = feedRangeState.State;
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 FeedRangeInternal outerFeedRange;
                 if ((this.queryRequestOptions != null) && this.queryRequestOptions.PartitionKey.HasValue)
                 {
-                    outerFeedRange = new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value);
+                    outerFeedRange = new FeedRangeLogicalPartitionKey(this.queryRequestOptions.PartitionKey.Value);
                 }
                 else if ((this.queryRequestOptions != null) && (this.queryRequestOptions.FeedRange != null))
                 {
@@ -282,7 +282,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 }
                 else
                 {
-                    outerFeedRange = FeedRangeEpk.FullRange;
+                    outerFeedRange = FeedRangeEpkRange.FullRange;
                 }
 
                 FeedRangeCompositeContinuation feedRangeCompositeContinuation = new FeedRangeCompositeContinuation(

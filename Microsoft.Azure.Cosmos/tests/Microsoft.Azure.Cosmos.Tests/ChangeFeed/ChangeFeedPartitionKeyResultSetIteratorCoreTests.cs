@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
+                It.Is<FeedRange>(fr => fr is FeedRangePhysicalPartitionKeyRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<ITrace>(),
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.Is<FeedRange>(fr => fr is FeedRangePartitionKeyRange),
+                It.Is<FeedRange>(fr => fr is FeedRangePhysicalPartitionKeyRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<ITrace>(),
@@ -195,8 +195,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             int itemCount = 5;
             string pkRangeId = "0";
             DateTime startTime = DateTime.UtcNow;
-            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
-            FeedRangeEpk feedRange = new FeedRangeEpk(range);
+            FeedRangeEpkRange feedRange = new FeedRangeEpkRange("AA", "BB");
             DocumentServiceLeaseCoreEpk documentServiceLeaseCore = new DocumentServiceLeaseCoreEpk()
             {
                 LeaseToken = pkRangeId,
@@ -211,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.Is<FeedRange>(fr => fr is FeedRangeEpk),
+                It.Is<FeedRange>(fr => fr is FeedRangeEpkRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<ITrace>(),
@@ -240,7 +239,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.Is<Documents.OperationType>(rt => rt == Documents.OperationType.ReadFeed),
                 It.Is<ChangeFeedRequestOptions>(cfo => cfo.PageSizeHint == itemCount),
                 It.Is<ContainerInternal>(o => o == containerMock.Object),
-                It.Is<FeedRange>(fr => fr is FeedRangeEpk),
+                It.Is<FeedRange>(fr => fr is FeedRangeEpkRange),
                 It.IsAny<Stream>(),
                 It.IsAny<Action<RequestMessage>>(),
                 It.IsAny<ITrace>(),

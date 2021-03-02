@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
 {
     internal interface IFeedRangeVisitor<TInput, TOutput>
     {
-        TOutput Visit(FeedRangePartitionKey feedRange, TInput input);
+        TOutput Visit(FeedRangeLogicalPartitionKey feedRange, TInput input);
 
-        TOutput Visit(FeedRangePartitionKeyRange feedRange, TInput input);
+        TOutput Visit(FeedRangePhysicalPartitionKeyRange feedRange, TInput input);
 
-        TOutput Visit(FeedRangeEpk feedRange, TInput input);
+        TOutput Visit(FeedRangeEpkRange feedRange, TInput input);
     }
 }

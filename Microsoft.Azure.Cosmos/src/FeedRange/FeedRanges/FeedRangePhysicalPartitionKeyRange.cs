@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Collections.Generic;
     using System.Net;
     using System.Threading;
@@ -13,15 +14,19 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
-    /// <summary>
-    /// FeedRange that represents a Partition Key Range.
-    /// Backward compatibility implementation to transition from V2 SDK queries that were filtering by PKRangeId.
-    /// </summary>
-    internal sealed class FeedRangePartitionKeyRange : FeedRangeInternal
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+        sealed class FeedRangePhysicalPartitionKeyRange : FeedRangeInternal
     {
-        public FeedRangePartitionKeyRange(string partitionKeyRangeId)
+        public FeedRangePhysicalPartitionKeyRange(string partitionKeyRangeId)
         {
-            this.PartitionKeyRangeId = partitionKeyRangeId;
+            this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
         }
 
         public string PartitionKeyRangeId { get; }

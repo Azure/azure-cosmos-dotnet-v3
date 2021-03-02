@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
         {
             IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 this.containerRid, 
-                FeedRangeEpk.FullRange.Range, 
+                new Documents.Routing.Range<string>(FeedRangeEpkRange.FullRange.StartEpkInclusive, FeedRangeEpkRange.FullRange.EndEpkExclusive, isMaxInclusive: true, isMinInclusive: false), 
                 NoOpTrace.Singleton, 
                 forceRefresh: true);
             DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri, ranges.Count);
@@ -74,8 +74,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             DefaultTrace.TraceInformation("Lease {0} is gone due to split or merge", leaseToken);
 
             IReadOnlyList<PartitionKeyRange> overlappingRanges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
-                this.containerRid, 
-                ((FeedRangeEpk)lease.FeedRange).Range, 
+                this.containerRid,
+                new Documents.Routing.Range<string>(((FeedRangeEpkRange)lease.FeedRange).StartEpkInclusive, ((FeedRangeEpkRange)lease.FeedRange).EndEpkExclusive, isMaxInclusive: true, isMinInclusive: false),
                 NoOpTrace.Singleton, 
                 forceRefresh: true);
             if (overlappingRanges.Count == 0)
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 PartitionKeyRange mergedRange = overlappingRanges[0];
                 DefaultTrace.TraceInformation("Lease {0} merged into {1}", leaseToken, mergedRange.Id);
 
-                DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync((FeedRangeEpk)partitionBasedLease.FeedRange, lastContinuationToken);
+                DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync((FeedRangeEpkRange)partitionBasedLease.FeedRange, lastContinuationToken);
                 if (newLease != null)
                 {
                     newLeases.Enqueue(newLease);
@@ -146,16 +146,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
             if (overlappingRanges.Count > 1)
             {
                 // Split: More than two children spanning the feed range
-                FeedRangeEpk splitRange = (FeedRangeEpk)feedRangeBasedLease.FeedRange;
-                string min = splitRange.Range.Min;
-                string max = splitRange.Range.Max;
+                FeedRangeEpkRange splitRange = (FeedRangeEpkRange)feedRangeBasedLease.FeedRange;
+                string min = splitRange.StartEpkInclusive;
+                string max = splitRange.EndEpkExclusive;
 
                 // Create new leases starting from the current min and ending in the current max and across the ordered list of partitions
                 for (int i = 0; i < overlappingRanges.Count - 1; i++)
                 {
                     Documents.Routing.Range<string> partitionRange = overlappingRanges[i].ToRange();
                     Documents.Routing.Range<string> mergedRange = new Documents.Routing.Range<string>(min, partitionRange.Max, true, false);
-                    DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangeEpk(mergedRange), lastContinuationToken);
+                    DocumentServiceLease newLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangeEpkRange(mergedRange.Min, mergedRange.Max), lastContinuationToken);
                     if (newLease != null)
                     {
                         newLeases.Add(newLease);
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
 
                 // Add the last range with the original max and the last min from the split
                 Documents.Routing.Range<string> lastRangeAfterSplit = new Documents.Routing.Range<string>(min, max, true, false);
-                DocumentServiceLease lastLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangeEpk(lastRangeAfterSplit), lastContinuationToken);
+                DocumentServiceLease lastLease = await this.leaseManager.CreateLeaseIfNotExistAsync(new FeedRangeEpkRange(lastRangeAfterSplit.Min, lastRangeAfterSplit.Max), lastContinuationToken);
                 if (lastLease != null)
                 {
                     newLeases.Add(lastLease);
@@ -217,8 +217,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                     // based on the fact that the lease store was always initialized for the full collection
                     Documents.Routing.Range<string> partitionRange = partitionKeyRange.ToRange();
                     if (leases.Where(lease => lease is DocumentServiceLeaseCoreEpk
-                        && lease.FeedRange is FeedRangeEpk feedRangeEpk
-                        && (partitionRange.Min == feedRangeEpk.Range.Min || partitionRange.Max == feedRangeEpk.Range.Max)).Any())
+                        && lease.FeedRange is FeedRangeEpkRange feedRangeEpk
+                        && (partitionRange.Min == feedRangeEpk.StartEpkInclusive || partitionRange.Max == feedRangeEpk.EndEpkExclusive)).Any())
                     {
                         continue;
                     }

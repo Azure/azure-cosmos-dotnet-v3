@@ -9,14 +9,19 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
 
-    /// <summary>
-    /// FeedRange that represents an exact Partition Key value.
-    /// </summary>
-    internal sealed class FeedRangePartitionKey : FeedRangeInternal
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif  
+        sealed class FeedRangeLogicalPartitionKey : FeedRangeInternal
     {
         public PartitionKey PartitionKey { get; }
 
-        public FeedRangePartitionKey(PartitionKey partitionKey)
+        public FeedRangeLogicalPartitionKey(PartitionKey partitionKey)
         {
             this.PartitionKey = partitionKey;
         }

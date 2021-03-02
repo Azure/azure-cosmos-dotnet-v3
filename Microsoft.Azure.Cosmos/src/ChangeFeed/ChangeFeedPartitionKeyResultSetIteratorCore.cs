@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             // If the lease represents a full partition (old schema) then use a FeedRangePartitionKeyRange
             // If the lease represents an EPK range (new schema) the use the FeedRange in the lease
-            FeedRangeInternal feedRange = lease is DocumentServiceLeaseCoreEpk ? lease.FeedRange : new FeedRangePartitionKeyRange(lease.CurrentLeaseToken);
+            FeedRangeInternal feedRange = lease is DocumentServiceLeaseCoreEpk ? lease.FeedRange : new FeedRangePhysicalPartitionKeyRange(lease.CurrentLeaseToken);
 
             ChangeFeedStartFrom startFrom;
             if (continuationToken != null)

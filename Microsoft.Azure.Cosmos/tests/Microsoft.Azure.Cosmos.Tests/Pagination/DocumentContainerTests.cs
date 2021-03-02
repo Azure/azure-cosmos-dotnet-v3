@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -16,13 +15,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Threading;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Moq;
@@ -164,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             {
                 // Start off with one range.
-                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(expected: 1, ranges.Count);
@@ -174,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             {
                 // Still have one range, since we have let to refresh.
-                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(expected: 1, ranges.Count);
@@ -184,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             {
                 // Now we should have two ranges after a refresh.
-                List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
+                List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(expected: 2, ranges.Count);
@@ -198,21 +195,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             // Check range with no children (base case)
             {
-                List<FeedRangeEpk> ranges = await documentContainer.GetChildRangeAsync(
-                    feedRange: new FeedRangePartitionKeyRange("0"),
+                List<FeedRangeEpkRange> ranges = await documentContainer.GetChildRangeAsync(
+                    feedRange: new FeedRangePhysicalPartitionKeyRange("0"),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(expected: 1, ranges.Count);
             }
 
-            await documentContainer.SplitAsync(new FeedRangePartitionKeyRange("0"), cancellationToken: default);
+            await documentContainer.SplitAsync(new FeedRangePhysicalPartitionKeyRange("0"), cancellationToken: default);
             await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
 
             // Check the leaves
             foreach (int i in new int[] { 1, 2 })
             {
-                List<FeedRangeEpk> ranges = await documentContainer.GetChildRangeAsync(
-                    feedRange: new FeedRangePartitionKeyRange(i.ToString()),
+                List<FeedRangeEpkRange> ranges = await documentContainer.GetChildRangeAsync(
+                    feedRange: new FeedRangePhysicalPartitionKeyRange(i.ToString()),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(expected: 1, ranges.Count);
@@ -220,8 +217,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             // Check a range with children
             {
-                List<FeedRangeEpk> ranges = await documentContainer.GetChildRangeAsync(
-                    feedRange: new FeedRangePartitionKeyRange("0"),
+                List<FeedRangeEpkRange> ranges = await documentContainer.GetChildRangeAsync(
+                    feedRange: new FeedRangePhysicalPartitionKeyRange("0"),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.AreEqual(expected: 2, ranges.Count);
@@ -229,8 +226,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             // Check a range that isn't an integer
             {
-                TryCatch<List<FeedRangeEpk>> monad = await documentContainer.MonadicGetChildRangeAsync(
-                    feedRange: new FeedRangePartitionKeyRange("asdf"),
+                TryCatch<List<FeedRangeEpkRange>> monad = await documentContainer.MonadicGetChildRangeAsync(
+                    feedRange: new FeedRangePhysicalPartitionKeyRange("asdf"),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.IsFalse(monad.Succeeded);
@@ -238,8 +235,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             // Check a range that doesn't exist
             {
-                TryCatch<List<FeedRangeEpk>> monad = await documentContainer.MonadicGetChildRangeAsync(
-                    feedRange: new FeedRangePartitionKeyRange("42"),
+                TryCatch<List<FeedRangeEpkRange>> monad = await documentContainer.MonadicGetChildRangeAsync(
+                    feedRange: new FeedRangePhysicalPartitionKeyRange("42"),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 Assert.IsFalse(monad.Succeeded);
@@ -603,8 +600,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await documentContainer.CreateItemAsync(item, cancellationToken: default);
             }
 
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
-            FeedRangeEpk range = ranges[0];
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            FeedRangeEpkRange range = ranges[0];
 
             {
                 int count = 0;
@@ -626,7 +623,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             {
                 ReadFeedPage partitionKeyPage = await documentContainer.ReadFeedAsync(
-                    new FeedRangeState<ReadFeedState>(new FeedRangePartitionKey(new Cosmos.PartitionKey(0)), ReadFeedState.Beginning()),
+                    new FeedRangeState<ReadFeedState>(new FeedRangeLogicalPartitionKey(new Cosmos.PartitionKey(0)), ReadFeedState.Beginning()),
                     readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 100),
                     NoOpTrace.Singleton,
                     cancellationToken: default);
@@ -645,12 +642,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     // Should get back only the document within the epk range.
                     ReadFeedPage partitionKeyRangePage = await documentContainer.ReadFeedAsync(
                         new FeedRangeState<ReadFeedState>(
-                            new FeedRangeEpk(
-                                new Documents.Routing.Range<string>(
-                                    min: value.StartInclusive.HasValue ? value.StartInclusive.Value.ToString() : string.Empty,
-                                    max: value.EndExclusive.HasValue ? value.EndExclusive.Value.ToString() : string.Empty,
-                                    isMinInclusive: true,
-                                    isMaxInclusive: false)),
+                            new FeedRangeEpkRange(
+                                startEpkInclusive: value.StartInclusive.HasValue ? value.StartInclusive.Value.ToString() : string.Empty, 
+                                endEpkExclusive: value.EndExclusive.HasValue ? value.EndExclusive.Value.ToString() : string.Empty),
                             ReadFeedState.Beginning()),
                         readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 100),
                         NoOpTrace.Singleton,
@@ -675,8 +669,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await documentContainer.CreateItemAsync(item, cancellationToken: default);
             }
 
-            List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
-            FeedRangeEpk range = ranges[0];
+            List<FeedRangeEpkRange> ranges = await documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default);
+            FeedRangeEpkRange range = ranges[0];
 
             {
                 QueryPage fullRangePage = await documentContainer.QueryAsync(
@@ -691,7 +685,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
                 QueryPage partitionKeyPage = await documentContainer.QueryAsync(
                     sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
-                    feedRangeState: new FeedRangeState<QueryState>(new FeedRangePartitionKey(new Cosmos.PartitionKey(0)), state: null),
+                    feedRangeState: new FeedRangeState<QueryState>(new FeedRangeLogicalPartitionKey(new Cosmos.PartitionKey(0)), state: null),
                     queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
@@ -711,12 +705,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     QueryPage partitionKeyRangePage = await documentContainer.QueryAsync(
                         sqlQuerySpec: new Cosmos.Query.Core.SqlQuerySpec("SELECT * FROM c"),
                         feedRangeState: new FeedRangeState<QueryState>(
-                            new FeedRangeEpk(
-                                new Documents.Routing.Range<string>(
-                                    min: value.StartInclusive.HasValue ? value.StartInclusive.Value.ToString() : string.Empty,
-                                    max: value.EndExclusive.HasValue ? value.EndExclusive.Value.ToString() : string.Empty,
-                                    isMinInclusive: true,
-                                    isMaxInclusive: false)),
+                            new FeedRangeEpkRange(
+                                startEpkInclusive: value.StartInclusive.HasValue ? value.StartInclusive.Value.ToString() : string.Empty,
+                                endEpkExclusive: value.EndExclusive.HasValue ? value.EndExclusive.Value.ToString() : string.Empty),
                             state: null),
                         queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: int.MaxValue),
                         NoOpTrace.Singleton,

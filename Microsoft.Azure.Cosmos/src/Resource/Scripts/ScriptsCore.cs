@@ -646,7 +646,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 operationType: operationType,
                 requestOptions: requestOptions,
                 cosmosContainerCore: this.container,
-                feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
+                feedRange: partitionKey.HasValue ? new FeedRangeLogicalPartitionKey(partitionKey.Value) : null,
                 streamPayload: streamPayload,
                 requestEnricher: null,
                 trace: trace,

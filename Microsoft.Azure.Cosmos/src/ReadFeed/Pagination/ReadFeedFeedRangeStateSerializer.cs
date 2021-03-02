@@ -10,7 +10,15 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal static class ReadFeedFeedRangeStateSerializer
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif
+        static class ReadFeedFeedRangeStateSerializer
     {
         private static class PropertyNames
         {
@@ -83,16 +91,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                             innerException: monadicFeedRange.Exception));
                 }
 
-                ReadFeedState readFeedState;
-                if (stateCosmosElement is CosmosNull)
-                {
-                    readFeedState = ReadFeedState.Beginning();
-                }
-                else
-                {
-                    readFeedState = ReadFeedState.Continuation(stateCosmosElement);
-                }
-
+                ReadFeedState readFeedState = stateCosmosElement is CosmosNull ? ReadFeedState.Beginning() : ReadFeedState.Continuation(stateCosmosElement);
                 return TryCatch<FeedRangeState<ReadFeedState>>.FromResult(
                     new FeedRangeState<ReadFeedState>(
                         monadicFeedRange.Result,

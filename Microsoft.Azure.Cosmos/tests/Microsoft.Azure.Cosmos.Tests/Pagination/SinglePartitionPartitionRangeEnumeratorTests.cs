@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 IDocumentContainer documentContainer,
                 ReadFeedState state = null) => new PartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     feedRangeState: new FeedRangeState<ReadFeedState>(
-                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"), 
+                        new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: "0"), 
                         state ?? ReadFeedState.Beginning()),
                     (feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                         documentContainer,
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 ReadFeedState state = null) => new ReadFeedPartitionRangeEnumerator(
                     inMemoryCollection,
                     feedRangeState: new FeedRangeState<ReadFeedState>(
-                        new FeedRangePartitionKeyRange(partitionKeyRangeId: "0"),
+                        new FeedRangePhysicalPartitionKeyRange(partitionKeyRangeId: "0"),
                         state ?? ReadFeedState.Beginning()),
                     readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
                     cancellationToken: default);

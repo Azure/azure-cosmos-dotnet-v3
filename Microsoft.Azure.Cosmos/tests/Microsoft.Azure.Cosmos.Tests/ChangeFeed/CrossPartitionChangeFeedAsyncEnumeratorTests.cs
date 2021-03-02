@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpkRange.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
                 cancellationToken: default);
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpkRange.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
                 cancellationToken: default);
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpkRange.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
                 cancellationToken: default);
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Time(DateTime.UtcNow))
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpkRange.FullRange, ChangeFeedState.Time(DateTime.UtcNow))
                     }),
                 ChangeFeedPaginationOptions.Default,
                 cancellationToken: default);
@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 new CrossFeedRangeState<ChangeFeedState>(
                     new FeedRangeState<ChangeFeedState>[]
                     {
-                        new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
+                        new FeedRangeState<ChangeFeedState>(FeedRangeEpkRange.FullRange, ChangeFeedState.Now())
                     }),
                 ChangeFeedPaginationOptions.Default,
                 cancellationToken: default);
