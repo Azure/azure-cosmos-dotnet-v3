@@ -3,7 +3,7 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.17.0"/> [3.17.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0) - 2021-02-24
+### <a name="3.17.0"/> [3.17.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0) - 2021-03-02
 
 #### Added
 - [#1870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1870) Batch API: Adds Session token support
@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2262](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2262) CosmosException: Fixes the headers not matching CosmosException property values and incorrect SubStatusCode values on client initialization failures
 - [#2269](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2269) PermissionProperties: Fixes PermissionProperties to not take dependency on internal type to fix mocking 
 
-### <a name="3.17.0-Preview1"/> [3.17.0-preview1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0-preview1) - 2021-02-24
+### <a name="3.17.0-Preview1"/> [3.17.0-preview1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0-preview1) - 2021-03-02
 
 #### Added
 - [#2197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2197) CosmosClient: Adds CreateAndInitializeAsync Method
