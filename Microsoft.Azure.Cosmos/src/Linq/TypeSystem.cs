@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return GetElementType(type, new HashSet<Type>());
         }
 
-        public static string GetMemberName(this MemberInfo memberInfo, CosmosSerializationOptions cosmosSerializationOptions = null)
+        public static string GetMemberName(this MemberInfo memberInfo, CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             string memberName = null;
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
@@ -49,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 memberName = memberInfo.Name;
             }
 
-            if (cosmosSerializationOptions != null)
+            if (linqSerializerOptions != null)
             {
-                memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(cosmosSerializationOptions, memberName);
+                memberName = CosmosSerializationUtil.GetStringWithPropertyNamingPolicy(linqSerializerOptions, memberName);
             }
 
             return memberName;
