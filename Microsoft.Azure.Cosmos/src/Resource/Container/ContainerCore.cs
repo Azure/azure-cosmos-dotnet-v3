@@ -286,6 +286,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw CosmosExceptionFactory.CreateInternalServerErrorException(
                         $"Container rid {containerRId} did not have a partition key range after refresh",
+                        headers: new Headers(),
                         trace: trace);
                 }
 
@@ -299,6 +300,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw CosmosExceptionFactory.CreateInternalServerErrorException(
                         $"Container rid {containerRId} returned partitionKeyRanges null after Container RID refresh",
+                        headers: new Headers(),
                         trace: trace);
                 }
             }
