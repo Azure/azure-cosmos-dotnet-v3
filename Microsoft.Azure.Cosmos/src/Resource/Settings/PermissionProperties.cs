@@ -29,7 +29,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceUri = this.GenerateLinkUri(container);
+            this.ResourceUri = UriFactory.CreateDocumentCollectionUri(container.Database.Id,
+                                                                      container.Id).ToString();
             if (resourcePartitionKey == null)
             {
                 this.InternalResourcePartitionKey = null;
@@ -56,7 +57,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceUri = this.GenerateLinkUri(container, itemId);
+            this.ResourceUri = UriFactory.CreateDocumentUri(container.Database.Id,
+                                                            container.Id,
+                                                            itemId).ToString();
             this.InternalResourcePartitionKey = resourcePartitionKey.InternalKey;
         }
 
@@ -131,28 +134,6 @@ namespace Microsoft.Azure.Cosmos
                     this.InternalResourcePartitionKey = value.Value.InternalKey;
                 }
             }
-        }
-
-        private string GenerateLinkUri(Container container, string itemId = null)
-        {
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(Paths.DatabasesPathSegment);
-            stringBuilder.Append("/");
-            stringBuilder.Append(Uri.EscapeUriString(container.Database.Id));
-            stringBuilder.Append("/");
-            stringBuilder.Append(Paths.CollectionsPathSegment);
-            stringBuilder.Append("/");
-            stringBuilder.Append(Uri.EscapeUriString(container.Id));
-
-            if (itemId != null)
-            {
-                stringBuilder.Append("/");
-                stringBuilder.Append(Paths.DocumentsPathSegment);
-                stringBuilder.Append("/");
-                stringBuilder.Append(Uri.EscapeUriString(itemId));
-            }
-
-            return stringBuilder.ToString();
         }
 
         /// <summary>
