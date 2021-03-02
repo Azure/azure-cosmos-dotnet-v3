@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     public class ClientConfigurationTraceDatumBenchmark
     {
         private readonly MockedItemBenchmarkHelper benchmarkHelper;
+        private readonly ItemResponse<ToDoActivity> typedResponse;
 
         public ClientConfigurationTraceDatumBenchmark()
         {
@@ -19,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
-        public async Task ReadItemTDiagnostics()
+        public async Task ReadItemDiagnostics()
         {
             ItemResponse<ToDoActivity> response = await this.benchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                             MockedItemBenchmarkHelper.ExistingItemId,
@@ -28,16 +29,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             response.Diagnostics.ToString();
         }
 
-        [Benchmark]
+        [Benchmark(Baseline = true)]
         [BenchmarkCategory("GateBenchmark")]
-        public async Task ReadItemStreamDiagnostics()
+        public async Task ReadItemDiagnosticsBaseline()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                MockedItemBenchmarkHelper.ExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
-            {
-                response.Diagnostics.ToString();
-            }
+            await this.benchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
+                    MockedItemBenchmarkHelper.ExistingItemId,
+                    MockedItemBenchmarkHelper.ExistingPartitionId);
         }
     }
 }
