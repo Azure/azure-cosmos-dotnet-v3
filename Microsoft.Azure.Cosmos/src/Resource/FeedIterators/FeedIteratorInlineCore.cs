@@ -13,9 +13,11 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
     {
         private readonly FeedIteratorInternal feedIteratorInternal;
+        private readonly CosmosClientContext clientContext;
 
         internal FeedIteratorInlineCore(
-            FeedIterator feedIterator)
+            FeedIterator feedIterator,
+            CosmosClientContext clientContext)
         {
             if (!(feedIterator is FeedIteratorInternal feedIteratorInternal))
             {
@@ -23,12 +25,15 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.feedIteratorInternal = feedIteratorInternal;
+            this.clientContext = clientContext;
         }
 
         internal FeedIteratorInlineCore(
-            FeedIteratorInternal feedIteratorInternal)
+            FeedIteratorInternal feedIteratorInternal,
+            CosmosClientContext clientContext)
         {
             this.feedIteratorInternal = feedIteratorInternal ?? throw new ArgumentNullException(nameof(feedIteratorInternal));
+            this.clientContext = clientContext;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -40,15 +45,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return TaskHelper.RunInlineIfNeededAsync(() => this.ReadNextWithRootTraceAsync(cancellationToken));
-        }
-
-        private async Task<ResponseMessage> ReadNextWithRootTraceAsync(CancellationToken cancellationToken = default)
-        {
-            using (ITrace trace = Trace.GetRootTrace("FeedIterator Read Next Async", TraceComponent.Unknown, TraceLevel.Info))
-            {
-                return await this.ReadNextAsync(trace, cancellationToken);
-            }
+            return this.clientContext.OperationHelperAsync("FeedIterator Read Next Async",
+                        requestOptions: null,
+                        task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
         }
 
         public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)

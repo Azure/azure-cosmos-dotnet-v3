@@ -13,9 +13,11 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
     {
         private readonly FeedIteratorInternal<T> feedIteratorInternal;
+        private readonly CosmosClientContext clientContext;
 
         internal FeedIteratorInlineCore(
-            FeedIterator<T> feedIterator)
+            FeedIterator<T> feedIterator,
+            CosmosClientContext clientContext)
         {
             if (!(feedIterator is FeedIteratorInternal<T> feedIteratorInternal))
             {
@@ -23,15 +25,25 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.feedIteratorInternal = feedIteratorInternal;
+            this.clientContext = clientContext;
         }
 
         internal FeedIteratorInlineCore(
-            FeedIteratorInternal<T> feedIteratorInternal)
+            FeedIteratorInternal<T> feedIteratorInternal,
+            CosmosClientContext clientContext)
         {
             this.feedIteratorInternal = feedIteratorInternal ?? throw new ArgumentNullException(nameof(feedIteratorInternal));
+            this.clientContext = clientContext;
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
+
+        public override Task<FeedResponse<T>> ReadNextAsync(CancellationToken cancellationToken = default)
+        {
+            return this.clientContext.OperationHelperAsync("Typed FeedIterator ReadNextAsync",
+                        requestOptions: null,
+                        task: trace => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
+        }
 
         public override Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
