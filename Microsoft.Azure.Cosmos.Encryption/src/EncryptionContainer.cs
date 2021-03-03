@@ -492,12 +492,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null,
+            CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             return this.Container.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
-                requestOptions);
+                requestOptions,
+                linqSerializerOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(

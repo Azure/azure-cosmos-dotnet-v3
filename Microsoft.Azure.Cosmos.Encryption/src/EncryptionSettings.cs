@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             CachedEncryptionSettings cachedEncryptionSettings = await this.EncryptionSettingCacheByPropertyName.GetAsync(
                 propertyName,
-                null,
+                obsoleteValue: null,
                 async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, encryptionProcessor, cancellationToken),
                 cancellationToken);
 
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 cachedEncryptionSettings = await this.EncryptionSettingCacheByPropertyName.GetAsync(
                     propertyName,
-                    null,
+                    obsoleteValue: null,
                     async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, encryptionProcessor, cancellationToken),
                     cancellationToken,
                     forceRefresh: true);

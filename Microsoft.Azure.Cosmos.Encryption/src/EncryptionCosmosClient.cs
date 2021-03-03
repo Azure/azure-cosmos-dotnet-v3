@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // cache it against Database and Container ID key.
             return await this.clientEncryptionPolicyCacheByContainerId.GetAsync(
                  cacheKey,
-                 null,
+                 obsoleteValue: null,
                  async () =>
                  {
                      ContainerResponse containerResponse = await container.ReadContainerAsync();
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
                      cacheKey,
-                     null,
+                     obsoleteValue: null,
                      async () => await this.FetchClientEncryptionKeyPropertiesAsync(container, clientEncryptionKeyId, cancellationToken),
                      cancellationToken,
                      forceRefresh: shouldForceRefresh);

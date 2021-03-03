@@ -1242,20 +1242,6 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToEncryptionFeedIterator[T](Microsoft.Azure.Cosmos.Container, System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.PermissionProperties GetPermissionPropertiesForEncryptionContainer(Microsoft.Azure.Cosmos.Container, System.String, Microsoft.Azure.Cosmos.PermissionMode, Microsoft.Azure.Cosmos.PartitionKey, System.String)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.PermissionProperties GetPermissionPropertiesForEncryptionContainer(Microsoft.Azure.Cosmos.Container, System.String, Microsoft.Azure.Cosmos.PermissionMode, Microsoft.Azure.Cosmos.PartitionKey, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Microsoft.Azure.Cosmos.PermissionProperties GetPermissionPropertiesForEncryptionContainer(Microsoft.Azure.Cosmos.Container, System.String, Microsoft.Azure.Cosmos.PermissionMode, System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.PermissionProperties GetPermissionPropertiesForEncryptionContainer(Microsoft.Azure.Cosmos.Container, System.String, Microsoft.Azure.Cosmos.PermissionMode, System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "Microsoft.Azure.Cosmos.QueryDefinition CreateQueryDefinition(Microsoft.Azure.Cosmos.Container, System.String)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
