@@ -2221,7 +2221,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2252,7 +2252,7 @@
     │                   │                                   Redacted To Not Change The Baselines From Run To Run
     │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2277,7 +2277,7 @@
     │                   │                                   Redacted To Not Change The Baselines From Run To Run
     │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2302,7 +2302,7 @@
     │                   │                                   Redacted To Not Change The Baselines From Run To Run
     │                   │                               )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                 └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2344,7 +2344,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2656,7 +2656,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2882,7 +2882,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3108,7 +3108,7 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3357,7 +3357,7 @@
     <Output>
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3389,7 +3389,7 @@
     │   │               │                               )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3415,7 +3415,7 @@
     │   │               │                               )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3441,7 +3441,7 @@
     │   │               │                               )
     │   │               └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3484,7 +3484,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3810,7 +3810,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -4050,7 +4050,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -4290,7 +4290,7 @@
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Unknown",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",

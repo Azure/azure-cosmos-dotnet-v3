@@ -315,7 +315,8 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorInlineCore(base.GetItemQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
-                    requestOptions));
+                    requestOptions),
+                    this.ClientContext);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -326,7 +327,8 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorInlineCore<T>(base.GetItemQueryIterator<T>(
                 queryDefinition,
                 continuationToken,
-                requestOptions));
+                requestOptions),
+                this.ClientContext);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(string queryText = null,
@@ -336,7 +338,8 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorInlineCore(base.GetItemQueryStreamIterator(
                 queryText,
                 continuationToken,
-                requestOptions));
+                requestOptions),
+                this.ClientContext);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -347,7 +350,8 @@ namespace Microsoft.Azure.Cosmos
             return new FeedIteratorInlineCore<T>(base.GetItemQueryIterator<T>(
                 queryText,
                 continuationToken,
-                requestOptions));
+                requestOptions),
+                this.ClientContext);
         }
 
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution = false,
