@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task RetryTransientIssuesTestAsync()
+        public async Task RetryTransientIssuesTestAsync_ControlPlaneRead()
         {
             using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();
             using CancellationTokenSource cancellationTokenSource2 = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokenSource1.Token);
@@ -64,12 +64,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     TimeSpan.FromSeconds(5.1),
                     TimeSpan.FromSeconds(10.1),
                     TimeSpan.FromSeconds(20.1)
-                }},
-                {HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,  new List<TimeSpan>()
-                {
-                    TimeSpan.FromSeconds(.6),
-                    TimeSpan.FromSeconds(5.1),
-                    TimeSpan.FromSeconds(10.1)
                 }},
             };
 
@@ -97,6 +91,80 @@ namespace Microsoft.Azure.Cosmos.Tests
                     }
 
                     if (count == 3)
+                    {
+                        return new HttpResponseMessage(HttpStatusCode.OK);
+                    }
+
+                    throw new Exception("Should not return after the success");
+                }
+
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+                HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+                using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
+                    new ValueTask<HttpRequestMessage>(
+                        result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
+                        resourceType: ResourceType.Collection,
+                        timeoutPolicy: currentTimeoutPolicy.Key,
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+
+                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task RetryTransientIssuesTestAsync_ControlPlaneHotPath()
+        {
+            using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();
+            using CancellationTokenSource cancellationTokenSource2 = CancellationTokenSource.CreateLinkedTokenSource(cancellationTokenSource1.Token);
+            cancellationTokenSource2.Cancel();
+            Assert.IsFalse(cancellationTokenSource1.IsCancellationRequested);
+
+            IReadOnlyDictionary<HttpTimeoutPolicy, IReadOnlyList<TimeSpan>> timeoutMap = new Dictionary<HttpTimeoutPolicy, IReadOnlyList<TimeSpan>>()
+            {
+                {HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,  new List<TimeSpan>()
+                {
+                    TimeSpan.FromSeconds(.6),
+                    TimeSpan.FromSeconds(5.1),
+                    TimeSpan.FromSeconds(10.1),
+                    TimeSpan.FromSeconds(65.1)
+                }},
+            };
+
+            foreach (KeyValuePair<HttpTimeoutPolicy, IReadOnlyList<TimeSpan>> currentTimeoutPolicy in timeoutMap)
+            {
+                int count = 0;
+                async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+                {
+                    count++;
+
+                    if (count == 1)
+                    {
+                        Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                        await Task.Delay(currentTimeoutPolicy.Value[0]);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        Assert.Fail("Cancellation token should be canceled");
+                    }
+
+                    if (count == 2)
+                    {
+                        Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                        await Task.Delay(currentTimeoutPolicy.Value[1]);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        Assert.Fail("Cancellation token should be canceled");
+                    }
+
+                    if (count == 3)
+                    {
+                        Assert.IsFalse(cancellationToken.IsCancellationRequested);
+                        await Task.Delay(currentTimeoutPolicy.Value[2]);
+                        cancellationToken.ThrowIfCancellationRequested();
+                        Assert.Fail("Cancellation token should be canceled");
+                    }
+
+                    if (count == 4)
                     {
                         return new HttpResponseMessage(HttpStatusCode.OK);
                     }
