@@ -21,13 +21,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly IDocumentContainer documentContainer;
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
+        private readonly CosmosClientContext clientContext;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
             IDocumentContainer documentContainer,
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions,
-            ChangeFeedStartFrom changeFeedStartFrom)
+            ChangeFeedStartFrom changeFeedStartFrom,
+            CosmosClientContext clientContext)
         {
             if (changeFeedStartFrom == null)
             {
@@ -39,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
+            this.clientContext = clientContext;
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
@@ -197,13 +200,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            using (ITrace trace = Trace.GetRootTrace("Change Feed Iterator Read Next Async", TraceComponent.ChangeFeed, TraceLevel.Info))
-            {
-                ResponseMessage responseMessage = await this.ReadNextAsync(trace, cancellationToken);
-                responseMessage.Trace = trace;
-
-                return responseMessage;
-            } 
+            return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
+                                requestOptions: null,
+                                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
+                                traceComponent: TraceComponent.ChangeFeed,
+                                traceLevel: TraceLevel.Info);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)

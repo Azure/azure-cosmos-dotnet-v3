@@ -821,7 +821,8 @@ namespace Microsoft.Azure.Cosmos
                this.GetDatabaseQueryIteratorHelper<T>(
                    queryDefinition,
                    continuationToken,
-                   requestOptions));
+                   requestOptions),
+               this.ClientContext);
         }
 
         /// <summary>
@@ -873,7 +874,8 @@ namespace Microsoft.Azure.Cosmos
                 this.GetDatabaseQueryStreamIteratorHelper(
                     queryDefinition,
                     continuationToken,
-                    requestOptions));
+                    requestOptions),
+                this.ClientContext);
         }
 
         /// <summary>
@@ -925,7 +927,8 @@ namespace Microsoft.Azure.Cosmos
                 this.GetDatabaseQueryIteratorHelper<T>(
                     queryDefinition,
                     continuationToken,
-                    requestOptions));
+                    requestOptions),
+                this.ClientContext);
         }
 
         /// <summary>
@@ -981,7 +984,8 @@ namespace Microsoft.Azure.Cosmos
                 this.GetDatabaseQueryStreamIterator(
                     queryDefinition,
                     continuationToken,
-                    requestOptions));
+                    requestOptions),
+                this.ClientContext);
         }
 
         /// <summary>
