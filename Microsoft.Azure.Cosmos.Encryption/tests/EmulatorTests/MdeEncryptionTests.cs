@@ -322,8 +322,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.database.CreateUserAsync(restrictedUser.Id);
 
             PermissionProperties restrictedUserPermission = await restrictedUser.CreatePermissionAsync(
-                MdeEncryptionTests.encryptionContainer.GetPermissionPropertiesForEncryptionContainer(Guid.NewGuid().ToString(), PermissionMode.All));
-
+                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, MdeEncryptionTests.encryptionContainer));
 
             CosmosClient clientForRestrictedUser = TestCommon.CreateCosmosClient(
                 restrictedUserPermission.Token);
