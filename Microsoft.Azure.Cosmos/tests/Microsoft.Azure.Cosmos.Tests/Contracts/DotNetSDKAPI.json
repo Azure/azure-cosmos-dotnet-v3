@@ -1957,11 +1957,9 @@
           "Attributes": [],
           "MethodInfo": "Boolean TryGetHeader(System.String, System.String ByRef);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Double get_RequestCharge()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Double get_RequestCharge()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Double RequestCharge": {
@@ -1969,11 +1967,9 @@
           "Attributes": [],
           "MethodInfo": "Double RequestCharge;CanRead:True;CanWrite:False;Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 get_SubStatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Int32 get_SubStatusCode()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Int32 get_SubStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 SubStatusCode": {
@@ -2015,11 +2011,9 @@
           "Attributes": [],
           "MethodInfo": "System.Net.HttpStatusCode StatusCode;CanRead:True;CanWrite:False;System.Net.HttpStatusCode get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.TimeSpan] get_RetryAfter()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.TimeSpan] get_RetryAfter()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] get_RetryAfter();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.TimeSpan] RetryAfter": {
@@ -2032,11 +2026,9 @@
           "Attributes": [],
           "MethodInfo": "System.String ActivityId;CanRead:True;CanWrite:False;System.String get_ActivityId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_ActivityId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ActivityId()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ActivityId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_ResponseBody()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {

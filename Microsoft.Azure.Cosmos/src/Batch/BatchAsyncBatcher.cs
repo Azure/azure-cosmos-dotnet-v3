@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxBatchByteSize;
         private readonly int maxBatchOperationCount;
         private readonly InterlockIncrementCheck interlockIncrementCheck = new InterlockIncrementCheck();
+        private readonly CosmosClientContext clientContext;
         private long currentSize = 0;
         private bool dispatched = false;
 
@@ -45,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
             int maxBatchByteSize,
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
-            BatchAsyncBatcherRetryDelegate retrier)
+            BatchAsyncBatcherRetryDelegate retrier,
+            CosmosClientContext clientContext)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -63,6 +65,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxBatchByteSize = maxBatchByteSize;
             this.maxBatchOperationCount = maxBatchOperationCount;
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
+            this.clientContext = clientContext;
         }
 
         public virtual bool TryAdd(ItemBatchOperation operation)
@@ -110,92 +113,103 @@ namespace Microsoft.Azure.Cosmos
             BatchPartitionMetric partitionMetric,
             CancellationToken cancellationToken = default)
         {
-            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Dispatch Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            await this.clientContext.OperationHelperAsync("Batch Dispatch Async",
+                        requestOptions: null,
+                        task: (trace) => this.DispatchHelperAsync(trace, partitionMetric, cancellationToken),
+                        traceComponent: TraceComponent.Batch,
+                        traceLevel: Tracing.TraceLevel.Info);
+        }
+
+        private async Task<object> DispatchHelperAsync(
+            ITrace trace,
+            BatchPartitionMetric partitionMetric,
+            CancellationToken cancellationToken = default)
+        {
+            this.interlockIncrementCheck.EnterLockCheck();
+
+            PartitionKeyRangeServerBatchRequest serverRequest = null;
+            ArraySegment<ItemBatchOperation> pendingOperations;
+
+            try
             {
-                this.interlockIncrementCheck.EnterLockCheck();
-
-                PartitionKeyRangeServerBatchRequest serverRequest = null;
-                ArraySegment<ItemBatchOperation> pendingOperations;
-
                 try
                 {
-                    try
+                    // HybridRow serialization might leave some pending operations out of the batch
+                    Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>> createRequestResponse = await this.CreateServerRequestAsync(cancellationToken);
+                    serverRequest = createRequestResponse.Item1;
+                    pendingOperations = createRequestResponse.Item2;
+                    // Any overflow goes to a new batch
+                    foreach (ItemBatchOperation operation in pendingOperations)
                     {
-                        // HybridRow serialization might leave some pending operations out of the batch
-                        Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>> createRequestResponse = await this.CreateServerRequestAsync(cancellationToken);
-                        serverRequest = createRequestResponse.Item1;
-                        pendingOperations = createRequestResponse.Item2;
-                        // Any overflow goes to a new batch
-                        foreach (ItemBatchOperation operation in pendingOperations)
-                        {
-                            await this.retrier(operation, trace, cancellationToken);
-                        }
+                        await this.retrier(operation, trace, cancellationToken);
                     }
-                    catch (Exception ex)
-                    {
-                        // Exceptions happening during request creation, fail the entire list
-                        foreach (ItemBatchOperation itemBatchOperation in this.batchOperations)
-                        {
-                            itemBatchOperation.Context.Fail(this, ex);
-                        }
-
-                        throw;
-                    }
-
-                    try
-                    {
-                        Stopwatch stopwatch = Stopwatch.StartNew();
-
-                        PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, cancellationToken);
-
-                        int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
-                        partitionMetric.Add(
-                            numberOfDocumentsOperatedOn: result.ServerResponse.Count,
-                            timeTakenInMilliseconds: stopwatch.ElapsedMilliseconds,
-                            numberOfThrottles: numThrottle);
-
-                        using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
-                        {
-                            foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
-                            {
-                                TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
-
-                                if (!response.IsSuccessStatusCode)
-                                {
-                                    Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
-                                    if (shouldRetry.ShouldRetry)
-                                    {
-                                        await this.retrier(itemBatchOperation, trace, cancellationToken);
-                                        continue;
-                                    }
-                                }
-
-                                itemBatchOperation.Context.Complete(this, response);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Exceptions happening during execution fail all the Tasks part of the request (excluding overflow)
-                        foreach (ItemBatchOperation itemBatchOperation in serverRequest.Operations)
-                        {
-                            itemBatchOperation.Context.Fail(this, ex);
-                        }
-
-                        throw;
-                    }
-
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
+                    // Exceptions happening during request creation, fail the entire list
+                    foreach (ItemBatchOperation itemBatchOperation in this.batchOperations)
+                    {
+                        itemBatchOperation.Context.Fail(this, ex);
+                    }
+
+                    throw;
                 }
-                finally
+
+                try
                 {
-                    this.batchOperations.Clear();
-                    this.dispatched = true;
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+
+                    PartitionKeyRangeBatchExecutionResult result = await this.executor(serverRequest, trace, cancellationToken);
+
+                    int numThrottle = result.ServerResponse.Any(r => r.StatusCode == (System.Net.HttpStatusCode)StatusCodes.TooManyRequests) ? 1 : 0;
+                    partitionMetric.Add(
+                        numberOfDocumentsOperatedOn: result.ServerResponse.Count,
+                        timeTakenInMilliseconds: stopwatch.ElapsedMilliseconds,
+                        numberOfThrottles: numThrottle);
+
+                    using (PartitionKeyRangeBatchResponse batchResponse = new PartitionKeyRangeBatchResponse(serverRequest.Operations.Count, result.ServerResponse, this.serializerCore))
+                    {
+                        foreach (ItemBatchOperation itemBatchOperation in batchResponse.Operations)
+                        {
+                            TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
+
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
+                                if (shouldRetry.ShouldRetry)
+                                {
+                                    await this.retrier(itemBatchOperation, trace, cancellationToken);
+                                    continue;
+                                }
+                            }
+
+                            itemBatchOperation.Context.Complete(this, response);
+                        }
+                    }
                 }
-            } 
+                catch (Exception ex)
+                {
+                    // Exceptions happening during execution fail all the Tasks part of the request (excluding overflow)
+                    foreach (ItemBatchOperation itemBatchOperation in serverRequest.Operations)
+                    {
+                        itemBatchOperation.Context.Fail(this, ex);
+                    }
+
+                    throw;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Exception during BatchAsyncBatcher: {0}", ex);
+            }
+            finally
+            {
+                this.batchOperations.Clear();
+                this.dispatched = true;
+            }
+
+            return null;
         }
 
         internal virtual async Task<Tuple<PartitionKeyRangeServerBatchRequest, ArraySegment<ItemBatchOperation>>> CreateServerRequestAsync(CancellationToken cancellationToken)

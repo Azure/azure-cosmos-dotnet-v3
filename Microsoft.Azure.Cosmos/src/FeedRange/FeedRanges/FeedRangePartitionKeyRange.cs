@@ -49,13 +49,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw CosmosExceptionFactory.Create(
                     statusCode: HttpStatusCode.Gone,
-                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                     message: $"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .",
                     stackTrace: string.Empty,
-                    activityId: string.Empty,
-                    requestCharge: 0,
-                    retryAfter: null,
-                    headers: null,
+                    headers: new Headers()
+                    {
+                        SubStatusCode = SubStatusCodes.PartitionKeyRangeGone,
+                    },
                     error: null,
                     innerException: null,
                     trace: NoOpTrace.Singleton);
