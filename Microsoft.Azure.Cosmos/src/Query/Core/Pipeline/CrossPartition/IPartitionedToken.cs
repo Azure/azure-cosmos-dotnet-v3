@@ -14,6 +14,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition
 #endif 
          interface IPartitionedToken
     {
-        Documents.Routing.Range<string> Range { get; }
+        (string Min, string Max) Range { get; }
     }
 }

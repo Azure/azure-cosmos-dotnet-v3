@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
 
         public string EndEpkExclusive { get; }
 
-        public Documents.Routing.Range<string> Range => new Documents.Routing.Range<string>(this.StartEpkInclusive, this.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false);
+        internal Documents.Routing.Range<string> Range => new Documents.Routing.Range<string>(this.StartEpkInclusive, this.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false);
 
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
@@ -56,9 +56,14 @@ namespace Microsoft.Azure.Cosmos
             Documents.PartitionKeyDefinition partitionKeyDefinition,
             CancellationToken cancellationToken)
         {
+            Documents.Routing.Range<string> range = new Documents.Routing.Range<string>(
+                this.StartEpkInclusive, 
+                this.EndEpkExclusive, 
+                isMinInclusive: true, 
+                isMaxInclusive: false);
             IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 containerRid,
-                new Documents.Routing.Range<string>(this.StartEpkInclusive, this.EndEpkExclusive, isMinInclusive: true, isMaxInclusive: false),
+                range,
                 NoOpTrace.Singleton,
                 forceRefresh: false);
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);

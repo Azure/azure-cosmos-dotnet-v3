@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         }
 
         [JsonIgnore]
-        public Range<string> Range => this.ParallelContinuationToken.Range;
+        public (string Min, string Max) Range => this.ParallelContinuationToken.Range;
 
         public static CosmosElement ToCosmosElement(OrderByContinuationToken orderByContinuationToken)
         {
@@ -290,16 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     new MalformedContinuationTokenException($"{nameof(OrderByContinuationToken)} is missing field: '{PropertyNames.Filter}': {cosmosElement}"));
             }
 
-            string filter;
-            if (filterRaw is CosmosString filterStringRaw)
-            {
-                filter = filterStringRaw.Value;
-            }
-            else
-            {
-                filter = null;
-            }
-
+            string filter = filterRaw is CosmosString filterStringRaw ? (string)filterStringRaw.Value : null;
             OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                 compositeContinuationToken,
                 orderByItems,

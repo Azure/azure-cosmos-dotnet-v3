@@ -30,8 +30,6 @@ namespace Microsoft.Azure.Cosmos.Query
             Assert.AreEqual(compositeContinuationToken.Token, compositeContinuationTokenFromCosmosElement.Token);
             Assert.AreEqual(compositeContinuationToken.Range.Min, compositeContinuationTokenFromCosmosElement.Range.Min);
             Assert.AreEqual(compositeContinuationToken.Range.Max, compositeContinuationTokenFromCosmosElement.Range.Max);
-            Assert.AreEqual(compositeContinuationToken.Range.IsMinInclusive, compositeContinuationTokenFromCosmosElement.Range.IsMinInclusive);
-            Assert.AreEqual(compositeContinuationToken.Range.IsMaxInclusive, compositeContinuationTokenFromCosmosElement.Range.IsMaxInclusive);
         }
     }
 }

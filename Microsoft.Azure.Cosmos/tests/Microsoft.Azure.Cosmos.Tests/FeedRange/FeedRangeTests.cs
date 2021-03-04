@@ -122,7 +122,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangePhysicalPartitionKeyRange feedRangePartitionKeyRange = new FeedRangePhysicalPartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
-                .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.Is<Documents.Routing.Range<string>>(s => s == range), It.IsAny<ITrace>(), It.IsAny<bool>()))
+                .Setup(f => f.TryGetOverlappingRangesAsync(
+                    It.IsAny<string>(), 
+                    It.Is<Documents.Routing.Range<string>>(s => s.Min == range.Min && s.Max == range.Max),
+                    It.IsAny<ITrace>(), 
+                    It.IsAny<bool>()))
                 .ReturnsAsync(new List<Documents.PartitionKeyRange>() { partitionKeyRange });
 
             FeedRangeEpkRange FeedRangeEpk = new FeedRangeEpkRange(range.Min, range.Max);

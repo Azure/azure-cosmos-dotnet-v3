@@ -36,12 +36,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         public ParallelContinuationToken(string token, Range<string> range)
         {
             this.Token = token;
-            this.Range = range ?? throw new ArgumentNullException(nameof(range));
+            this.Range = (range.Min, range.Max);
         }
 
         public string Token { get; }
 
-        public Range<string> Range { get; }
+        public (string Min, string Max) Range { get; }
 
         public static CosmosElement ToCosmosElement(ParallelContinuationToken parallelContinuationToken)
         {
