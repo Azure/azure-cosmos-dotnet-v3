@@ -43,7 +43,6 @@
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             Assert.AreEqual(trace.Data.Count, 1);
             ClientConfigurationTraceDatum clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
-            Assert.AreEqual(clientConfigurationTraceDatum.NumberOfClients, 1);
             Assert.IsNotNull(clientConfigurationTraceDatum.UserAgent);
         }
 

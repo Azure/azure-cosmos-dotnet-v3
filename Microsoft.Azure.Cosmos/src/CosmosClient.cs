@@ -449,6 +449,8 @@ namespace Microsoft.Azure.Cosmos
                  this,
                  documentClient,
                  cosmosClientOptions);
+
+            this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
         /// <summary>
