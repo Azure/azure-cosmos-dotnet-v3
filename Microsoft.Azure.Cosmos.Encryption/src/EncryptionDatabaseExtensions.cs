@@ -91,14 +91,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 wrappedDataEncryptionKey,
                 encryptionKeyWrapMetadata);
 
-            RequestOptions requestOptions = new RequestOptions
-            {
-                IfMatchEtag = clientEncryptionKeyProperties.ETag,
-            };
-
             ClientEncryptionKeyResponse clientEncryptionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                 clientEncryptionKeyProperties,
-                requestOptions,
                 cancellationToken: cancellationToken);
 
             return clientEncryptionKeyResponse;
@@ -158,6 +152,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
 
+            RequestOptions requestOptions = new RequestOptions
+            {
+                IfMatchEtag = clientEncryptionKeyProperties.ETag,
+            };
+
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
@@ -177,11 +176,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clientEncryptionKeyProperties.EncryptionAlgorithm,
                 rewrappedKey,
                 newEncryptionKeyWrapMetadata);
-
-            RequestOptions requestOptions = new RequestOptions
-            {
-                IfMatchEtag = clientEncryptionKeyProperties.ETag,
-            };
 
             ClientEncryptionKeyResponse clientEncryptionKeyResponse = await clientEncryptionKey.ReplaceAsync(
                 clientEncryptionKeyProperties,
