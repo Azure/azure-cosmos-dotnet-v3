@@ -23,7 +23,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [Point Operation Statistics]
             Activity ID: 00000000-0000-0000-0000-000000000000
@@ -38,6 +38,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -82,7 +87,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [Point Operation Statistics Default]
             Activity ID: <null>
@@ -97,6 +102,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -135,7 +145,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [Query Metrics]
             Retrieved Document Count                 :           2,000             
@@ -173,6 +183,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -242,7 +257,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats]
             Start Time: 12:00:00:000
@@ -291,6 +306,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -390,7 +410,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [Client Side Request Stats Default]
             Start Time: 12:00:00:000
@@ -434,6 +454,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {
@@ -495,7 +520,7 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  12:00:00:000  0.00 milliseconds  
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         (
             [CPU History]
             (0001-01-01T00:00:00.0000000 42.000), (0001-01-01T00:00:00.0000000 23.000)
@@ -505,6 +530,11 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
   "data": {

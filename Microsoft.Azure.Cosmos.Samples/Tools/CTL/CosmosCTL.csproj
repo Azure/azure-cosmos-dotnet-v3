@@ -18,15 +18,11 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="3.1.10" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(ProjectRef)' == 'True' ">
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(OSSProjectRef)' == 'True' ">
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+  <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" />
     <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" />
   </ItemGroup>

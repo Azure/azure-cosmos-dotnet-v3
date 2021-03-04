@@ -269,7 +269,8 @@ namespace Microsoft.Azure.Cosmos
                 this.defaultMaxDegreeOfConcurrency,
                 this.cosmosClientContext.SerializerCore,
                 this.ExecuteAsync,
-                this.ReBatchAsync);
+                this.ReBatchAsync,
+                this.cosmosClientContext);
             if (!this.streamersByPartitionKeyRange.TryAdd(partitionKeyRangeId, newStreamer))
             {
                 newStreamer.Dispose();
