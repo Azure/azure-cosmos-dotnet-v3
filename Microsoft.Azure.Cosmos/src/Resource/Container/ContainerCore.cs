@@ -371,9 +371,10 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedRequestOptions: changeFeedRequestOptions,
                 clientContext: this.ClientContext);
 
-            return new FeedIteratorCore<T>(
+            return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(
                 changeFeedIteratorCore,
-                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
+                responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>),
+                this.ClientContext);
         }
 
         public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(

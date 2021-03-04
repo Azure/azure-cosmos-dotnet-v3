@@ -6,35 +6,62 @@
     FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
         queryText: null);
 
-    Trace rootTrace;
-    using (rootTrace = Trace.GetRootTrace("Root Trace"))
+    List<ITrace> traces = new List<ITrace>();
+    while (feedIterator.HasMoreResults)
     {
-        while (feedIterator.HasMoreResults)
-        {
-            await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-        }
+        ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+        traces.Add(trace);
     }
+
+    ITrace traceForest = TraceJoiner.JoinTraces(traces);
 ]]></Setup>
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Root Trace(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │               └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           │               └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │               └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                       ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                       ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                       └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                                           └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                                                   (
+    │                                                       [Client Side Request Stats]
+    │                                                       Redacted To Not Change The Baselines From Run To Run
+    │                                                   )
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -48,57 +75,51 @@
     │                                                   [Client Side Request Stats]
     │                                                   Redacted To Not Change The Baselines From Run To Run
     │                                               )
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │           └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                           (
-    │                                               [Client Side Request Stats]
-    │                                               Redacted To Not Change The Baselines From Run To Run
-    │                                           )
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                           (
-    │                                               [Client Side Request Stats]
-    │                                               Redacted To Not Change The Baselines From Run To Run
-    │                                           )
-    └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                                               (
+    │                                                   [Client Side Request Stats]
+    │                                                   Redacted To Not Change The Baselines From Run To Run
+    │                                               )
+    └── FeedIterator Read Next Async(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   (
+        │       [Client Configuration]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │   )
+        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                             └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                 └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                     └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                        └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                                (
-                                                    [Client Side Request Stats]
-                                                    Redacted To Not Change The Baselines From Run To Run
-                                                )
+                                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                            └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                                    (
+                                                        [Client Side Request Stats]
+                                                        Redacted To Not Change The Baselines From Run To Run
+                                                    )
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Root Trace",
+  "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
   "caller info": {
@@ -111,9 +132,9 @@
   "data": {},
   "children": [
     {
-      "name": "MoveNextAsync",
+      "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -121,12 +142,14 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
+          "component": "ReadFeed",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -137,7 +160,7 @@
           "data": {},
           "children": [
             {
-              "name": "[,FF) move next",
+              "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
               "caller info": {
@@ -150,7 +173,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "Prefetch",
+                  "name": "[,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
                   "caller info": {
@@ -163,7 +186,181 @@
                   "data": {},
                   "children": [
                     {
-                      "name": "[,FF) move next",
+                      "name": "Prefetch",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
+                      },
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "[,FF) move next",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Pagination",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
+                              },
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Get Collection Cache",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "Routing",
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
+                                  },
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": []
+                                },
+                                {
+                                  "name": "Try Get Overlapping Ranges",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "Routing",
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
+                                  },
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Get Container Properties",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Transport",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Get Collection Cache",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Routing",
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
+                      },
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "name": "Get RID",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": []
+                },
+                {
+                  "name": "Get Collection Cache",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": []
+                },
+                {
+                  "name": "Get Overlapping Feed Ranges",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Get Partition Key Ranges",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Routing",
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
+                      },
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "name": "MoveNextAsync",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
                       "caller info": {
@@ -215,6 +412,97 @@
                               "duration in milliseconds": 0,
                               "data": {},
                               "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
+                              },
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
+                                  },
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
+                                      },
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
+                                          },
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
+                                              },
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
+                                                  },
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
                             }
                           ]
                         }
@@ -223,93 +511,39 @@
                   ]
                 }
               ]
-            },
-            {
-              "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": [
-                {
-                  "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
-                }
-              ]
-            },
-            {
-              "name": "Get RID",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
-            },
-            {
-              "name": "Get Collection Cache",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
-            },
-            {
-              "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": [
-                {
-                  "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
-                }
-              ]
-            },
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "FeedIterator Read Next Async",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Transport",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "ReadFeed",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -324,7 +558,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "[,05C1CFFFFFFFF8) move next",
+                  "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
                   "caller info": {
@@ -479,9 +713,9 @@
       ]
     },
     {
-      "name": "MoveNextAsync",
+      "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -489,12 +723,14 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
+          "component": "ReadFeed",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -505,7 +741,7 @@
           "data": {},
           "children": [
             {
-              "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+              "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
               "caller info": {
@@ -518,9 +754,9 @@
               "data": {},
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                  "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
+                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -530,34 +766,6 @@
                   "duration in milliseconds": 0,
                   "data": {},
                   "children": [
-                    {
-                      "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
@@ -572,7 +780,35 @@
                       "data": {},
                       "children": [
                         {
-                          "name": "Send Async",
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
                           "caller info": {
@@ -624,9 +860,9 @@
                                       "data": {},
                                       "children": [
                                         {
-                                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                          "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "Transport",
+                                          "component": "RequestHandler",
                                           "caller info": {
                                             "member": "MemberName",
                                             "file": "FilePath",
@@ -634,10 +870,25 @@
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {
-                                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                          },
-                                          "children": []
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
+                                              },
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
                                         }
                                       ]
                                     }
@@ -658,9 +909,9 @@
       ]
     },
     {
-      "name": "MoveNextAsync",
+      "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -668,12 +919,14 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
+          "component": "ReadFeed",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -684,7 +937,7 @@
           "data": {},
           "children": [
             {
-              "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+              "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
               "caller info": {
@@ -697,9 +950,9 @@
               "data": {},
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                  "name": "[05C1E7FFFFFFFA,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
+                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -709,34 +962,6 @@
                   "duration in milliseconds": 0,
                   "data": {},
                   "children": [
-                    {
-                      "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
@@ -751,7 +976,35 @@
                       "data": {},
                       "children": [
                         {
-                          "name": "Send Async",
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
                           "caller info": {
@@ -803,9 +1056,9 @@
                                       "data": {},
                                       "children": [
                                         {
-                                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                          "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "Transport",
+                                          "component": "RequestHandler",
                                           "caller info": {
                                             "member": "MemberName",
                                             "file": "FilePath",
@@ -813,189 +1066,25 @@
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {
-                                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                          },
-                                          "children": []
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": [
-        {
-          "name": "MoveNextAsync",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": [
-            {
-              "name": "[05C1E7FFFFFFFA,FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": [
-                    {
-                      "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "RequestHandler",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": [
-                        {
-                          "name": "Send Async",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": [
-                            {
-                              "name": "Send Async",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": [
-                                {
-                                  "name": "Send Async",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
-                                  "start time": "12:00:00:000",
-                                  "duration in milliseconds": 0,
-                                  "data": {},
-                                  "children": [
-                                    {
-                                      "name": "Send Async",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
-                                      "start time": "12:00:00:000",
-                                      "duration in milliseconds": 0,
-                                      "data": {},
-                                      "children": [
-                                        {
-                                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "Transport",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
-                                          "start time": "12:00:00:000",
-                                          "duration in milliseconds": 0,
-                                          "data": {
-                                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                          },
-                                          "children": []
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
+                                              },
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
                                         }
                                       ]
                                     }
@@ -1026,103 +1115,124 @@
     FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container
         .GetItemQueryIterator<JToken>(queryText: null);
 
-    Trace rootTrace;
-    using (rootTrace = Trace.GetRootTrace("Root Trace"))
+    List<ITrace> traces = new List<ITrace>();
+    while (feedIterator.HasMoreResults)
     {
-        while (feedIterator.HasMoreResults)
-        {
-            await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-        }
+        FeedResponse<JToken> response = await feedIterator.ReadNextAsync(cancellationToken: default);
+        ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+        traces.Add(trace);
     }
+
+    ITrace traceForest = TraceJoiner.JoinTraces(traces);
 ]]></Setup>
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Root Trace(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │               └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                               (
-    │                                                   [Client Side Request Stats]
-    │                                                   Redacted To Not Change The Baselines From Run To Run
-    │                                               )
-    ├── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                           (
-    │                                               [Client Side Request Stats]
-    │                                               Redacted To Not Change The Baselines From Run To Run
-    │                                           )
-    ├── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                           (
-    │                                               [Client Side Request Stats]
-    │                                               Redacted To Not Change The Baselines From Run To Run
-    │                                           )
-    ├── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                                           (
-    │                                               [Client Side Request Stats]
-    │                                               Redacted To Not Change The Baselines From Run To Run
-    │                                           )
-    └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │               └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       ├── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       │   └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │           └── [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                   └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                                       └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                                               (
+    │   │                                                   [Client Side Request Stats]
+    │   │                                                   Redacted To Not Change The Baselines From Run To Run
+    │   │                                               )
+    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                                           (
+    │   │                                               [Client Side Request Stats]
+    │   │                                               Redacted To Not Change The Baselines From Run To Run
+    │   │                                           )
+    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
+    │   ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │                                           (
+    │   │                                               [Client Side Request Stats]
+    │   │                                               Redacted To Not Change The Baselines From Run To Run
+    │   │                                           )
+    │   └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   (
+        │       [Client Configuration]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │   )
+        ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  ReadFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │           └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │               ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │               ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │               └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │                   └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │                       └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │                           └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │                               └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │                                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │                                           (
+        │                                               [Client Side Request Stats]
+        │                                               Redacted To Not Change The Baselines From Run To Run
+        │                                           )
+        └── POCO Materialization(00000000-0000-0000-0000-000000000000)  Poco-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Root Trace",
+  "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
   "caller info": {
@@ -1135,9 +1245,9 @@
   "data": {},
   "children": [
     {
-      "name": "MoveNextAsync",
+      "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1145,12 +1255,14 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
+          "component": "ReadFeed",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1161,7 +1273,7 @@
           "data": {},
           "children": [
             {
-              "name": "[,FF) move next",
+              "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
               "caller info": {
@@ -1174,7 +1286,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "Prefetch",
+                  "name": "[,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
                   "caller info": {
@@ -1187,7 +1299,181 @@
                   "data": {},
                   "children": [
                     {
-                      "name": "[,FF) move next",
+                      "name": "Prefetch",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Pagination",
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
+                      },
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": [
+                        {
+                          "name": "[,FF) move next",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Pagination",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": [
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
+                              },
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Get Collection Cache",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "Routing",
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
+                                  },
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": []
+                                },
+                                {
+                                  "name": "Try Get Overlapping Ranges",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "Routing",
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
+                                  },
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": []
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "name": "Get Container Properties",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Transport",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Get Collection Cache",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Routing",
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
+                      },
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "name": "Get RID",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": []
+                },
+                {
+                  "name": "Get Collection Cache",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": []
+                },
+                {
+                  "name": "Get Overlapping Feed Ranges",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Routing",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "Get Partition Key Ranges",
+                      "id": "00000000-0000-0000-0000-000000000000",
+                      "component": "Routing",
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
+                      },
+                      "start time": "12:00:00:000",
+                      "duration in milliseconds": 0,
+                      "data": {},
+                      "children": []
+                    }
+                  ]
+                },
+                {
+                  "name": "MoveNextAsync",
+                  "id": "00000000-0000-0000-0000-000000000000",
+                  "component": "Pagination",
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
+                  },
+                  "start time": "12:00:00:000",
+                  "duration in milliseconds": 0,
+                  "data": {},
+                  "children": [
+                    {
+                      "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
                       "caller info": {
@@ -1239,6 +1525,97 @@
                               "duration in milliseconds": 0,
                               "data": {},
                               "children": []
+                            },
+                            {
+                              "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                              "id": "00000000-0000-0000-0000-000000000000",
+                              "component": "RequestHandler",
+                              "caller info": {
+                                "member": "MemberName",
+                                "file": "FilePath",
+                                "line": 42
+                              },
+                              "start time": "12:00:00:000",
+                              "duration in milliseconds": 0,
+                              "data": {},
+                              "children": [
+                                {
+                                  "name": "Send Async",
+                                  "id": "00000000-0000-0000-0000-000000000000",
+                                  "component": "RequestHandler",
+                                  "caller info": {
+                                    "member": "MemberName",
+                                    "file": "FilePath",
+                                    "line": 42
+                                  },
+                                  "start time": "12:00:00:000",
+                                  "duration in milliseconds": 0,
+                                  "data": {},
+                                  "children": [
+                                    {
+                                      "name": "Send Async",
+                                      "id": "00000000-0000-0000-0000-000000000000",
+                                      "component": "RequestHandler",
+                                      "caller info": {
+                                        "member": "MemberName",
+                                        "file": "FilePath",
+                                        "line": 42
+                                      },
+                                      "start time": "12:00:00:000",
+                                      "duration in milliseconds": 0,
+                                      "data": {},
+                                      "children": [
+                                        {
+                                          "name": "Send Async",
+                                          "id": "00000000-0000-0000-0000-000000000000",
+                                          "component": "RequestHandler",
+                                          "caller info": {
+                                            "member": "MemberName",
+                                            "file": "FilePath",
+                                            "line": 42
+                                          },
+                                          "start time": "12:00:00:000",
+                                          "duration in milliseconds": 0,
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Send Async",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "RequestHandler",
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
+                                              },
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {},
+                                              "children": [
+                                                {
+                                                  "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                                  "id": "00000000-0000-0000-0000-000000000000",
+                                                  "component": "Transport",
+                                                  "caller info": {
+                                                    "member": "MemberName",
+                                                    "file": "FilePath",
+                                                    "line": 42
+                                                  },
+                                                  "start time": "12:00:00:000",
+                                                  "duration in milliseconds": 0,
+                                                  "data": {
+                                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                                  },
+                                                  "children": []
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
                             }
                           ]
                         }
@@ -1247,93 +1624,53 @@
                   ]
                 }
               ]
-            },
-            {
-              "name": "Get Container Properties",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": [
-                {
-                  "name": "Get Collection Cache",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
-                }
-              ]
-            },
-            {
-              "name": "Get RID",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
-            },
-            {
-              "name": "Get Collection Cache",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
-            },
-            {
-              "name": "Get Overlapping Feed Ranges",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": [
-                {
-                  "name": "Get Partition Key Ranges",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
-                }
-              ]
-            },
+            }
+          ]
+        },
+        {
+          "name": "POCO Materialization",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Poco",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "Typed FeedIterator ReadNextAsync",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "component": "Transport",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
+      },
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0,
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
+      "children": [
+        {
+          "name": "MoveNextAsync",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "ReadFeed",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": [
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -1348,7 +1685,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "[,05C1CFFFFFFFF8) move next",
+                  "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
                   "caller info": {
@@ -1499,13 +1836,27 @@
               ]
             }
           ]
+        },
+        {
+          "name": "POCO Materialization",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Poco",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
         }
       ]
     },
     {
-      "name": "POCO Materialization",
+      "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Poco",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1513,26 +1864,14 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
-      "children": []
-    },
-    {
-      "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
+          "component": "ReadFeed",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1543,7 +1882,7 @@
           "data": {},
           "children": [
             {
-              "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
+              "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
               "caller info": {
@@ -1556,9 +1895,9 @@
               "data": {},
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                  "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
+                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -1568,34 +1907,6 @@
                   "duration in milliseconds": 0,
                   "data": {},
                   "children": [
-                    {
-                      "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
@@ -1610,7 +1921,35 @@
                       "data": {},
                       "children": [
                         {
-                          "name": "Send Async",
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
                           "caller info": {
@@ -1662,9 +2001,9 @@
                                       "data": {},
                                       "children": [
                                         {
-                                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                          "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "Transport",
+                                          "component": "RequestHandler",
                                           "caller info": {
                                             "member": "MemberName",
                                             "file": "FilePath",
@@ -1672,10 +2011,25 @@
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {
-                                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                          },
-                                          "children": []
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
+                                              },
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
                                         }
                                       ]
                                     }
@@ -1692,13 +2046,27 @@
               ]
             }
           ]
+        },
+        {
+          "name": "POCO Materialization",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "component": "Poco",
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
+          },
+          "start time": "12:00:00:000",
+          "duration in milliseconds": 0,
+          "data": {},
+          "children": []
         }
       ]
     },
     {
-      "name": "POCO Materialization",
+      "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Poco",
+      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1706,26 +2074,14 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
-      "children": []
-    },
-    {
-      "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
       },
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
+          "component": "ReadFeed",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1736,7 +2092,7 @@
           "data": {},
           "children": [
             {
-              "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
+              "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
               "caller info": {
@@ -1749,9 +2105,9 @@
               "data": {},
               "children": [
                 {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+                  "name": "[05C1E7FFFFFFFA,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
+                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -1761,34 +2117,6 @@
                   "duration in milliseconds": 0,
                   "data": {},
                   "children": [
-                    {
-                      "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
@@ -1803,7 +2131,35 @@
                       "data": {},
                       "children": [
                         {
-                          "name": "Send Async",
+                          "name": "Get Collection Cache",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Try Get Overlapping Ranges",
+                          "id": "00000000-0000-0000-0000-000000000000",
+                          "component": "Routing",
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
+                          },
+                          "start time": "12:00:00:000",
+                          "duration in milliseconds": 0,
+                          "data": {},
+                          "children": []
+                        },
+                        {
+                          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "RequestHandler",
                           "caller info": {
@@ -1855,9 +2211,9 @@
                                       "data": {},
                                       "children": [
                                         {
-                                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                          "name": "Send Async",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "Transport",
+                                          "component": "RequestHandler",
                                           "caller info": {
                                             "member": "MemberName",
                                             "file": "FilePath",
@@ -1865,10 +2221,25 @@
                                           },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {
-                                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                          },
-                                          "children": []
+                                          "data": {},
+                                          "children": [
+                                            {
+                                              "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
+                                              "id": "00000000-0000-0000-0000-000000000000",
+                                              "component": "Transport",
+                                              "caller info": {
+                                                "member": "MemberName",
+                                                "file": "FilePath",
+                                                "line": 42
+                                              },
+                                              "start time": "12:00:00:000",
+                                              "duration in milliseconds": 0,
+                                              "data": {
+                                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
+                                              },
+                                              "children": []
+                                            }
+                                          ]
                                         }
                                       ]
                                     }
@@ -1885,40 +2256,11 @@
               ]
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "POCO Materialization",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Poco",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
-    },
-    {
-      "name": "MoveNextAsync",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": [
+        },
         {
-          "name": "MoveNextAsync",
+          "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
+          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1927,173 +2269,9 @@
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
           "data": {},
-          "children": [
-            {
-              "name": "[05C1E7FFFFFFFA,FF) move next",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": [
-                {
-                  "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": [
-                    {
-                      "name": "Get Collection Cache",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Try Get Overlapping Ranges",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Routing",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    },
-                    {
-                      "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "RequestHandler",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": [
-                        {
-                          "name": "Send Async",
-                          "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
-                          "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": [
-                            {
-                              "name": "Send Async",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": [
-                                {
-                                  "name": "Send Async",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
-                                  "start time": "12:00:00:000",
-                                  "duration in milliseconds": 0,
-                                  "data": {},
-                                  "children": [
-                                    {
-                                      "name": "Send Async",
-                                      "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
-                                      "start time": "12:00:00:000",
-                                      "duration in milliseconds": 0,
-                                      "data": {},
-                                      "children": [
-                                        {
-                                          "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
-                                          "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "Transport",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
-                                          "start time": "12:00:00:000",
-                                          "duration in milliseconds": 0,
-                                          "data": {
-                                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                          },
-                                          "children": []
-                                        }
-                                      ]
-                                    }
-                                  ]
-                                }
-                              ]
-                            }
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
+          "children": []
         }
       ]
-    },
-    {
-      "name": "POCO Materialization",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Poco",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
     }
   ]
 }]]></Json>
