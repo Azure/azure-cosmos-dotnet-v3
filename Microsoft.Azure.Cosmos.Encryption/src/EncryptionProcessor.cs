@@ -154,9 +154,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     case CosmosEncryptionType.Randomized:
                         encryptionType = EncryptionType.Randomized;
                         break;
-                    default:
-                        Debug.Fail(string.Format("Invalid encryption type {0}. ", propertyToEncrypt.EncryptionType));
+                    case CosmosEncryptionType.Plaintext:
+                        encryptionType = EncryptionType.Plaintext;
                         break;
+                    default:
+                        throw new ArgumentException($"Invalid encryption type {propertyToEncrypt.EncryptionType}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
                 string propertyName = propertyToEncrypt.Path.Substring(1);

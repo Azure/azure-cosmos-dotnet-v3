@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <![CDATA[
         /// ClientEncryptionKeyResponse response = await this.cosmosDatabase.CreateClientEncryptionKeyAsync(
         ///     "testKey",
-        ///     CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+        ///     DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
         ///     new EncryptionKeyWrapMetadata("metadataName", "MetadataValue"));
         /// ]]>
         /// </code>
@@ -91,8 +91,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 wrappedDataEncryptionKey,
                 encryptionKeyWrapMetadata);
 
+            RequestOptions requestOptions = new RequestOptions
+            {
+                IfMatchEtag = clientEncryptionKeyProperties.ETag,
+            };
+
             ClientEncryptionKeyResponse clientEncryptionKeyResponse = await database.CreateClientEncryptionKeyAsync(
                 clientEncryptionKeyProperties,
+                requestOptions,
                 cancellationToken: cancellationToken);
 
             return clientEncryptionKeyResponse;
@@ -172,8 +178,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 rewrappedKey,
                 newEncryptionKeyWrapMetadata);
 
+            RequestOptions requestOptions = new RequestOptions
+            {
+                IfMatchEtag = clientEncryptionKeyProperties.ETag,
+            };
+
             ClientEncryptionKeyResponse clientEncryptionKeyResponse = await clientEncryptionKey.ReplaceAsync(
                 clientEncryptionKeyProperties,
+                requestOptions,
                 cancellationToken: cancellationToken);
 
             return clientEncryptionKeyResponse;

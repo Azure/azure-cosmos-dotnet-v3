@@ -48,37 +48,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return container;
         }
 
-        internal static async Task InitContainerCacheAsync(
-            this Container container,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (container is EncryptionContainer encryptionContainer)
-            {
-                EncryptionCosmosClient encryptionCosmosClient = encryptionContainer.EncryptionCosmosClient;
-                ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetClientEncryptionPolicyAsync(
-                    container: container,
-                    cancellationToken: cancellationToken,
-                    shouldForceRefresh: false);
-
-                if (clientEncryptionPolicy != null)
-                {
-                    foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
-                    {
-                        await encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                            clientEncryptionKeyId: clientEncryptionKeyId,
-                            container: container,
-                            cancellationToken: cancellationToken,
-                            shouldForceRefresh: false);
-                    }
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException($"Invalid {container} used for this operation. This operation requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-            }
-        }
-
         /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
         /// This will create the fresh new FeedIterator when called which will support decryption.
@@ -93,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <code language="c#">
         /// <![CDATA[
         /// IOrderedQueryable<ToDoActivity> linqQueryable = this.container.GetItemLinqQueryable<ToDoActivity>();
-        /// FeedIterator setIterator = this.container.ToEncryptionStreamIterator<ToDoActivity>(linqQueryable);
+        /// FeedIterator setIterator = this.container.ToEncryptionFeedIterator<ToDoActivity>(linqQueryable);
         /// ]]>
         /// </code>
         /// </example>
@@ -157,6 +126,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// containerWithEncryption = await this.cosmosDatabase.GetContainer("id").InitializeEncryptionAsync();
         /// QueryDefinition withEncryptedParameter = containerWithEncryption.CreateQueryDefinition(
         ///     "SELECT * FROM c where c.PropertyName = @PropertyValue");
+        /// await withEncryptedParameter.AddParameterAsync(
+        ///     "@PropertyName",
+        ///     PropertyValue,
+        ///     "/PropertyName");
         /// ]]>
         /// </code>
         /// </example>

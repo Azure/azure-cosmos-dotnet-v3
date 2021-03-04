@@ -86,6 +86,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
+        internal async Task InitContainerCacheAsync(
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            EncryptionCosmosClient encryptionCosmosClient = this.EncryptionCosmosClient;
+            ClientEncryptionPolicy clientEncryptionPolicy = await encryptionCosmosClient.GetClientEncryptionPolicyAsync(
+                container: this,
+                cancellationToken: cancellationToken,
+                shouldForceRefresh: false);
+
+            if (clientEncryptionPolicy != null)
+            {
+                foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(p => p.ClientEncryptionKeyId).Distinct())
+                {
+                    await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                        clientEncryptionKeyId: clientEncryptionKeyId,
+                        container: this,
+                        cancellationToken: cancellationToken,
+                        shouldForceRefresh: false);
+                }
+            }
+        }
+
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             PartitionKey? partitionKey = null,

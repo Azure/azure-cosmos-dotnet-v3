@@ -77,7 +77,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionContainer encryptionContainer = (EncryptionContainer)encryptionQueryDefinition.Container;
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
 
-                // not really required, but will have things setup for subsequent queries or operations on this Container.
+                // not really required, but will have things setup for subsequent queries or operations on this Container if the Container was never init
+                // or if this was the first operation carried out on this container.
                 await encryptionContainer.EncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
                 // get the path's encryption setting.
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (settings.EncryptionType == EncryptionType.Randomized)
                 {
-                    throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                    throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
                 JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);

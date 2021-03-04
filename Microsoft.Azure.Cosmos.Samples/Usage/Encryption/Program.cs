@@ -104,12 +104,12 @@
             // Create the Client Encryption Keys for Encrypting the configured Paths.
             await database.CreateClientEncryptionKeyAsync(
                     "key1",
-                    CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
                     new EncryptionKeyWrapMetadata("key1", "metadata1"));
 
             await database.CreateClientEncryptionKeyAsync(
                     "key2",
-                    CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                    DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
                     new EncryptionKeyWrapMetadata("key2", "metadata2"));
 
             // Configure the required Paths to be Encrypted with appropriate settings.
@@ -117,8 +117,8 @@
             {
                 Path = "/SubTotal",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionType = EncryptionType.Deterministic.ToString(),
+                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()
             };
 
             // non primitive data type.Leaves get encrypted.
@@ -126,16 +126,16 @@
             {
                 Path = "/Items",
                 ClientEncryptionKeyId = "key2",
-                EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256
+                EncryptionType = EncryptionType.Deterministic.ToString(),
+                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()
             };
 
             ClientEncryptionIncludedPath path3 = new ClientEncryptionIncludedPath()
             {
                 Path = "/OrderDate",
                 ClientEncryptionKeyId = "key1",
-                EncryptionType = CosmosEncryptionType.Deterministic,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AeadAes256CbcHmacSha256,
+                EncryptionType = EncryptionType.Deterministic.ToString(),
+                EncryptionAlgorithm = DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256.ToString()
             };
 
             // Create a container with the appropriate partition key definition (we choose the "AccountNumber" property here) and throughput (we choose 1000 here).
