@@ -863,7 +863,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
@@ -980,7 +980,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost);
         ///         }
@@ -1006,7 +1006,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
@@ -1088,7 +1088,7 @@ namespace Microsoft.Azure.Cosmos
         ///     //Asynchronous query execution
         ///     while (setIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.Price); 
         ///         }
@@ -1392,7 +1392,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
