@@ -1,21 +1,5 @@
 {
   "Subclasses": {
-    "Microsoft.Azure.Cosmos.Encryption.CosmosEncryptionType;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.String Deterministic": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String Deterministic;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String Randomized": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String Randomized;IsInitOnly:False;IsStatic:True;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.Encryption.Custom.AzureKeyVaultCosmosEncryptor;Microsoft.Azure.Cosmos.Encryption.Custom.Encryptor;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
