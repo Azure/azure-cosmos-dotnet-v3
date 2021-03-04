@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
@@ -862,7 +863,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
@@ -979,7 +980,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost);
         ///         }
@@ -1005,7 +1006,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
@@ -1032,6 +1033,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
+        /// <param name="linqSerializerOptions">(Optional) The options to configure Linq Serializer Properties. This overrides properties in CosmosSerializerOptions while creating client</param>
         /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
         /// 1. This example below shows LINQ query generation and blocked execution.
@@ -1086,7 +1088,7 @@ namespace Microsoft.Azure.Cosmos
         ///     //Asynchronous query execution
         ///     while (setIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.Price); 
         ///         }
@@ -1098,10 +1100,12 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
+        /// <seealso cref="CosmosSerializationOptions"/>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
+            QueryRequestOptions requestOptions = null,
+            CosmosLinqSerializerOptions linqSerializerOptions = null);
 
         /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
@@ -1388,7 +1392,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }

@@ -55,11 +55,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [TestMethod]
         public void FeedRangeResponse_ResponseIsAccessible()
         {
+            Headers headers = new Headers();
             ResponseMessage original = new ResponseMessage(
                 System.Net.HttpStatusCode.OK,
                 new RequestMessage(),
-                new Headers(),
-                CosmosExceptionFactory.CreateBadRequestException("test"),
+                headers,
+                CosmosExceptionFactory.CreateBadRequestException("test", headers),
                 NoOpTrace.Singleton)
             {
                 Content = Mock.Of<MemoryStream>()

@@ -408,6 +408,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task LINQWithCamelCaseFlagTest()
+        {
+            static void builder(CosmosClientBuilder action)
+            {
+                action.WithSerializerOptions(new CosmosSerializationOptions()
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                });
+            }
+            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder, false);
+            Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
+            Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
+
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            // NamingPolicy - CamelCase set
+            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            };
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 2);
+
+            // Override camelcase client with default
+            linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
+            };
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 0);
+
+            // Normal client - CamelCase flag not set
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 0);
+
+            // Camel case client - CamelCase flag not set
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 2);
+        }
+
+        [TestMethod]
         public async Task LinqParameterisedTest1()
         {
             //Creating items for query.
