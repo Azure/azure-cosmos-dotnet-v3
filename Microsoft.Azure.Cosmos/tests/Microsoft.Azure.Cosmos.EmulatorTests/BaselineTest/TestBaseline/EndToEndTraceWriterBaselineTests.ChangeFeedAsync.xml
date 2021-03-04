@@ -4313,6 +4313,10 @@
       <Text><![CDATA[.
 └── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │       ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -4345,6 +4349,10 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │       └── [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -4364,6 +4372,10 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   (
+    │   │       [Client Configuration]
+    │   │       Redacted To Not Change The Baselines From Run To Run
+    │   │   )
     │   ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │       └── [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -4383,6 +4395,10 @@
     │   ├── Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   (
+        │       [Client Configuration]
+        │       Redacted To Not Change The Baselines From Run To Run
+        │   )
         ├── ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │       └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -4426,7 +4442,9 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "ChangeFeed MoveNextAsync",
@@ -4837,7 +4855,9 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "ChangeFeed MoveNextAsync",
@@ -5059,7 +5079,9 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "ChangeFeed MoveNextAsync",
@@ -5281,7 +5303,9 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
+      "data": {
+        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      },
       "children": [
         {
           "name": "ChangeFeed MoveNextAsync",
