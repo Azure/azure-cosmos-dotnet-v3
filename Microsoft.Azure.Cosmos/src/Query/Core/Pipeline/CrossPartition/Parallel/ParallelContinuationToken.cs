@@ -33,10 +33,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             public const string Max = "max";
         }
 
-        public ParallelContinuationToken(string token, Range<string> range)
+        internal ParallelContinuationToken(string token, Range<string> range)
         {
             this.Token = token;
             this.Range = (range.Min, range.Max);
+        }
+
+        public ParallelContinuationToken(string token, string min, string max)
+            : this(token, new Range<string>(min, max, isMinInclusive: true, isMaxInclusive: false))
+        {
         }
 
         public string Token { get; }
