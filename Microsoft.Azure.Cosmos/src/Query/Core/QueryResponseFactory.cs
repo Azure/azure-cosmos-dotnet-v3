@@ -46,13 +46,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 else
                 {
                     CosmosException unkownCosmosException = CosmosExceptionFactory.CreateInternalServerErrorException(
-                        subStatusCode: default,
+                        headers: new Headers()
+                        {
+                            SubStatusCode = SubStatusCodes.PartitionKeyRangeGone,
+                            ActivityId = QueryResponseCore.EmptyGuidString
+                        },
                         message: exception.Message,
                         stackTrace: exception.StackTrace,
-                        activityId: QueryResponseCore.EmptyGuidString,
-                        requestCharge: 0,
-                        retryAfter: null,
-                        headers: null,
                         trace: NoOpTrace.Singleton,
                         innerException: exception);
 
@@ -113,17 +113,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 statusCode: queryResponseCore.StatusCode,
                 subStatusCodes: queryResponseCore.SubStatusCode,
                 cosmosException: CosmosExceptionFactory.Create(
-                    cosmosException.StatusCode,
-                    cosmosException.SubStatusCode,
-                    cosmosException.Message,
-                    exceptionWithStackTrace.StackTrace,
-                    cosmosException.ActivityId,
-                    cosmosException.RequestCharge,
-                    cosmosException.RetryAfter,
-                    cosmosException.Headers,
-                    cosmosException.Trace,
-                    cosmosException.Error,
-                    cosmosException.InnerException),
+                    statusCode: cosmosException.StatusCode,
+                    message: cosmosException.Message,
+                    stackTrace: exceptionWithStackTrace.StackTrace,
+                    headers: cosmosException.Headers,
+                    trace: cosmosException.Trace,
+                    error: cosmosException.Error,
+                    innerException: cosmosException.InnerException),
                 requestCharge: queryResponseCore.RequestCharge,
                 activityId: queryResponseCore.ActivityId);
 
@@ -142,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedContinuationTokenException.Message,
+                    headers: new Headers(),
                     stackTrace: malformedContinuationTokenException.StackTrace,
                     innerException: malformedContinuationTokenException);
             }
@@ -150,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 return CosmosExceptionFactory.CreateInternalServerErrorException(
                     message: $"{nameof(CosmosException)} due to {nameof(UnexpectedQueryPartitionProviderException)}",
+                    headers: new Headers(),
                     innerException: unexpectedQueryPartitionProviderException);
             }
 
@@ -157,6 +155,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: expectedQueryPartitionProviderException.Message,
+                    headers: new Headers(),
                     stackTrace: expectedQueryPartitionProviderException.StackTrace,
                     innerException: expectedQueryPartitionProviderException);
             }

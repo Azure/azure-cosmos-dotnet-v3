@@ -292,6 +292,10 @@ namespace Microsoft.Azure.Cosmos
                                             $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
                                         throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                             message,
+                                            headers: new Headers()
+                                            {
+                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                            },
                                             innerException: operationCanceledException,
                                             trace: helperTrace);
                                     }
