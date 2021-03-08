@@ -303,9 +303,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
 
                 this.jsonWriter.WriteFieldName("NumberOfClients");
-                this.jsonWriter.WriteNumber64Value(clientConfigurationTraceDatum.NumberOfClients);
+                this.jsonWriter.WriteNumber64Value(CosmosClient.numberOfClients);
                 this.jsonWriter.WriteFieldName("User Agent");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.UserAgent);
+                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.UserAgentContainer.UserAgent);
                 
                 this.jsonWriter.WriteFieldName("ConnectionConfig");
                 this.jsonWriter.WriteObjectStart();

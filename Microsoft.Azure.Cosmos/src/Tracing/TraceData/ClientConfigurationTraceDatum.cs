@@ -15,49 +15,40 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public ClientConfigurationTraceDatum(CosmosClientContext cosmosClientContext, DateTime startTime)
         {
             this.ClientCreatedDateTimeUtc = startTime;
-            this.RecordClientConfig(cosmosClientContext);
+            this.UserAgentContainer = cosmosClientContext.DocumentClient.ConnectionPolicy.UserAgentContainer;
+            this.GatewayConnectionConfig = new GatewayConnectionConfig(cosmosClientContext.DocumentClient.ConnectionPolicy.MaxConnectionLimit,
+                                                                       cosmosClientContext.DocumentClient.ConnectionPolicy.RequestTimeout,
+                                                                       cosmosClientContext.ClientOptions.WebProxy);
+
+            this.RntbdConnectionConfig = cosmosClientContext.DocumentClient.RecordTcpSettings(this);
+
+            this.OtherConnectionConfig = new OtherConnectionConfig(cosmosClientContext.DocumentClient.ConnectionPolicy.EnableEndpointDiscovery,
+                                                cosmosClientContext.ClientOptions.AllowBulkExecution);
+
+            this.ConsistencyConfig = new ConsistencyConfig(cosmosClientContext.ClientOptions.ConsistencyLevel,
+                                                    cosmosClientContext.DocumentClient.ConnectionPolicy.UseMultipleWriteLocations,
+                                                    cosmosClientContext.ClientOptions.ApplicationPreferredRegions);
         }
 
         public DateTime ClientCreatedDateTimeUtc { get; }
 
-        public int NumberOfClients { get; set; }
+        public GatewayConnectionConfig GatewayConnectionConfig { get; }
 
-        public string UserAgent { get; set; }
+        public RntbdConnectionConfig RntbdConnectionConfig { get; }
 
-        public GatewayConnectionConfig GatewayConnectionConfig { get; set; }
+        public OtherConnectionConfig OtherConnectionConfig { get; }
 
-        public RntbdConnectionConfig RntbdConnectionConfig { get; set; }
+        public ConsistencyConfig ConsistencyConfig { get; }
 
-        public OtherConnectionConfig OtherConnectionConfig { get; set; }
-
-        public ConsistencyConfig ConsistencyConfig { get; set; }
+        internal readonly UserAgentContainer UserAgentContainer;
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
         }
-
-        private void RecordClientConfig(CosmosClientContext cosmosClientContext)
-        {
-            this.GatewayConnectionConfig = new GatewayConnectionConfig(cosmosClientContext.DocumentClient.ConnectionPolicy.MaxConnectionLimit,
-                                                                       cosmosClientContext.DocumentClient.ConnectionPolicy.RequestTimeout,
-                                                                       cosmosClientContext.ClientOptions.WebProxy);
-
-            cosmosClientContext.DocumentClient.RecordTcpSettings(this);
-
-            this.OtherConnectionConfig = new OtherConnectionConfig(cosmosClientContext.DocumentClient.ConnectionPolicy.EnableEndpointDiscovery,
-                                                cosmosClientContext.ClientOptions.AllowBulkExecution);
-            
-            this.ConsistencyConfig = new ConsistencyConfig(cosmosClientContext.ClientOptions.ConsistencyLevel,
-                                                    cosmosClientContext.DocumentClient.ConnectionPolicy.UseMultipleWriteLocations,
-                                                    cosmosClientContext.ClientOptions.ApplicationPreferredRegions);
-
-            this.NumberOfClients = CosmosClient.numberOfClients;
-            this.UserAgent = cosmosClientContext.UserAgent;
-        }
     }
 
-    internal struct GatewayConnectionConfig
+    internal class GatewayConnectionConfig
     {
         public GatewayConnectionConfig(
             int maxConnectionLimit,
@@ -72,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                 maxConnectionLimit,
                                 (int)requestTimeout.TotalSeconds,
                                 webProxy != null));
+            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
         public int MaxConnectionLimit { get; }
@@ -79,6 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public bool IsWebProxyConfigured { get; }
 
         private readonly Lazy<string> lazyString;
+        private readonly Lazy<string> lazyJsonString;
 
         public override string ToString()
         {
@@ -87,11 +80,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public string ToJsonString()
         {
-            return JsonConvert.SerializeObject(this);
+            return this.lazyJsonString.Value;
         }
     }
 
-    internal struct RntbdConnectionConfig
+    internal class RntbdConnectionConfig
     {
         public RntbdConnectionConfig(
             int connectionTimeout,
@@ -112,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                 maxRequestsPerChannel,
                                 maxRequestsPerEndpoint,
                                 tcpEndpointRediscovery));
+            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
         public int ConnectionTimeout { get; }
@@ -121,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public bool TcpEndpointRediscovery { get; }
 
         private readonly Lazy<string> lazyString;
+        private readonly Lazy<string> lazyJsonString;
 
         public override string ToString()
         {
@@ -129,11 +124,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public string ToJsonString()
         {
-            return JsonConvert.SerializeObject(this);
+            return this.lazyJsonString.Value;
         }
     }
 
-    internal struct OtherConnectionConfig
+    internal class OtherConnectionConfig
     {
         public OtherConnectionConfig(
             bool enableEndpointDiscovery,
@@ -145,12 +140,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                  "(ed:{0}, be:{1})",
                                  enableEndpointDiscovery,
                                  allowBulkExecution));
+            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
         public bool EnableEndpointDiscovery { get; }
         public bool AllowBulkExecution { get; }
 
         private readonly Lazy<string> lazyString;
+        private readonly Lazy<string> lazyJsonString;
 
         public override string ToString()
         {
@@ -159,11 +156,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public string ToJsonString()
         {
-            return JsonConvert.SerializeObject(this);
+            return this.lazyJsonString.Value;
         }
     }
 
-    internal struct ConsistencyConfig
+    internal class ConsistencyConfig
     {
         public ConsistencyConfig(
             ConsistencyLevel? consistencyLevel,
@@ -178,6 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                 consistencyLevel.GetValueOrDefault(),
                                 multipleWriteLocationsEnabled,
                                 ConsistencyConfig.PreferredRegionsInternal(preferredRegions)));
+            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
         public ConsistencyLevel ConsistencyLevel { get; }
@@ -185,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public IReadOnlyList<string> PreferredRegions { get; }
 
         private readonly Lazy<string> lazyString;
+        private readonly Lazy<string> lazyJsonString;
 
         public override string ToString()
         {
@@ -193,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public string ToJsonString()
         {
-            return JsonConvert.SerializeObject(this);
+            return this.lazyJsonString.Value;
         }
 
         private static string PreferredRegionsInternal(IReadOnlyList<string> applicationPreferredRegions)

@@ -1357,13 +1357,13 @@ namespace Microsoft.Azure.Cosmos
             return builder.ToString();
         }
 
-        internal void RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+        internal RntbdConnectionConfig RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
         {
-            clientConfigurationTraceDatum.RntbdConnectionConfig = new RntbdConnectionConfig(this.openConnectionTimeoutInSeconds,
-                                                                    this.idleConnectionTimeoutInSeconds,
-                                                                    this.maxRequestsPerRntbdChannel,
-                                                                    this.maxRntbdChannels,
-                                                                    this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery);
+            return new RntbdConnectionConfig(this.openConnectionTimeoutInSeconds,
+                                this.idleConnectionTimeoutInSeconds,
+                                this.maxRequestsPerRntbdChannel,
+                                this.maxRntbdChannels,
+                                this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery);
         }
 
         private void ThrowIfDisposed()
