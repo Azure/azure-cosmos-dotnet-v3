@@ -817,10 +817,10 @@
           "Attributes": [],
           "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata), Void .ctor(Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata)]"
         },
-        "Void .ctor(System.String, System.String)": {
+        "Void .ctor(System.String, System.String, System.String, System.String)": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.String, System.String), Void .ctor(System.String, System.String)]"
+          "MethodInfo": "[Void .ctor(System.String, System.String, System.String, System.String), Void .ctor(System.String, System.String, System.String, System.String)]"
         }
       },
       "NestedTypes": {}

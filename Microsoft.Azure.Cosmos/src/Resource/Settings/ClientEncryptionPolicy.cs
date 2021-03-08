@@ -86,9 +86,10 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (!string.Equals(clientEncryptionIncludedPath.EncryptionType, "Deterministic") &&
-                !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized"))
+                !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized") &&
+                !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Plaintext"))
             {
-                throw new ArgumentException("EncryptionType should be either 'Deterministic' or 'Randomized'.", nameof(clientEncryptionIncludedPath));
+                throw new ArgumentException("EncryptionType should be either 'Deterministic' or 'Randomized' or 'Plaintext'.", nameof(clientEncryptionIncludedPath));
             }
 
             if (string.IsNullOrWhiteSpace(clientEncryptionIncludedPath.EncryptionAlgorithm))

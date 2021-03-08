@@ -25,12 +25,17 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Creates a new instance of key wrap metadata.
-        /// </summary>
+        /// </summary> 
+        /// <param name="type">ProviderName of KeyStoreProvider.</param>
         /// <param name="name">Name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
-        public EncryptionKeyWrapMetadata(string name, string value)
-            : this(type: "custom", name: name, value: value)
+        /// <param name="algorithm">Algorithm used by the KeyStoreProvider to wrap and unwrap keys.</param>
+        public EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm = null)
         {
+            this.Type = type ?? throw new ArgumentNullException(nameof(type));
+            this.Name = name ?? throw new ArgumentNullException(nameof(name));
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));            
+            this.Algorithm = algorithm;
         }
 
         /// <summary>
@@ -40,15 +45,7 @@ namespace Microsoft.Azure.Cosmos
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
             : this(source?.Type, source?.Name, source?.Value, source?.Algorithm)
         {
-        }
-
-        internal EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm = null)
-        {
-            this.Type = type ?? throw new ArgumentNullException(nameof(type));
-            this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.Value = value ?? throw new ArgumentNullException(nameof(value));
-            this.Algorithm = algorithm;
-        }
+        }  
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
         internal string Type { get; private set; }
