@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             List<string> resolvedRanges = new List<string>();
             foreach(FeedRange token in tokens)
             {
-                resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token, NoOpTrace.Singleton));
+                resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token));
             }
 
             Assert.AreEqual(pkRangesCount, resolvedRanges.Count);
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
             FeedRange feedToken = new FeedRangePartitionKey(new PartitionKey("TBD"));
-            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken, NoOpTrace.Singleton)).ToList();
+            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
 
             Assert.AreEqual(1, resolvedRanges.Count, "PK value should resolve to a single range");
 
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
             FeedRange feedToken = new FeedRangePartitionKeyRange(ranges.First().Id);
-            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken, NoOpTrace.Singleton)).ToList();
+            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
 
             Assert.AreEqual(1, resolvedRanges.Count);
 

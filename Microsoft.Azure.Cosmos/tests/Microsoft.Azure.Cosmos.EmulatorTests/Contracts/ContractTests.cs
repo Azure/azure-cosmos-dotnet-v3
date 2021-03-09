@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             // First do one request to construct the old model information based on Etag
             foreach (FeedRange feedRange in feedRanges)
             {
-                IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange, NoOpTrace.Singleton);
+                IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
                     PageSizeHint = 1

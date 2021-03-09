@@ -418,7 +418,6 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
-            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(

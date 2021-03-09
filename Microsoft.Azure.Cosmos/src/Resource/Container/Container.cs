@@ -1297,13 +1297,13 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
         /// <param name="feedRange">A <see cref="FeedRange"/></param>
+        /// <param name="trace">the Trace</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
-            ITrace trace,
             CancellationToken cancellationToken = default);
 
         /// <summary>

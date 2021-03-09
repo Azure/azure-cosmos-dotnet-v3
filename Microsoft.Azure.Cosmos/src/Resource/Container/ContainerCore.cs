@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
-        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        internal async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             ITrace trace,
             CancellationToken cancellationToken = default)
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
-                NoOpTrace.Singleton,
+                trace,
                 cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
