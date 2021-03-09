@@ -220,8 +220,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 clientOptions);
 
-            Interlocked.Increment(ref numberOfClients);
-
+            this.IncrementNumberOfClients();
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -268,8 +267,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 clientOptions);
 
-            Interlocked.Increment(ref numberOfClients);
-
+            this.IncrementNumberOfClients();
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -1210,6 +1208,11 @@ namespace Microsoft.Azure.Cosmos
                 this.Dispose();
                 throw;
             }
+        }
+
+        private void IncrementNumberOfClients()
+        {
+            Interlocked.Increment(ref numberOfClients);
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)

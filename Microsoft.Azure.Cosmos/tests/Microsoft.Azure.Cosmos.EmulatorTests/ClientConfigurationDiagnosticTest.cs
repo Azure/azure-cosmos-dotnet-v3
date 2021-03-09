@@ -68,7 +68,7 @@
             Assert.AreEqual(tcpconfig.TcpEndpointRediscovery, false);
 
             GatewayConnectionConfig gwConfig = cosmosClient.ClientConfigurationTraceDatum.GatewayConnectionConfig;
-            Assert.AreEqual(gwConfig.RequestTimeout, 50);
+            Assert.AreEqual(gwConfig.UserRequestTimeout, 50);
             Assert.AreEqual(gwConfig.MaxConnectionLimit, 20);
 
             ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;

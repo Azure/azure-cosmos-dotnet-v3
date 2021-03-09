@@ -1363,7 +1363,8 @@ namespace Microsoft.Azure.Cosmos
                                 this.idleConnectionTimeoutInSeconds,
                                 this.maxRequestsPerRntbdChannel,
                                 this.maxRntbdChannels,
-                                this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery);
+                                this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
+                                this.rntbdPortReuseMode);
         }
 
         private void ThrowIfDisposed()

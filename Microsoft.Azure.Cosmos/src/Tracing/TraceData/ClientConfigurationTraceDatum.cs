@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Collections.Generic;
     using System.Globalization;
     using System.Net;
+    using System.Net.Http;
     using Newtonsoft.Json;
 
     internal sealed class ClientConfigurationTraceDatum : TraceDatum
@@ -16,17 +17,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             this.ClientCreatedDateTimeUtc = startTime;
             this.UserAgentContainer = cosmosClientContext.DocumentClient.ConnectionPolicy.UserAgentContainer;
-            this.GatewayConnectionConfig = new GatewayConnectionConfig(cosmosClientContext.DocumentClient.ConnectionPolicy.MaxConnectionLimit,
-                                                                       cosmosClientContext.DocumentClient.ConnectionPolicy.RequestTimeout,
-                                                                       cosmosClientContext.ClientOptions.WebProxy);
+            this.GatewayConnectionConfig = new GatewayConnectionConfig(cosmosClientContext.ClientOptions.GatewayModeMaxConnectionLimit,
+                                                                       cosmosClientContext.ClientOptions.RequestTimeout,
+                                                                       cosmosClientContext.ClientOptions.WebProxy,
+                                                                       cosmosClientContext.ClientOptions.HttpClientFactory);
 
             this.RntbdConnectionConfig = cosmosClientContext.DocumentClient.RecordTcpSettings(this);
 
-            this.OtherConnectionConfig = new OtherConnectionConfig(cosmosClientContext.DocumentClient.ConnectionPolicy.EnableEndpointDiscovery,
+            this.OtherConnectionConfig = new OtherConnectionConfig(cosmosClientContext.ClientOptions.LimitToEndpoint,
                                                 cosmosClientContext.ClientOptions.AllowBulkExecution);
 
             this.ConsistencyConfig = new ConsistencyConfig(cosmosClientContext.ClientOptions.ConsistencyLevel,
-                                                    cosmosClientContext.DocumentClient.ConnectionPolicy.UseMultipleWriteLocations,
                                                     cosmosClientContext.ClientOptions.ApplicationPreferredRegions);
         }
 
@@ -53,22 +54,26 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public GatewayConnectionConfig(
             int maxConnectionLimit,
             TimeSpan requestTimeout,
-            IWebProxy webProxy)
+            IWebProxy webProxy,
+            Func<HttpClient> httpClientFactory)
         {
             this.MaxConnectionLimit = maxConnectionLimit;
-            this.RequestTimeout = (int)requestTimeout.TotalSeconds;
+            this.UserRequestTimeout = (int)requestTimeout.TotalSeconds;
             this.IsWebProxyConfigured = webProxy != null;
+            this.IsHttpClientFactoryConfigured = httpClientFactory != null;
             this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
-                                "(cps:{0}, rto:{1}, p:{2})",
+                                "(cps:{0}, urto:{1}, p:{2}, httpf: {3})",
                                 maxConnectionLimit,
                                 (int)requestTimeout.TotalSeconds,
-                                webProxy != null));
+                                webProxy != null,
+                                httpClientFactory != null));
             this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
         public int MaxConnectionLimit { get; }
-        public int RequestTimeout { get; }
+        public int UserRequestTimeout { get; }
         public bool IsWebProxyConfigured { get; }
+        public bool IsHttpClientFactoryConfigured { get; }
 
         private readonly Lazy<string> lazyString;
         private readonly Lazy<string> lazyJsonString;
@@ -91,20 +96,23 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             int idleConnectionTimeout,
             int maxRequestsPerChannel,
             int maxRequestsPerEndpoint,
-            bool tcpEndpointRediscovery)
+            bool tcpEndpointRediscovery,
+            PortReuseMode portReuseMode)
         {
             this.ConnectionTimeout = connectionTimeout;
             this.IdleConnectionTimeout = idleConnectionTimeout;
             this.MaxRequestsPerChannel = maxRequestsPerChannel;
             this.MaxRequestsPerEndpoint = maxRequestsPerEndpoint;
             this.TcpEndpointRediscovery = tcpEndpointRediscovery;
+            this.PortReuseMode = portReuseMode;
             this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
-                                "(cto: {0}, icto: {1}, mrpc: {2}, mcpe: {3}, erd: {4})",
+                                "(cto: {0}, icto: {1}, mrpc: {2}, mcpe: {3}, erd: {4}, pr: {5})",
                                 connectionTimeout,
                                 idleConnectionTimeout,
                                 maxRequestsPerChannel,
                                 maxRequestsPerEndpoint,
-                                tcpEndpointRediscovery));
+                                tcpEndpointRediscovery,
+                                portReuseMode.ToString()));
             this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
@@ -113,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public int MaxRequestsPerChannel { get; }
         public int MaxRequestsPerEndpoint { get; }
         public bool TcpEndpointRediscovery { get; }
+        public PortReuseMode PortReuseMode { get; }
 
         private readonly Lazy<string> lazyString;
         private readonly Lazy<string> lazyJsonString;
@@ -131,19 +140,19 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     internal class OtherConnectionConfig
     {
         public OtherConnectionConfig(
-            bool enableEndpointDiscovery,
+            bool limitToEndpoint,
             bool allowBulkExecution)
         {
-            this.EnableEndpointDiscovery = enableEndpointDiscovery;
+            this.LimitToEndpoint = limitToEndpoint;
             this.AllowBulkExecution = allowBulkExecution;
             this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
                                  "(ed:{0}, be:{1})",
-                                 enableEndpointDiscovery,
+                                 limitToEndpoint,
                                  allowBulkExecution));
             this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
-        public bool EnableEndpointDiscovery { get; }
+        public bool LimitToEndpoint { get; }
         public bool AllowBulkExecution { get; }
 
         private readonly Lazy<string> lazyString;
@@ -164,22 +173,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     {
         public ConsistencyConfig(
             ConsistencyLevel? consistencyLevel,
-            bool multipleWriteLocationsEnabled,
             IReadOnlyList<string> preferredRegions)
         {
             this.ConsistencyLevel = consistencyLevel.GetValueOrDefault();
-            this.MultipleWriteLocationsEnabled = multipleWriteLocationsEnabled;
             this.PreferredRegions = preferredRegions;
             this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
-                                "(consistency: {0}, mm: {1}, prgns:[{2}])",
+                                "(consistency: {0}, prgns:[{1}])",
                                 consistencyLevel.GetValueOrDefault(),
-                                multipleWriteLocationsEnabled,
                                 ConsistencyConfig.PreferredRegionsInternal(preferredRegions)));
             this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
         }
 
         public ConsistencyLevel ConsistencyLevel { get; }
-        public bool MultipleWriteLocationsEnabled { get; }
         public IReadOnlyList<string> PreferredRegions { get; }
 
         private readonly Lazy<string> lazyString;
