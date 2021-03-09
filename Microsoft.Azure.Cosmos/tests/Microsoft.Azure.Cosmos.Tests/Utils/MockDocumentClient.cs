@@ -249,10 +249,8 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<ITrace>(),
                         It.IsAny<bool>()
                     )
-            ).Returns((string collectionRid, string pkRangeId, bool forceRefresh) =>
-            {
-                return Task.FromResult<PartitionKeyRange>(this.ResolvePartitionKeyRangeById(collectionRid, pkRangeId, forceRefresh));
-            });
+            ).Returns((string collectionRid, string pkRangeId, ITrace trace, bool forceRefresh) => 
+            Task.FromResult<PartitionKeyRange>(this.ResolvePartitionKeyRangeById(collectionRid, pkRangeId, forceRefresh)));
 
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 

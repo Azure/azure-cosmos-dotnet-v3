@@ -1303,6 +1303,7 @@ namespace Microsoft.Azure.Cosmos
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
+            ITrace trace,
             CancellationToken cancellationToken = default);
 
         /// <summary>
