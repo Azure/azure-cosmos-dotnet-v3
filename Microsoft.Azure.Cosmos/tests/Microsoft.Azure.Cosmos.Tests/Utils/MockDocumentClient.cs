@@ -164,7 +164,8 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                     (m =>
                         m.ResolveCollectionAsync(
                         It.IsAny<DocumentServiceRequest>(),
-                        It.IsAny<CancellationToken>()
+                        It.IsAny<CancellationToken>(),
+                        NoOpTrace.Singleton
                     )
                 ).Returns(() =>
                 {
@@ -186,7 +187,8 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>()
+                        It.IsAny<CancellationToken>(),
+                        NoOpTrace.Singleton
                     )
                 ).Returns(() => {
                     ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
@@ -200,7 +202,8 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>()
+                        It.IsAny<CancellationToken>(),
+                        NoOpTrace.Singleton
                     )
                 ).Returns(() =>
                 {
@@ -223,7 +226,8 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<string>(),
                             It.IsAny<CollectionRoutingMap>(),
                             It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<CancellationToken>()
+                            It.IsAny<CancellationToken>(),
+                            It.IsAny<ITrace>()
                         )
                 ).Returns(Task.FromResult<CollectionRoutingMap>(null));
             this.partitionKeyRangeCache.Setup(
@@ -242,6 +246,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                     m => m.TryGetPartitionKeyRangeByIdAsync(
                         It.IsAny<string>(),
                         It.IsAny<string>(),
+                        It.IsAny<ITrace>(),
                         It.IsAny<bool>()
                     )
             ).Returns((string collectionRid, string pkRangeId, bool forceRefresh) =>

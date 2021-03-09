@@ -418,12 +418,13 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
                 nameof(GetPartitionKeyRangesAsync),
                 null,
-                (trace) => base.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
+                (trace) => base.GetPartitionKeyRangesAsync(feedRange, trace, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

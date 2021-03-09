@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using System.IO;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
             // First do one request to construct the old model information based on Etag
             foreach (FeedRange feedRange in feedRanges)
             {
-                IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange);
+                IEnumerable<string> pkRangeIds = await container.GetPartitionKeyRangesAsync(feedRange, NoOpTrace.Singleton);
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
                     PageSizeHint = 1

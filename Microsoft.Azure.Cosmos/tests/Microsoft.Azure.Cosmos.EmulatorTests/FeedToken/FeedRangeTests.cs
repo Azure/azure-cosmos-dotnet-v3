@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [SDK.EmulatorTests.TestClass]
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             List<string> resolvedRanges = new List<string>();
             foreach(FeedRange token in tokens)
             {
-                resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token));
+                resolvedRanges.AddRange(await this.Container.GetPartitionKeyRangesAsync(token, NoOpTrace.Singleton));
             }
 
             Assert.AreEqual(pkRangesCount, resolvedRanges.Count);
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
             FeedRange feedToken = new FeedRangePartitionKey(new PartitionKey("TBD"));
-            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
+            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken, NoOpTrace.Singleton)).ToList();
 
             Assert.AreEqual(1, resolvedRanges.Count, "PK value should resolve to a single range");
 
@@ -150,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             DocumentFeedResponse<Documents.PartitionKeyRange> ranges = await this.Container.ClientContext.DocumentClient.ReadPartitionKeyRangeFeedAsync(this.Container.LinkUri);
 
             FeedRange feedToken = new FeedRangePartitionKeyRange(ranges.First().Id);
-            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken)).ToList();
+            List<string> resolvedRanges = (await this.Container.GetPartitionKeyRangesAsync(feedToken, NoOpTrace.Singleton)).ToList();
 
             Assert.AreEqual(1, resolvedRanges.Count);
 

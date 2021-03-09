@@ -160,6 +160,7 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
+            ITrace trace,
             CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetItemQueryStreamIterator(
