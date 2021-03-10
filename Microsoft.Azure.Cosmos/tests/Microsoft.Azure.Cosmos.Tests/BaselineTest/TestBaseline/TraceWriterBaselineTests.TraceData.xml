@@ -348,6 +348,7 @@
           "ResourceType": "Document",
           "OperationType": "Query",
           "LocationEndpoint": "http://someuri1.com/",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
           "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null"
         }
       ]
@@ -489,6 +490,7 @@
           "ResourceType": "Database",
           "OperationType": "Create",
           "LocationEndpoint": null,
+          "ActivityId": null,
           "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null"
         }
       ]
