@@ -29,12 +29,16 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="type">ProviderName of KeyStoreProvider.</param>
         /// <param name="name">Name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
-        /// <param name="algorithm">Algorithm used by the KeyStoreProvider to wrap and unwrap keys.</param>
-        public EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm = null)
+        public EncryptionKeyWrapMetadata(string type, string name, string value)
+            : this(type: type, name: name, value: value, algorithm: null)
+        {
+        }
+
+        internal EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm = null)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
-            this.Value = value ?? throw new ArgumentNullException(nameof(value));            
+            this.Value = value ?? throw new ArgumentNullException(nameof(value));
             this.Algorithm = algorithm;
         }
 
