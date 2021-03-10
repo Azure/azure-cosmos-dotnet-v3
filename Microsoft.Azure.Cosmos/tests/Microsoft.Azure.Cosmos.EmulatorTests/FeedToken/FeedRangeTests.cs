@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [SDK.EmulatorTests.TestClass]
