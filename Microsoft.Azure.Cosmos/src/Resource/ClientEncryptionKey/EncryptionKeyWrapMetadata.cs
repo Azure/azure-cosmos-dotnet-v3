@@ -30,16 +30,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="name">Name of the metadata.</param>
         /// <param name="value">Value of the metadata.</param>
         public EncryptionKeyWrapMetadata(string type, string name, string value)
-            : this(type: type, name: name, value: value, algorithm: null)
-        {
-        }
-
-        internal EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm = null)
         {
             this.Type = type ?? throw new ArgumentNullException(nameof(type));
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Value = value ?? throw new ArgumentNullException(nameof(value));
-            this.Algorithm = algorithm;
         }
 
         /// <summary>
@@ -47,15 +41,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="source">Existing instance from which to initialize.</param>
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
-            : this(source?.Type, source?.Name, source?.Value, source?.Algorithm)
+            : this(source?.Type, source?.Name, source?.Value)
         {
         }  
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
         internal string Type { get; private set; }
-
-        [JsonProperty(PropertyName = "algorithm", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Algorithm { get; private set; }
 
         /// <summary>
         /// Serialized form of metadata.
@@ -85,7 +76,6 @@ namespace Microsoft.Azure.Cosmos
         {
             int hashCode = 1265339359;
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Type);
-            hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Algorithm);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Name);
             hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Value);
             return hashCode;
@@ -102,7 +92,6 @@ namespace Microsoft.Azure.Cosmos
         {
             return other != null &&
                    this.Type == other.Type &&
-                   this.Algorithm == other.Algorithm &&
                    this.Name == other.Name &&
                    this.Value == other.Value;
         }
