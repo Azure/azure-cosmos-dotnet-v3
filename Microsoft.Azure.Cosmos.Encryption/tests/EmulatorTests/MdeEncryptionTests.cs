@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_BoolFormat",
-                    ClientEncryptionKeyId = "key1",
+                    ClientEncryptionKeyId = "key2",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -135,7 +135,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_IntMultiDimArray",
-                    ClientEncryptionKeyId = "key1",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_Dict",
+                    ClientEncryptionKeyId = "key2",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1029,7 +1037,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
-            Assert.AreEqual(2, unwrapcount);
+            Assert.AreEqual(1, unwrapcount);
         }
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             Container container,
@@ -1412,6 +1420,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public Sensitive_NestedObjectL1 Sensitive_NestedObjectFormatL1 { get; set; }
 
+            public Dictionary<string, string> Sensitive_Dict { get; set; }
+
             public TestDoc()
             {
             }
@@ -1540,10 +1550,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
                     Sensitive_DecimalFormat = 472.3108m,
                     Sensitive_IntArray = new int[2] { 999, 1000 },
-                    Sensitive_IntMultiDimArray = new [,] { { 1,2},{ 2,3}, { 4,5} },
+                    Sensitive_IntMultiDimArray = new[,] { { 1, 2 }, { 2, 3 }, { 4, 5 } },
                     Sensitive_IntFormat = 1965,
                     Sensitive_BoolFormat = true,
                     Sensitive_FloatFormat = 8923.124f,
+                    Sensitive_Dict = new Dictionary<string, string>() { { "key", "value"} },
                     Sensitive_ArrayFormat = new Sensitive_ArrayData[]
                     {
                         new Sensitive_ArrayData
@@ -1697,18 +1708,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     throw new RequestFailedException((int)HttpStatusCode.Forbidden, "Forbidden");
                 }
 
-                if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
-                {
-                    this.UnWrapKeyCallsCount[masterKeyPath] = 1;
-                }
-                else
-                {
-                    this.UnWrapKeyCallsCount[masterKeyPath]++;
-                }
+                return this.GetOrCreateDataEncryptionKey(encryptedKey.ToHexString(), DecryptEncryptionKey);
 
-                this.keyinfo.TryGetValue(masterKeyPath, out int moveBy);
-                byte[] plainkey = encryptedKey.Select(b => (byte)(b - moveBy)).ToArray();
-                return plainkey;
+                byte[] DecryptEncryptionKey()
+                {
+                    if (!this.UnWrapKeyCallsCount.ContainsKey(masterKeyPath))
+                    {
+                        this.UnWrapKeyCallsCount[masterKeyPath] = 1;
+                    }
+                    else
+                    {
+                        this.UnWrapKeyCallsCount[masterKeyPath]++;
+                    }
+
+                    this.keyinfo.TryGetValue(masterKeyPath, out int moveBy);
+                    byte[] plainkey = encryptedKey.Select(b => (byte)(b - moveBy)).ToArray();
+                    return plainkey;
+                }
             }
 
             public override byte[] WrapKey(string masterKeyPath, KeyEncryptionKeyAlgorithm encryptionAlgorithm, byte[] key)

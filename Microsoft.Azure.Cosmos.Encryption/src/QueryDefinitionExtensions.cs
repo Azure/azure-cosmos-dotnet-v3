@@ -94,6 +94,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     return queryDefinitionwithEncryptedValues;
                 }
 
+                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settings.BuildEncryptionAlgorithmForSettingAsync(
+                    encryptionContainer.EncryptionProcessor,
+                    cancellationToken: default);
+
                 if (settings.EncryptionType == EncryptionType.Randomized)
                 {
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
@@ -102,11 +106,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
                 (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
 
-                byte[] cipherText = settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
+                byte[] cipherText = aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
 
                 if (cipherText == null)
                 {
-                    throw new InvalidOperationException($"{nameof(AddParameterAsync)} returned null cipherText from {nameof(settings.AeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                    throw new InvalidOperationException($"{nameof(AddParameterAsync)} returned null cipherText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
                 byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
