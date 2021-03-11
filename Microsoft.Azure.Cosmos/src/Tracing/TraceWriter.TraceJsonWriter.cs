@@ -278,6 +278,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (storeResponseStatistics.StoreResult != null)
                 {
+                    jsonWriter.WriteFieldName("ActivityId");
+                    if (storeResponseStatistics.StoreResult.ActivityId == null)
+                    {
+                        jsonWriter.WriteNullValue();
+                    }
+                    else
+                    {
+                        jsonWriter.WriteStringValue(storeResponseStatistics.StoreResult.ActivityId);
+                    }
+
                     jsonWriter.WriteFieldName("StoreResult");
                     jsonWriter.WriteStringValue(storeResponseStatistics.StoreResult.ToString());
                 }
