@@ -378,6 +378,7 @@ namespace Microsoft.Azure.Cosmos
                         cosmosResponseMessage.Headers.RequestCharge,
                         cosmosResponseMessage.Headers.ActivityId,
                         responseLengthBytes,
+                        cosmosResponseMessage.Headers.PendingPartitionKeyDelete.Equals(bool.TrueString.ToLower()),
                         cosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
                         queryState);

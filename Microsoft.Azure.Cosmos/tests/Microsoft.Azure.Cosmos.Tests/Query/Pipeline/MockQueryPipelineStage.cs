@@ -58,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 requestCharge: default,
                 activityId: Guid.NewGuid().ToString(),
                 responseLengthInBytes: default,
+                pendingPKDelete: default,
                 cosmosQueryExecutionInfo: default,
                 disallowContinuationTokenMessage: default,
                 state: state);

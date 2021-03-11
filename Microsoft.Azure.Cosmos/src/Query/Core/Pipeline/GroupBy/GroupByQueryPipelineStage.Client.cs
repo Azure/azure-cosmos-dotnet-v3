@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 {
     using System;
     using System.Collections.Generic;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -81,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 double requestCharge = 0.0;
                 long responseLengthInBytes = 0;
+                bool pendingPKDelete = false;
 
                 while (await this.inputStage.MoveNextAsync(trace))
                 {
@@ -99,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                     requestCharge += sourcePage.RequestCharge;
                     responseLengthInBytes += sourcePage.ResponseLengthInBytes;
+                    pendingPKDelete |= sourcePage.PendingPKDelete;
                     this.AggregateGroupings(sourcePage.Documents);
                 }
 
@@ -115,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                     requestCharge: requestCharge,
                     activityId: null,
                     responseLengthInBytes: responseLengthInBytes,
+                    pendingPKDelete: pendingPKDelete,
                     cosmosQueryExecutionInfo: null,
                     disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
                     state: null);

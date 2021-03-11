@@ -129,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     requestCharge: sourcePage.RequestCharge,
                     activityId: sourcePage.ActivityId,
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                    pendingPKDelete: sourcePage.PendingPKDelete,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: ComputeDistinctQueryPipelineStage.UseTryGetContinuationTokenMessage,
                     state: queryState);

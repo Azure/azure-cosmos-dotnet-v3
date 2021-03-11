@@ -129,6 +129,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.PageSize, value);
         }
 
+        public virtual string PendingPartitionKeyDelete
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.PendingPKDelete);
+            set => this.SetProperty(HttpConstants.HttpHeaders.PendingPKDelete, value);
+        }
+
         public virtual string this[string headerName] 
         {
             get

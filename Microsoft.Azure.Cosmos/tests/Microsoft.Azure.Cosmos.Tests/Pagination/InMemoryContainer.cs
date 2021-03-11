@@ -637,6 +637,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             requestCharge: 42,
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: 1337,
+                            pendingPKDelete: default,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
                             state: queryState)));

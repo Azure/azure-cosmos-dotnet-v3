@@ -171,6 +171,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                        pendingPKDelete: sourcePage.PendingPKDelete,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                         state: state);
@@ -182,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                        pendingPKDelete: sourcePage.PendingPKDelete,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: ClientDistinctQueryPipelineStage.DisallowContinuationTokenMessage,
                         state: null);

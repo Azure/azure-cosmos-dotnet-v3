@@ -115,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         requestCharge: 0,
                         activityId: string.Empty,
                         responseLengthInBytes: 0,
+                        pendingPKDelete: false,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
                         state: this.state));
@@ -150,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 requestCharge: 0,
                                 activityId: Guid.NewGuid().ToString(),
                                 responseLengthInBytes: 0,
+                                pendingPKDelete: default,
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
                                 state: null));
@@ -170,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         requestCharge: page.RequestCharge,
                         activityId: page.ActivityId,
                         responseLengthInBytes: page.ResponseLengthInBytes,
+                        pendingPKDelete: page.PendingPKDelete,
                         cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
                         state: this.state));
@@ -230,6 +233,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             requestCharge: 0,
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: 0,
+                            pendingPKDelete: default,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
                             state: null));
@@ -273,6 +277,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     requestCharge: page.RequestCharge,
                     activityId: page.ActivityId,
                     responseLengthInBytes: page.ResponseLengthInBytes,
+                    pendingPKDelete: page.PendingPKDelete,
                     cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
                     state: InitializingQueryState));
@@ -401,6 +406,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 requestCharge: 0,
                                 activityId: default,
                                 responseLengthInBytes: 0,
+                                pendingPKDelete: default,
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
                                 state: this.state));
@@ -455,6 +461,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     requestCharge: 0,
                     activityId: default,
                     responseLengthInBytes: 0,
+                    pendingPKDelete: default,
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
                     state: this.state));
@@ -521,6 +528,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             requestCharge: 0,
                             activityId: Guid.NewGuid().ToString(),
                             responseLengthInBytes: 0,
+                            pendingPKDelete: default,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
                             state: null));

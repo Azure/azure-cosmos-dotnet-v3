@@ -142,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                     requestCharge: sourcePage.RequestCharge,
                     activityId: sourcePage.ActivityId,
                     responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                    pendingPKDelete: sourcePage.PendingPKDelete,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                     state: state);

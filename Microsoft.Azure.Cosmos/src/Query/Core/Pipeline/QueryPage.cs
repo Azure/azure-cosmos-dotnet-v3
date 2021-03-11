@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             double requestCharge,
             string activityId,
             long responseLengthInBytes,
+            bool pendingPKDelete,
             CosmosQueryExecutionInfo cosmosQueryExecutionInfo,
             string disallowContinuationTokenMessage,
             QueryState state)
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
             this.ActivityId = activityId;
             this.ResponseLengthInBytes = responseLengthInBytes < 0 ? throw new ArgumentOutOfRangeException(nameof(responseLengthInBytes)) : responseLengthInBytes;
+            this.PendingPKDelete = pendingPKDelete;
             this.CosmosQueryExecutionInfo = cosmosQueryExecutionInfo;
             this.DisallowContinuationTokenMessage = disallowContinuationTokenMessage;
         }
@@ -37,6 +39,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         public string ActivityId { get; }
 
         public long ResponseLengthInBytes { get; }
+
+        public bool PendingPKDelete { get; }
 
         public CosmosQueryExecutionInfo CosmosQueryExecutionInfo { get; }
 

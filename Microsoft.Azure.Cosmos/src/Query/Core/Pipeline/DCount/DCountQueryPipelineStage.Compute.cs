@@ -126,6 +126,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                        pendingPKDelete: sourcePage.PendingPKDelete,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
                         state: queryState);
@@ -148,6 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         requestCharge: default,
                         activityId: default,
                         responseLengthInBytes: default,
+                        pendingPKDelete: default,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
                         state: default);

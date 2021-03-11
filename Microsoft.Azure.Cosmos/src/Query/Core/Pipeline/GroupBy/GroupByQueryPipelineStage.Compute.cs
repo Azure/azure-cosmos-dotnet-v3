@@ -140,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         requestCharge: sourcePage.RequestCharge,
                         activityId: sourcePage.ActivityId,
                         responseLengthInBytes: sourcePage.ResponseLengthInBytes,
+                        pendingPKDelete: sourcePage.PendingPKDelete,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
                         state: state);
@@ -169,6 +170,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         requestCharge: default,
                         activityId: default,
                         responseLengthInBytes: default,
+                        pendingPKDelete: default,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
                         state: state);

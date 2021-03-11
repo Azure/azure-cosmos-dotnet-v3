@@ -120,6 +120,15 @@ namespace Microsoft.Azure.Cosmos
             internal set => this.CosmosMessageHeaders.Location = value;
         }
 
+        /// <summary>
+        /// Indicates if there is a pending PartitionKey Delete operation at the time of the request.
+        /// </summary>
+        public virtual string PendingPartitionKeyDelete
+        {
+            get => this.CosmosMessageHeaders.PendingPartitionKeyDelete;
+            internal set => this.CosmosMessageHeaders.PendingPartitionKeyDelete = value;
+        }
+
         internal virtual string SubStatusCodeLiteral
         {
             get => this.CosmosMessageHeaders.SubStatus;

@@ -124,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                 backendQueryPage.RequestCharge,
                 backendQueryPage.ActivityId,
                 backendQueryPage.ResponseLengthInBytes,
+                backendQueryPage.PendingPKDelete,
                 backendQueryPage.CosmosQueryExecutionInfo,
                 backendQueryPage.DisallowContinuationTokenMessage,
                 queryState);
