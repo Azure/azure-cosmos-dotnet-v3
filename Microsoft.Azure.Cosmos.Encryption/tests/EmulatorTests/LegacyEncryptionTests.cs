@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Encryption.KeyVaultAccessClientTests;
+    using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
 
     [TestClass]
     public class LegacyEncryptionTests
@@ -705,7 +706,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = LegacyEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental);
 
             while (changeIterator.HasMoreResults)
             {
@@ -1338,7 +1340,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc2)
         {
             FeedIterator<TestDoc> changeIterator = container.GetChangeFeedIterator<TestDoc>(
-                ChangeFeedStartFrom.Beginning());
+                ChangeFeedStartFrom.Beginning(),
+                ChangeFeedMode.Incremental);
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)

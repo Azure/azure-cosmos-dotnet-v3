@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract partial class AggregateQueryPipelineStage : QueryPipelineStageBase
@@ -129,6 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
                     pendingPKDelete: pendingPKDelete,
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
+                    additionalHeaders: default,
                     state: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

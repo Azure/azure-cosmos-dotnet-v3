@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -48,16 +49,15 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw CosmosExceptionFactory.Create(
                     statusCode: HttpStatusCode.Gone,
-                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                     message: $"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .",
                     stackTrace: string.Empty,
-                    activityId: string.Empty,
-                    requestCharge: 0,
-                    retryAfter: null,
-                    headers: null,
-                    diagnosticsContext: null,
+                    headers: new Headers()
+                    {
+                        SubStatusCode = SubStatusCodes.PartitionKeyRangeGone,
+                    },
                     error: null,
-                    innerException: null);
+                    innerException: null,
+                    trace: NoOpTrace.Singleton);
             }
 
             return new List<Documents.Routing.Range<string>> { pkRange.ToRange() };

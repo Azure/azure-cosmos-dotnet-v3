@@ -6,10 +6,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class SkipEmptyPageQueryPipelineStage : IQueryPipelineStage
@@ -19,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
         private readonly IQueryPipelineStage inputStage;
         private double cumulativeRequestCharge;
         private long cumulativeResponseLengthInBytes;
+        private ImmutableDictionary<string, string> cumulativeAdditionalHeaders;
         private bool cumulativePendingPKDelete;
         private CancellationToken cancellationToken;
         private bool returnedFinalStats;
@@ -59,9 +62,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         pendingPKDelete: this.cumulativePendingPKDelete,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
+                        additionalHeaders: this.cumulativeAdditionalHeaders,
                         state: default);
                     this.cumulativeRequestCharge = 0;
                     this.cumulativeResponseLengthInBytes = 0;
+                    this.cumulativeAdditionalHeaders = null;
                     this.cumulativePendingPKDelete = false;
                     this.returnedFinalStats = true;
                     this.Current = TryCatch<QueryPage>.FromResult(queryPage);
@@ -84,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 this.cumulativeRequestCharge += sourcePage.RequestCharge;
                 this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
+                this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
                 this.cumulativePendingPKDelete |= sourcePage.PendingPKDelete;
                 if (sourcePage.State == null)
                 {
@@ -95,9 +101,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                         pendingPKDelete: sourcePage.PendingPKDelete || this.cumulativePendingPKDelete,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        additionalHeaders: sourcePage.AdditionalHeaders,
                         state: default);
                     this.cumulativeRequestCharge = 0;
                     this.cumulativeResponseLengthInBytes = 0;
+                    this.cumulativeAdditionalHeaders = null;
                     this.cumulativePendingPKDelete = false;
                     this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                     return true;
@@ -117,9 +125,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     pendingPKDelete: sourcePage.PendingPKDelete || this.cumulativePendingPKDelete,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                    additionalHeaders: sourcePage.AdditionalHeaders,
                     state: sourcePage.State);
                 this.cumulativeRequestCharge = 0;
                 this.cumulativeResponseLengthInBytes = 0;
+                this.cumulativeAdditionalHeaders = null;
                 this.cumulativePendingPKDelete = false;
             }
             else

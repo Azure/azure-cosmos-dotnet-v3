@@ -4,23 +4,28 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 {
-    using System;
+    using System.Collections.Generic;
+    using System.Collections.Immutable;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Documents;
 
     internal abstract class ChangeFeedPage : Page<ChangeFeedState>
     {
+        public static readonly ImmutableHashSet<string> BannedHeaders = new HashSet<string>()
+        {
+            HttpConstants.HttpHeaders.ETag,
+        }
+        .Concat(Page<ChangeFeedState>.BannedHeadersBase)
+        .ToImmutableHashSet();
+
         protected ChangeFeedPage(
             double requestCharge,
             string activityId,
+            IReadOnlyDictionary<string, string> additionalHeaders,
             ChangeFeedState state)
-            : base(state)
+            : base(requestCharge, activityId, additionalHeaders, state)
         {
-            this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
-            this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
         }
-
-        public double RequestCharge { get; }
-
-        public string ActivityId { get; }
     }
 }

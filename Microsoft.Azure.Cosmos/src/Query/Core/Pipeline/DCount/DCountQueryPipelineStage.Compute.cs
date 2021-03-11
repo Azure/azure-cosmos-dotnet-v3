@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
 
@@ -129,6 +130,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         pendingPKDelete: sourcePage.PendingPKDelete,
                         cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: sourcePage.DisallowContinuationTokenMessage,
+                        additionalHeaders: sourcePage.AdditionalHeaders,
                         state: queryState);
 
                     queryPage = emptyPage;
@@ -152,6 +154,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                         pendingPKDelete: default,
                         cosmosQueryExecutionInfo: default,
                         disallowContinuationTokenMessage: default,
+                        additionalHeaders: default,
                         state: default);
 
                     queryPage = finalPage;

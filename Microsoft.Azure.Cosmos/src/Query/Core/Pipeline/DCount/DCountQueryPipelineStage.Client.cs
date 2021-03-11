@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -13,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
 
@@ -72,6 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                 double requestCharge = 0;
                 long responseLengthBytes = 0;
+                ImmutableDictionary<string, string> additionalHeaders = null;
                 bool pendingPKDelete = false;
                 while (await this.inputStage.MoveNextAsync(trace))
                 {
@@ -86,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
 
                     requestCharge += sourcePage.RequestCharge;
                     responseLengthBytes += sourcePage.ResponseLengthInBytes;
+                    additionalHeaders = sourcePage.AdditionalHeaders;
                     pendingPKDelete |= sourcePage.PendingPKDelete;
 
                     this.cancellationToken.ThrowIfCancellationRequested();
@@ -107,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount
                     pendingPKDelete: pendingPKDelete,
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
+                    additionalHeaders: additionalHeaders,
                     state: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);

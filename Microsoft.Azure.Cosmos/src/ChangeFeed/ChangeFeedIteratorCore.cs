@@ -21,13 +21,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly IDocumentContainer documentContainer;
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
+        private readonly CosmosClientContext clientContext;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
             IDocumentContainer documentContainer,
             ChangeFeedMode changeFeedMode,
-            ChangeFeedRequestOptions changeFeedRequestOptions,            
-            ChangeFeedStartFrom changeFeedStartFrom)
+            ChangeFeedRequestOptions changeFeedRequestOptions,
+            ChangeFeedStartFrom changeFeedStartFrom,
+            CosmosClientContext clientContext)
         {
             if (changeFeedStartFrom == null)
             {
@@ -39,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
+            this.clientContext = clientContext;
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
@@ -153,11 +156,38 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                                 innerException: monadicChangeFeedCrossFeedRangeState.Exception));
                     }
 
+                    Dictionary<string, string> additionalHeaders;
+                    if (changeFeedRequestOptions?.Properties != null)
+                    {
+                        additionalHeaders = new Dictionary<string, string>();
+                        Dictionary<string, object> nonStringHeaders = new Dictionary<string, object>();
+                        foreach (KeyValuePair<string, object> keyValuePair in changeFeedRequestOptions.Properties)
+                        {
+                            if (keyValuePair.Value is string stringValue)
+                            {
+                                additionalHeaders[keyValuePair.Key] = stringValue;
+                            }
+                            else
+                            {
+                                nonStringHeaders[keyValuePair.Key] = keyValuePair.Value;
+                            }
+                        }
+
+                        changeFeedRequestOptions.Properties = nonStringHeaders;
+                    }
+                    else
+                    {
+                        additionalHeaders = null;
+                    }
+
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,
-                        changeFeedMode,
-                        changeFeedRequestOptions,
                         new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
+                        new ChangeFeedPaginationOptions(
+                            changeFeedMode,
+                            changeFeedRequestOptions?.PageSizeHint,
+                            changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
+                            additionalHeaders),
                         cancellationToken: default);
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);
@@ -168,9 +198,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override bool HasMoreResults => this.hasMoreResults;
 
-        public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            return this.ReadNextAsync(NoOpTrace.Singleton, cancellationToken);
+            return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
+                                requestOptions: null,
+                                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
+                                traceComponent: TraceComponent.ChangeFeed,
+                                traceLevel: TraceLevel.Info);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
@@ -192,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: new CosmosDiagnosticsContextCore());
+                    trace: trace);
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
@@ -214,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     requestMessage: null,
                     headers: cosmosException.Headers,
                     cosmosException: cosmosException,
-                    diagnostics: new CosmosDiagnosticsContextCore());
+                    trace: trace);
             }
 
             CrossFeedRangePage<Pagination.ChangeFeedPage, ChangeFeedState> crossFeedRangePage = enumerator.Current.Result;
@@ -271,6 +305,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             responseMessage.Headers.ContinuationToken = continuationToken;
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;
             responseMessage.Headers.ActivityId = changeFeedPage.ActivityId;
+            responseMessage.Trace = trace;
 
             return responseMessage;
         }

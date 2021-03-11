@@ -6,12 +6,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Immutable;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract partial class GroupByQueryPipelineStage : QueryPipelineStageBase
@@ -82,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                 double requestCharge = 0.0;
                 long responseLengthInBytes = 0;
+                ImmutableDictionary<string, string> addtionalHeaders = null;
                 bool pendingPKDelete = false;
 
                 while (await this.inputStage.MoveNextAsync(trace))
@@ -101,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
                     requestCharge += sourcePage.RequestCharge;
                     responseLengthInBytes += sourcePage.ResponseLengthInBytes;
+                    addtionalHeaders = sourcePage.AdditionalHeaders;
                     pendingPKDelete |= sourcePage.PendingPKDelete;
                     this.AggregateGroupings(sourcePage.Documents);
                 }
@@ -116,12 +120,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 QueryPage queryPage = new QueryPage(
                     documents: results,
                     requestCharge: requestCharge,
-                    activityId: null,
+                    activityId: default,
                     responseLengthInBytes: responseLengthInBytes,
                     pendingPKDelete: pendingPKDelete,
-                    cosmosQueryExecutionInfo: null,
+                    cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: ClientGroupByQueryPipelineStage.ContinuationTokenNotSupportedWithGroupBy,
-                    state: null);
+                    additionalHeaders: addtionalHeaders,
+                    state: default);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                 return true;

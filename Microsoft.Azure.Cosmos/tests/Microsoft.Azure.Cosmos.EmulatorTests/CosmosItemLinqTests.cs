@@ -282,19 +282,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task QueryableExtentionFunctionsTest(bool disableDiagnostic)
+        public async Task QueryableExtentionFunctionsTest()
         {
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
             QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
-            if (disableDiagnostic)
-            {
-                queryRequestOptions.DiagnosticContextFactory = () => EmptyCosmosDiagnosticsContext.Singleton;
-            };
-
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 requestOptions: queryRequestOptions);
 
@@ -411,6 +404,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true);
             queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             queryText = queriable.ToQueryDefinition().QueryText;
+            Assert.AreEqual(queriable.Count(), 2);
+        }
+
+        [TestMethod]
+        public async Task LINQWithCamelCaseFlagTest()
+        {
+            static void builder(CosmosClientBuilder action)
+            {
+                action.WithSerializerOptions(new CosmosSerializationOptions()
+                {
+                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                });
+            }
+            CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder, false);
+            Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
+            Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
+
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            // NamingPolicy - CamelCase set
+            CosmosLinqSerializerOptions linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+            };
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            IQueryable<ToDoActivity> queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 2);
+
+            // Override camelcase client with default
+            linqSerializerOptions = new CosmosLinqSerializerOptions
+            {
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.Default
+            };
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true, null, null, linqSerializerOptions);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 0);
+
+            // Normal client - CamelCase flag not set
+            linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
+            Assert.AreEqual(queriable.Count(), 0);
+
+            // Camel case client - CamelCase flag not set
+            linqQueryable = containerFromCamelCaseClient.GetItemLinqQueryable<ToDoActivity>(true);
+            queriable = linqQueryable.Where(item => item.CamelCase == "camelCase");
             Assert.AreEqual(queriable.Count(), 2);
         }
 
@@ -803,12 +841,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-
-            bool disableDiagnostics = queryRequestOptions.DiagnosticContextFactory != null;
-            CosmosDiagnosticsTests.VerifyQueryDiagnostics(
-                diagnostics: response.Diagnostics,
-                isFirstPage: false,
-                disableDiagnostics: disableDiagnostics);
         }
     }
 }

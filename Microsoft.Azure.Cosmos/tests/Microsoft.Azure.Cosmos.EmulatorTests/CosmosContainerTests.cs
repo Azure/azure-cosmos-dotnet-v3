@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -611,16 +612,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Simulate a race condition which results in a 409
                     return CosmosExceptionFactory.Create(
                         statusCode: HttpStatusCode.Conflict,
-                        subStatusCode: default,
                         message: "Fake 409 conflict",
                         stackTrace: string.Empty,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: response.Headers.RequestCharge,
-                        retryAfter: default,
                         headers: response.Headers,
-                        diagnosticsContext: response.DiagnosticsContext,
                         error: default,
-                        innerException: default).ToCosmosResponseMessage(request);
+                        innerException: default,
+                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
                 }
 
                 return response;
@@ -712,7 +709,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
         //MultiHash container checks.
         [TestMethod]
         public async Task CreateContainerIfNotExistsAsyncForMultiHashCollectionsTest()

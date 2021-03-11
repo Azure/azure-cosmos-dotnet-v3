@@ -29,11 +29,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false)]
         public async Task ValidateUserAgentHeaderWithMacOs(bool useMacOs)
         {
-            this.SetEnvironmentInformation(useMacOs);
-
             const string suffix = " UserApplicationName/1.0";
 
-            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder.WithApplicationName(suffix)))
+            CosmosClientOptions clientOptions = this.SetEnvironmentInformation(useMacOs);
+            clientOptions.ApplicationName = suffix;
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(clientOptions))
             {
                 Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
 
@@ -79,12 +80,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public void VerifyUserAgentContent(bool useMacOs)
+        public void VerifyUserAgentContent()
         {
-            this.SetEnvironmentInformation(useMacOs);
-
             EnvironmentInformation envInfo = new EnvironmentInformation();
             Cosmos.UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer();
             string serialization = userAgentContainer.UserAgent;
@@ -95,11 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
             Assert.AreEqual(envInfo.ClientId, values[2]);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
-            Assert.IsTrue(!string.IsNullOrWhiteSpace(values[4]));
-            if (useMacOs)
-            {
-                Assert.AreEqual("Darwin 18.0.0 Darwin Kernel V", values[4]);
-            }
+            Assert.AreEqual(envInfo.OperatingSystem, values[4]);
             Assert.AreEqual(envInfo.RuntimeFramework, values[5]);
         }
 
@@ -110,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(false, false)]
         public async Task VerifyUserAgentWithFeatures(bool setApplicationName, bool useMacOs)
         {
-            this.SetEnvironmentInformation(useMacOs);
+            CosmosClientOptions cosmosClientOptions = this.SetEnvironmentInformation(useMacOs);
 
             const string suffix = " UserApplicationName/1.0";
             CosmosClientOptionsFeatures featuresFlags = CosmosClientOptionsFeatures.NoFeatures;
@@ -119,15 +112,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             string features = Convert.ToString((int)featuresFlags, 2).PadLeft(8, '0');
 
-            Action<Fluent.CosmosClientBuilder> applicationNameBuilder = (builder) =>
+            cosmosClientOptions.AllowBulkExecution = true;
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient();
+            if (setApplicationName)
             {
-                if (setApplicationName)
-                {
-                    builder.WithApplicationName(suffix);
-                }
-            };
+                cosmosClientOptions.ApplicationName = suffix;
+            }
 
-            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => applicationNameBuilder(builder.WithBulkExecution(true).WithHttpClientFactory(() => new HttpClient()))))
+            using (CosmosClient client = TestCommon.CreateCosmosClient(cosmosClientOptions))
             {
                 Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
 
@@ -152,7 +144,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await db.DeleteAsync();
             }
 
-            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => applicationNameBuilder(builder)))
+            cosmosClientOptions = this.SetEnvironmentInformation(useMacOs);
+            if (setApplicationName)
+            {
+                cosmosClientOptions.ApplicationName = suffix;
+            }
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(cosmosClientOptions))
             {
                 Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
 
@@ -170,13 +168,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private void SetEnvironmentInformation(bool useMacOs)
+        private sealed class MacUserAgentStringClientOptions : CosmosClientOptions
         {
-            //This changes the runtime information to simulate a max os x response. Windows user agent are tested by every other emulator test.
-            const string invalidOsField = "Darwin 18.0.0: Darwin/Kernel/Version 18.0.0: Wed Aug 22 20:13:40 PDT 2018; root:xnu-4903.201.2~1/RELEASE_X86_64";
+            internal override ConnectionPolicy GetConnectionPolicy()
+            {
+                ConnectionPolicy connectionPolicy = base.GetConnectionPolicy();
+                MacOsUserAgentContainer userAgent = new MacOsUserAgentContainer();
+                
+                this.SetUserAgentFeatures(userAgent);
 
-            FieldInfo fieldInfo = typeof(EnvironmentInformation).GetField("os", BindingFlags.Static | BindingFlags.NonPublic);
-            fieldInfo.SetValue(null, useMacOs ? invalidOsField : RuntimeInformation.OSDescription);
+                connectionPolicy.UserAgentContainer = userAgent;
+
+                return connectionPolicy;
+            }
+        }
+
+        private sealed class MacOsUserAgentContainer : Cosmos.UserAgentContainer
+        {
+            protected override void GetEnvironmentInformation(
+                out string clientVersion,
+                out string directVersion,
+                out string clientId,
+                out string processArchitecture,
+                out string operatingSystem,
+                out string runtimeFramework)
+            {
+                //This changes the information to simulate a max os x response. Windows user agent are tested by every other emulator test.
+                operatingSystem = "Darwin 18.0.0: Darwin/Kernel/Version 18.0.0: Wed Aug 22 20:13:40 PDT 2018; root:xnu-4903.201.2~1/RELEASE_X86_64";
+
+                base.GetEnvironmentInformation(
+                    clientVersion: out clientVersion,
+                    directVersion: out directVersion,
+                    clientId: out clientId,
+                    processArchitecture: out processArchitecture,
+                    operatingSystem: out _,
+                    runtimeFramework: out runtimeFramework);
+            }
+        }
+
+        private CosmosClientOptions SetEnvironmentInformation(bool useMacOs)
+        {
+            if (useMacOs)
+            {
+                return new MacUserAgentStringClientOptions();
+            }
+
+            return new CosmosClientOptions();
         }
 
         private string GetClientIdFromCosmosClient(CosmosClient client)
