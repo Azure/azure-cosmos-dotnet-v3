@@ -3299,6 +3299,11 @@
           "Attributes": [],
           "MethodInfo": "System.String get_Location();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.String get_PendingPartitionKeyDelete()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_PendingPartitionKeyDelete();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String get_Session()": {
           "Type": "Method",
           "Attributes": [],
@@ -3318,6 +3323,11 @@
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.String Location;CanRead:True;CanWrite:True;System.String get_Location();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String PendingPartitionKeyDelete": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String PendingPartitionKeyDelete;CanRead:True;CanWrite:True;System.String get_PendingPartitionKeyDelete();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String Session": {
           "Type": "Property",

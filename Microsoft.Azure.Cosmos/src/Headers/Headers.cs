@@ -125,8 +125,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual string PendingPartitionKeyDelete
         {
-            get => this.CosmosMessageHeaders.PendingPartitionKeyDelete;
-            internal set => this.CosmosMessageHeaders.PendingPartitionKeyDelete = value;
+            get => this.CosmosMessageHeaders.PendingPKDelete;
+            internal set => this.CosmosMessageHeaders.PendingPKDelete = value;
         }
 
         internal virtual string SubStatusCodeLiteral
