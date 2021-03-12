@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
         private ConsistencyLevel? accountConsistencyLevel;
         private bool isDisposed = false;
 
-        internal static int numberOfClients;
+        internal static int numberOfClientsCreated;
 
         static CosmosClient()
         {
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 clientOptions);
 
-            this.IncrementNumberOfClients();
+            this.IncrementNumberOfClientsCreated();
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.Cosmos
                 this,
                 clientOptions);
 
-            this.IncrementNumberOfClients();
+            this.IncrementNumberOfClientsCreated();
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -1210,9 +1210,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void IncrementNumberOfClients()
+        private void IncrementNumberOfClientsCreated()
         {
-            Interlocked.Increment(ref numberOfClients);
+            Interlocked.Increment(ref numberOfClientsCreated);
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)
