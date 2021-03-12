@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangePartitionKey feedRange, CancellationToken cancellationToken = default)
         {
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
             return await feedRange.GetEffectiveRangesAsync(
                 partitionKeyRangeCache,
@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangePartitionKeyRange feedRange, CancellationToken cancellationToken = default)
         {
             // Migration from PKRangeId scenario
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             return await feedRange.GetEffectiveRangesAsync(
                 routingMapProvider: partitionKeyRangeCache,
                 containerRid: await this.container.GetCachedRIDAsync(
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEpk feedRange, CancellationToken cancellationToken = default)
         {
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<PartitionKeyRange> pkRanges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                 collectionRid: await this.container.GetCachedRIDAsync(
                     forceRefresh: false,

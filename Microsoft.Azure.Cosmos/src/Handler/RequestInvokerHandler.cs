@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
 
                 await this.ValidateAndSetConsistencyLevelAsync(request);
-                (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
+                (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, childTrace);
                 if (isError)
                 {
                     return errorResponse;
@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         {
                             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                            PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                            PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
                             CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(childTrace);
                             ContainerProperties collectionFromCache =
                                 await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
@@ -323,11 +323,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private async Task<(bool, ResponseMessage)> EnsureValidClientAsync(RequestMessage request)
+        private async Task<(bool, ResponseMessage)> EnsureValidClientAsync(RequestMessage request, ITrace trace)
         {
             try
             {
-                await this.client.DocumentClient.EnsureValidClientAsync();
+                await this.client.DocumentClient.EnsureValidClientAsync(trace);
                 return RequestInvokerHandler.clientIsValid;
             }
             catch (DocumentClientException dce)

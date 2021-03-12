@@ -541,15 +541,18 @@ namespace Microsoft.Azure.Cosmos
         {
             using (ITrace childTrace = trace.StartChild("Get Collection Cache", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
-                await this.EnsureValidClientAsync();
+                await this.EnsureValidClientAsync(childTrace);
                 return this.collectionCache;
             }
         }
 
-        internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
+        internal virtual async Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
         {
-            await this.EnsureValidClientAsync();
-            return this.partitionKeyRangeCache;
+            using (ITrace childTrace = trace.StartChild("Get Partition Key Range Cache", TraceComponent.Routing, Tracing.TraceLevel.Info))
+            {
+                await this.EnsureValidClientAsync(childTrace);
+                return this.partitionKeyRangeCache;
+            }
         }
 
         internal GlobalAddressResolver AddressResolver { get; private set; }
@@ -584,7 +587,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task OpenPrivateInlineAsync(CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
             await TaskHelper.InlineIfPossibleAsync(() => this.OpenPrivateAsync(cancellationToken), this.ResetSessionTokenRetryPolicy.GetRequestPolicy(), cancellationToken);
         }
 
@@ -641,7 +644,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.queryPartitionProvider = new AsyncLazy<QueryPartitionProvider>(async () =>
             {
-                await this.EnsureValidClientAsync();
+                await this.EnsureValidClientAsync(NoOpTrace.Singleton);
                 return new QueryPartitionProvider(this.accountServiceConfiguration.QueryEngineConfiguration);
             }, CancellationToken.None);
 
@@ -1134,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos
             get
             {
 #pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
-                TaskHelper.InlineIfPossibleAsync(() => this.EnsureValidClientAsync(), null).Wait();
+                TaskHelper.InlineIfPossibleAsync(() => this.EnsureValidClientAsync(NoOpTrace.Singleton), null).Wait();
 #pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
                 return this.desiredConsistencyLevel.HasValue ? this.desiredConsistencyLevel.Value :
                     this.accountServiceConfiguration.DefaultConsistencyLevel;
@@ -1258,7 +1261,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal virtual async Task<ConsistencyLevel> GetDefaultConsistencyLevelAsync()
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
             return (ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel;
         }
 
@@ -1319,7 +1322,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (retryPolicyInstance != null)
             {
@@ -1364,7 +1367,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal virtual async Task EnsureValidClientAsync()
+        internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
             this.ThrowIfDisposed();
 
@@ -1468,7 +1471,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Documents.Database>> CreateDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (database == null)
             {
@@ -1705,7 +1708,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentCollectionLink))
             {
@@ -1799,7 +1802,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(databaseLink))
             {
@@ -1943,7 +1946,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<DocumentCollection>> RestoreDocumentCollectionPrivateAsync(string sourceDocumentCollectionLink, DocumentCollection targetDocumentCollection, DateTimeOffset? restoreTime, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(sourceDocumentCollectionLink))
             {
@@ -2113,7 +2116,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(collectionLink))
             {
@@ -2209,7 +2212,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Trigger>> CreateTriggerPrivateAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(collectionLink))
             {
@@ -2295,7 +2298,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(collectionLink))
             {
@@ -2368,7 +2371,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<UserDefinedType>> CreateUserDefinedTypePrivateAsync(string databaseLink, UserDefinedType userDefinedType, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(databaseLink))
             {
@@ -2456,7 +2459,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Snapshot>> CreateSnapshotPrivateAsync(Snapshot snapshot, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (snapshot == null)
             {
@@ -2521,7 +2524,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Documents.Database>> DeleteDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(databaseLink))
             {
@@ -2579,7 +2582,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Document>> DeleteDocumentPrivateAsync(string documentLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentLink))
             {
@@ -2638,7 +2641,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<DocumentCollection>> DeleteDocumentCollectionPrivateAsync(string documentCollectionLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentCollectionLink))
             {
@@ -2695,7 +2698,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<StoredProcedure>> DeleteStoredProcedurePrivateAsync(string storedProcedureLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(storedProcedureLink))
             {
@@ -2752,7 +2755,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Trigger>> DeleteTriggerPrivateAsync(string triggerLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(triggerLink))
             {
@@ -2809,7 +2812,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<UserDefinedFunction>> DeleteUserDefinedFunctionPrivateAsync(string functionLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(functionLink))
             {
@@ -2866,7 +2869,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Conflict>> DeleteConflictPrivateAsync(string conflictLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(conflictLink))
             {
@@ -2924,7 +2927,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Snapshot>> DeleteSnapshotPrivateAsync(string snapshotLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(snapshotLink))
             {
@@ -2966,7 +2969,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (documentCollection == null)
             {
@@ -3147,7 +3150,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Document>> ReplaceDocumentPrivateAsync(string documentLink, Document document, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (document == null)
             {
@@ -3223,7 +3226,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (storedProcedure == null)
             {
@@ -3293,7 +3296,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Trigger>> ReplaceTriggerPrivateAsync(Trigger trigger, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (trigger == null)
             {
@@ -3367,7 +3370,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicyInstance,
             string altLink = null)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (function == null)
             {
@@ -3502,7 +3505,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<UserDefinedType>> ReplaceUserDefinedTypePrivateAsync(UserDefinedType userDefinedType, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, string altLink = null)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (userDefinedType == null)
             {
@@ -3584,7 +3587,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Documents.Database>> ReadDatabasePrivateAsync(string databaseLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(databaseLink))
             {
@@ -3664,7 +3667,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Document>> ReadDocumentPrivateAsync(string documentLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentLink))
             {
@@ -3746,7 +3749,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentResponse<T>> ReadDocumentPrivateAsync<T>(string documentLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance, CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentLink))
             {
@@ -3829,7 +3832,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentCollectionLink))
             {
@@ -3908,7 +3911,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<StoredProcedure>> ReadStoredProcedureAsync(string storedProcedureLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(storedProcedureLink))
             {
@@ -3987,7 +3990,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Trigger>> ReadTriggerPrivateAsync(string triggerLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(triggerLink))
             {
@@ -4066,7 +4069,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<UserDefinedFunction>> ReadUserDefinedFunctionPrivateAsync(string functionLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(functionLink))
             {
@@ -4145,7 +4148,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Conflict>> ReadConflictPrivateAsync(string conflictLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(conflictLink))
             {
@@ -4232,7 +4235,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Offer>> ReadOfferPrivateAsync(string offerLink, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(offerLink))
             {
@@ -4310,7 +4313,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Schema>> ReadSchemaPrivateAsync(string documentSchemaLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentSchemaLink))
             {
@@ -4390,7 +4393,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<UserDefinedType>> ReadUserDefinedTypePrivateAsync(string userDefinedTypeLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(userDefinedTypeLink))
             {
@@ -4466,7 +4469,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Snapshot>> ReadSnapshotPrivateAsync(string snapshotLink, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(snapshotLink))
             {
@@ -4541,7 +4544,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<Documents.Database>> ReadDatabaseFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             return await this.CreateDatabaseFeedReader(options).ExecuteNextAsync();
         }
@@ -4594,7 +4597,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<PartitionKeyRange>> ReadPartitionKeyRangeFeedPrivateAsync(string partitionKeyRangesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(partitionKeyRangesLink))
             {
@@ -4663,7 +4666,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<DocumentCollection>> ReadDocumentCollectionFeedPrivateAsync(string collectionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(collectionsLink))
             {
@@ -4732,7 +4735,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<StoredProcedure>> ReadStoredProcedureFeedPrivateAsync(string storedProceduresLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(storedProceduresLink))
             {
@@ -4801,7 +4804,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<Trigger>> ReadTriggerFeedPrivateAsync(string triggersLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(triggersLink))
             {
@@ -4870,7 +4873,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<UserDefinedFunction>> ReadUserDefinedFunctionFeedPrivateAsync(string userDefinedFunctionsLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(userDefinedFunctionsLink))
             {
@@ -4942,7 +4945,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<dynamic>> ReadDocumentFeedInlineAsync(string documentsLink, FeedOptions options, CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentsLink))
             {
@@ -5017,7 +5020,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<Conflict>> ReadConflictFeedInlineAsync(string conflictsLink, FeedOptions options)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(conflictsLink))
             {
@@ -5081,7 +5084,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<Offer>> ReadOfferFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             return await this.CreateOfferFeedReader(options).ExecuteNextAsync();
         }
@@ -5143,7 +5146,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<Schema>> ReadSchemaFeedPrivateAsync(string documentCollectionSchemaLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentCollectionSchemaLink))
             {
@@ -5212,7 +5215,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<UserDefinedType>> ReadUserDefinedTypeFeedPrivateAsync(string userDefinedTypesLink, FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(userDefinedTypesLink))
             {
@@ -5275,7 +5278,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<DocumentFeedResponse<Snapshot>> ReadSnapshotFeedPrivateAsync(FeedOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             return await this.CreateSnapshotFeedReader(options).ExecuteNextAsync();
         }
@@ -5404,7 +5407,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken,
             params dynamic[] procedureParams)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(storedProcedureLink))
             {
@@ -5505,7 +5508,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Documents.Database>> UpsertDatabasePrivateAsync(Documents.Database database, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (database == null)
             {
@@ -5660,7 +5663,7 @@ namespace Microsoft.Azure.Cosmos
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(documentCollectionLink))
             {
@@ -5808,7 +5811,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(collectionLink))
             {
@@ -5904,7 +5907,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<Trigger>> UpsertTriggerPrivateAsync(string collectionLink, Trigger trigger, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(collectionLink))
             {
@@ -5990,7 +5993,7 @@ namespace Microsoft.Azure.Cosmos
             Documents.Client.RequestOptions options,
             IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(collectionLink))
             {
@@ -6063,7 +6066,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResourceResponse<UserDefinedType>> UpsertUserDefinedTypePrivateAsync(string databaseLink, UserDefinedType userDefinedType, Documents.Client.RequestOptions options, IDocumentClientRetryPolicy retryPolicyInstance)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             if (string.IsNullOrEmpty(databaseLink))
             {
@@ -6274,7 +6277,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<AccountProperties> GetDatabaseAccountPrivateAsync(Uri serviceEndpoint, CancellationToken cancellationToken = default)
         {
-            await this.EnsureValidClientAsync();
+            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
             if (this.GatewayStoreModel is GatewayStoreModel gatewayModel)
             {
                 async ValueTask<HttpRequestMessage> CreateRequestMessage()

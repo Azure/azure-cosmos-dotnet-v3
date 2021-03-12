@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
                     || subStatusCode == SubStatusCodes.CompletingSplit
                     || subStatusCode == SubStatusCodes.CompletingPartitionMigration)
                 {
-                    PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    PartitionKeyRangeCache partitionKeyRangeCache = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
                     string containerRid = await this.container.GetCachedRIDAsync(
                         forceRefresh: false, 
                         NoOpTrace.Singleton, 

@@ -414,7 +414,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
         {
-            return this.documentClient.GetPartitionKeyRangeCacheAsync();
+            return this.documentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
 
         /// <summary>
