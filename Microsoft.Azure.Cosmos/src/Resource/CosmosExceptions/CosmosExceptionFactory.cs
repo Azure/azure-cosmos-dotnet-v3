@@ -5,10 +5,15 @@
 namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     internal static class CosmosExceptionFactory
     {
@@ -154,24 +159,36 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                 if (content != null
                && content.CanRead)
                 {
-                    try
-                    {
-                        Error error = Documents.Resource.LoadFrom<Error>(content);
-                        if (error != null)
-                        {
-                            // Error format is not consistent across modes
-                            return (error, error.ToString());
-                        }
-                    }
-                    catch (Newtonsoft.Json.JsonReaderException)
-                    {
-                    }
-
-                    // Content is not Json
-                    content.Position = 0;
                     using (StreamReader streamReader = new StreamReader(content))
                     {
-                        return (null, streamReader.ReadToEnd());
+                        string errorContent = streamReader.ReadToEnd();
+                        try
+                        {
+                            JObject errorObj = JObject.Parse(errorContent);
+                            Error error = errorObj.ToObject<Error>();
+                            if (error != null)
+                            {
+                                StringBuilder message = new StringBuilder();
+                                Dictionary<string, object> errorDictionary = errorObj.ToObject<Dictionary<string, object>>();
+                                foreach (KeyValuePair<string, object> entry in errorDictionary)
+                                {
+                                    message
+                                        .Append(Environment.NewLine)
+                                        .Append(entry.Key + " : " + entry.Value);
+                                }
+                                message.Append(Environment.NewLine);
+                                // Error format is not consistent across modes
+                                return (error, Regex.Unescape(message.ToString()));
+                            }
+                        }
+                        catch (Newtonsoft.Json.JsonReaderException ex)
+                        {
+                            Console.WriteLine(ex.Message);
+                        }
+
+                        // Content is not Json
+                        content.Position = 0;
+                        return (null, errorContent);
                     }
                 }
 

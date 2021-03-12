@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosExceptionTests
@@ -136,6 +137,51 @@ namespace Microsoft.Azure.Cosmos
                 catch (CosmosException exception)
                 {
                     Assert.IsTrue(exception.Message.Contains(message));
+                }
+            }
+        }
+
+        [TestMethod]
+        public void EnsureSuccessStatusCode_ThrowsOnFailure_ContainsComplexJsonBody()
+        {
+            JObject error = new JObject
+            {
+                { "Code", "code" },
+                { "Message", "TestContent" },
+                { "Error", new JArray { "msg1", "msg2" }},
+                { "Link", "https://www.demolink.com" },
+                { "EscapedLink", @"https:\/\/www.demolink.com\/with\/escape\/character" },
+                { "Path", "/demo/path" },
+                { "EscapedPath", @"\/demo\/path\/with\/escape\/character" }
+            };
+
+            string testContent = JsonConvert.SerializeObject(error);
+
+            using (MemoryStream memoryStream = new MemoryStream())
+            {
+                StreamWriter sw = new StreamWriter(memoryStream);
+                sw.Write(testContent);
+                sw.Flush();
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+                ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.NotFound) { Content = memoryStream };
+                try
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                    Assert.Fail("Should have thrown");
+                }
+                catch (CosmosException exception)
+                {
+                    Assert.IsTrue(exception.Message.Contains("code"));
+                    Assert.IsTrue(exception.Message.Contains("TestContent"));
+                    Assert.IsTrue(exception.Message.Contains("msg1"));
+                    Assert.IsTrue(exception.Message.Contains("msg2"));
+                    Assert.IsTrue(exception.Message.Contains("https://www.demolink.com"));
+                    Assert.IsTrue(exception.Message.Contains("/demo/path"));
+                    Assert.IsTrue(exception.Message.Contains("https://www.demolink.com/with/escape/character"));
+                    Assert.IsTrue(exception.Message.Contains("/demo/path/with/escape/character"));
+                    Assert.IsFalse(exception.Message.Contains("}"));
+                    Assert.IsFalse(exception.Message.Contains("{"));
                 }
             }
         }
