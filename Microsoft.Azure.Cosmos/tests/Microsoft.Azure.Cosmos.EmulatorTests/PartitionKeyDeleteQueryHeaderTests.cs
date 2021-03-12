@@ -107,7 +107,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", 12000);
 
             string pKString = "PK";
-            //string idString = "Item";
 
             ContainerInternal containerInternal = (ContainerInternal)container;
 
@@ -253,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ResponseMessage response = await feedStreamIterator.ReadNextAsync();
                 response.EnsureSuccessStatusCode();
                 Assert.AreEqual(expectedStatus, response.StatusCode);
-                Assert.AreEqual(expectedPKDelete.ToString(), response.Headers.PendingPartitionKeyDelete);
+                Assert.AreEqual(expectedPKDelete.ToString().ToLower(), response.Headers.PendingPartitionKeyDelete);
 
                 StreamReader sr = new StreamReader(response.Content);
                 string result = await sr.ReadToEndAsync();
