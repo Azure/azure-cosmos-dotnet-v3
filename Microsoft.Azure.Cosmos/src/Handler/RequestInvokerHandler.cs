@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     return errorResponse;
                 }
 
-                await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
+                await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, childTrace);
                 this.FillMultiMasterContext(request);
                 return await base.SendAsync(request, cancellationToken);
             }
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
                             CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(childTrace);
                             ContainerProperties collectionFromCache =
-                                await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
+                                await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken, childTrace);
 
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionFromCache.ResourceId,

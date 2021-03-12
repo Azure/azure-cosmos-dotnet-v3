@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -94,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<List<CompositeContinuationToken>>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).Returns(Task.FromResult(new ResolvedRangeInfo(new PartitionKeyRange { Id = partitionRangeKeyId }, new List<CompositeContinuationToken>())));
             partitionRoutingHelperMock.Setup(m => m.TryAddPartitionKeyRangeToContinuationTokenAsync(
@@ -102,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<IRoutingMapProvider>(),
                 It.IsAny<string>(),
                 It.IsAny<ResolvedRangeInfo>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).Returns(Task.FromResult(true));
             return partitionRoutingHelperMock;

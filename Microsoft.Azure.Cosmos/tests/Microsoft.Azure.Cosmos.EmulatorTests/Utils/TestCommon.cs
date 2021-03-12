@@ -332,8 +332,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static void RouteToTheOnlyPartition(DocumentClient client, DocumentServiceRequest request)
         {
             ClientCollectionCache collectionCache = client.GetCollectionCacheAsync(NoOpTrace.Singleton).Result;
-            ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
-            IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result;
+            ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton).Result;
+            IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
             IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(
                 collection.ResourceId,
                 Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
@@ -989,8 +989,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (request.ResourceType.IsPartitioned())
                 {
                     ClientCollectionCache collectionCache = client.GetCollectionCacheAsync(NoOpTrace.Singleton).Result;
-                    ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None).Result;
-                    IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result;
+                    ContainerProperties collection = collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton).Result;
+                    IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
                     IReadOnlyList<PartitionKeyRange> overlappingRanges = routingMapProvider.TryGetOverlappingRangesAsync(
                         collection.ResourceId,
                         Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
