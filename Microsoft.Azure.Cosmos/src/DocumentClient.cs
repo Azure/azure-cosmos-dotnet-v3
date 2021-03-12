@@ -1376,42 +1376,47 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            // If the initialization task failed, we should retry initialization.
-            // We may end up throwing the same exception but this will ensure that we dont have a
-            // client which is unusable and can resume working if it failed initialization once.
-            // If we have to reinitialize the client, it needs to happen in thread safe manner so that
-            // we dont re-initalize the task again for each incoming call.
-            Task initTask = null;
+            // Trace when the Initialization of client has not been completed. Usually during first call
+            using (ITrace childTrace = trace.StartChild("Waiting for Initialization of client to complete", TraceComponent.Unknown, Tracing.TraceLevel.Info))
+            {
+                // If the initialization task failed, we should retry initialization.
+                // We may end up throwing the same exception but this will ensure that we dont have a
+                // client which is unusable and can resume working if it failed initialization once.
+                // If we have to reinitialize the client, it needs to happen in thread safe manner so that
+                // we dont re-initalize the task again for each incoming call.
+                Task initTask = null;
 
-            lock (this.initializationSyncLock)
-            {
-                initTask = this.initializeTask;
-            }
-
-            try
-            {
-                await initTask;
-                this.isSuccessfullyInitialized = true;
-                return;
-            }
-            catch (Exception e)
-            {
-                DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
-            }
-
-            lock (this.initializationSyncLock)
-            {
-                // if the task has not been updated by another caller, update it
-                if (object.ReferenceEquals(this.initializeTask, initTask))
+                lock (this.initializationSyncLock)
                 {
-                    this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
+                    initTask = this.initializeTask;
                 }
 
-                initTask = this.initializeTask;
-            }
+                try
+                {
+                    await initTask;
+                    this.isSuccessfullyInitialized = true;
+                    return;
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceWarning("initializeTask failed {0}", e.ToString());
+                    childTrace.AddDatum("initializeTask failed", e.ToString());
+                }
 
-            await initTask;
-            this.isSuccessfullyInitialized = true;
+                lock (this.initializationSyncLock)
+                {
+                    // if the task has not been updated by another caller, update it
+                    if (object.ReferenceEquals(this.initializeTask, initTask))
+                    {
+                        this.initializeTask = this.GetInitializationTaskAsync(storeClientFactory: null);
+                    }
+
+                    initTask = this.initializeTask;
+                }
+
+                await initTask;
+                this.isSuccessfullyInitialized = true;
+            }
         }
 
         #region Create Impl

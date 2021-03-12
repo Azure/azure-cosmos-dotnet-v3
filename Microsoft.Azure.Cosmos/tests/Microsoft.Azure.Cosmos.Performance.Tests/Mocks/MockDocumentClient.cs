@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             this.Init();
         }
 
-        internal override async Task EnsureValidClientAsync()
+        internal override async Task EnsureValidClientAsync(ITrace trace)
         {
             await Task.Yield();
         }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Task.FromResult(this.collectionCache.Object);
         }
 
-        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
+        internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
         {
             return Task.FromResult(this.partitionKeyRangeCache.Object);
         }
