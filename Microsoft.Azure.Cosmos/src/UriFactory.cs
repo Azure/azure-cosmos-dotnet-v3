@@ -71,9 +71,9 @@ namespace Microsoft.Azure.Cosmos
         /// Given a database and client encryption key id, this creates a client encryption key link.
         /// </summary>
         /// <param name="databaseId">The database id</param>
-        /// <param name="clientEncryptionKeyId">The data encryption key id</param>
+        /// <param name="clientEncryptionKeyId">The client encryption key id</param>
         /// <returns>
-        /// A data encryption key link in the format of /dbs/{0}/clientEncryptionkeys/{1}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/> and {1} being <paramref name="clientEncryptionKeyId"/>
+        /// A client encryption key link in the format of /dbs/{0}/clientEncryptionkeys/{1}/ with {0} being a Uri escaped version of the <paramref name="databaseId"/> and {1} being <paramref name="clientEncryptionKeyId"/>
         /// </returns>
         /// <remarks>
         /// Would be used when updating or deleting a <see cref="ClientEncryptionKey"/>

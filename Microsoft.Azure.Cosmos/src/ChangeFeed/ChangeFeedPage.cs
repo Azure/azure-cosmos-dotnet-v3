@@ -5,23 +5,33 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.CosmosElements;
 
-    internal sealed class ChangeFeedPage
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+#pragma warning disable SA1601 // Partial elements should be documented
+    public
+#else
+    internal
+#endif 
+        sealed class ChangeFeedPage
     {
         private ChangeFeedPage(
             CosmosArray documents,
             bool notModified,
             double requestCharge,
             string activityId,
-            ChangeFeedCrossFeedRangeState state)
+            ChangeFeedCrossFeedRangeState state,
+            ImmutableDictionary<string, string> additionalHeaders)
         {
             this.Documents = documents ?? throw new ArgumentOutOfRangeException(nameof(documents));
             this.NotModified = notModified;
             this.RequestCharge = requestCharge < 0 ? throw new ArgumentOutOfRangeException(nameof(requestCharge)) : requestCharge;
             this.ActivityId = activityId ?? throw new ArgumentNullException(nameof(activityId));
             this.State = state;
+            this.AdditionalHeaders = additionalHeaders;
         }
 
         public CosmosArray Documents { get; }
@@ -34,14 +44,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public ChangeFeedCrossFeedRangeState State { get; }
 
-        public static ChangeFeedPage CreateNotModifiedPage(double requestCharge, string activityId, ChangeFeedCrossFeedRangeState state)
+        public ImmutableDictionary<string, string> AdditionalHeaders { get; }
+
+        public static ChangeFeedPage CreateNotModifiedPage(
+            double requestCharge, 
+            string activityId, 
+            ChangeFeedCrossFeedRangeState state,
+            ImmutableDictionary<string, string> additionalHeaders)
         {
-            return new ChangeFeedPage(CosmosArray.Empty, notModified: true, requestCharge, activityId, state);
+            return new ChangeFeedPage(CosmosArray.Empty, notModified: true, requestCharge, activityId, state, additionalHeaders);
         }
 
-        public static ChangeFeedPage CreatePageWithChanges(CosmosArray documents, double requestCharge, string activityId, ChangeFeedCrossFeedRangeState state)
+        public static ChangeFeedPage CreatePageWithChanges(
+            CosmosArray documents, 
+            double requestCharge,
+            string activityId, 
+            ChangeFeedCrossFeedRangeState state, 
+            ImmutableDictionary<string, string> additionalHeaders)
         {
-            return new ChangeFeedPage(documents, notModified: false, requestCharge, activityId, state);
+            return new ChangeFeedPage(documents, notModified: false, requestCharge, activityId, state, additionalHeaders);
         }
     }
 }

@@ -39,13 +39,11 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosClientContext ClientContext { get; }
 
         public async Task<PermissionResponse> DeleteAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.DeletePermissionStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -54,13 +52,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ResponseMessage> DeletePermissionStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 streamPayload: null,
                 operationType: OperationType.Delete,
                 tokenExpiryInSeconds: null,
@@ -70,14 +66,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<PermissionResponse> ReadAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await this.ReadPermissionStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 trace: trace,
@@ -87,14 +81,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ResponseMessage> ReadPermissionStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 streamPayload: null,
                 operationType: OperationType.Read,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
@@ -104,7 +96,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<PermissionResponse> ReplaceAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             PermissionProperties permissionProperties,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
@@ -118,7 +109,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
             ResponseMessage response = await this.ReplaceStreamInternalAsync(
-                diagnosticsContext: diagnosticsContext,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
@@ -129,7 +119,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public Task<ResponseMessage> ReplacePermissionStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             PermissionProperties permissionProperties,
             RequestOptions requestOptions,
             ITrace trace,
@@ -142,7 +131,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
             return this.ReplaceStreamInternalAsync(
-                diagnosticsContext: diagnosticsContext,
                 streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
                 tokenExpiryInSeconds: null,
                 requestOptions: requestOptions,
@@ -151,7 +139,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<ResponseMessage> ReplaceStreamInternalAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             int? tokenExpiryInSeconds,
             RequestOptions requestOptions,
@@ -159,7 +146,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             return this.ProcessStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 streamPayload: streamPayload,
                 operationType: OperationType.Replace,
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
@@ -169,7 +155,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<ResponseMessage> ProcessStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             OperationType operationType,
             int? tokenExpiryInSeconds,
@@ -178,7 +163,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             return this.ProcessResourceOperationStreamAsync(
-                diagnosticsContext: diagnosticsContext,
                 streamPayload: streamPayload,
                 operationType: operationType,
                 linkUri: this.linkUri,
@@ -190,7 +174,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private Task<ResponseMessage> ProcessResourceOperationStreamAsync(
-            CosmosDiagnosticsContext diagnosticsContext,
             Stream streamPayload,
             OperationType operationType,
             string linkUri,
@@ -215,7 +198,6 @@ namespace Microsoft.Azure.Cosmos
                       requestMessage.Headers.Add(HttpConstants.HttpHeaders.ResourceTokenExpiry, tokenExpiryInSeconds.Value.ToString());
                   }
               },
-              diagnosticsContext: diagnosticsContext,
               trace: trace,
               cancellationToken: cancellationToken);
         }

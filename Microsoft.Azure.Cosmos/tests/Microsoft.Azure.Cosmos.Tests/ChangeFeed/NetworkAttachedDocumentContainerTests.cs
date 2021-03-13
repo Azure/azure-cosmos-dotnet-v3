@@ -49,7 +49,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<FeedRangeInternal>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
-                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
@@ -57,14 +56,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                Mock.Of<CosmosQueryClient>(),
-                Mock.Of<CosmosDiagnosticsContext>());
+                Mock.Of<CosmosQueryClient>());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
-                state: ChangeFeedState.Beginning(),
-                feedRange: new FeedRangePartitionKeyRange("0"),
-                pageSize: 10,
-                changeFeedMode: ChangeFeedMode.Incremental,
+                feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
+                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -77,7 +73,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<FeedRangeInternal>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
-                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);
@@ -112,7 +107,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<FeedRangeInternal>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
-                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 )
@@ -120,14 +114,11 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                Mock.Of<CosmosQueryClient>(),
-                Mock.Of<CosmosDiagnosticsContext>());
+                Mock.Of<CosmosQueryClient>());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
-                state: ChangeFeedState.Beginning(),
-                feedRange: new FeedRangePartitionKeyRange("0"),
-                pageSize: 10,
-                changeFeedMode: ChangeFeedMode.FullFidelity,
+                feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
+                changeFeedPaginationOptions: new ChangeFeedPaginationOptions(ChangeFeedMode.FullFidelity, pageSizeHint: 10),
                 trace: NoOpTrace.Singleton,
                 cancellationToken: default);
 
@@ -140,7 +131,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<FeedRangeInternal>(),
                 It.IsAny<Stream>(),
                 It.Is<Action<RequestMessage>>(enricher => validateEnricher(enricher)),
-                It.IsAny<CosmosDiagnosticsContext>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()
                 ), Times.Once);

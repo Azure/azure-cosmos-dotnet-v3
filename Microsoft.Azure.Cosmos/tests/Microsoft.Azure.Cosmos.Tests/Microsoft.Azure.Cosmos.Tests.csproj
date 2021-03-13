@@ -19,8 +19,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestPointOperationStatistics.xml" />
-    <None Remove="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestQueryAggregateDiagnostics.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ElementsHash.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.ExtendedTypesHash.xml" />
     <None Remove="BaselineTest\TestBaseline\DistinctHashBaselineTests.NumbersHash.xml" />
@@ -33,11 +31,14 @@
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlQueries.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlScalarExpression.xml" />
     <None Remove="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml" />
+    <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.ScenariosAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.Serialization.xml" />
+    <None Remove="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -64,7 +65,7 @@
   </ItemGroup>  
 
   <ItemGroup Condition="$(OS) != 'Linux' AND '$(ProjectRef)' != 'True' ">
-    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\microsoft.azure.cosmos.serialization.hybridrow.nuspec">
+    <None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\microsoft.hybridrow.nuspec">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\Microsoft.Azure.Cosmos.Direct.nuspec">
@@ -298,19 +299,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Singletons.xml">
+    <Content Include="BaselineTest\TestBaseline\TraceWriterBaselineTests.TraceData.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestQueryAggregateDiagnostics.xml">
+    <Content Include="BaselineTest\TestBaseline\TraceWriterBaselineTests.Serialization.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\TraceWriterBaselineTests.ScenariosAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Singletons.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.ElementsHash.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.ExtendedTypesHash.xml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="BaselineTest\TestBaseline\CosmosDiagnosticsSerializerTests.TestPointOperationStatistics.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\DistinctHashBaselineTests.NumbersHash.xml">
@@ -334,6 +338,16 @@
     <Content Include="BaselineTest\TestBaseline\SqlObjectVisitorBaselineTests.SqlUnaryScalarOperators.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Diagnostics\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Tracing\TraceWriterBaselineTests.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Compile>
   </ItemGroup>
 
   <PropertyGroup>

@@ -29,6 +29,12 @@ jobs:
 #    Arguments: $(DebugArguments)
 #    VmImage: $(VmImage)
 
+- template:  templates/build-ctl.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+
 - template:  templates/build-test.yml
   parameters:
     BuildConfiguration: Release

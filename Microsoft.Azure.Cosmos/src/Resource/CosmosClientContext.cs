@@ -60,11 +60,9 @@ namespace Microsoft.Azure.Cosmos
         internal abstract Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
-            Func<CosmosDiagnosticsContext, ITrace, Task<TResult>> task);
-
-        internal abstract CosmosDiagnosticsContext CreateDiagnosticContext(
-            string operationName,
-            RequestOptions requestOptions);
+            Func<ITrace, Task<TResult>> task,
+            TraceComponent traceComponent = TraceComponent.Transport,
+            TraceLevel traceLevel = TraceLevel.Info);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 
@@ -80,7 +78,6 @@ namespace Microsoft.Azure.Cosmos
             string itemId,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsContext,
             ITrace trace,
             CancellationToken cancellationToken);
 
@@ -97,7 +94,6 @@ namespace Microsoft.Azure.Cosmos
             FeedRange feedRange,
             Stream streamPayload,
             Action<RequestMessage> requestEnricher,
-            CosmosDiagnosticsContext diagnosticsContext,
             ITrace trace,
             CancellationToken cancellationToken);
 
@@ -115,7 +111,6 @@ namespace Microsoft.Azure.Cosmos
            Stream streamPayload,
            Action<RequestMessage> requestEnricher,
            Func<ResponseMessage, T> responseCreator,
-           CosmosDiagnosticsContext diagnosticsContext,
            ITrace trace,
            CancellationToken cancellationToken);
 

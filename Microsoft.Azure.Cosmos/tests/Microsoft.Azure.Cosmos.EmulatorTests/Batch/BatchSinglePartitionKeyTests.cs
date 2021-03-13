@@ -175,34 +175,326 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("rakkuma")]
-        [Description("Verify session token received from batch operations")]
-        public async Task BatchItemSessionTokenAsync()
+        [Description("Verify session token properties received from batch operations")]
+        public async Task BatchSessionTokenPropertiesTestAsync()
         {
-            Container container = BatchTestBase.JsonContainer;
+            await this.RunBatchSessionTokenPropertiesTestAsync(BatchTestBase.JsonContainer);
+        }
+
+        [TestMethod]
+        [Owner("rakkuma")]
+        [Description("Verify session token properties received from batch operations")]
+        public async Task BatchSessionTokenPropertiesGatewayTestAsync()
+        {
+            await this.RunBatchSessionTokenPropertiesTestAsync(BatchTestBase.GatewayJsonContainer);
+        }
+
+        [TestMethod]
+        [Owner("rakkuma")]
+        [Description("Verify session token properties received from batch operations")]
+        public async Task BatchSessionTokenPropertiesSharedThroughputTestAsync()
+        {
+            await this.RunBatchSessionTokenPropertiesTestAsync(BatchTestBase.SharedThroughputContainer);
+        }
+
+        private async Task RunBatchSessionTokenPropertiesTestAsync(Container container)
+        {
             await this.CreateJsonTestDocsAsync(container);
 
-            TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            TestDoc sampleDoc = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+            ItemResponse<TestDoc> createResponse = await container.CreateItemAsync<TestDoc>(
+                sampleDoc,
+                BatchTestBase.GetPartitionKey(this.PartitionKey1));
 
-            TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
-            testDocToReplace.Cost++;
+            string ownerIdCreate = createResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+            Assert.IsFalse(string.IsNullOrEmpty(ownerIdCreate));
 
-            ItemResponse<TestDoc> readResponse = await BatchTestBase.JsonContainer.ReadItemAsync<TestDoc>(
+            ItemResponse<TestDoc> readResponse = await container.ReadItemAsync<TestDoc>(
+                this.TestDocPk1ExistingC.Id,
+                BatchTestBase.GetPartitionKey(this.PartitionKey1));
+
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+
+            ISessionToken beforeRequestSessionToken = BatchTestBase.GetSessionToken(readResponse.Headers.Session);
+            string readEtagValue = readResponse.ETag;
+            TransactionalBatchItemRequestOptions readRequestoption = new TransactionalBatchItemRequestOptions
+            {
+                IfMatchEtag = readEtagValue
+            };
+
+            string oldSessionToken = BatchTestBase.GetDifferentLSNToken(readResponse.Headers.Session, -10);
+            {
+                // Batch with only Read operation
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .ReadItem(this.TestDocPk1ExistingA.Id)
+                    .ReadItem(this.TestDocPk1ExistingC.Id, readRequestoption)
+                    .ExecuteAsync(new TransactionalBatchRequestOptions() { SessionToken = oldSessionToken });
+
+                BatchSinglePartitionKeyTests.VerifyBatchProcessed(
+                    batchResponse,
+                    numberOfOperations: 2,
+                    expectedStatusCode: HttpStatusCode.MultiStatus);
+                Assert.AreEqual(HttpStatusCode.OK, batchResponse[0].StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotModified, batchResponse[1].StatusCode);
+
+                ISessionToken afterRequestSessionToken = BatchTestBase.GetSessionToken(batchResponse.Headers.Session);
+
+                Assert.IsTrue(afterRequestSessionToken.LSN >= beforeRequestSessionToken.LSN,
+                    "Response session token should be more than or equal to previous session token");
+
+                string ownerIdBatch = batchResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsFalse(string.IsNullOrEmpty(ownerIdBatch));
+                Assert.AreEqual(ownerIdCreate, ownerIdBatch);
+            }
+
+            {
+                // Batch with write-read operations
+                TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+                TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingB);
+                testDocToReplace.Cost++;
+                TestDoc testDocToUpsert = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .CreateItem(testDocToCreate)
+                    .ReplaceItem(testDocToReplace.Id, testDocToReplace)
+                    .UpsertItem<TestDoc>(testDocToUpsert)
+                    .DeleteItem(this.TestDocPk1ExistingD.Id)
+                    .ReadItem(this.TestDocPk1ExistingA.Id)
+                    .ReadItem(this.TestDocPk1ExistingC.Id, readRequestoption)
+                    .ExecuteAsync(new TransactionalBatchRequestOptions() { SessionToken = oldSessionToken });
+
+                BatchSinglePartitionKeyTests.VerifyBatchProcessed(
+                    batchResponse: batchResponse,
+                    numberOfOperations: 6,
+                    expectedStatusCode: HttpStatusCode.MultiStatus);
+
+                Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
+                Assert.AreEqual(HttpStatusCode.Created, batchResponse[2].StatusCode);
+                Assert.AreEqual(HttpStatusCode.NoContent, batchResponse[3].StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, batchResponse[4].StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotModified, batchResponse[5].StatusCode);
+
+                ISessionToken afterRequestSessionToken = BatchTestBase.GetSessionToken(batchResponse.Headers.Session);
+                Assert.IsTrue(afterRequestSessionToken.LSN > beforeRequestSessionToken.LSN,
+                    "Response session token should be more than request session token");
+
+                string ownerIdBatch = batchResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsFalse(string.IsNullOrEmpty(ownerIdBatch));
+                Assert.AreEqual(ownerIdCreate, ownerIdBatch);
+            }
+        }
+
+        [TestMethod]
+        [Owner("rakkuma")]
+        [Description("Verify session token properties received from batch operations in error scenarios")]
+        public async Task BatchErrorSessionTokenTestAsync()
+        {
+            await this.RunBatchErrorSessionTokenAsync(BatchTestBase.JsonContainer);
+        }
+
+        [TestMethod]
+        [Owner("rakkuma")]
+        [Description("Verify session token properties received from batch operations in error scenarios")]
+        public async Task BatchErrorSessionTokenGatewayTestAsync()
+        {
+            await this.RunBatchErrorSessionTokenAsync(BatchTestBase.GatewayJsonContainer);
+        }
+
+        [TestMethod]
+        [Owner("rakkuma")]
+        [Description("Verify session token properties received from batch operations in error scenarios")]
+        public async Task BatchErrorSessionTokenSharedThroughputTestAsync()
+        {
+            await this.RunBatchErrorSessionTokenAsync(BatchTestBase.SharedThroughputContainer);
+        }
+
+        private async Task RunBatchErrorSessionTokenAsync(Container container)
+        {
+            await this.CreateJsonTestDocsAsync(container);
+
+            ISessionToken readResponseNotExistsToken = null;
+            try
+            {
+                ItemResponse<TestDoc> readResponseNotExists = await container.ReadItemAsync<TestDoc>(
+                    Guid.NewGuid().ToString(),
+                    BatchTestBase.GetPartitionKey(this.PartitionKey1));
+            }
+            catch (CosmosException ex)
+            {
+                readResponseNotExistsToken = BatchTestBase.GetSessionToken(ex.Headers.Session);
+
+                // When this is changed to return non null, batch needs to be modified too.
+                string ownerIdRead = ex.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsTrue(string.IsNullOrEmpty(ownerIdRead));
+            }
+
+            {
+                // Only errored read
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .ReadItem(Guid.NewGuid().ToString())
+                    .ExecuteAsync();
+
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse[0].StatusCode);
+
+                string ownerIdBatch = batchResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsTrue(string.IsNullOrEmpty(ownerIdBatch));
+                
+                ISessionToken batchResponseToken = BatchTestBase.GetSessionToken(
+                    batchResponse.Headers.Session);
+
+                Assert.IsTrue(batchResponseToken.LSN >= readResponseNotExistsToken.LSN,
+                        "Batch response session token should be more than or equal previous read session token");
+            }
+
+            {
+                // One valid read one error read
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .ReadItem(this.TestDocPk1ExistingA.Id)
+                    .ReadItem(Guid.NewGuid().ToString())
+                    .ExecuteAsync();
+
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.FailedDependency, batchResponse[0].StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse[1].StatusCode);
+
+                string ownerIdBatch = batchResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsTrue(string.IsNullOrEmpty(ownerIdBatch));
+
+                ISessionToken batchResponseToken = BatchTestBase.GetSessionToken(
+                    batchResponse.Headers.Session);
+
+                Assert.IsTrue(batchResponseToken.LSN >= readResponseNotExistsToken.LSN,
+                        "Batch response session token should be more than or equal previous read session token");
+            }
+
+            {
+                // One error one valid read
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .ReadItem(Guid.NewGuid().ToString())
+                    .ReadItem(this.TestDocPk1ExistingB.Id)
+                    .ExecuteAsync();
+
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse[0].StatusCode);
+                Assert.AreEqual(HttpStatusCode.FailedDependency, batchResponse[1].StatusCode);
+
+                string ownerIdBatch = batchResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsTrue(string.IsNullOrEmpty(ownerIdBatch));
+
+                ISessionToken batchResponseToken = BatchTestBase.GetSessionToken(
+                    batchResponse.Headers.Session);
+
+                Assert.IsTrue(batchResponseToken.LSN >= readResponseNotExistsToken.LSN,
+                        "Batch response session token should be more than or equal previous read session token");
+            }
+
+            {
+                // One valid write and one error
+                TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .CreateItem(testDocToCreate)
+                    .ReadItem(Guid.NewGuid().ToString())
+                    .ExecuteAsync();
+
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.FailedDependency, batchResponse[0].StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse[1].StatusCode);
+
+                string ownerIdBatch = batchResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsTrue(string.IsNullOrEmpty(ownerIdBatch));
+
+                ISessionToken batchResponseToken = BatchTestBase.GetSessionToken(
+                    batchResponse.Headers.Session);
+
+                Assert.IsTrue(batchResponseToken.LSN >= readResponseNotExistsToken.LSN,
+                        "Batch response session token should be more than or equal previous read session token");
+            }
+
+            {
+                // One error one valid write
+                TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .ReadItem(Guid.NewGuid().ToString())
+                    .CreateItem(testDocToCreate)
+                    .ExecuteAsync();
+
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse[0].StatusCode);
+                Assert.AreEqual(HttpStatusCode.FailedDependency, batchResponse[1].StatusCode);
+
+                string ownerIdBatch = batchResponse.Headers[HttpConstants.HttpHeaders.OwnerId];
+                Assert.IsTrue(string.IsNullOrEmpty(ownerIdBatch));
+
+                ISessionToken batchResponseToken = BatchTestBase.GetSessionToken(
+                    batchResponse.Headers.Session);
+
+                Assert.IsTrue(batchResponseToken.LSN >= readResponseNotExistsToken.LSN,
+                        "Batch response session token should be more than or equal previous read session token");
+            }
+        }
+
+        [TestMethod]
+        [Owner("rakkuma")]
+        [Description("Verify batch in case of inavalid session token")]
+        public async Task BatchInvalidSessionTokenAsync()
+        {
+            Container container = BatchTestBase.JsonContainer;
+            await base.CreateJsonTestDocsAsync(container);
+
+            ItemResponse<TestDoc> readResponse = await container.ReadItemAsync<TestDoc>(
                 this.TestDocPk1ExistingA.Id,
                 BatchTestBase.GetPartitionKey(this.PartitionKey1));
 
-            ISessionToken beforeRequestSessionToken = BatchTestBase.GetSessionToken(readResponse.Headers.Session);
+            string invalidSessionToken = BatchTestBase.GetDifferentLSNToken(readResponse.Headers.Session, 2000);
+            {
+                // Batch without Read operation
+                TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+                TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingA);
+                testDocToReplace.Cost++;
+                TestDoc testDocToUpsert = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
 
-            TransactionalBatchResponse batchResponse = await new BatchCore((ContainerInlineCore)container, BatchTestBase.GetPartitionKey(this.PartitionKey1))
-                .CreateItem(testDocToCreate)
-                .ReplaceItem(testDocToReplace.Id, testDocToReplace)
-                .ExecuteAsync();
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .CreateItem(testDocToCreate)
+                    .ReplaceItem(testDocToReplace.Id, testDocToReplace)
+                    .UpsertItem<TestDoc>(testDocToUpsert)
+                    .DeleteItem(this.TestDocPk1ExistingC.Id)
+                    .ExecuteAsync(new TransactionalBatchRequestOptions() { SessionToken = invalidSessionToken });
 
-            BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 2);
-            Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
-            Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
+                BatchSinglePartitionKeyTests.VerifyBatchProcessed(batchResponse, numberOfOperations: 4);
+                Assert.AreEqual(HttpStatusCode.Created, batchResponse[0].StatusCode);
+                Assert.AreEqual(HttpStatusCode.OK, batchResponse[1].StatusCode);
+                Assert.AreEqual(HttpStatusCode.Created, batchResponse[2].StatusCode);
+                Assert.AreEqual(HttpStatusCode.NoContent, batchResponse[3].StatusCode);
+            }
 
-            ISessionToken afterRequestSessionToken = BatchTestBase.GetSessionToken(batchResponse.Headers.Session);
-            Assert.IsTrue(afterRequestSessionToken.LSN > beforeRequestSessionToken.LSN, "Response session token should be more than request session token");
+            {
+                // Batch with Read operation
+                TestDoc testDocToCreate = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+                TestDoc testDocToReplace = this.GetTestDocCopy(this.TestDocPk1ExistingB);
+                testDocToReplace.Cost++;
+                TestDoc testDocToUpsert = BatchTestBase.PopulateTestDoc(this.PartitionKey1);
+
+                TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(BatchTestBase.GetPartitionKey(this.PartitionKey1))
+                    .CreateItem(testDocToCreate)
+                    .ReplaceItem(testDocToReplace.Id, testDocToReplace)
+                    .UpsertItem<TestDoc>(testDocToUpsert)
+                    .DeleteItem(this.TestDocPk1ExistingD.Id)
+                    .ReadItem(this.TestDocPk1ExistingA.Id)
+                    .ExecuteAsync(new TransactionalBatchRequestOptions() { SessionToken = invalidSessionToken });
+
+                Assert.AreEqual(HttpStatusCode.NotFound, batchResponse.StatusCode);
+
+                foreach (TransactionalBatchOperationResult batchOperationResult in batchResponse)
+                {
+                    Assert.AreEqual(HttpStatusCode.NotFound, batchOperationResult.StatusCode);
+                    Assert.AreEqual(SubStatusCodes.ReadSessionNotAvailable, batchOperationResult.SubStatusCode);
+                }
+            }
         }
 
         [TestMethod]

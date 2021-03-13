@@ -4,7 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
 {
-    internal interface IChangeFeedStateTransformer<TResult>
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif 
+        interface IChangeFeedStateTransformer<TResult>
     {
         TResult Transform(ChangeFeedStateBeginning changeFeedStateBeginning);
         TResult Transform(ChangeFeedStateTime changeFeedStateTime);

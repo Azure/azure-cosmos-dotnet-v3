@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
 {
     using System;
     using System.Collections.Generic;
-    using System.Data.SqlTypes;
     using System.Globalization;
     using System.Linq;
     using System.Text.RegularExpressions;
@@ -1222,13 +1221,13 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
 
             // ORDER BY
             inputs.Add(new SqlObjectVisitorInput(
-                nameof(SqlOrderbyClause) + " Single",
-                SqlOrderbyClause.Create(
+                nameof(SqlOrderByClause) + " Single",
+                SqlOrderByClause.Create(
                     SqlOrderByItem.Create(somePath, false))));
 
             inputs.Add(new SqlObjectVisitorInput(
-                nameof(SqlOrderbyClause) + " Multi",
-                SqlOrderbyClause.Create(
+                nameof(SqlOrderByClause) + " Multi",
+                SqlOrderByClause.Create(
                     SqlOrderByItem.Create(somePath, false),
                     SqlOrderByItem.Create(somePath, true))));
 
@@ -1260,7 +1259,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                         SqlIdentifier.Create("some alias"))),
                 sqlWhereClause,
                 SqlGroupByClause.Create(somePath),
-                SqlOrderbyClause.Create(
+                SqlOrderByClause.Create(
                     SqlOrderByItem.Create(somePath, false)),
                 SqlOffsetLimitClause.Create(
                     SqlOffsetSpec.Create(SqlNumberLiteral.Create(0)),

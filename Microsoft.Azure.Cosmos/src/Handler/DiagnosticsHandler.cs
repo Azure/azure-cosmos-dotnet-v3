@@ -7,7 +7,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
@@ -64,7 +65,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         CpuLoadHistory cpuHistory = this.cpuMonitor.GetCpuLoad();
                         if (cpuHistory != null)
                         {
-                            request.DiagnosticsContext.AddDiagnosticsInternal(new CosmosSystemInfo(cpuHistory));
+                            request.Trace.AddDatum(
+                                "CPU Load History",
+                                new CpuHistoryTraceDatum(cpuHistory));
                         }
                     }
                     catch (Exception)

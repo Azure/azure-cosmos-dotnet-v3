@@ -15,33 +15,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     internal sealed class ReadFeedPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
     {
         private readonly IReadFeedDataSource readFeedDataSource;
-        private readonly QueryRequestOptions queryRequestOptions;
-        private readonly int pageSize;
+        private readonly ReadFeedPaginationOptions readFeedPaginationOptions;
 
         public ReadFeedPartitionRangeEnumerator(
             IReadFeedDataSource readFeedDataSource,
-            FeedRangeInternal feedRange,
-            QueryRequestOptions queryRequestOptions,
-            int pageSize,
-            CancellationToken cancellationToken,
-            ReadFeedState state)
-            : base(
-                  feedRange,
-                  cancellationToken,
-                  state)
+            FeedRangeState<ReadFeedState> feedRangeState,
+            ReadFeedPaginationOptions readFeedPaginationOptions,
+            CancellationToken cancellationToken)
+            : base(feedRangeState, cancellationToken)
         {
             this.readFeedDataSource = readFeedDataSource ?? throw new ArgumentNullException(nameof(readFeedDataSource));
-            this.queryRequestOptions = queryRequestOptions;
-            this.pageSize = pageSize;
+            this.readFeedPaginationOptions = readFeedPaginationOptions;
         }
 
         public override ValueTask DisposeAsync() => default;
 
         protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken = default) => this.readFeedDataSource.MonadicReadFeedAsync(
-            feedRange: this.Range,
-            readFeedState: this.State,
-            queryRequestOptions: this.queryRequestOptions,
-            pageSize: this.pageSize,
+            feedRangeState: this.FeedRangeState,
+            readFeedPaginationOptions: this.readFeedPaginationOptions,
             trace: trace,
             cancellationToken: cancellationToken);
     }
