@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage requestMessage = new RequestMessage(
                 HttpMethod.Put,
                 "someRequestUri",
-                new CosmosDiagnosticsContextCore(),
                 NoOpTrace.Singleton);
 
             Mock<RequestHandler> mockRequestHandler = new Mock<RequestHandler>();
@@ -120,7 +119,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestMessage requestMessage = new RequestMessage(
                 HttpMethod.Put,
                 "/dbs/testdb/colls/testColl/docs/123",
-                new CosmosDiagnosticsContextCore(),
                 NoOpTrace.Singleton)
             { 
                 ResourceType = ResourceType.Document,
@@ -156,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 requestMessage,
                 headers,
                 null,
-                requestMessage.DiagnosticsContext);
+                NoOpTrace.Singleton);
 
             ResponseMessage successResponse = new ResponseMessage(HttpStatusCode.Created, requestMessage);
 

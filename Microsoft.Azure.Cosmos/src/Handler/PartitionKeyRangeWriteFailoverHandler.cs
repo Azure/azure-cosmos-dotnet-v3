@@ -120,15 +120,22 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 // The partition failed over to a different region. Change the location to the new region.
                 if (this.lazyUriToFailedOverLocation.Value.TryGetValue(primaryReplicaUri, out Uri initialOverrideLocation))
                 {
-                    changedInitialLocation = true;
-                    documentServiceRequest.RequestContext.RouteToLocation(initialOverrideLocation);
+                    using (request.Trace.StartChild("PartitionKeyRangeWriteFailoverHandler update initial request location"))
+                    {
+                        changedInitialLocation = true;
+                        documentServiceRequest.RequestContext.RouteToLocation(initialOverrideLocation);
+                    }
                 }
             }
 
             IEnumerator<(Uri endpoint, bool isPrimaryLocation)>? locationToFailover = null;
             while (true)
             {
-                ResponseMessage responseMessage = await base.SendAsync(request, cancellationToken);
+                ResponseMessage responseMessage;
+                using (request.Trace.StartChild("PartitionKeyRangeWriteFailoverHandler SendAsync"))
+                {
+                     responseMessage = await base.SendAsync(request, cancellationToken);
+                }
 
                 bool isWriteForbidden = responseMessage.StatusCode == HttpStatusCode.Forbidden &&
                     responseMessage.Headers.SubStatusCode == SubStatusCodes.WriteForbidden;
@@ -166,10 +173,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 cancellationToken);
                         }
 
-                        this.lazyUriToFailedOverLocation.Value.AddOrUpdate(
-                            primaryReplicaUri,
-                            locationToFailover.Current.endpoint,
-                            (key, currentLocation) => locationToFailover.Current.endpoint);
+                        using (request.Trace.StartChild("PartitionKeyRangeWriteFailoverHandler AddOrUpdate location"))
+                        {
+                            this.lazyUriToFailedOverLocation.Value.AddOrUpdate(
+                                primaryReplicaUri,
+                                locationToFailover.Current.endpoint,
+                                (key, currentLocation) => locationToFailover.Current.endpoint);
+                        }
                     }
 
                     return responseMessage;
@@ -180,10 +190,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 if (locationToFailover == null)
                 {
-                    startingLocation ??= requestContext.LocationEndpointToRoute;
-                    locationToFailover = this.GetLocationsToRetryOn(
-                        this.getReadEndpoints(),
-                        startingLocation);
+                    using (request.Trace.StartChild("PartitionKeyRangeWriteFailoverHandler locationToFailover null"))
+                    {
+                        startingLocation ??= requestContext.LocationEndpointToRoute;
+                        locationToFailover = this.GetLocationsToRetryOn(
+                            this.getReadEndpoints(),
+                            startingLocation);
+                    }
                 }
 
                 // No more location to retry on
