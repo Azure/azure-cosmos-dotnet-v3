@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
-    using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
 
     public class MockedItemOfTBenchmark : IItemBenchmark
@@ -25,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task UpsertItem()
@@ -37,6 +38,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task ReadItemNotExists()
@@ -50,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(ex.Diagnostics);
             }
         }
 
@@ -63,6 +67,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task UpdateItem()
@@ -76,6 +82,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task DeleteItemExists()
@@ -88,6 +96,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception();
             }
+
+            this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task DeleteItemNotExists()
@@ -100,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(ex.Diagnostics);
             }
         }
 
@@ -113,6 +124,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception();
                 }
+
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
             }
         }
     }
