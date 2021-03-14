@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         m.ResolveCollectionAsync(
                         It.IsAny<DocumentServiceRequest>(),
                         It.IsAny<CancellationToken>(),
-                        NoOpTrace.Singleton
+                        It.IsAny<ITrace>()
                     )
                 ).Returns(Task.FromResult(containerProperties));
 
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<string>(),
                     It.IsAny<bool>(),
                     It.IsAny<CancellationToken>(),
-                    NoOpTrace.Singleton)).Returns(Task.FromResult(containerProperties));
+                    It.IsAny<ITrace>())).Returns(Task.FromResult(containerProperties));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
