@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
                     PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
-                    CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
+                    CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(childTrace);
                     ContainerProperties collectionFromCache =
                         await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None, childTrace);
 
