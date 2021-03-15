@@ -976,7 +976,7 @@ namespace Microsoft.Azure.Cosmos
                     collection.SelfLink,
                     AuthorizationTokenType.PrimaryMasterKey))
             {
-                ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                ContainerProperties resolvedCollection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
                 IReadOnlyList<PartitionKeyRange> ranges = await this.partitionKeyRangeCache.TryGetOverlappingRangesAsync(
                     resolvedCollection.ResourceId,
                     new Range<string>(
@@ -6592,7 +6592,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Document document, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync(NoOpTrace.Singleton);
-            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
@@ -6615,7 +6615,7 @@ namespace Microsoft.Azure.Cosmos
         internal async Task AddPartitionKeyInformationAsync(DocumentServiceRequest request, Documents.Client.RequestOptions options)
         {
             CollectionCache collectionCache = await this.GetCollectionCacheAsync(NoOpTrace.Singleton);
-            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents
