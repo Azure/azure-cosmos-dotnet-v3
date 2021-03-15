@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Added 
 - [#2112](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2112) Adds support for public model using MDE based Encryption via Container Level Encryption Policy for items.
 
+#### Fixes 
+- [#2306](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2306) Fixes the response for transactional batch in case of non-success status code.
+
 
 ### <a name="1.0.0-previewV11"/> [1.0.0-previewV11](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV11) - 2021-02-16
 
