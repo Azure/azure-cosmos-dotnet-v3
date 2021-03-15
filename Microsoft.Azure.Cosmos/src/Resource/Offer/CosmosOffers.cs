@@ -101,7 +101,10 @@ namespace Microsoft.Azure.Cosmos
                 {
                     CosmosException notFound = CosmosExceptionFactory.CreateNotFoundException(
                          $"Throughput is not configured for {targetRID}",
-                         requestCharge: requestCharge);
+                         headers: new Headers()
+                         {
+                             RequestCharge = requestCharge
+                         });
                     return new ThroughputResponse(
                         httpStatusCode: notFound.StatusCode,
                         headers: notFound.Headers,
@@ -192,7 +195,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw CosmosExceptionFactory.CreateNotFoundException(
                     $"Throughput is not configured for {targetRID}",
-                    requestCharge: result.requestCharge);
+                    headers: new Headers()
+                    {
+                        RequestCharge = result.requestCharge
+                    });
             }
 
             return result;
@@ -271,7 +277,6 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
-              diagnosticsContext: null,
               trace: NoOpTrace.Singleton,
               cancellationToken: cancellationToken);
 

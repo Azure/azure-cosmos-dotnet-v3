@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.Generic;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
 
     /// <summary>
@@ -17,13 +18,13 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// This function exists for testing only.
         /// </summary>
         /// <param name="inputExpression">Expression to translate.</param>
-        /// <param name="serializationOptions">Optional serializer options.</param>
+        /// <param name="linqSerializerOptions">Optional serializer options.</param>
         /// <returns>A string describing the expression translation.</returns>
         internal static string TranslateExpression(
             Expression inputExpression,
-            CosmosSerializationOptions serializationOptions = null)
+            CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
-            TranslationContext context = new TranslationContext(serializationOptions);
+            TranslationContext context = new TranslationContext(linqSerializerOptions);
 
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
             SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
@@ -32,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static string TranslateExpressionOld(
             Expression inputExpression,
-            CosmosSerializationOptions serializationOptions = null)
+            CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
-            TranslationContext context = new TranslationContext(serializationOptions);
+            TranslationContext context = new TranslationContext(linqSerializerOptions);
 
             inputExpression = ConstantFolding.Fold(inputExpression);
             SqlScalarExpression scalarExpression = ExpressionToSql.VisitNonSubqueryScalarExpression(inputExpression, context);
@@ -43,11 +44,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         internal static SqlQuerySpec TranslateQuery(
             Expression inputExpression,
-            CosmosSerializationOptions serializationOptions,
+            CosmosLinqSerializerOptions linqSerializerOptions,
             IDictionary<object, string> parameters)
         {
             inputExpression = ConstantEvaluator.PartialEval(inputExpression);
-            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, serializationOptions);
+            SqlQuery query = ExpressionToSql.TranslateQuery(inputExpression, parameters, linqSerializerOptions);
             string queryText = null;
             SqlParameterCollection sqlParameters = new SqlParameterCollection();
             if (parameters != null && parameters.Count > 0)

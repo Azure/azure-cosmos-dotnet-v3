@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
     public class MockedItemStreamBenchmark : IItemBenchmark
     {
-        private MockedItemBenchmarkHelper benchmarkHelper;
+        private readonly MockedItemBenchmarkHelper benchmarkHelper;
 
         public MockedItemStreamBenchmark()
         {
@@ -68,6 +68,25 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                {
+                    throw new Exception();
+                }
+            }
+        }
+
+        public async Task ReadItemExistsWithDiagnosticToString()
+        {
+            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
+                MockedItemBenchmarkHelper.ExistingItemId,
+                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
+            {
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                {
+                    throw new Exception();
+                }
+
+                string diagnostics = response.Diagnostics.ToString();
+                if (string.IsNullOrEmpty(diagnostics))
                 {
                     throw new Exception();
                 }

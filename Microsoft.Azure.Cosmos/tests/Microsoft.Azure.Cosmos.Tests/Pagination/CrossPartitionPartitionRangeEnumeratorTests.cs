@@ -128,14 +128,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossFeedRangeState<ReadFeedState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
-                    FeedRangeInternal range,
-                    ReadFeedState state) => new ReadFeedPartitionRangeEnumerator(
+                    FeedRangeState<ReadFeedState> feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
-                        feedRange: range,
-                        pageSize: 10,
-                        queryRequestOptions: default,
-                        cancellationToken: default,
-                        state: state);
+                        feedRangeState: feedRangeState,
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: default);
 
                 return new CrossPartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     feedRangeProvider: inMemoryCollection,
@@ -154,14 +151,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossFeedRangeState<ReadFeedState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
-                    FeedRangeInternal range,
-                    ReadFeedState state) => new ReadFeedPartitionRangeEnumerator(
+                    FeedRangeState<ReadFeedState> feedRangeState) => new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
-                        feedRange: range,
-                        pageSize: 10,
-                        queryRequestOptions: default,
-                        cancellationToken: default,
-                        state: state);
+                        feedRangeState: feedRangeState,
+                        readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: 10),
+                        cancellationToken: default);
 
                 CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
                     feedRangeProvider: inMemoryCollection,
@@ -198,8 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                     // Either both don't have results or both do.
                     return string.CompareOrdinal(
-                        ((FeedRangeEpk)partitionRangePageEnumerator1.Range).Range.Min,
-                        ((FeedRangeEpk)partitionRangePageEnumerator2.Range).Range.Min);
+                        ((FeedRangeEpk)partitionRangePageEnumerator1.FeedRangeState.FeedRange).Range.Min,
+                        ((FeedRangeEpk)partitionRangePageEnumerator2.FeedRangeState.FeedRange).Range.Min);
                 }
             }
         }

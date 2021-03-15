@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
                     item,
-                    cosmosResponseMessage.Diagnostics);
+                    cosmosResponseMessage.Trace);
             });
         }
 

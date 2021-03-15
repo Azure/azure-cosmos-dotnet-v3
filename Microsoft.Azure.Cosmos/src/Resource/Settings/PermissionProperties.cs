@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -28,7 +29,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceUri = ((ContainerInlineCore)container).LinkUri;
+            this.ResourceUri = UriFactory.CreateDocumentCollectionUri(container.Database.Id,
+                                                                      container.Id).ToString();
             if (resourcePartitionKey == null)
             {
                 this.InternalResourcePartitionKey = null;
@@ -55,10 +57,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.Id = id;
             this.PermissionMode = permissionMode;
-            this.ResourceUri = ((ContainerInlineCore)container).ClientContext.CreateLink(
-                    parentLink: ((ContainerInlineCore)container).LinkUri,
-                    uriPathSegment: Paths.DocumentsPathSegment,
-                    id: itemId);
+            this.ResourceUri = UriFactory.CreateDocumentUri(container.Database.Id,
+                                                            container.Id,
+                                                            itemId).ToString();
             this.InternalResourcePartitionKey = resourcePartitionKey.InternalKey;
         }
 

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -54,13 +55,16 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [TestMethod]
         public void FeedRangeResponse_ResponseIsAccessible()
         {
+            Headers headers = new Headers();
             ResponseMessage original = new ResponseMessage(
                 System.Net.HttpStatusCode.OK,
                 new RequestMessage(),
-                new Headers(),
-                CosmosExceptionFactory.CreateBadRequestException("test"),
-                CosmosDiagnosticsContext.Create(new RequestOptions()));
-            original.Content = Mock.Of<MemoryStream>();
+                headers,
+                CosmosExceptionFactory.CreateBadRequestException("test", headers),
+                NoOpTrace.Singleton)
+            {
+                Content = Mock.Of<MemoryStream>()
+            };
             Mock<FeedRangeContinuation> feedContinuation = new Mock<FeedRangeContinuation>();
 
             ResponseMessage feedRangeResponse = FeedRangeResponse.CreateSuccess(original, feedContinuation.Object);
@@ -69,7 +73,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.AreEqual(original.RequestMessage, feedRangeResponse.RequestMessage);
             Assert.AreEqual(original.Headers, feedRangeResponse.Headers);
             Assert.AreEqual(original.CosmosException, feedRangeResponse.CosmosException);
-            Assert.AreEqual(original.DiagnosticsContext, feedRangeResponse.DiagnosticsContext);
         }
     }
 }
