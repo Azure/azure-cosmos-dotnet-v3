@@ -6,16 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <a name="3.17.1"/> [3.17.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.1) - 2021-03-15
 
 #### Fixed
+- [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations
 - [#2278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2278) Documentation: Fixed typos in comment examples (Thanks to paulomorgado)
 - [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs
-- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) CosmosDiagnostics: Fixed regression which caused ActivityId to not get included
+- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) CDiagnostics: Fixed regression which caused ActivityId to not get included
 
 ### <a name="3.17.1-preview"/> [3.17.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.1-preview) - 2021-03-15
 
 #### Fixed
+- [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations
 - [#2278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2278) Documentation: Fixed typos in comment examples (Thanks to paulomorgado)
 - [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs
-- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) CosmosDiagnostics: Fixed regression which caused ActivityId to not get included
+- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) Diagnostics: Fixed regression which caused ActivityId to not get included
 
 ### <a name="3.17.0"/> [3.17.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0) - 2021-03-02
 
