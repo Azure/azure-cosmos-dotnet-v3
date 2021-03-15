@@ -70,7 +70,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
                 PartitionKeyRange partitionKeyRange = await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
                     this.lazyContainerRid.Result.Result, 
-                    lease.CurrentLeaseToken);
+                    lease.CurrentLeaseToken,
+                    NoOpTrace.Singleton);
 
                 if (partitionKeyRange != null)
                 {
