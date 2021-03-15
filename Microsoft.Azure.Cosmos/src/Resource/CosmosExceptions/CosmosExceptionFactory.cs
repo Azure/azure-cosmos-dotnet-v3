@@ -174,7 +174,9 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                                 {
                                     message
                                         .Append(Environment.NewLine)
-                                        .Append(entry.Key + " : " + entry.Value);
+                                        .Append(entry.Key)
+                                        .Append(" : ")
+                                        .Append(entry.Value);
                                 }
                                 message.Append(Environment.NewLine);
                                 // Error format is not consistent across modes
