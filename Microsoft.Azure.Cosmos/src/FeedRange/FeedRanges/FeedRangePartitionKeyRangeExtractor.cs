@@ -31,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
                     forceRefresh: false, 
                     NoOpTrace.Singleton, 
                     cancellationToken: cancellationToken),
-                partitionKeyDefinition);
+                partitionKeyDefinition,
+                NoOpTrace.Singleton);
         }
 
         public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangePartitionKeyRange feedRange, CancellationToken cancellationToken = default)
@@ -44,7 +45,8 @@ namespace Microsoft.Azure.Cosmos
                      forceRefresh: false, 
                      NoOpTrace.Singleton, 
                      cancellationToken: cancellationToken),
-                partitionKeyDefinition: null);
+                partitionKeyDefinition: null,
+                trace: NoOpTrace.Singleton);
         }
 
         public async Task<IReadOnlyList<Documents.Routing.Range<string>>> VisitAsync(FeedRangeEpk feedRange, CancellationToken cancellationToken = default)
