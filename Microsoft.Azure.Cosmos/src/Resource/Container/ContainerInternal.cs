@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentNullException(nameof(partitionKey));
         }
 
-#if !INTERNAL
+#if !PREVIEW
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
@@ -135,9 +135,7 @@ namespace Microsoft.Azure.Cosmos
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
-#endif
 
-#if !PREVIEW
         public abstract ChangeFeedEstimator GetChangeFeedEstimator(
            string processorName,
            Container leaseContainer);

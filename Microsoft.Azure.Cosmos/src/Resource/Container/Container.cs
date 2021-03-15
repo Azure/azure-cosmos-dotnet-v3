@@ -631,7 +631,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
-#if INTERNAL
+#if PREVIEW
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
