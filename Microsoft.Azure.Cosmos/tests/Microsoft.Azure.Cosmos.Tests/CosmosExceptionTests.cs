@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 { "Link", "https://www.demolink.com" },
                 { "EscapedLink", @"https:\/\/www.demolink.com\/with\/escape\/character" },
                 { "Path", "/demo/path" },
-                { "EscapedPath", @"\/demo\/path\/with\/escape\/character" }
+                { "EscapedPath", @"/demo/path/with/escape/character" }
             };
 
             string testContent = JsonConvert.SerializeObject(error);

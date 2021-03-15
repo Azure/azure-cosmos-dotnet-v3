@@ -169,23 +169,21 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                             if (error != null)
                             {
                                 StringBuilder message = new StringBuilder();
-                                Dictionary<string, object> errorDictionary = errorObj.ToObject<Dictionary<string, object>>();
-                                foreach (KeyValuePair<string, object> entry in errorDictionary)
+                                foreach (var err in errorObj)
                                 {
                                     message
                                         .Append(Environment.NewLine)
-                                        .Append(entry.Key)
+                                        .Append(err.Key)
                                         .Append(" : ")
-                                        .Append(entry.Value);
+                                        .Append(err.Value);
                                 }
                                 message.Append(Environment.NewLine);
                                 // Error format is not consistent across modes
                                 return (error, Regex.Unescape(message.ToString()));
                             }
                         }
-                        catch (Newtonsoft.Json.JsonReaderException ex)
+                        catch (Newtonsoft.Json.JsonReaderException)
                         {
-                            Console.WriteLine(ex.Message);
                         }
 
                         // Content is not Json
