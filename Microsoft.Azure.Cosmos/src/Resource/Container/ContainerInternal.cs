@@ -144,7 +144,6 @@ namespace Microsoft.Azure.Cosmos
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default(CancellationToken));
 
-
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
