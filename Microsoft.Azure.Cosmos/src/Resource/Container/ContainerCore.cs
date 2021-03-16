@@ -376,14 +376,15 @@ namespace Microsoft.Azure.Cosmos
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
 
-        public override async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+        internal async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
             string containerRid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
-                NoOpTrace.Singleton,
+                trace,
                 cancellationToken);
             PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
 
@@ -392,7 +393,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException(nameof(feedRange), ClientResources.FeedToken_UnrecognizedFeedToken);
             }
 
-            return await feedTokenInternal.GetPartitionKeyRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition, cancellationToken);
+            return await feedTokenInternal.GetPartitionKeyRangesAsync(routingMapProvider, containerRid, partitionKeyDefinition, cancellationToken, trace);
         }
 
         /// <summary>
@@ -415,7 +416,8 @@ namespace Microsoft.Azure.Cosmos
                     HttpConstants.Versions.CurrentVersion,
                     this.LinkUri,
                     forceRefresh,
-                    cancellationToken);
+                    cancellationToken,
+                    trace);
             }
             catch (DocumentClientException ex)
             {
@@ -502,7 +504,8 @@ namespace Microsoft.Azure.Cosmos
                 collectionRid,
                 previousValue: null,
                 request: null,
-                cancellationToken);
+                cancellationToken,
+                NoOpTrace.Singleton);
 
             // Not found.
             if (collectionRoutingMap == null)
@@ -516,7 +519,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid,
                     previousValue: null,
                     request: null,
-                    cancellationToken);
+                    cancellationToken,
+                    NoOpTrace.Singleton);
             }
 
             return collectionRoutingMap;

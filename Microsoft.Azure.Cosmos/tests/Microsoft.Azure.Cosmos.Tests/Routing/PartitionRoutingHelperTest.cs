@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                         this.AddFormattedContinuationHeaderHelper(positiveTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
 
-                        bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, positiveTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
+                        bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, positiveTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null), NoOpTrace.Singleton);
 
                         Assert.AreEqual(positiveTestData.OutputCompositeContinuationToken, headers[HttpConstants.HttpHeaders.Continuation]);
                     }
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                             this.AddFormattedContinuationHeaderHelper(negativeTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
 
-                            bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, negativeTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null));
+                            bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, negativeTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null), NoOpTrace.Singleton);
 
                             Assert.Fail("Expect BadRequestException");
                         }
@@ -231,11 +231,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         for (Range<string> currentRange = startRange; currentRange != null;)
                         {
                             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
-                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null);
+                            PartitionRoutingHelper.ResolvedRangeInfo resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(testCase.ProvidedRanges, routingMapProvider, string.Empty, currentRange, null, NoOpTrace.Singleton);
                             actualPartitionKeyRangeIds.Add(resolvedRangeInfo.ResolvedRange.Id);
                             INameValueCollection headers = new StoreRequestNameValueCollection();
 
-                            await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo);
+                            await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo, NoOpTrace.Singleton);
 
                             List<CompositeContinuationToken> suppliedTokens;
                             Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
@@ -269,6 +269,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
                 string collectionResourceId, 
                 string partitionKeyRangeId, 
+                ITrace trace,
                 bool forceRefresh = false)
             {
                 return Task.FromResult(this.collectionRoutingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId));
