@@ -3,17 +3,22 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.17.1"/> [3.17.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.1) - 2021-03-15
+### <a name="3.18.0"/> [3.18.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.0) - 2021-03-17
 
 #### Fixed
+- [#2311](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2311) Spatial: Fixes deserialization when Json does not represent a Spatial type
 - [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations
 - [#2278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2278) Documentation: Fixed typos in comment examples (Thanks to paulomorgado)
 - [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs
 - [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) CDiagnostics: Fixed regression which caused ActivityId to not get included
 
-### <a name="3.17.1-preview"/> [3.17.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.1-preview) - 2021-03-15
+### <a name="3.18.0-preview"/> [3.18.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.0-preview) - 2021-03-17
+
+#### Added
+- [#2308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2308) Patch: Adds preview support for Patch API
 
 #### Fixed
+- [#2311](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2311) Spatial: Fixes deserialization when Json does not represent a Spatial type
 - [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations
 - [#2278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2278) Documentation: Fixed typos in comment examples (Thanks to paulomorgado)
 - [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs
