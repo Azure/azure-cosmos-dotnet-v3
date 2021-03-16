@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Common
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal interface ICollectionRoutingMapCache
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Common
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            ITrace trace);
     }
 }

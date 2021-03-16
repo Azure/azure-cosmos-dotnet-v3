@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// FeedRange that represents an exact Partition Key value.
@@ -24,7 +25,8 @@ namespace Microsoft.Azure.Cosmos
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            ITrace trace)
         {
             return Task.FromResult(
                 new List<Documents.Routing.Range<string>>
@@ -38,10 +40,11 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace trace)
         {
             string effectivePartitionKeyString = this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
-            Documents.PartitionKeyRange range = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(containerRid, effectivePartitionKeyString);
+            Documents.PartitionKeyRange range = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(containerRid, effectivePartitionKeyString, trace);
             return new List<string>() { range.Id };
         }
 
