@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Details of Patch operation that is to be applied to the referred Cosmos item.
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
