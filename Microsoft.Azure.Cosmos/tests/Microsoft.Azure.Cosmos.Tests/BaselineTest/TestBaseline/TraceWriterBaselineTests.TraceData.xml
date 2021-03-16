@@ -222,8 +222,8 @@
             datum.FailedReplicas.Add(uri1);
             datum.FailedReplicas.Add(uri2);
 
-            datum.RegionsContacted.Add(uri1);
-            datum.RegionsContacted.Add(uri2);
+            datum.RegionsContactedWithName.Add(("local", uri1));
+            datum.RegionsContactedWithName.Add(("local", uri2));
 
             datum.RequestEndTimeUtc = DateTime.MaxValue;
 
@@ -377,7 +377,7 @@
 
             datum.FailedReplicas.Add(default);
 
-            datum.RegionsContacted.Add(default);
+            datum.RegionsContactedWithName.Add(default);
 
             datum.RequestEndTimeUtc = default;
 
