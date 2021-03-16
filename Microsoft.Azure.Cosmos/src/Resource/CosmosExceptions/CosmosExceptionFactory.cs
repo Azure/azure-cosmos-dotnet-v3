@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                                 }
                                 message.Append(Environment.NewLine);
                                 // Error format is not consistent across modes
-                                return (error, Regex.Unescape(message.ToString()));
+                                return (error, message.ToString());
                             }
                         }
                         catch (Newtonsoft.Json.JsonReaderException)

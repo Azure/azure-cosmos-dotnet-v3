@@ -1518,6 +1518,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.AreEqual(HttpStatusCode.NotFound, ex.StatusCode);
                 Assert.IsTrue(ex.Message.Contains("Resource Not Found"));
+                Assert.IsTrue(ex.Message.Contains("https://aka.ms/cosmosdb-tsg-not-found"));
+
             }
 
             // adding a child when parent / ancestor does not exist - 400 BadRequest response

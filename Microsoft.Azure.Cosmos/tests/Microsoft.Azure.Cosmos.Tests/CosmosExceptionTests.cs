@@ -150,7 +150,6 @@ namespace Microsoft.Azure.Cosmos
                 { "Message", "TestContent" },
                 { "Error", new JArray { "msg1", "msg2" }},
                 { "Link", "https://www.demolink.com" },
-                { "EscapedLink", @"https:\/\/www.demolink.com\/with\/escape\/character" },
                 { "Path", "/demo/path" },
                 { "EscapedPath", @"/demo/path/with/escape/character" }
             };
@@ -178,7 +177,6 @@ namespace Microsoft.Azure.Cosmos
                     Assert.IsTrue(exception.Message.Contains("msg2"));
                     Assert.IsTrue(exception.Message.Contains("https://www.demolink.com"));
                     Assert.IsTrue(exception.Message.Contains("/demo/path"));
-                    Assert.IsTrue(exception.Message.Contains("https://www.demolink.com/with/escape/character"));
                     Assert.IsTrue(exception.Message.Contains("/demo/path/with/escape/character"));
                     Assert.IsFalse(exception.Message.Contains("}"));
                     Assert.IsFalse(exception.Message.Contains("{"));
