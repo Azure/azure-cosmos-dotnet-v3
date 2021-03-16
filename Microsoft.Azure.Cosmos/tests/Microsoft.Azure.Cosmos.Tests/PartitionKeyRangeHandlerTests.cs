@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<IRoutingMapProvider>(),
                 It.Is<string>(x => x == CollectionId),
                 It.IsAny<ResolvedRangeInfo>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).ThrowsAsync(new DocumentClientException("error", HttpStatusCode.ServiceUnavailable, SubStatusCodes.Unknown));
 
@@ -157,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CollectionId,
                 range,
                 suppliedTokens,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse);
             Assert.AreEqual(overlappingRanges.Last().Id, resolvedRangeInfo.ResolvedRange.Id);
             CollectionAssert.AreEqual(suppliedTokens, resolvedRangeInfo.ContinuationTokens);
@@ -175,6 +177,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CollectionId,
                 range,
                 suppliedTokens,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Forward);
             Assert.AreEqual(overlappingRanges.First().Id, resolvedRangeInfo.ResolvedRange.Id);
             CollectionAssert.AreEqual(suppliedTokens, resolvedRangeInfo.ContinuationTokens);
@@ -219,6 +222,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CollectionId,
                 range,
                 suppliedTokens,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse);
             Assert.AreEqual(overlappingRanges.First().Id, resolvedRangeInfo.ResolvedRange.Id);
             CollectionAssert.AreEqual(suppliedTokens, resolvedRangeInfo.ContinuationTokens);
@@ -265,6 +269,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CollectionId,
                 range,
                 suppliedTokens,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse);
 
             Assert.IsNotNull(resolvedRangeInfo);
@@ -319,6 +324,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CollectionId,
                 rangeFromContinuationToken,
                 suppliedTokens,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse);
 
             routingMapProvider.Verify();
@@ -341,6 +347,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CollectionId,
                 rangeFromContinuationToken,
                 suppliedTokens,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Forward);
 
             routingMapProvider.Verify();
@@ -388,6 +395,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 routingMapProvider.Object,
                 CollectionId,
                 currentPartitionKeyRange,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse
             );
             Assert.IsTrue(result);
@@ -413,6 +421,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  routingMapProvider.Object,
                  CollectionId,
                  currentPartitionKeyRange,
+                 NoOpTrace.Singleton,
                  RntdbEnumerationDirection.Forward
              );
             Assert.IsTrue(result);
@@ -448,6 +457,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 routingMapProvider.Object,
                 CollectionId,
                 currentPartitionKeyRange,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse
             );
             Assert.IsTrue(true);
@@ -481,6 +491,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 null,
                 resolvedRangeInfo,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse);
             List<CompositeContinuationToken> compositeContinuationTokens = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(headers.Get(HttpConstants.HttpHeaders.Continuation));
             Assert.IsTrue(result);
@@ -497,6 +508,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 null,
                 null,
                 resolvedRangeInfo,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse);
             compositeContinuationTokens = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(headers.Get(HttpConstants.HttpHeaders.Continuation));
             Assert.IsTrue(result);
@@ -536,6 +548,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 routingMapProvider.Object,
                 CollectionId,
                 currentPartitionKeyRange,
+                NoOpTrace.Singleton,
                 RntdbEnumerationDirection.Reverse
             );
 
@@ -567,6 +580,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  routingMapProvider.Object,
                  CollectionId,
                  currentPartitionKeyRange,
+                 NoOpTrace.Singleton,
                  RntdbEnumerationDirection.Forward
              );
 
@@ -682,6 +696,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<string>(),
                 It.IsAny<Range<string>>(),
                 It.IsAny<List<CompositeContinuationToken>>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).Returns(Task.FromResult(new ResolvedRangeInfo(new PartitionKeyRange { Id = PartitionRangeKeyId }, new List<CompositeContinuationToken>())));
             partitionRoutingHelperMock.Setup(m => m.TryAddPartitionKeyRangeToContinuationTokenAsync(
@@ -690,6 +705,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<IRoutingMapProvider>(),
                 It.IsAny<string>(),
                 It.IsAny<ResolvedRangeInfo>(),
+                It.IsAny<ITrace>(),
                 It.IsAny<RntbdConstants.RntdbEnumerationDirection>()
             )).Returns(Task.FromResult(true));
             return partitionRoutingHelperMock;
