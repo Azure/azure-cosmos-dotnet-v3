@@ -30,6 +30,17 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         }
 
         /// <summary>
+        /// Tests that no type throws exception.
+        /// </summary>
+        [TestMethod]
+        [ExpectedException(typeof(JsonSerializationException))]
+        public void TestNoType()
+        {
+            string json = @"{""notatype"":""nothingrelevant""}";
+            Point point = JsonConvert.DeserializeObject<Point>(json);
+        }
+
+        /// <summary>
         /// Tests that coordinates cannot be null.
         /// </summary>
         [TestMethod]
