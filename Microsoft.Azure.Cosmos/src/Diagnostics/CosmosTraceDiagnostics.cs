@@ -5,9 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Diagnostics
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class CosmosTraceDiagnostics : CosmosDiagnostics
     {
@@ -38,6 +41,30 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
         public override TimeSpan GetClientElapsedTime()
         {
             return this.Value.Duration;
+        }
+
+        public override IReadOnlyList<(string, Uri)> GetContactedRegions()
+        {
+            HashSet<(string, Uri)> regionsContacted = new HashSet<(string, Uri)>();
+            ITrace rootTrace = this.Value;
+            this.WalkTraceTree(rootTrace, regionsContacted);
+            return regionsContacted.ToList();
+        }
+
+        private void WalkTraceTree(ITrace currentTrace, HashSet<(string, Uri)> regionsContacted)
+        {
+            foreach (object datums in currentTrace.Data.Values)
+            {
+                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                {
+                    regionsContacted.UnionWith(clientSideRequestStatisticsTraceDatum.RegionsContactedWithName);
+                }
+            }
+
+            foreach (ITrace childTrace in currentTrace.Children)
+            {
+                this.WalkTraceTree(childTrace, regionsContacted);
+            }
         }
 
         private string ToJsonString()
