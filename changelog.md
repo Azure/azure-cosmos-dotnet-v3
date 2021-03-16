@@ -5,6 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### <a name="3.18.0"/> [3.18.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.0) - 2021-03-17
 
+#### Added
+- [#2312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2312) Diagnostics: Adds Api for getting all regions contacted by a request
+
 #### Fixed
 - [#2311](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2311) Spatial: Fixes deserialization when Json does not represent a Spatial type
 - [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations
@@ -16,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 - [#2308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2308) Patch: Adds preview support for Patch API
+- [#2312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2312) Diagnostics: Adds Api for getting all regions contacted by a request
 
 #### Fixed
 - [#2311](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2311) Spatial: Fixes deserialization when Json does not represent a Spatial type
