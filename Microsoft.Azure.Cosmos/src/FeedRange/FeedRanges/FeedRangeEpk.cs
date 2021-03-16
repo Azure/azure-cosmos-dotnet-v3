@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            ITrace trace)
         {
             return Task.FromResult(new List<Documents.Routing.Range<string>>() { this.Range });
         }
@@ -42,12 +43,13 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace trace)
         {
             IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 containerRid, 
                 this.Range,
-                NoOpTrace.Singleton,
+                trace,
                 forceRefresh: false);
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
