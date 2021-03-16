@@ -1201,6 +1201,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeCustomEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);           
         }
 
+        [TestMethod]
+        public async Task EncryptionTransactionalBatchConflictResponse()
+        {
+            string partitionKey = "thePK";
+            string dek1 = MdeCustomEncryptionTests.dekId;
+            
+            ItemResponse<TestDoc> doc1CreatedResponse = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToCreateAgain = doc1CreatedResponse.Resource;
+            doc1ToCreateAgain.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToCreateAgain.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TransactionalBatchResponse batchResponse = await MdeCustomEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreateAgain, MdeCustomEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.AreEqual(1, batchResponse.Count);
+        }
+
         // One of query or queryDefinition is to be passed in non-null
         private static async Task ValidateQueryResultsAsync(
             Container container,
