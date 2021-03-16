@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
                 return FeedRangeCompositeContinuation.NoRetry;
             }
 
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true);
             if (resolvedRanges.Count > 0)
             {

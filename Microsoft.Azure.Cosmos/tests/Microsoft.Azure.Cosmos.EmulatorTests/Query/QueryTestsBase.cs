@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                 true,
                 false);
-            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             Assert.IsNotNull(routingMapProvider);
 
             IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
