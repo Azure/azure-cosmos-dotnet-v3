@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         {
             (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
             (TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1)),
-            (TimeSpan.FromSeconds(10), TimeSpan.Zero),
+            (TimeSpan.FromSeconds(65), TimeSpan.Zero),
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyControlPlaneRetriableHotPath.Name;

@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     using Microsoft.Azure.Documents.Routing;
@@ -259,9 +260,9 @@ namespace Microsoft.Azure.Cosmos
 
             bool collectionRoutingMapCacheIsUptoDate = false;
 
-            ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+            ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
             CollectionRoutingMap routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
-                collection.ResourceId, null, request, cancellationToken);
+                collection.ResourceId, null, request, cancellationToken, NoOpTrace.Singleton);
 
             if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
             {
@@ -269,7 +270,7 @@ namespace Microsoft.Azure.Cosmos
                     "AddressResolver.ResolveAddressesAndIdentityAsync ForceCollectionRoutingMapRefresh collection.ResourceId = {0}",
                     collection.ResourceId);
 
-                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken);
+                routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken, NoOpTrace.Singleton);
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
@@ -278,7 +279,7 @@ namespace Microsoft.Azure.Cosmos
                 request.ForcePartitionKeyRangeRefresh = false;
                 if (routingMap != null)
                 {
-                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken);
+                    routingMap = await this.collectionRoutingMapCache.TryLookupAsync(collection.ResourceId, routingMap, request, cancellationToken, NoOpTrace.Singleton);
                 }
             }
 
@@ -289,12 +290,13 @@ namespace Microsoft.Azure.Cosmos
                 request.ForceNameCacheRefresh = true;
                 collectionCacheIsUptoDate = true;
                 collectionRoutingMapCacheIsUptoDate = false;
-                collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
                 routingMap = await this.collectionRoutingMapCache.TryLookupAsync(
                         collection.ResourceId,
                         previousValue: null,
                         request: request,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken,
+                        trace: NoOpTrace.Singleton);
             }
 
             AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
@@ -317,7 +319,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     request.ForceNameCacheRefresh = true;
                     collectionCacheIsUptoDate = true;
-                    collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                    collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
                     if (collection.ResourceId != routingMap.CollectionUniqueId)
                     {
                         // Collection cache was stale. We resolved to new Rid. routing map cache is potentially stale
@@ -327,7 +329,8 @@ namespace Microsoft.Azure.Cosmos
                             collection.ResourceId,
                             previousValue: null,
                             request: request,
-                            cancellationToken: cancellationToken);
+                            cancellationToken: cancellationToken,
+                            trace: NoOpTrace.Singleton);
                     }
                 }
 
@@ -338,7 +341,8 @@ namespace Microsoft.Azure.Cosmos
                         collection.ResourceId,
                         previousValue: routingMap,
                         request: request,
-                        cancellationToken: cancellationToken);
+                        cancellationToken: cancellationToken,
+                        trace: NoOpTrace.Singleton);
                 }
 
                 AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);

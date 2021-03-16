@@ -221,7 +221,10 @@ namespace Microsoft.Azure.Cosmos
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
-                                subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
+                                headers: new Headers()
+                                {
+                                    SubStatusCode = SubStatusCodes.FailedToGetAadToken,
+                                },
                                 innerException: lastException,
                                 trace: getTokenTrace);
                         }
@@ -253,7 +256,10 @@ namespace Microsoft.Azure.Cosmos
 
                 throw CosmosExceptionFactory.CreateUnauthorizedException(
                     message: ClientResources.FailedToGetAadToken,
-                    subStatusCode: (int)SubStatusCodes.FailedToGetAadToken,
+                    headers: new Headers()
+                    {
+                        SubStatusCode = SubStatusCodes.FailedToGetAadToken,
+                    },
                     innerException: lastException,
                     trace: trace);
             }
