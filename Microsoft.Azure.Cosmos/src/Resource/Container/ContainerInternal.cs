@@ -124,6 +124,13 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentNullException(nameof(partitionKey));
         }
 
+#if !INTERNAL
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
 #if !PREVIEW
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
@@ -138,11 +145,6 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
-
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
 
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
