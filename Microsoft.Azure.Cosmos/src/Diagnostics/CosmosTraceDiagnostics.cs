@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
             return this.Value.Duration;
         }
 
-        public override IReadOnlyList<(string, Uri)> GetContactedRegions()
+        public override IReadOnlyList<(string RegionName, Uri Uri)> GetContactedRegions()
         {
             HashSet<(string, Uri)> regionsContacted = new HashSet<(string, Uri)>();
             ITrace rootTrace = this.Value;
