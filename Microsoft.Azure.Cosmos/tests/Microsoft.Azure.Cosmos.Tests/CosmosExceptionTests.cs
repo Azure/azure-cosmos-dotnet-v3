@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyNullHeaderLogic()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
-            
+
             CosmosException exception = new CosmosException(
                 statusCode: HttpStatusCode.BadRequest,
                 message: testMessage,
@@ -236,13 +236,14 @@ namespace Microsoft.Azure.Cosmos
             foreach ((HttpStatusCode statusCode, CosmosException exception) in exceptionsToStatusCodes)
             {
                 this.ValidateExceptionInfo(
-                    exception, 
+                    exception,
                     statusCode,
                     substatus,
                     testMessage,
                     activityId,
                     requestCharge,
-                    retryAfter);
+                    retryAfter,
+                    exception.Diagnostics);
             }
         }
 
@@ -321,7 +322,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 responseMessage.EnsureSuccessStatusCode();
             }
-            catch(CosmosException ex)
+            catch (CosmosException ex)
             {
                 Assert.IsTrue(ex.Message.Contains($"Cosmos Diagnostics: {ex.Diagnostics};"));
                 Assert.IsFalse(ex.BaseMessage.Contains($"Cosmos Diagnostics: {ex.Diagnostics};"));
@@ -336,8 +337,7 @@ namespace Microsoft.Azure.Cosmos
             string message,
             string activityId,
             double requestCharge,
-            double retryAfter)
-            string message,
+            double retryAfter,
             CosmosDiagnostics diagnostics)
         {
             Assert.AreEqual(message, exception.ResponseBody);
@@ -351,7 +351,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.RetryAfter);
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.Headers.RetryAfter);
             Assert.IsTrue(exception.ToString().Contains(message));
-            string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: 0; ActivityId: {exception.ActivityId}; Reason: ({message}); Cosmos Diagnostics: {diagnostics};";
+            string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: {substatus}; ActivityId: {exception.ActivityId}; Reason: ({message}); Cosmos Diagnostics: {diagnostics};";
 
             Assert.AreEqual(expectedMessage, exception.Message);
 
