@@ -4,10 +4,8 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.IO;
-    using System.Linq;
     using System.Net.Http;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -27,6 +25,12 @@ namespace Microsoft.Azure.Documents
 
         // Uses requests's ResourceOperation to determine the operation
         public virtual Task<StoreResponse> InvokeResourceOperationAsync(Uri physicalAddress, DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(physicalAddress, new ResourceOperation(request.OperationType, request.ResourceType), request);
+        }
+
+        // Uses requests's ResourceOperation to determine the operation
+        public virtual Task<StoreResponse> InvokeResourceOperationAsync(TransportAddressUri physicalAddress, DocumentServiceRequest request)
         {
             return this.InvokeStoreAsync(physicalAddress, new ResourceOperation(request.OperationType, request.ResourceType), request);
         }
@@ -1124,7 +1128,15 @@ namespace Microsoft.Azure.Documents
                 ResourceOperation.Query(operationType, resourceType),
                 request);
         }
-        
+
+        internal virtual Task<StoreResponse> InvokeStoreAsync(
+            TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(physicalAddress.Uri, resourceOperation, request);
+        }
+
         internal abstract Task<StoreResponse> InvokeStoreAsync(
             Uri physicalAddress,
             ResourceOperation resourceOperation,

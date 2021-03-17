@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Documents
 
         public Uri GetPrimaryUri(DocumentServiceRequest request, Protocol protocol)
         {
-            return this.perProtocolAddressInformation[(int)protocol].GetPrimaryUri(request);
+            return this.perProtocolAddressInformation[(int)protocol].GetPrimaryAddressUri(request).Uri;
         }
 
         public PerProtocolPartitionAddressInformation Get(Protocol protocol)

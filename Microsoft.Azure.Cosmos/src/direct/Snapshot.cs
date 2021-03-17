@@ -212,6 +212,23 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets the <see cref="ParentResourceId"/> string of the parent for which the snapshot was created.
+        /// </summary>
+        /// <value>The resource ID of the parent for which this snapshot was created.</value>
+        [JsonProperty(PropertyName = Constants.Properties.ParentResourceId)]
+        internal string ParentResourceId
+        {
+            get
+            {
+                return base.GetValue<string>(Constants.Properties.ParentResourceId);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.ParentResourceId, value);
+            }
+        }
+
         internal override void OnSave()
         {
             base.OnSave();
@@ -233,6 +250,7 @@ namespace Microsoft.Azure.Documents
             base.GetValue<string>(Constants.Properties.OwnerResourceId);
             base.GetValue<ulong>(Constants.Properties.SizeInKB);
             base.GetValue<ulong>(Constants.Properties.CompressedSizeInKB);
+            base.GetValue<string>(Constants.Properties.ParentResourceId);
 
             if (this.Content != null)
             {

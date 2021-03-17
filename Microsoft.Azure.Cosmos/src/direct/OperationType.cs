@@ -96,6 +96,10 @@ namespace Microsoft.Azure.Documents
 
         CollectionTruncate = 57,
 
+#if !COSMOSCLIENT
+        UpdateFailoverPriorityList = 58,
+#endif
+
         // These names make it unclear what they map to in RequestOperationType.
         ExecuteJavaScript = -2,
 #if !COSMOSCLIENT
@@ -169,8 +173,8 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.EnsureSnapshotOperation ||
                    type == OperationType.GetSplitPoints ||
                    type == OperationType.ForcePartitionBackup ||
-                   type == OperationType.MetadataCheckAccess ||
                    type == OperationType.CreateSystemSnapshot ||
+                   type == OperationType.UpdateFailoverPriorityList ||
                    type == OperationType.Pause ||
                    type == OperationType.Resume
 #endif
@@ -195,7 +199,12 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.SqlQuery ||
                    type == OperationType.Head ||
                    type == OperationType.HeadFeed ||
-                   type == OperationType.QueryPlan;
+                   type == OperationType.QueryPlan
+#if !COSMOSCLIENT
+                   ||
+                   type == OperationType.MetadataCheckAccess
+#endif
+                   ;
         }
 
         /// <summary>
@@ -273,6 +282,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.MetadataCheckAccess:
                 case OperationType.CreateSystemSnapshot:
                 case OperationType.GetAadGroups:
+                case OperationType.UpdateFailoverPriorityList:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:

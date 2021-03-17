@@ -99,8 +99,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        internal async override Task<StoreResponse> InvokeStoreAsync(
-            Uri physicalAddress, ResourceOperation resourceOperation,
+        internal override Task<StoreResponse> InvokeStoreAsync(
+            Uri physicalAddress,
+            ResourceOperation resourceOperation,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(new TransportAddressUri(physicalAddress), resourceOperation, request);
+        }
+
+        internal override async Task<StoreResponse> InvokeStoreAsync(
+            TransportAddressUri physicalAddress, ResourceOperation resourceOperation,
             DocumentServiceRequest request)
         {
             this.ThrowIfDisposed();
@@ -124,7 +132,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
                 bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
-                IChannel channel = this.channelDictionary.GetChannel(physicalAddress, localRegionRequest);
+                IChannel channel = this.channelDictionary.GetChannel(physicalAddress.Uri, localRegionRequest);
 
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdRequestCount(resourceOperation.resourceType, resourceOperation.operationType);
 
@@ -180,23 +188,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
                     throw TransportExceptions.GetGoneException(
-                        physicalAddress, activityId, ex);
+                        physicalAddress.Uri, activityId, ex);
                 }
                 if (!ex.UserRequestSent)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (write request, not sent)");
                     throw TransportExceptions.GetGoneException(
-                        physicalAddress, activityId, ex);
+                        physicalAddress.Uri, activityId, ex);
                 }
                 if (TransportException.IsTimeout(ex.ErrorCode))
                 {
                     DefaultTrace.TraceInformation("Converting to RequestTimeout");
                     throw TransportExceptions.GetRequestTimeoutException(
-                        physicalAddress, activityId, ex);
+                        physicalAddress.Uri, activityId, ex);
                 }
                 DefaultTrace.TraceInformation("Converting to ServiceUnavailable");
                 throw TransportExceptions.GetServiceUnavailableException(
-                    physicalAddress, activityId, ex);
+                    physicalAddress.Uri, activityId, ex);
             }
             catch (DocumentClientException ex)
             {
@@ -222,7 +230,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.RaiseProtocolDowngradeRequest(storeResponse);
             }
 
-            TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress, activityId, request);
+            TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
             return storeResponse;
         }
 

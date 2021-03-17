@@ -643,9 +643,6 @@ namespace Microsoft.Azure.Documents
 
             long maxGlobalCommittedLSN = validReadResponses.Max(res => res.GlobalCommittedLSN);
             
-            DefaultTrace.TraceInformation("QuorumReader: MaxLSN {0} ReplicaCountMaxLSN {1} bCheckGlobalStrong {2} MaxGlobalCommittedLSN {3} NumberOfReadRegions {4} SelectedResponseItemLSN {5}",
-                maxLsn, replicaCountMaxLsn, checkForGlobalStrong, maxGlobalCommittedLSN, numberOfReadRegions, selectedResponse.ItemLSN);
-            
             // quorum is met if one of the following conditions are satisfied:
             // 1. readLsn is greater than zero 
             //    AND the number of responses that have the same LSN as the selected response is greater than or equal to the read quorum
@@ -672,6 +669,12 @@ namespace Microsoft.Azure.Documents
                 isQuorumMet = true;    
             }
             
+            if (!isQuorumMet)
+            {
+                DefaultTrace.TraceInformation("QuorumReader: MaxLSN {0} ReplicaCountMaxLSN {1} bCheckGlobalStrong {2} MaxGlobalCommittedLSN {3} NumberOfReadRegions {4} SelectedResponseItemLSN {5}",
+                    maxLsn, replicaCountMaxLsn, checkForGlobalStrong, maxGlobalCommittedLSN, numberOfReadRegions, selectedResponse.ItemLSN);
+            }
+
             return isQuorumMet;
         }
 

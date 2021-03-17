@@ -117,55 +117,24 @@ namespace Microsoft.Azure.Documents.Routing
             List<IPartitionKeyComponent> components = new List<IPartitionKeyComponent>();
             foreach (object value in values)
             {
-                if (value == null)
-                {
-                    components.Add(NullPartitionKeyComponent.Value);
-                }
-                else if (value is Undefined)
-                {
-                    components.Add(UndefinedPartitionKeyComponent.Value);
-                }
-                else if (value is bool)
-                {
-                    components.Add(new BoolPartitionKeyComponent((bool)value));
-                }
-                else if (value is string)
-                {
-                    components.Add(new StringPartitionKeyComponent((string)value));
-                }
-                else if (IsNumeric(value))
-                {
-                    components.Add(new NumberPartitionKeyComponent(Convert.ToDouble(value, CultureInfo.InvariantCulture)));
-                }
-                else if (value is MinNumber)
-                {
-                    components.Add(MinNumberPartitionKeyComponent.Value);
-                }
-                else if (value is MaxNumber)
-                {
-                    components.Add(MaxNumberPartitionKeyComponent.Value);
-                }
-                else if (value is MinString)
-                {
-                    components.Add(MinStringPartitionKeyComponent.Value);
-                }
-                else if (value is MaxString)
-                {
-                    components.Add(MaxStringPartitionKeyComponent.Value);
-                }
-                else
-                {
-                    if (strict)
-                    {
-                        throw new InvalidOperationException(
-                            string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, value));
-                    }
-                    else
-                    {
-                        components.Add(UndefinedPartitionKeyComponent.Value);
-                    }
-                }
+                components.Add(PartitionKeyInternal.FromObjectToPartitionKeyComponent(value, strict));
             }
+
+            return new PartitionKeyInternal(components);
+        }
+
+        /// <summary>
+        /// Constructs instance of <see cref="PartitionKeyInternal"/> from single object.
+        /// </summary>
+        /// <param name="value">Partition key component value.</param>
+        /// <param name="strict">If this is false, unsupported component values will be repliaced with 'Undefined'. If this is true, exception will be thrown.</param>
+        /// <returns>Instance of <see cref="PartitionKeyInternal"/>.</returns>
+        public static PartitionKeyInternal FromObject(object value, bool strict)
+        {
+            List<IPartitionKeyComponent> components = new List<IPartitionKeyComponent>(1)
+            {
+                PartitionKeyInternal.FromObjectToPartitionKeyComponent(value, strict)
+            };
 
             return new PartitionKeyInternal(components);
         }
@@ -414,6 +383,49 @@ namespace Microsoft.Azure.Documents.Routing
             return new PartitionKeyInternal(this.Components);
         }
 
+        private static IPartitionKeyComponent FromObjectToPartitionKeyComponent(object value, bool strict)
+        {
+            switch (value)
+            {
+                case null:
+                    return NullPartitionKeyComponent.Value;
+                case Undefined _:
+                    return UndefinedPartitionKeyComponent.Value;
+                case bool b:
+                    return new BoolPartitionKeyComponent(b);
+                case string s:
+                    return new StringPartitionKeyComponent(s);
+                case sbyte _:
+                case byte _:
+                case short _:
+                case ushort _:
+                case int _:
+                case uint _:
+                case long _:
+                case ulong _:
+                case float _:
+                case double _:
+                case decimal _:
+                    return new NumberPartitionKeyComponent(Convert.ToDouble(value, CultureInfo.InvariantCulture));
+                case MinNumber _:
+                    return MinNumberPartitionKeyComponent.Value;
+                case MaxNumber _:
+                    return MaxNumberPartitionKeyComponent.Value;
+                case MinString _:
+                    return MinStringPartitionKeyComponent.Value;
+                case MaxString _:
+                    return MaxStringPartitionKeyComponent.Value;
+            }
+
+            if (strict)
+            {
+                throw new InvalidOperationException(
+                    string.Format(CultureInfo.InvariantCulture, RMResources.UnsupportedPartitionKeyComponentValue, value));
+            }
+
+            return UndefinedPartitionKeyComponent.Value;
+        }
+
         private static string ToHexEncodedBinaryString(IReadOnlyList<IPartitionKeyComponent> components)
         {
             byte[] bufferBytes = new byte[MaxPartitionKeyBinarySize];
@@ -635,21 +647,6 @@ namespace Microsoft.Azure.Documents.Routing
             }
 
             return HexConvert.ToHex(hash, 0, hash.Length);
-        }
-
-        private static bool IsNumeric(object value)
-        {
-            return value is sbyte
-                    || value is byte
-                    || value is short
-                    || value is ushort
-                    || value is int
-                    || value is uint
-                    || value is long
-                    || value is ulong
-                    || value is float
-                    || value is double
-                    || value is decimal;
         }
 
         private static byte[] HexStringToByteArray(string hex)

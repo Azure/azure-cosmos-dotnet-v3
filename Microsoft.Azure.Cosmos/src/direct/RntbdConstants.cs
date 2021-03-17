@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Documents
             RoleDefinition = 0x0027,
             RoleAssignment = 0x0028,
             SystemDocument = 0x0029,
+            InteropUser = 0x002A,
+            TransportControlCommand = 0x002B,
         }
 
         public enum RntbdOperationType : ushort
@@ -108,6 +110,7 @@ namespace Microsoft.Azure.Documents
             MasterInitiatedProgressCoordination = 0x0030,
             MetadataCheckAccess = 0x0031,
             CreateSystemSnapshot = 0x0032,
+            UpdateFailoverPriorityList = 0x0033,
         }
 
         public enum ConnectionContextRequestTokenIdentifiers : ushort
@@ -427,7 +430,11 @@ namespace Microsoft.Azure.Documents
             IsMaterializedViewBuild = 0x00A3,
             BuilderClientIdentifier = 0x00A4,
             SourceCollectionIfMatch = 0x00A5,
-            RequestedCollectionType = 0x00A6
+            RequestedCollectionType = 0x00A6,
+            // 0x00A7 is unused,
+            InteropUserName = 0x00A8,
+            PopulateQueryMetricsIndexUtilization = 0x00A9,
+            PopulateAnalyticalMigrationProgress = 0x00AA
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -583,6 +590,9 @@ namespace Microsoft.Azure.Documents
             public RntbdToken builderClientIdentifier;
             public RntbdToken sourceCollectionIfMatch;
             public RntbdToken requestedCollectionType;
+            public RntbdToken interopUserName;
+            public RntbdToken populateQueryMetricsIndexUtilization;
+            public RntbdToken populateAnalyticalMigrationProgress;
 
             public Request()
             {
@@ -737,6 +747,9 @@ namespace Microsoft.Azure.Documents
                 this.builderClientIdentifier = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.BuilderClientIdentifier);
                 this.sourceCollectionIfMatch = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.SourceCollectionIfMatch);
                 this.requestedCollectionType = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.RequestedCollectionType);
+                this.interopUserName = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.InteropUserName);
+                this.populateQueryMetricsIndexUtilization = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateQueryMetricsIndexUtilization);
+                this.populateAnalyticalMigrationProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateAnalyticalMigrationProgress);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -890,7 +903,10 @@ namespace Microsoft.Azure.Documents
                     this.isMaterializedViewBuild,
                     this.builderClientIdentifier,
                     this.sourceCollectionIfMatch,
-                    this.requestedCollectionType
+                    this.requestedCollectionType,
+                    this.interopUserName,
+                    this.populateQueryMetricsIndexUtilization,
+                    this.populateAnalyticalMigrationProgress
                 });
             }
         }

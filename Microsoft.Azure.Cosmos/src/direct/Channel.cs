@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         public async Task<StoreResponse> RequestAsync(
-            DocumentServiceRequest request, Uri physicalAddress,
+            DocumentServiceRequest request, TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation, Guid activityId)
         {
             this.ThrowIfDisposed();
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this, timeoutCode);
                 Debug.Assert(callArguments.CommonArguments.UserPayload);
                 throw new TransportException(
-                    timeoutCode, ex, activityId, physicalAddress, this.ToString(),
+                    timeoutCode, ex, activityId, physicalAddress.Uri, this.ToString(),
                     callArguments.CommonArguments.UserPayload, payloadSent);
             }
             else

@@ -11,9 +11,11 @@ namespace Microsoft.Azure.Documents
 
     internal static class PathsHelper
     {
+        private const char ForwardSlash = '/';
+
         private static readonly StringSegment[] EmptyArray = new StringSegment[0];
 
-        private static readonly char[] PathSeparatorArray = new char[1] { '/' };
+        private static readonly char[] PathSeparatorArray = new char[1] { PathsHelper.ForwardSlash };
 
         /// <summary>
         ///     The output resourceId can be
@@ -160,6 +162,11 @@ namespace Microsoft.Azure.Documents
                 {
                     isNameBased = true;
                 }
+                else if (segments[0].Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase) &&
+                         (!ResourceId.TryParse(segments[1], out rid) || !rid.IsInteropUserId))
+                {
+                    isNameBased = true;
+                }
 
                 if (isNameBased)
                 {
@@ -249,6 +256,100 @@ namespace Microsoft.Azure.Documents
                     documentName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(new StringSegment(segments[5]))).GetString());
                 }
             }
+        }
+
+        /// <summary>
+        /// Try to parse resource URL for non root operation.
+        /// Valid URL example is 
+        /// /dbs/d557cdb4-21ac-46c9-ab17-33285c2ab040/colls/ce6ca6b0-c0b0-4f6c-90ce-8eef6d9524e0/operations/partitionkeydelete 
+        /// and RID based
+        /// /dbs/1fIrAA==/colls/1fIrANmsTf4=/operations/partitionkeydelete 
+        /// </summary>
+        /// <param name="resourceUrl">Resource URL.</param>
+        /// <param name="resourcePath">Indicates resource path. For collection level it will be <see cref="Paths.CollectionsPathSegment"/>.</param>
+        /// <param name="resourceIdOrFullName">Resource name or resourceId. Always trimmed.</param>
+        /// <param name="databaseName">Database name extracted from the URL.</param>
+        /// <param name="collectionName">Collection name extracted from the URL.</param>
+        /// <param name="resourceType">Resource type mapped for the operation.</param>
+        /// <param name="operationType">Operation type mapped for the operation.</param>
+        /// <returns></returns>
+        public static bool TryParsePathSegmentsWithDatabaseAndCollectionAndOperationNames(
+            string resourceUrl,
+            out string resourcePath,
+            out string resourceIdOrFullName,
+            out bool isNameBased,
+            out string databaseName,
+            out string collectionName,
+            out ResourceType resourceType,
+            out OperationType operationType)
+        {
+            resourcePath = string.Empty;
+            resourceIdOrFullName = string.Empty;
+            isNameBased = false;
+            databaseName = string.Empty;
+            collectionName = string.Empty;
+            resourceType = ResourceType.Unknown;
+            operationType = OperationType.Invalid;
+
+            if (string.IsNullOrEmpty(resourceUrl))
+            {
+                return false;
+            }
+
+            string[] segments = resourceUrl.Split(PathsHelper.PathSeparatorArray, StringSplitOptions.RemoveEmptyEntries);
+
+            if (segments == null || segments.Length != 6)
+            {
+                return false;
+            }
+
+            if (!segments[0].Equals(Paths.DatabasesPathSegment, StringComparison.OrdinalIgnoreCase)
+                || !segments[2].Equals(Paths.CollectionsPathSegment, StringComparison.OrdinalIgnoreCase)
+                || !segments[4].Equals(Paths.OperationsPathSegment, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            switch (segments[5])
+            {
+                case Paths.PartitionKeyDeletePathSegment:
+                    {
+                        resourceType = ResourceType.PartitionKey;
+                        operationType = OperationType.Delete;
+                        break;
+                    }
+
+                case Paths.CollectionTruncatePathsegment:
+                    {
+                        resourceType = ResourceType.Collection;
+                        operationType = OperationType.CollectionTruncate;
+                        break;
+                    }
+
+                default:
+                    {
+                        // Unknown operation.
+                        return false;
+                    }
+            }
+
+            resourcePath = Paths.CollectionsPathSegment;
+            databaseName = Uri.UnescapeDataString(segments[1]);
+            collectionName = Uri.UnescapeDataString(segments[3]);
+
+            if (!ResourceId.TryParse(segments[3], out ResourceId id) || !id.IsDocumentCollectionId)
+            {
+                // Resource name includes database and collection resource ids. For example dbs/d557cdb4-21ac-46c9-ab17-33285c2ab040/colls/ce6ca6b0-c0b0-4f6c-90ce-8eef6d9524e0.
+                // Concatenation of the segments is done to support repeating slashes on the URL like dbs//d557cdb4-21ac-46c9-ab17-33285c2ab040//colls//ce6ca6b0-c0b0-4f6c-90ce-8eef6d9524e0.
+                resourceIdOrFullName = $"{segments[0]}{PathsHelper.ForwardSlash}{segments[1]}{PathsHelper.ForwardSlash}{segments[2]}{PathsHelper.ForwardSlash}{segments[3]}";
+                isNameBased = true;
+            }
+            else
+            {
+                resourceIdOrFullName = segments[3];
+            }
+            
+            return true;
         }
 
         private static bool TryParseNameSegments(
@@ -389,6 +490,9 @@ namespace Microsoft.Azure.Documents
 
                 case Paths.PartitionedSystemDocumentsPathSegment:
                     return ResourceType.PartitionedSystemDocument;
+
+                case Paths.InteropUsersPathSegment:
+                    return ResourceType.InteropUser;
             }
 
             string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.UnknownResourceType, resourcePathSegment);
@@ -467,6 +571,9 @@ namespace Microsoft.Azure.Documents
                 case ResourceType.SystemDocument:
                     return Paths.SystemDocumentsPathSegment;
 
+                case ResourceType.InteropUser:
+                    return Paths.InteropUsersPathSegment;
+
 #if !COSMOSCLIENT
                 case ResourceType.MasterPartition:
                 case ResourceType.ServerPartition:
@@ -486,6 +593,7 @@ namespace Microsoft.Azure.Documents
                 case ResourceType.RestoreMetadata:
                 case ResourceType.Module:
                 case ResourceType.ModuleCommand:
+                case ResourceType.TransportControlCommand:
 #endif
                 case ResourceType.DatabaseAccount:
                 case ResourceType.Address:
@@ -652,6 +760,7 @@ namespace Microsoft.Azure.Documents
             {
                 ResourceType.RoleAssignment => Paths.RoleAssignmentsPathSegment + "/" + resourceName,
                 ResourceType.RoleDefinition => Paths.RoleDefinitionsPathSegment + "/" + resourceName,
+                ResourceType.InteropUser    => Paths.InteropUsersPathSegment    + "/" + resourceName,
                 _ => null
             };
         }
@@ -671,7 +780,8 @@ namespace Microsoft.Azure.Documents
                 resourceType != ResourceType.Database &&
                 resourceType != ResourceType.Snapshot &&
                 resourceType != ResourceType.RoleDefinition &&
-                resourceType != ResourceType.RoleAssignment)
+                resourceType != ResourceType.RoleAssignment &&
+                resourceType != ResourceType.InteropUser)
             {
                 string errorMessage = string.Format(CultureInfo.InvariantCulture, RMResources.UnexpectedResourceType, resourceType);
                 throw new BadRequestException(errorMessage);
@@ -791,6 +901,10 @@ namespace Microsoft.Azure.Documents
                 resourceTypeToValidate = ResourceType.Collection;
                 resourcePath = resourceFullName + "/" + Paths.SystemDocumentsPathSegment;
             }
+            else if (resourceType == ResourceType.InteropUser)
+            {
+                return Paths.InteropUsersPathSegment;
+            }
             else
             {
                 string errorMessage = string.Format(CultureInfo.CurrentUICulture, RMResources.UnknownResourceType, resourceType.ToString());
@@ -818,7 +932,8 @@ namespace Microsoft.Azure.Documents
                 resourceType != ResourceType.DatabaseAccount &&
                 resourceType != ResourceType.Snapshot &&
                 resourceType != ResourceType.RoleAssignment &&
-                resourceType != ResourceType.RoleDefinition
+                resourceType != ResourceType.RoleDefinition &&
+                resourceType != ResourceType.InteropUser
 #if !COSMOSCLIENT
                 && resourceType != ResourceType.MasterPartition &&
                 resourceType != ResourceType.ServerPartition &&
@@ -1127,6 +1242,14 @@ namespace Microsoft.Azure.Documents
                     Paths.CollectionsPathSegment + "/" + sysdocId.DocumentCollectionId.ToString() + "/" +
                     Paths.PartitionedSystemDocumentsPathSegment + "/" + sysdocId.PartitionedSystemDocumentId.ToString();
             }
+            else if (isFeed && resourceType == ResourceType.InteropUser)
+            {
+                return Paths.InteropUsersPathSegment;
+            }
+            else if (resourceType == ResourceType.InteropUser)
+            {
+                return Paths.InteropUsersPathSegment + "/" + ownerOrResourceId.ToString();
+            }
 #if !COSMOSCLIENT
             else if (isFeed && resourceType == ResourceType.MasterPartition)
             {
@@ -1258,7 +1381,8 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.RoleDefinitionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.RoleAssignmentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.TransactionsPathSegment, StringComparison.OrdinalIgnoreCase) ||
-                   resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase);
+                   resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsRootOperation(in StringSegment operationSegment, in StringSegment operationTypeSegment)
@@ -1288,6 +1412,7 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchGetOutput, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchReportCharges, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetFederationConfigurations, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetStorageServiceConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetConfiguration, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountKey, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountSas, StringComparison.OrdinalIgnoreCase) ||
@@ -1396,6 +1521,12 @@ namespace Microsoft.Azure.Documents
             if (resourceType == ResourceType.Address)
             {
                 segments.Add(Paths.AddressPathSegment);
+                return segments.ToArray();
+            }
+
+            if (resourceType == ResourceType.InteropUser)
+            {
+                segments.Add(Paths.InteropUsersPathSegment);
                 return segments.ToArray();
             }
 
@@ -1547,6 +1678,10 @@ namespace Microsoft.Azure.Documents
             {
                 return PathsHelper.ValidatePartitionedSystemDocumentId(resourceId);
             }
+            if (resourceType == ResourceType.InteropUser)
+            {
+                return PathsHelper.ValidateInteropUserId(resourceId);
+            }
             else
             {
                 Debug.Assert(false,
@@ -1662,6 +1797,12 @@ namespace Microsoft.Azure.Documents
         {
             ResourceId resourceId = null;
             return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.PartitionedSystemDocument > 0;
+        }
+
+        internal static bool ValidateInteropUserId(string resourceIdString)
+        {
+            ResourceId resourceId = null;
+            return ResourceId.TryParse(resourceIdString, out resourceId) && resourceId.InteropUser > 0;
         }
 
         internal static bool IsPublicResource(Type resourceType)

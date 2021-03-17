@@ -502,6 +502,30 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public ulong InteropUser
+        {
+            get;
+            private set;
+        }
+
+        public ResourceId InteropUserId
+        {
+            get
+            {
+                ResourceId rid = new ResourceId();
+                rid.InteropUser = this.InteropUser;
+                return rid;
+            }
+        }
+
+        public bool IsInteropUserId
+        {
+            get
+            {
+                return this.InteropUser != 0;
+            }
+        }
+
         public byte[] Value
         {
             get
@@ -516,6 +540,8 @@ namespace Microsoft.Azure.Documents
                 else if (this.RoleDefinition > 0)
                     len += ResourceId.RbacResourceIdLength;
                 else if (this.AuthPolicyElement > 0)
+                    len += ResourceId.RbacResourceIdLength;
+                else if (this.InteropUser > 0)
                     len += ResourceId.RbacResourceIdLength;
                 else if (this.Database > 0)
                     len += 4;
@@ -548,7 +574,14 @@ namespace Microsoft.Azure.Documents
                     ResourceId.BlockCopy(BitConverter.GetBytes(0x1000), 0, val, 4, 2);
                 }
                 else if (this.RoleDefinition > 0)
+                {
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.RoleDefinition), 0, val, 0, ResourceId.RbacResourceIdLength);
+                }
+                else if (this.InteropUser > 0)
+                {
+                    ResourceId.BlockCopy(BitConverter.GetBytes(this.InteropUser), 0, val, 0, ResourceId.RbacResourceIdLength);
+                    ResourceId.BlockCopy(BitConverter.GetBytes(0x2000), 0, val, 4, 2);
+                }
 
                 if (this.DocumentCollection > 0)
                     ResourceId.BlockCopy(BitConverter.GetBytes(this.DocumentCollection), 0, val, 4, 4);
@@ -652,6 +685,14 @@ namespace Microsoft.Azure.Documents
             return new ResourceId()
             {
                 Snapshot = snapshotId
+            };
+        }
+
+        public static ResourceId NewInteropUserId(ulong interopUserId)
+        {
+            return new ResourceId()
+            {
+                InteropUser = interopUserId
             };
         }
 
@@ -892,6 +933,10 @@ namespace Microsoft.Azure.Documents
 
                         case RbacResourceType.RbacResourceType_AuthPolicyElement:
                             rid.AuthPolicyElement = rbacResourceId;
+                            break;
+
+                        case RbacResourceType.RbacResourceType_InteropUser:
+                            rid.InteropUser = rbacResourceId;
                             break;
 
                         default:

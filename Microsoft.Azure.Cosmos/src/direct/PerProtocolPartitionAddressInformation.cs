@@ -31,34 +31,40 @@ namespace Microsoft.Azure.Documents
             this.ReplicaUris = this.ReplicaAddresses
                                 .Select(e => new Uri(e.PhysicalUri))
                                 .ToArray();
-            this.NonPrimaryReplicaUris = this.ReplicaAddresses
+
+            this.ReplicaTransportAddressUris = this.ReplicaUris
+                .Select(e => new TransportAddressUri(e))
+                .ToArray();
+
+            this.NonPrimaryReplicaTransportAddressUris = this.ReplicaAddresses
                                 .Where(e => !e.IsPrimary)
                                 .Select(e => new Uri(e.PhysicalUri))
+                                .Select(e => new TransportAddressUri(e))
                                 .ToArray();
 
             AddressInformation primaryReplicaAddress = this.ReplicaAddresses.SingleOrDefault(
                 address => address.IsPrimary && !address.PhysicalUri.Contains('['));
             if (primaryReplicaAddress != null)
             {
-                this.PrimaryReplicaUri = new Uri(primaryReplicaAddress.PhysicalUri);
+                this.PrimaryReplicaTransportAddressUri = new TransportAddressUri(new Uri(primaryReplicaAddress.PhysicalUri));
             }
 
             this.Protocol = protocol;
         }
 
-        public Uri GetPrimaryUri(DocumentServiceRequest request)
+        public TransportAddressUri GetPrimaryAddressUri(DocumentServiceRequest request)
         {
-            Uri primaryReplicaAddress = null;
+            TransportAddressUri primaryReplicaAddress = null;
             // if replicaIndex is not set, or if replicaIndex is 0, we return primary address.
             if (!request.DefaultReplicaIndex.HasValue || request.DefaultReplicaIndex.Value == 0)
             {
-                primaryReplicaAddress = this.PrimaryReplicaUri;
+                primaryReplicaAddress = this.PrimaryReplicaTransportAddressUri;
             }
             else
             {
                 if (request.DefaultReplicaIndex.Value > 0 && request.DefaultReplicaIndex.Value < this.ReplicaUris.Count)
                 {
-                    primaryReplicaAddress = this.ReplicaUris[(int)request.DefaultReplicaIndex.Value];
+                    primaryReplicaAddress = this.ReplicaTransportAddressUris[(int)request.DefaultReplicaIndex.Value];
                 }
             }
 
@@ -74,11 +80,15 @@ namespace Microsoft.Azure.Documents
 
         public Protocol Protocol { get; }
 
-        public IReadOnlyList<Uri> NonPrimaryReplicaUris { get; }
+        public IReadOnlyList<TransportAddressUri> NonPrimaryReplicaTransportAddressUris { get; }
 
         public IReadOnlyList<Uri> ReplicaUris { get; }
 
-        public Uri PrimaryReplicaUri { get; }
+        public IReadOnlyList<TransportAddressUri> ReplicaTransportAddressUris { get; }
+
+        public Uri PrimaryReplicaUri => this.PrimaryReplicaTransportAddressUri?.Uri;
+
+        public TransportAddressUri PrimaryReplicaTransportAddressUri { get; }
 
         public IReadOnlyList<AddressInformation> ReplicaAddresses { get; }
     }

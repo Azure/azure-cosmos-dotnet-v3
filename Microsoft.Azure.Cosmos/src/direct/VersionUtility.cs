@@ -33,8 +33,8 @@ namespace Microsoft.Azure.Documents
         // true if compareVersion >= baseVersion.
         internal static bool IsLaterThan(string compareVersion, string baseVersion)
         {
-            if (baseVersion.ToLowerInvariant().Contains("preview")
-                && !compareVersion.ToLowerInvariant().Contains("preview"))
+            if (VersionUtility.IsPreviewApiVersion(baseVersion)
+                && !VersionUtility.IsPreviewApiVersion(compareVersion))
             {
                 // Only another preview API version can be considered to be later than a base preview API version
                 return false;
@@ -53,6 +53,11 @@ namespace Microsoft.Azure.Documents
         internal static bool IsValidApiVersion(string apiVersion)
         {
             return TryParseApiVersion(apiVersion, out _);
+        }
+
+        internal static bool IsPreviewApiVersion(string apiVersion)
+        {
+            return apiVersion.ToLowerInvariant().Contains("preview");
         }
 
         // Format is YYYY-MM-DD

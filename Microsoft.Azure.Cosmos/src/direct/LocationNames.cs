@@ -323,6 +323,16 @@ namespace Microsoft.Azure.Documents
         /// Name of the Azure East US SLV region in the Azure Cosmos DB service.
         /// </summary>
         public const string EastUSSLV = "East US SLV";
+
+        /// <summary>
+        /// Name of the Azure Sweden Central region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string SwedenCentral = "Sweden Central";
+
+        /// <summary>
+        /// Name of the Azure Sweden South region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string SwedenSouth = "Sweden South";
     }
 }
 

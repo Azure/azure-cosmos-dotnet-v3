@@ -136,6 +136,7 @@ namespace Microsoft.Azure.Documents
         // 401 : Unauthorized Exception (User-side errors start with 50)
         MissingAuthHeader = 5000,
         InvalidAuthHeaderFormat = 5001,
+        AadAuthDisabled = 5002,
         AadTokenInvalidFormat = 5003,
         AadTokenInvalidSignature = 5004,
         AadTokenNotYetValid = 5005,
@@ -159,5 +160,8 @@ namespace Microsoft.Azure.Documents
 
         // 403 Forbidden. (CosmosDB-side errors start with 54)
         RbacRequestWasNotAuthorized = 5400,
+
+        // 200 OK. List feed throttled response.
+        ListResourceFeedThrottled = 5500
     }
 }

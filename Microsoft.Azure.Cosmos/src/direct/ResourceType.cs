@@ -73,6 +73,10 @@ namespace Microsoft.Azure.Documents
         InteropUser = 149,
         AuthPolicyElement = 150,
 
+#if !COSMOSCLIENT
+        TransportControlCommand = 151,
+#endif
+
         // These names make it unclear what they map to in ResourceType.
         Key = -2,
         Media = -3,

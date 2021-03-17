@@ -25,24 +25,24 @@ namespace Microsoft.Azure.Documents
             this.protocol = protocol;
         }
 
-        public async Task<IReadOnlyList<Uri>> ResolveAllUriAsync(
-           DocumentServiceRequest request,
-           bool includePrimary,
-           bool forceRefresh)
+        public async Task<IReadOnlyList<TransportAddressUri>> ResolveAllTransportAddressUriAsync(
+            DocumentServiceRequest request,
+            bool includePrimary,
+            bool forceRefresh)
         {
             PerProtocolPartitionAddressInformation partitionPerProtocolAddress = await this.ResolveAddressesAsync(request, forceRefresh);
 
             return includePrimary
-                ? partitionPerProtocolAddress.ReplicaUris
-                : partitionPerProtocolAddress.NonPrimaryReplicaUris;
+                ? partitionPerProtocolAddress.ReplicaTransportAddressUris
+                : partitionPerProtocolAddress.NonPrimaryReplicaTransportAddressUris;
         }
 
-        public async Task<Uri> ResolvePrimaryUriAsync(
+        public async Task<TransportAddressUri> ResolvePrimaryTransportAddressUriAsync(
             DocumentServiceRequest request,
             bool forceAddressRefresh)
         {
             PerProtocolPartitionAddressInformation partitionPerProtocolAddress = await this.ResolveAddressesAsync(request, forceAddressRefresh);
-            return partitionPerProtocolAddress.GetPrimaryUri(request);
+            return partitionPerProtocolAddress.GetPrimaryAddressUri(request);
         }
 
         public async Task<PerProtocolPartitionAddressInformation> ResolveAddressesAsync(

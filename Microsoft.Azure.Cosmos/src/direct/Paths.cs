@@ -287,5 +287,13 @@ namespace Microsoft.Azure.Documents
         // /authpolicyelements/{id}
         public const string AuthPolicyElementId = "authpolicyelementId";
         public const string AuthPolicyElement_Root = AuthPolicyElements_Root + "{" + AuthPolicyElementId + "}";
+
+        // /interopUsers
+        public const string InteropUsersPathSegment = "interopusers";
+        public const string InteropUsers_Root = Root + "/" + InteropUsersPathSegment + "/";
+
+        // /interopUsers/{id}
+        public const string InteropUserId = "interopuserId";
+        public const string InteropUser_Root = InteropUsers_Root + "{" + InteropUserId + "}";
     }
 }

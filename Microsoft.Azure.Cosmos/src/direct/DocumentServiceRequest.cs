@@ -158,7 +158,8 @@ namespace Microsoft.Azure.Documents
                         !(this.ResourceType == ResourceType.DatabaseAccount) &&
                         !(this.ResourceType == ResourceType.Snapshot) &&
                         !(this.ResourceType == ResourceType.RoleDefinition) &&
-                        !(this.ResourceType == ResourceType.RoleAssignment)
+                        !(this.ResourceType == ResourceType.RoleAssignment) &&
+                        !(this.ResourceType == ResourceType.InteropUser)
 #if !COSMOSCLIENT
                         && !(this.ResourceType == ResourceType.MasterPartition) &&
                         !(this.ResourceType == ResourceType.ServerPartition) &&
@@ -499,6 +500,10 @@ namespace Microsoft.Azure.Documents
                         return true;
                     }
                     else if (this.ResourceType == ResourceType.RoleAssignment)
+                    {
+                        return true;
+                    }
+                    else if (this.ResourceType == ResourceType.InteropUser)
                     {
                         return true;
                     }

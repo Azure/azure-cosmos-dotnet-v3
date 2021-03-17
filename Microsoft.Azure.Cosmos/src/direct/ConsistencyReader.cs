@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Documents
             this.addressSelector = addressSelector;
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
-            this.storeReader = new StoreReader(transportClient, addressSelector, sessionContainer);
+            this.storeReader = new StoreReader(transportClient, addressSelector, new AddressEnumerator(), sessionContainer);
             this.quorumReader = new QuorumReader(transportClient, addressSelector, this.storeReader, serviceConfigReader, authorizationTokenProvider);
         }
 

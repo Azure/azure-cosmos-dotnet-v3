@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddPopulateResourceCount(request, rntbdRequest);
             TransportSerialization.AddDisableRUPerMinuteUsage(request, rntbdRequest);
             TransportSerialization.AddPopulateQueryMetrics(request, rntbdRequest);
+            TransportSerialization.AddPopulateQueryMetricsIndexUtilization(request, rntbdRequest);
             TransportSerialization.AddQueryForceScan(request, rntbdRequest);
             TransportSerialization.AddResponseContinuationTokenLimitInKb(request, rntbdRequest);
             TransportSerialization.AddPopulatePartitionStatistics(request, rntbdRequest);
@@ -180,6 +181,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IsMaterializedViewBuild, rntbdRequest.isMaterializedViewBuild, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.BuilderClientIdentifier, rntbdRequest.builderClientIdentifier, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.SourceCollectionIfMatch, rntbdRequest.sourceCollectionIfMatch, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, rntbdRequest.populateAnalyticalMigrationProgress, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -573,8 +575,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return RntbdConstants.RntbdOperationType.MetadataCheckAccess;
             case OperationType.CreateSystemSnapshot:
                 return RntbdConstants.RntbdOperationType.CreateSystemSnapshot;
+            case OperationType.UpdateFailoverPriorityList:
+                return RntbdConstants.RntbdOperationType.UpdateFailoverPriorityList;
 #endif
-                case OperationType.AddComputeGatewayRequestCharges:
+            case OperationType.AddComputeGatewayRequestCharges:
                 return RntbdConstants.RntbdOperationType.AddComputeGatewayRequestCharges;
             default:
                 throw new ArgumentException(
@@ -636,12 +640,16 @@ namespace Microsoft.Azure.Documents.Rntbd
             case ResourceType.RoleAssignment:
                 return RntbdConstants.RntbdResourceType.RoleAssignment;
             case ResourceType.Transaction:
-                    return RntbdConstants.RntbdResourceType.Transaction;
+                return RntbdConstants.RntbdResourceType.Transaction;
+            case ResourceType.InteropUser:
+                return RntbdConstants.RntbdResourceType.InteropUser;
 #if !COSMOSCLIENT
-                case ResourceType.Module:
+            case ResourceType.Module:
                 return RntbdConstants.RntbdResourceType.Module;
             case ResourceType.ModuleCommand:
                 return RntbdConstants.RntbdResourceType.ModuleCommand;
+            case ResourceType.TransportControlCommand:
+                return RntbdConstants.RntbdResourceType.TransportControlCommand;
             case ResourceType.Replica:
                 return RntbdConstants.RntbdResourceType.Replica;
             case ResourceType.PartitionSetInformation:
@@ -661,9 +669,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             case ResourceType.VectorClock:
                 return RntbdConstants.RntbdResourceType.VectorClock;
             case ResourceType.Snapshot:
-                    return RntbdConstants.RntbdResourceType.Snapshot;
+                return RntbdConstants.RntbdResourceType.Snapshot;
 #endif
-                default:
+            default:
                 throw new ArgumentException(
                     string.Format(CultureInfo.InvariantCulture, "Invalid resource type: {0}", resourceType),
                     "resourceType");
@@ -781,6 +789,10 @@ namespace Microsoft.Azure.Documents.Rntbd
                     case Paths.RoleAssignmentsPathSegment:
                         rntbdRequest.roleAssignmentName.value.valueBytes = BytesSerializer.GetBytesForString(fragments[1], rntbdRequest);
                         rntbdRequest.roleAssignmentName.isPresent = true;
+                        break;
+                    case Paths.InteropUsersPathSegment:
+                        rntbdRequest.interopUserName.value.valueBytes = BytesSerializer.GetBytesForString(fragments[1], rntbdRequest);
+                        rntbdRequest.interopUserName.isPresent = true;
                         break;
                     default:
                         throw new BadRequestException();
@@ -1287,6 +1299,18 @@ namespace Microsoft.Azure.Documents.Rntbd
                     ? (byte) 0x01
                     : (byte) 0x00;
                 rntbdRequest.populateQueryMetrics.isPresent = true;
+            }
+        }
+
+        private static void AddPopulateQueryMetricsIndexUtilization(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.PopulateQueryMetricsIndexUtilization]))
+            {
+                rntbdRequest.populateQueryMetricsIndexUtilization.value.valueByte = (request.Headers[HttpConstants.HttpHeaders.PopulateQueryMetricsIndexUtilization].
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.populateQueryMetricsIndexUtilization.isPresent = true;
             }
         }
 

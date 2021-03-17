@@ -142,7 +142,7 @@
     <value>Entity with the specified id already exists in the system.</value>
   </data>
   <data name="Forbidden" xml:space="preserve">
-    <value>Request is blocked by your Cosmos DB account firewall settings.</value>
+    <value>Request is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
   <data name="ClientPublicIpInfo" xml:space="preserve">
     <value>client IP {0} through public internet</value>
@@ -151,7 +151,7 @@
     <value>client VNET through {0}</value>
   </data>
   <data name="ForbiddenClientIpAddress" xml:space="preserve">
-    <value>Request originated from {0}. This is blocked by your Cosmos DB account firewall settings.</value>
+    <value>Request originated from {0}. This is blocked by your Cosmos DB account firewall settings. More info: https://aka.ms/cosmosdb-tsg-forbidden</value>
   </data>
   <data name="Gone" xml:space="preserve">
     <value>The requested resource is no longer available at the server.</value>
@@ -1042,8 +1042,17 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="FreeTierUpdateNotSupported" xml:space="preserve">
     <value>Cannot update FreeTier property for existing account.</value>
   </data>
+  <data name="AadAuthMetadataRequestBlocked" xml:space="preserve">
+    <value>Request is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on resource [{2}].</value>
+  </data>
+  <data name="AadAuthDatabaseAccountRequestBlocked" xml:space="preserve">
+    <value>Request for Read DatabaseAccount is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on any scope.</value>
+  </data>
+  <data name="AadAuthGroupExpansionNeeded" xml:space="preserve">
+    <value>This could be because the user's group memberships were not present in the AAD token.</value>
+  </data>
   <data name="AadAuthActionNotSupported" xml:space="preserve">
-    <value>The given request [{0} {1}] with ResourceType [{2}] cannot be authorized by AAD token in data plane.</value>
+    <value>The given request [{0} {1}] cannot be authorized by AAD token in data plane.</value>
   </data>
   <data name="AadAuthenticatorNotAvailable" xml:space="preserve">
     <value>Failed to validate AAD identity since the authenticator is unavailable.</value>
@@ -1098,5 +1107,8 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="InvalidStoreTypeSpecified" xml:space="preserve">
     <value>Invalid store type specified {0}.</value>
+  </data>
+  <data name="RevokeRegrantNotAllowed" xml:space="preserve">
+    <value>Revoke/Grant is not allowed as the Account status is: {0}.</value>
   </data>
 </root>

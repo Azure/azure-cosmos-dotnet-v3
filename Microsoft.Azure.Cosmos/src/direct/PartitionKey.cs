@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Documents
         /// </remarks>
         public PartitionKey(object keyValue)
         {
-            this.InternalKey = PartitionKeyInternal.FromObjectArray(new object[] { keyValue }, true);
+            this.InternalKey = PartitionKeyInternal.FromObject(keyValue, true);
         }
 
         /// <summary>

@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public async Task<StoreResponse> RequestAsync(
             DocumentServiceRequest request,
-            Uri physicalAddress,
+            TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation,
             Guid activityId)
         {

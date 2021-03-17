@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Documents
         private Error error;
         private SubStatusCodes? substatus = null;
         private INameValueCollection responseHeaders;
+        private string rawErrorMessage;
 
         internal DocumentClientException(Error errorResource,
             HttpResponseHeaders responseHeaders,
@@ -111,6 +112,7 @@ namespace Microsoft.Azure.Documents
             this.RequestUri = requestUri;
             this.LSN = -1;
             this.PartitionKeyRangeId = null;
+            this.rawErrorMessage = message;
 
             if (this.StatusCode != HttpStatusCode.Gone)
             {
@@ -160,6 +162,7 @@ namespace Microsoft.Azure.Documents
             this.RequestUri = requestUri;
             this.LSN = -1;
             this.PartitionKeyRangeId = null;
+            this.rawErrorMessage = message;
 
             if (this.StatusCode != HttpStatusCode.Gone)
             {
@@ -403,7 +406,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return base.Message;
+                return this.rawErrorMessage ?? base.Message;
             }
         }
 
@@ -536,7 +539,7 @@ namespace Microsoft.Azure.Documents
             if (responseHeaders == null) return "null";
 
             IEnumerable<Tuple<string, string>> items = responseHeaders.AllKeys().SelectMany(responseHeaders.GetValues, (k, v) => new Tuple<string, string>(k, v ));
-            
+
             StringBuilder result = new StringBuilder("{");
             result.Append(Environment.NewLine);
 

@@ -186,7 +186,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         TaskCreationOptions.LongRunning |
                         TaskCreationOptions.DenyChildAttach,
                         TaskScheduler.Default).Unwrap();
-                    this.receiveTask.ContinueWith(completedTask =>
+                    _ = this.receiveTask.ContinueWith(completedTask =>
                     {
                         Debug.Assert(completedTask.IsFaulted);
                         Debug.Assert(this.serverUri != null);
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // PrepareCall assigns a request ID to the request, serializes it, and
         // returns the result. The caller must treat PrepareCallResult as an
         // opaque handle.
-        public PrepareCallResult PrepareCall(DocumentServiceRequest request, Uri physicalAddress,
+        public PrepareCallResult PrepareCall(DocumentServiceRequest request, TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation, Guid activityId)
         {
             uint requestId = unchecked((uint) Interlocked.Increment(ref this.nextRequestId));
@@ -268,13 +268,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                 int headerSize, bodySize;
                 BufferProvider.DisposableBuffer serializedRequest = TransportSerialization.BuildRequest(
                     request,
-                    physicalAddress.PathAndQuery.TrimEnd(TransportSerialization.UrlTrim),
+                    physicalAddress.PathAndQuery,
                     resourceOperation,
                     activityId,
                     this.connection.BufferProvider,
                     out headerSize, out bodySize);
 
-                return new PrepareCallResult(requestId, physicalAddress, serializedRequest);
+                return new PrepareCallResult(requestId, physicalAddress.Uri, serializedRequest);
             }
         }
 

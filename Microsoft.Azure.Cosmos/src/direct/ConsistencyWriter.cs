@@ -70,6 +70,7 @@ For globally strong write:
             this.storeReader = new StoreReader(
                                     transportClient,
                                     addressSelector,
+                                    new AddressEnumerator(),
                                     sessionContainer: null); //we need store reader only for global strong, no session is needed*/
         }
 
@@ -142,7 +143,7 @@ For globally strong write:
                 // TODO: Can we not rely on this inversion of dependencies.
                 request.RequestContext.ClientRequestStatistics.ContactedReplicas = partitionPerProtocolAddress.ReplicaUris.ToList();
 
-                Uri primaryUri = partitionPerProtocolAddress.GetPrimaryUri(request);
+                TransportAddressUri primaryUri = partitionPerProtocolAddress.GetPrimaryAddressUri(request);
                 this.LastWriteAddress = primaryUri.ToString();
 
                 if ((this.useMultipleWriteLocations || request.OperationType == OperationType.Batch) &&
@@ -165,12 +166,12 @@ For globally strong write:
                 {
                     response = await this.transportClient.InvokeResourceOperationAsync(primaryUri, request);
 
-                    storeResult = StoreResult.CreateStoreResult(response, null, true, false, primaryUri);
+                    storeResult = StoreResult.CreateStoreResult(response, null, true, false, primaryUri.Uri);
 
                 }
                 catch (Exception ex)
                 {
-                    storeResult = StoreResult.CreateStoreResult(null, ex, true, false, primaryUri);
+                    storeResult = StoreResult.CreateStoreResult(null, ex, true, false, primaryUri.Uri);
 
                     if (ex is DocumentClientException)
                     {
@@ -327,7 +328,7 @@ For globally strong write:
         {
             try
             {
-                this.addressSelector.ResolvePrimaryUriAsync(request, true).ContinueWith((task) =>
+                this.addressSelector.ResolvePrimaryTransportAddressUriAsync(request, true).ContinueWith((task) =>
                 {
                     if (task.IsFaulted)
                     {

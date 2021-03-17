@@ -16,6 +16,10 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
+#if COSMOSCLIENT
+    using Microsoft.Azure.Cosmos.Rntbd;
+#endif
+
 #if NETSTANDARD15 || NETSTANDARD16
     using Trace = Microsoft.Azure.Documents.Trace;
 #endif
@@ -89,6 +93,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // mutual exclusion because only one thread consumes from the stream.
         private readonly SemaphoreSlim writeSemaphore = new SemaphoreSlim(1);
         private Stream stream;
+        private RntbdStreamReader streamReader;
 
         private readonly object timestampLock = new object();
         private DateTime lastSendAttemptTime;  // Guarded by timestampLock.
@@ -435,6 +440,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 this.tcpClient = null;
                 Debug.Assert(this.stream != null);
                 this.stream.Close();
+                this.streamReader?.Dispose();
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdConnectionClosedCount();
             }
         }
@@ -628,6 +634,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 args.OpenTimeline.RecordSslHandshakeFinishTime();
 
                 this.stream = sslStream;
+                this.streamReader = new RntbdStreamReader(this.stream);
                 Debug.Assert(this.tcpClient != null);
                 DefaultTrace.TraceInformation("RNTBD SSL handshake complete {0} -> {1}",
                     this.localEndPoint, this.remoteEndPoint);
@@ -659,7 +666,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 int read = 0;
                 try
                 {
-                    read = await this.stream.ReadAsync(payload, bytesRead,
+                    read = await this.streamReader.ReadAsync(payload, bytesRead,
                         length - bytesRead);
                 }
                 catch (IOException ex)

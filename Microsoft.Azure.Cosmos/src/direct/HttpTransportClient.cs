@@ -393,6 +393,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQuotaInfo, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetrics, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetricsIndexUtilization, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ForceQueryScan, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.RemoteStorageType, request);
@@ -433,16 +434,13 @@ namespace Microsoft.Azure.Documents
 
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.ForceSideBySideIndexMigration, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsClientEncrypted, request);
-
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.MigrateOfferToAutopilot, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.MigrateOfferToManualThroughput, request);
-
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsOfferStorageRefreshRequest, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateMaxThroughputEverProvisioned, request);
-
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.TruncateMergeLogRequest, request);
-
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowRequestWithoutInstanceId, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, request);
 
             Stream clonedStream = null;
             if (request.Body != null)
@@ -641,6 +639,7 @@ namespace Microsoft.Azure.Documents
 #if !COSMOSCLIENT
                 case ResourceType.Module:
                 case ResourceType.ModuleCommand:
+                case ResourceType.TransportControlCommand:
                 case ResourceType.Record:
                 case ResourceType.Replica:
                     Debug.Assert(false, "Unexpected resource type: " + resourceType);
@@ -703,6 +702,7 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.Module:
                 case ResourceType.ModuleCommand:
+                case ResourceType.TransportControlCommand:
 #endif
                 case ResourceType.Record:
 

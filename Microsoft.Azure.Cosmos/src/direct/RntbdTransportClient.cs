@@ -35,14 +35,19 @@
         {
             base.Dispose();
 
-            if (this.rntbdConnectionManager != null)
-            {
-                this.rntbdConnectionManager.Dispose();
-            }
+            this.rntbdConnectionManager?.Dispose();
+        }
+
+        internal override Task<StoreResponse> InvokeStoreAsync(
+            Uri physicalAddress,
+            ResourceOperation resourceOperation,
+            DocumentServiceRequest request)
+        {
+            return this.InvokeStoreAsync(new TransportAddressUri(physicalAddress), resourceOperation, request);
         }
 
         internal override async Task<StoreResponse> InvokeStoreAsync(
-            Uri physicalAddress,
+            TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation,
             DocumentServiceRequest request)
         {
@@ -58,7 +63,7 @@
             IConnection connection;
             try
             {
-                connection = await this.rntbdConnectionManager.GetOpenConnection(activityId, physicalAddress);
+                connection = await this.rntbdConnectionManager.GetOpenConnection(activityId, physicalAddress.Uri);
             }
             catch (Exception ex)
             {
@@ -86,7 +91,7 @@
                 }
 #endif
 
-                storeResponse = await connection.RequestAsync(request, physicalAddress, resourceOperation, activityId);
+                storeResponse = await connection.RequestAsync(request, physicalAddress.Uri, resourceOperation, activityId);
             }
             catch (Exception ex)
             {
@@ -118,7 +123,7 @@
             this.rntbdConnectionManager.ReturnToPool(connection);
 
             // Throw an appropriate exception if we got a response message that was tagged with a failed status code
-            TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress, activityId, request);
+            TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
 
             return storeResponse;
         }

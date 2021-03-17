@@ -85,16 +85,16 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public Task<StoreResponse> RequestAsync(
             DocumentServiceRequest request,
-            Uri physicalAddress,
+            TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation,
             Guid activityId)
         {
             this.ThrowIfDisposed();
-            Debug.Assert(this.serverUri.IsBaseOf(physicalAddress),
+            Debug.Assert(this.serverUri.IsBaseOf(physicalAddress.Uri),
                 string.Format("Expected: {0}.{1}Actual: {2}",
                 this.serverUri.GetLeftPart(UriPartial.Authority),
                 Environment.NewLine,
-                physicalAddress.GetLeftPart(UriPartial.Authority)));
+                physicalAddress.Uri.GetLeftPart(UriPartial.Authority)));
 
             if (this.singlePartition != null)
             {
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             ((IDisposable) this).Dispose();
         }
 
-        #region IDisposable
+#region IDisposable
 
         void IDisposable.Dispose()
         {
@@ -146,6 +146,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
-        #endregion
+#endregion
     }
 }
