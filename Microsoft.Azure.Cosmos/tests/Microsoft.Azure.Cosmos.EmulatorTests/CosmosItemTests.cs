@@ -2436,6 +2436,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
         }
 
+        [TestMethod]
+        public async Task RegionsContactedTest()
+        {
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item, new Cosmos.PartitionKey(item.pk));
+            Assert.IsNotNull(response.Diagnostics);
+            IReadOnlyList<(string region, Uri uri)> regionsContacted = response.Diagnostics.GetContactedRegions();
+            Assert.AreEqual(regionsContacted.Count, 1);
+            Assert.AreEqual(regionsContacted[0].region, Regions.SouthCentralUS);
+            Assert.IsNotNull(regionsContacted[0].uri);
+        }
+
 #if PREVIEW
         [TestMethod]
         public async Task VerifyDocumentCrudWithMultiHashKind()
