@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2311](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2311) Spatial: Fixes deserialization when Json does not represent a Spatial type
 - [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations
 - [#2278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2278) Documentation: Fixed typos in comment examples (Thanks to paulomorgado)
-- [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs
-- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) Diagnostics: Fixed regression which caused ActivityId to not get included
+- [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs. Introduced in 3.16.0 PR [#1954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1954)
+- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) Diagnostics: Fixed regression which caused ActivityId to not get included. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
 
 ### <a name="3.17.0"/> [3.17.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0) - 2021-03-02
 
