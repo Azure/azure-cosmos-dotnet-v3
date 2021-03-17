@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -324,7 +325,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             PartitionKeyRange partitonKeyRange = null;
-            ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+            ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
 
             string partitionKeyString = request.Headers[HttpConstants.HttpHeaders.PartitionKey];
             if (partitionKeyString != null)
@@ -332,14 +333,16 @@ namespace Microsoft.Azure.Cosmos
                 CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(collectionRid: collection.ResourceId,
                                                                                                         previousValue: null,
                                                                                                         request: request,
-                                                                                                        cancellationToken: CancellationToken.None);
+                                                                                                        cancellationToken: CancellationToken.None,
+                                                                                                        NoOpTrace.Singleton);
 
                 if (refreshCache && collectionRoutingMap != null)
                 {
                     collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(collectionRid: collection.ResourceId,
                                                                                         previousValue: collectionRoutingMap,
                                                                                         request: request,
-                                                                                        cancellationToken: CancellationToken.None);
+                                                                                        cancellationToken: CancellationToken.None,
+                                                                                        NoOpTrace.Singleton);
                 }
 
                 partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(request: request, 
@@ -352,7 +355,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKeyRangeIdentity partitionKeyRangeId = request.PartitionKeyRangeIdentity;
                 partitonKeyRange = await partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(collection.ResourceId, 
-                                                                                                 partitionKeyRangeId.ToString(), 
+                                                                                                 partitionKeyRangeId.ToString(),
+                                                                                                 NoOpTrace.Singleton,
                                                                                                  refreshCache);
             }
 
@@ -364,7 +368,11 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // need to refresh cache. Maybe split happened.
-                return await TryResolvePartitionKeyRangeAsync(request, sessionContainer, partitionKeyRangeCache, clientCollectionCache, true);
+                return await GatewayStoreModel.TryResolvePartitionKeyRangeAsync(request: request, 
+                                                                                sessionContainer: sessionContainer, 
+                                                                                partitionKeyRangeCache: partitionKeyRangeCache, 
+                                                                                clientCollectionCache: clientCollectionCache, 
+                                                                                refreshCache: true);
             }
 
             return new Tuple<bool, PartitionKeyRange>(true, partitonKeyRange);
