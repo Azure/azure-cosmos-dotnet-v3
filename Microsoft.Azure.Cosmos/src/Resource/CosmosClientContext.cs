@@ -60,7 +60,9 @@ namespace Microsoft.Azure.Cosmos
         internal abstract Task<TResult> OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
-            Func<ITrace, Task<TResult>> task);
+            Func<ITrace, Task<TResult>> task,
+            TraceComponent traceComponent = TraceComponent.Transport,
+            TraceLevel traceLevel = TraceLevel.Info);
 
         /// <summary>
         /// This is a wrapper around ExecUtil method. This allows the calls to be mocked so logic done 

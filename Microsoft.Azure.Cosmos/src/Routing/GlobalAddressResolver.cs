@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Rntbd;
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CancellationToken cancellationToken)
         {
             CollectionRoutingMap routingMap =
-                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken);
+                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken, NoOpTrace.Singleton);
 
             if (routingMap == null)
             {

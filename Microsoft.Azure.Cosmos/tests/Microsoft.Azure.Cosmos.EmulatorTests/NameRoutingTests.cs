@@ -1459,7 +1459,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                true,
                false);
 
-            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
+            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             Assert.AreNotEqual(sessionToken1.Split(':')[0], (await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton)).First().Id);
 
             Assert.AreEqual(2, client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c WHERE c.field1 IN (1, 2)", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());
@@ -1517,7 +1517,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                true,
                false);
 
-            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync();
+            PartitionKeyRangeCache routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             Assert.AreNotEqual(sessionToken1.Split(':')[0], (await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton)).First().Id);
 
             Assert.AreEqual(2, client.CreateDocumentQuery("/dbs/db1/colls/coll1", "SELECT * FROM c WHERE c.field1 IN (1, 2)", new FeedOptions { EnableCrossPartitionQuery = true }).AsEnumerable().Count());

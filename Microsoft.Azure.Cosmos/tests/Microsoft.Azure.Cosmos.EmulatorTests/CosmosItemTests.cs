@@ -1214,7 +1214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 container = (ContainerInlineCore)containerResponse;
 
                 // Get all the partition key ranges to verify there is more than one partition
-                IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                IRoutingMapProvider routingMapProvider = await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
                 IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true),
@@ -2431,6 +2431,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions: ro);
 
             Assert.AreEqual(HttpStatusCode.Created, responseAstype.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task RegionsContactedTest()
+        {
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync<ToDoActivity>(item, new Cosmos.PartitionKey(item.pk));
+            Assert.IsNotNull(response.Diagnostics);
+            IReadOnlyList<(string region, Uri uri)> regionsContacted = response.Diagnostics.GetContactedRegions();
+            Assert.AreEqual(regionsContacted.Count, 1);
+            Assert.AreEqual(regionsContacted[0].region, Regions.SouthCentralUS);
+            Assert.IsNotNull(regionsContacted[0].uri);
         }
 
 #if PREVIEW

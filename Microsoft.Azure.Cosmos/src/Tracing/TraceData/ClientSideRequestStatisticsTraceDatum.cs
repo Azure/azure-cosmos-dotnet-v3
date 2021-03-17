@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.ContactedReplicas = new List<Uri>();
             this.StoreResponseStatisticsList = new List<StoreResponseStatistics>();
             this.FailedReplicas = new HashSet<Uri>();
-            this.RegionsContacted = new HashSet<Uri>();
+            this.RegionsContactedWithName = new HashSet<(string, Uri)>();
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
 
@@ -48,6 +48,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public HashSet<Uri> FailedReplicas { get; }
 
         public HashSet<Uri> RegionsContacted { get; }
+
+        public HashSet<(string, Uri)> RegionsContactedWithName { get; }
 
         public TimeSpan RequestLatency
         {
@@ -119,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             DateTime responseTime = DateTime.UtcNow;
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+            string regionName = request.RequestContext.RegionName;
             StoreResponseStatistics responseStatistics = new StoreResponseStatistics(
                 startDateTime,
                 responseTime,
@@ -141,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContacted.Add(locationEndpoint);
+                    this.RegionsContactedWithName.Add((regionName, locationEndpoint));
                 }
 
                 this.StoreResponseStatisticsList.Add(responseStatistics);

@@ -48,6 +48,8 @@ namespace CosmosCTL
                         cosmosClient: client,
                         logger: logger);
 
+                    logger.LogInformation("Initialization completed.");
+
                     List<Task> tasks = new List<Task>
                     {
                         scenario.RunAsync(

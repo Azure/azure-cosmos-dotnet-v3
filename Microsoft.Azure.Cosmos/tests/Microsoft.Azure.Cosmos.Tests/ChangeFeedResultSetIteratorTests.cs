@@ -36,15 +36,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ResponseMessage firstResponse = new ResponseMessage(HttpStatusCode.NotModified);
             firstResponse.Headers.ETag = "FirstContinuation";
+            Headers headers = new Headers()
+            {
+                ETag = "ShouldNotContainThis"
+            };
             ResponseMessage secondResponse = new ResponseMessage(
                 statusCode: HttpStatusCode.NotFound,
                 requestMessage: null,
-                headers: new Headers()
-                {
-                    ETag = "ShouldNotContainThis"
-                },
+                headers: headers,
                 trace: NoOpTrace.Singleton,
-                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something"));
+                cosmosException: CosmosExceptionFactory.CreateNotFoundException("something", headers));
 
             mockContext.SetupSequence(x => x.ProcessResourceOperationAsync<ResponseMessage>(
                 It.IsAny<string>(),
