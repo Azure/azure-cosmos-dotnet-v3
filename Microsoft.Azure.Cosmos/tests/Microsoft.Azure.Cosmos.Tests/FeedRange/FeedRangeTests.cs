@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Routing;
     using Moq;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public class FeedRangeTests
@@ -46,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
             FeedRangeEpk FeedRangeEpk = new FeedRangeEpk(range);
-            List<Documents.Routing.Range<string>> ranges = await FeedRangeEpk.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null);
+            List<Documents.Routing.Range<string>> ranges = await FeedRangeEpk.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null, NoOpTrace.Singleton);
             Assert.AreEqual(1, ranges.Count);
             Assert.AreEqual(range, ranges[0]);
         }
@@ -59,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             PartitionKey partitionKey = new PartitionKey("test");
             FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
             Documents.Routing.Range<string> range = Documents.Routing.Range<string>.GetPointRange(partitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition));
-            List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKey.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, partitionKeyDefinition);
+            List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKey.GetEffectiveRangesAsync(Mock.Of<IRoutingMapProvider>(), null, partitionKeyDefinition, NoOpTrace.Singleton);
             Assert.AreEqual(1, ranges.Count);
             Assert.AreEqual(range, ranges[0]);
         }
@@ -71,14 +72,14 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
-                .Setup(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<bool>()))
+                .Setup(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<ITrace>(), It.IsAny<bool>()))
                 .ReturnsAsync(partitionKeyRange);
-            List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.GetEffectiveRangesAsync(routingProvider, null, null);
+            List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.GetEffectiveRangesAsync(routingProvider, null, null, NoOpTrace.Singleton);
             Assert.AreEqual(1, ranges.Count);
             Assert.AreEqual(partitionKeyRange.ToRange().Min, ranges[0].Min);
             Assert.AreEqual(partitionKeyRange.ToRange().Max, ranges[0].Max);
             Mock.Get(routingProvider)
-                .Verify(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<bool>()), Times.Once);
+                .Verify(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<ITrace>(), It.IsAny<bool>()), Times.Once);
         }
 
         [TestMethod]
@@ -88,15 +89,15 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
-                .SetupSequence(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<bool>()))
+                .SetupSequence(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<ITrace>(), It.IsAny<bool>()))
                 .ReturnsAsync(null)
                 .ReturnsAsync(partitionKeyRange);
-            List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.GetEffectiveRangesAsync(routingProvider, null, null);
+            List<Documents.Routing.Range<string>> ranges = await feedRangePartitionKeyRange.GetEffectiveRangesAsync(routingProvider, null, null, NoOpTrace.Singleton);
             Assert.AreEqual(1, ranges.Count);
             Assert.AreEqual(partitionKeyRange.ToRange().Min, ranges[0].Min);
             Assert.AreEqual(partitionKeyRange.ToRange().Max, ranges[0].Max);
             Mock.Get(routingProvider)
-                .Verify(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<bool>()), Times.Exactly(2));
+                .Verify(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.Is<string>(s => s == partitionKeyRange.Id), It.IsAny<ITrace>(), It.IsAny<bool>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -106,10 +107,10 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
-                .SetupSequence(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.Is<bool>(b => true)))
+                .SetupSequence(f => f.TryGetPartitionKeyRangeByIdAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<ITrace>(), It.Is<bool>(b => true)))
                 .ReturnsAsync((Documents.PartitionKeyRange)null)
                 .ReturnsAsync((Documents.PartitionKeyRange)null);
-            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedRangePartitionKeyRange.GetEffectiveRangesAsync(routingProvider, null, null));
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => feedRangePartitionKeyRange.GetEffectiveRangesAsync(routingProvider, null, null, NoOpTrace.Singleton));
             Assert.AreEqual(HttpStatusCode.Gone, exception.StatusCode);
             Assert.AreEqual((int)Documents.SubStatusCodes.PartitionKeyRangeGone, exception.SubStatusCode);
         }
@@ -122,11 +123,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
-                .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.Is<Documents.Routing.Range<string>>(s => s == range), It.IsAny<bool>()))
+                .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.Is<Documents.Routing.Range<string>>(s => s == range), It.IsAny<ITrace>(), It.IsAny<bool>()))
                 .ReturnsAsync(new List<Documents.PartitionKeyRange>() { partitionKeyRange });
 
             FeedRangeEpk FeedRangeEpk = new FeedRangeEpk(range);
-            IEnumerable<string> pkRanges = await FeedRangeEpk.GetPartitionKeyRangesAsync(routingProvider, null, null, default(CancellationToken));
+            IEnumerable<string> pkRanges = await FeedRangeEpk.GetPartitionKeyRangesAsync(routingProvider, null, null, default, NoOpTrace.Singleton);
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
         }
@@ -141,11 +142,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             PartitionKey partitionKey = new PartitionKey("test");
             IRoutingMapProvider routingProvider = Mock.Of<IRoutingMapProvider>();
             Mock.Get(routingProvider)
-                .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<bool>()))
+                .Setup(f => f.TryGetOverlappingRangesAsync(It.IsAny<string>(), It.IsAny<Documents.Routing.Range<string>>(), It.IsAny<ITrace>(), It.IsAny<bool>()))
                 .ReturnsAsync(new List<Documents.PartitionKeyRange>() { partitionKeyRange });
 
             FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
-            IEnumerable<string> pkRanges = await feedRangePartitionKey.GetPartitionKeyRangesAsync(routingProvider, null, partitionKeyDefinition, default(CancellationToken));
+            IEnumerable<string> pkRanges = await feedRangePartitionKey.GetPartitionKeyRangesAsync(routingProvider, null, partitionKeyDefinition, default, NoOpTrace.Singleton);
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
         }
@@ -155,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             Documents.PartitionKeyRange partitionKeyRange = new Documents.PartitionKeyRange() { Id = Guid.NewGuid().ToString(), MinInclusive = "AA", MaxExclusive = "BB" };
             FeedRangePartitionKeyRange feedRangePartitionKeyRange = new FeedRangePartitionKeyRange(partitionKeyRange.Id);
-            IEnumerable<string> pkRanges = await feedRangePartitionKeyRange.GetPartitionKeyRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null, default(CancellationToken));
+            IEnumerable<string> pkRanges = await feedRangePartitionKeyRange.GetPartitionKeyRangesAsync(Mock.Of<IRoutingMapProvider>(), null, null, default, NoOpTrace.Singleton);
             Assert.AreEqual(1, pkRanges.Count());
             Assert.AreEqual(partitionKeyRange.Id, pkRanges.First());
         }

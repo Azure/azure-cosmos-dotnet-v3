@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -432,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            PartitionKeyRange range = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId);
+            PartitionKeyRange range = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId, NoOpTrace.Singleton);
             if (range == null && PathsHelper.IsNameBased(this.ResourceLink))
             {
                 // Refresh the cache and don't try to reresolve collection as it is not clear what already
@@ -475,7 +476,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, NoOpTrace.Singleton);
             if (ranges == null && PathsHelper.IsNameBased(this.ResourceLink))
             {
                 // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -502,7 +503,7 @@ namespace Microsoft.Azure.Cosmos.Query
         protected async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
         {
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
-            List<PartitionKeyRange> replacementRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), true)).ToList();
+            List<PartitionKeyRange> replacementRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), NoOpTrace.Singleton, forceRefresh: true)).ToList();
             string replaceMinInclusive = replacementRanges.First().MinInclusive;
             string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
             if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))

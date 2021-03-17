@@ -14,13 +14,11 @@ namespace Microsoft.Azure.Cosmos
 
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
@@ -69,16 +67,7 @@ namespace Microsoft.Azure.Cosmos
             if (partitionKey != null)
             {
                 // Dis-ambiguate the NonePK if used 
-                PartitionKeyInternal partitionKeyInternal;
-                if (partitionKey.Value.IsNone)
-                {
-                    partitionKeyInternal = containerProperties.GetNoneValue();
-                }
-                else
-                {
-                    partitionKeyInternal = partitionKey.Value.InternalKey;
-                }
-
+                PartitionKeyInternal partitionKeyInternal = partitionKey.Value.IsNone ? containerProperties.GetNoneValue() : partitionKey.Value.InternalKey;
                 effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(containerProperties.PartitionKey);
             }
 
@@ -113,7 +102,6 @@ namespace Microsoft.Azure.Cosmos
             Guid clientQueryCorrelationId,
             FeedRange feedRange,
             QueryRequestOptions requestOptions,
-            Action<QueryPageDiagnostics> queryPageDiagnostics,
             SqlQuerySpec sqlQuerySpec,
             string continuationToken,
             bool isContinuationExpected,
@@ -142,17 +130,13 @@ namespace Microsoft.Azure.Cosmos
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                     cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
                 },
-                diagnosticsContext: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
 
             return CosmosQueryClientCore.GetCosmosElementResponse(
-                clientQueryCorrelationId,
                 requestOptions,
                 resourceType,
                 message,
-                feedRange,
-                queryPageDiagnostics,
                 trace);
         }
 
@@ -163,7 +147,6 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             PartitionKey? partitionKey,
             string supportedQueryFeatures,
-            CosmosDiagnosticsContext diagnosticsContext,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -184,7 +167,6 @@ namespace Microsoft.Azure.Cosmos
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.QueryVersion, new Version(major: 1, minor: 0).ToString());
                     requestMessage.UseGatewayMode = true;
                 },
-                diagnosticsContext: diagnosticsContext,
                 trace: trace,
                 cancellationToken: cancellationToken))
             {
@@ -225,7 +207,7 @@ namespace Microsoft.Azure.Cosmos
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
 
                 return await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
@@ -259,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace);
                 if (ranges == null && PathsHelper.IsNameBased(resourceLink))
                 {
                     // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -267,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
                     // Return NotFoundException this time. Next query will succeed.
                     // This can only happen if collection is deleted/created with same name and client was not restarted
                     // in between.
-                    CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+                    CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(getPKRangesTrace);
                     collectionCache.Refresh(resourceLink);
                 }
 
@@ -292,26 +274,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private static TryCatch<QueryPage> GetCosmosElementResponse(
-            Guid clientQueryCorrelationId,
             QueryRequestOptions requestOptions,
             ResourceType resourceType,
             ResponseMessage cosmosResponseMessage,
-            FeedRange feedRange,
-            Action<QueryPageDiagnostics> queryPageDiagnostics,
             ITrace trace)
         {
             using (ITrace getCosmosElementResponse = trace.StartChild("Get Cosmos Element Response", TraceComponent.Json, Tracing.TraceLevel.Info))
             {
                 using (cosmosResponseMessage)
                 {
-                    QueryPageDiagnostics queryPage = new QueryPageDiagnostics(
-                        clientQueryCorrelationId: clientQueryCorrelationId,
-                        partitionKeyRangeId: feedRange is FeedRangePartitionKey feedRangePartitionKey && feedRangePartitionKey.PartitionKey.IsNone ? "None" : feedRange.ToJsonString(),
-                        queryMetricText: cosmosResponseMessage.Headers.QueryMetricsText,
-                        indexUtilizationText: cosmosResponseMessage.Headers[HttpConstants.HttpHeaders.IndexUtilization],
-                        diagnosticsContext: cosmosResponseMessage.DiagnosticsContext);
-                    queryPageDiagnostics(queryPage);
-
                     if (
                         cosmosResponseMessage.Headers.QueryMetricsText != null &&
                         BackendMetricsParser.TryParse(cosmosResponseMessage.Headers.QueryMetricsText, out BackendMetrics backendMetrics))
@@ -323,21 +294,12 @@ namespace Microsoft.Azure.Cosmos
 
                     if (!cosmosResponseMessage.IsSuccessStatusCode)
                     {
-                        CosmosException exception;
-                        if (cosmosResponseMessage.CosmosException != null)
-                        {
-                            exception = cosmosResponseMessage.CosmosException;
-                        }
-                        else
-                        {
-                            exception = new CosmosException(
-                                cosmosResponseMessage.ErrorMessage,
-                                cosmosResponseMessage.StatusCode,
-                                (int)cosmosResponseMessage.Headers.SubStatusCode,
-                                cosmosResponseMessage.Headers.ActivityId,
-                                cosmosResponseMessage.Headers.RequestCharge);
-                        }
-
+                        CosmosException exception = cosmosResponseMessage.CosmosException ?? new CosmosException(
+                            cosmosResponseMessage.ErrorMessage,
+                            cosmosResponseMessage.StatusCode,
+                            (int)cosmosResponseMessage.Headers.SubStatusCode,
+                            cosmosResponseMessage.Headers.ActivityId,
+                            cosmosResponseMessage.Headers.RequestCharge);
                         return TryCatch<QueryPage>.FromException(exception);
                     }
 
@@ -373,6 +335,15 @@ namespace Microsoft.Azure.Cosmos
                         queryState = default;
                     }
 
+                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+                    foreach (string key in cosmosResponseMessage.Headers)
+                    {
+                        if (!QueryPage.BannedHeaders.Contains(key))
+                        {
+                            additionalHeaders[key] = cosmosResponseMessage.Headers[key];
+                        }
+                    }
+
                     QueryPage response = new QueryPage(
                         documents,
                         cosmosResponseMessage.Headers.RequestCharge,
@@ -380,6 +351,7 @@ namespace Microsoft.Azure.Cosmos
                         responseLengthBytes,
                         cosmosQueryExecutionInfo,
                         disallowContinuationTokenMessage: null,
+                        additionalHeaders,
                         queryState);
 
                     return TryCatch<QueryPage>.FromResult(response);
@@ -415,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClearSessionTokenCache(collectionLink);
 
-            CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync();
+            CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
             using (Documents.DocumentServiceRequest request = Documents.DocumentServiceRequest.Create(
                Documents.OperationType.Query,
                Documents.ResourceType.Collection,
@@ -423,7 +395,7 @@ namespace Microsoft.Azure.Cosmos
                Documents.AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
             {
                 request.ForceNameCacheRefresh = true;
-                await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                await collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
             }
         }
 
@@ -433,12 +405,16 @@ namespace Microsoft.Azure.Cosmos
             bool forceRefresh = false)
         {
             PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
-            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync(collectionResourceId, range, forceRefresh);
+            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync( 
+                collectionResourceId, 
+                range,
+                NoOpTrace.Singleton,
+                forceRefresh);
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
         {
-            return this.documentClient.GetPartitionKeyRangeCacheAsync();
+            return this.documentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
 
         /// <summary>
@@ -479,16 +455,7 @@ namespace Microsoft.Azure.Cosmos
             // }
             // You want to create a CosmosElement for each document in "Documents".
 
-            ReadOnlyMemory<byte> content;
-            if (memoryStream.TryGetBuffer(out ArraySegment<byte> buffer))
-            {
-                content = buffer;
-            }
-            else
-            {
-                content = memoryStream.ToArray();
-            }
-
+            ReadOnlyMemory<byte> content = memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) ? buffer : (ReadOnlyMemory<byte>)memoryStream.ToArray();
             IJsonNavigator jsonNavigator;
             if (cosmosSerializationOptions != null)
             {

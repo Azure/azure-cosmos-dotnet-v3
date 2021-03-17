@@ -3,6 +3,25 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="1.0.0-previewV12"/> [1.0.0-previewV12](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV12) - 2021-03-15
+
+#### Added 
+- [#2112](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2112) Adds support for public model using Microsoft Data Encryption (MDE) based encryption via Container Level Encryption Policy for items.
+
+#### Fixes 
+- [#2306](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2306) Fixes the response for transactional batch in case of non-success status code.
+
+
+### <a name="1.0.0-previewV11"/> [1.0.0-previewV11](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV11) - 2021-02-16
+
+#### Fixes 
+- [#2219](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2219) Adds integration with Cosmos SDK 3.17.0-preview. Moving to Microsoft.Data.Encryption.Cryptography Nuget package instead of dll dependency.
+
+### <a name="1.0.0-previewV10"/> [1.0.0-previewV10](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV10) - 2021-02-08
+
+#### Fixes 
+- [#2171](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2171) Adds support to Migrate Data Encryption Key via Rewrap from Legacy Encryption Algorithm to MDE based Encryption Algorithm.
+
 ### <a name="1.0.0-preview9"/> [1.0.0-preview9](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-preview9) - 2021-01-06
 
 #### Fixes 

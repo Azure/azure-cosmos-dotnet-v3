@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -184,7 +185,7 @@ namespace Microsoft.Azure.Cosmos
                 return FeedRangeCompositeContinuation.NoRetry;
             }
 
-            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            Routing.PartitionKeyRangeCache partitionKeyRangeCache = await containerCore.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<Documents.PartitionKeyRange> resolvedRanges = await this.TryGetOverlappingRangesAsync(partitionKeyRangeCache, this.CurrentToken.Range.Min, this.CurrentToken.Range.Max, forceRefresh: true);
             if (resolvedRanges.Count > 0)
             {
@@ -317,6 +318,7 @@ namespace Microsoft.Azure.Cosmos
                     max,
                     isMaxInclusive: false,
                     isMinInclusive: true),
+                NoOpTrace.Singleton,
                 forceRefresh);
 
             if (keyRanges.Count == 0)

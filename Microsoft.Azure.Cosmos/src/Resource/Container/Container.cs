@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary>
     /// Operations for reading, replacing, or deleting a specific, existing container or item in a container by id.
@@ -631,7 +632,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
-#if INTERNAL
+#if PREVIEW
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -690,7 +691,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -722,7 +723,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
-            ItemRequestOptions requestOptions = null,
+            PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 #endif
 
@@ -862,7 +863,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
@@ -979,7 +980,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost);
         ///         }
@@ -1005,7 +1006,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
@@ -1032,6 +1033,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
+        /// <param name="linqSerializerOptions">(Optional) The options to configure Linq Serializer Properties. This overrides properties in CosmosSerializerOptions while creating client</param>
         /// <returns>(Optional) An IOrderedQueryable{T} that can evaluate the query.</returns>
         /// <example>
         /// 1. This example below shows LINQ query generation and blocked execution.
@@ -1086,9 +1088,9 @@ namespace Microsoft.Azure.Cosmos
         ///     //Asynchronous query execution
         ///     while (setIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
-        ///             Console.WriteLine(item.cost); 
+        ///             Console.WriteLine(item.Price); 
         ///         }
         ///     }
         /// }
@@ -1098,10 +1100,12 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
         /// </remarks>
+        /// <seealso cref="CosmosSerializationOptions"/>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
-            QueryRequestOptions requestOptions = null);
+            QueryRequestOptions requestOptions = null,
+            CosmosLinqSerializerOptions linqSerializerOptions = null);
 
         /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
@@ -1149,7 +1153,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangesEstimationHandler estimationDelegate,
             TimeSpan? estimationPeriod = null);
-#if PREVIEW
+
         /// <summary>
         /// Gets a <see cref="ChangeFeedEstimator"/> for change feed monitoring.
         /// </summary>
@@ -1162,7 +1166,6 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedEstimator GetChangeFeedEstimator(
             string processorName,
             Container leaseContainer);
-#endif
 
         /// <summary>
         /// Initializes a new instance of <see cref="TransactionalBatch"/>
@@ -1204,6 +1207,7 @@ namespace Microsoft.Azure.Cosmos
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
         /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#stream-api</exception>
@@ -1220,6 +1224,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
         ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
@@ -1242,12 +1247,14 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
         /// <param name="changeFeedStartFrom">Where to start the changefeed from.</param>
+        /// <param name="changeFeedMode">Defines the mode on which to consume the change feed.</param>
         /// <param name="changeFeedRequestOptions">(Optional) The options for the Change Feed consumption.</param>
         /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
@@ -1264,6 +1271,7 @@ namespace Microsoft.Azure.Cosmos
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
         ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedMode.Incremental,
         ///     options);
         /// while (feedIterator.HasMoreResults)
         /// {
@@ -1282,6 +1290,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An iterator to go through the Change Feed.</returns>
         public abstract FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
         /// <summary>
@@ -1383,7 +1392,7 @@ namespace Microsoft.Azure.Cosmos
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync()){
+        ///         foreach(var item in await feedIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }

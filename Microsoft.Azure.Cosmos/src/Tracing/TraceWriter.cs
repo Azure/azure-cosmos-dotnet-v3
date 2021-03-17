@@ -4,12 +4,16 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
 
     internal static partial class TraceWriter
     {
+        private static readonly Dictionary<string, string> FilePathToName = new Dictionary<string, string>();
+
         public static void WriteTrace(
             TextWriter writer,
             ITrace trace,
@@ -55,6 +59,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
             Classic,
             ClassicRounded,
             ExclamationMarks,
+        }
+
+        public static string GetFileNameFromPath(string filePath)
+        {
+            if (!FilePathToName.TryGetValue(filePath, out string fileName))
+            {
+                fileName = filePath.Split('\\').Last();
+                FilePathToName[filePath] = fileName;
+            }
+
+            return fileName;
         }
     }
 }

@@ -65,12 +65,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                         throw tryInitializeContainerRId.Exception.InnerException;
                     }
 
-                    this.partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                    this.partitionKeyRangeCache = await this.monitoredContainer.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
                 }
 
                 PartitionKeyRange partitionKeyRange = await this.partitionKeyRangeCache.TryGetPartitionKeyRangeByIdAsync(
                     this.lazyContainerRid.Result.Result, 
-                    lease.CurrentLeaseToken);
+                    lease.CurrentLeaseToken,
+                    NoOpTrace.Singleton);
 
                 if (partitionKeyRange != null)
                 {
@@ -263,7 +264,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
             try
             {
-                string containerRId = await this.monitoredContainer.GetCachedRIDAsync(forceRefresh: false, cancellationToken: cancellationToken);
+                string containerRId = await this.monitoredContainer.GetCachedRIDAsync(
+                    forceRefresh: false,
+                    NoOpTrace.Singleton,
+                    cancellationToken: cancellationToken);
                 return TryCatch<string>.FromResult(containerRId);
             }
             catch (CosmosException cosmosException)

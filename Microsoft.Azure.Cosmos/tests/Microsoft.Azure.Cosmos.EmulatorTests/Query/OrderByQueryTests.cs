@@ -15,6 +15,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -91,20 +92,22 @@
         {
             string partitionKey = testArg;
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
-            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
 
             ContainerProperties containerSettings = await container.ReadContainerAsync();
             foreach (CosmosObject document in documents)
             {
-                IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
-                containerSettings.ResourceId,
-                Range<string>.GetPointRange(
-                    PartitionKeyInternal.FromObjectArray(
-                        new object[]
-                        {
-                            Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
-                        },
-                        true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)));
+                IReadOnlyList<PartitionKeyRange> targetRanges = await routingMapProvider
+                    .TryGetOverlappingRangesAsync(
+                        containerSettings.ResourceId,
+                        Range<string>.GetPointRange(
+                            PartitionKeyInternal.FromObjectArray(
+                                new object[]
+                                {
+                                    Number64.ToLong((document[partitionKey] as CosmosNumber).Value)
+                                },
+                                strict: true).GetEffectivePartitionKeyString(containerSettings.PartitionKey)),
+                        NoOpTrace.Singleton);
                 Debug.Assert(targetRanges.Count == 1);
                 idToRangeMinKeyMap.Add(((CosmosString)document["id"]).Value, targetRanges[0].MinInclusive);
             }
@@ -267,7 +270,7 @@
 
                                     double time = (DateTime.Now - startTime).TotalMilliseconds;
 
-                                    Trace.TraceInformation("<Query>: {0}, <Document Count>: {1}, <MaxItemCount>: {2}, <MaxDegreeOfParallelism>: {3}, <MaxBufferedItemCount>: {4}, <Time>: {5} ms",
+                                    System.Diagnostics.Trace.TraceInformation("<Query>: {0}, <Document Count>: {1}, <MaxItemCount>: {2}, <MaxDegreeOfParallelism>: {3}, <MaxBufferedItemCount>: {4}, <Time>: {5} ms",
                                         JsonConvert.SerializeObject(querySpec),
                                         actualDocuments.Count(),
                                         maxItemCount,
@@ -716,7 +719,7 @@
                             bool isDesc;
                             foreach (Cosmos.CompositePath compositePath in compositeIndex)
                             {
-                                isDesc = compositePath.Order == Cosmos.CompositePathSortOrder.Descending ? true : false;
+                                isDesc = compositePath.Order == Cosmos.CompositePathSortOrder.Descending;
                                 if (invert)
                                 {
                                     isDesc = !isDesc;

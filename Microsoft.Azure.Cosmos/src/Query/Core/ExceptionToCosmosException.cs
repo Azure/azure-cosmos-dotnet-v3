@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class ExceptionToCosmosException
     {
@@ -48,14 +49,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
 
             return CosmosExceptionFactory.CreateInternalServerErrorException(
-                subStatusCode: default,
                 message: exception.Message,
                 stackTrace: exception.StackTrace,
-                activityId: EmptyGuidString,
-                requestCharge: 0,
-                retryAfter: null,
-                headers: null,
-                diagnosticsContext: null,
+                headers: new Headers()
+                {
+                    ActivityId = EmptyGuidString,
+                },
+                trace: NoOpTrace.Singleton,
                 innerException: exception);
         }
 
@@ -80,14 +80,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(exceptionWithStackTrace.InnerException);
             return CosmosExceptionFactory.Create(
                 cosmosException.StatusCode,
-                cosmosException.SubStatusCode,
                 cosmosException.Message,
                 exceptionWithStackTrace.StackTrace,
-                cosmosException.ActivityId,
-                cosmosException.RequestCharge,
-                cosmosException.RetryAfter,
-                cosmosException.Headers,
-                cosmosException.DiagnosticsContext,
+                headers: cosmosException.Headers,
+                cosmosException.Trace,
                 cosmosException.Error,
                 cosmosException.InnerException);
         }
@@ -102,15 +98,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
             public override CosmosException Visit(MalformedContinuationTokenException malformedContinuationTokenException) => CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedContinuationTokenException.Message,
+                    headers: new Headers(),
                     stackTrace: malformedContinuationTokenException.StackTrace,
                     innerException: malformedContinuationTokenException);
 
             public override CosmosException Visit(UnexpectedQueryPartitionProviderException unexpectedQueryPartitionProviderException) => CosmosExceptionFactory.CreateInternalServerErrorException(
                     message: $"{nameof(CosmosException)} due to {nameof(UnexpectedQueryPartitionProviderException)}",
+                    headers: new Headers(),
                     innerException: unexpectedQueryPartitionProviderException);
 
             public override CosmosException Visit(ExpectedQueryPartitionProviderException expectedQueryPartitionProviderException) => CosmosExceptionFactory.CreateBadRequestException(
                     message: expectedQueryPartitionProviderException.Message,
+                    headers: new Headers(),
                     stackTrace: expectedQueryPartitionProviderException.StackTrace,
                     innerException: expectedQueryPartitionProviderException);
         }
@@ -126,6 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             internal override CosmosException Visit(
                 MalformedChangeFeedContinuationTokenException malformedChangeFeedContinuationTokenException) => CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedChangeFeedContinuationTokenException.Message,
+                    headers: new Headers(),
                     stackTrace: malformedChangeFeedContinuationTokenException.StackTrace,
                     innerException: malformedChangeFeedContinuationTokenException);
         }

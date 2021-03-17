@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private readonly QueryRequestOptions cosmosQueryRequestOptions;
         private readonly bool allowSynchronousQueryExecution = false;
         private readonly string continuationToken;
-        private readonly CosmosSerializationOptions serializationOptions;
+        private readonly CosmosLinqSerializerOptions linqSerializationOptions;
 
         public CosmosLinqQuery(
            ContainerInternal container,
@@ -41,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Linq
            QueryRequestOptions cosmosQueryRequestOptions,
            Expression expression,
            bool allowSynchronousQueryExecution,
-           CosmosSerializationOptions serializationOptions = null)
+           CosmosLinqSerializerOptions linqSerializationOptions = null)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.Expression = expression ?? Expression.Constant(this);
             this.allowSynchronousQueryExecution = allowSynchronousQueryExecution;
             this.correlatedActivityId = Guid.NewGuid();
-            this.serializationOptions = serializationOptions;
+            this.linqSerializationOptions = linqSerializationOptions;
 
             this.queryProvider = new CosmosLinqQueryProvider(
               container,
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Linq
               cosmosQueryRequestOptions,
               this.allowSynchronousQueryExecution,
               this.queryClient.OnExecuteScalarQueryCallback,
-              this.serializationOptions);
+              this.linqSerializationOptions);
         }
 
         public CosmosLinqQuery(
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Linq
           string continuationToken,
           QueryRequestOptions cosmosQueryRequestOptions,
           bool allowSynchronousQueryExecution,
-          CosmosSerializationOptions serializationOptions = null)
+          CosmosLinqSerializerOptions linqSerializerOptions = null)
             : this(
               container,
               responseFactory,
@@ -80,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Linq
               cosmosQueryRequestOptions,
               null,
               allowSynchronousQueryExecution,
-              serializationOptions)
+              linqSerializerOptions)
         {
         }
 
@@ -132,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public override string ToString()
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
             if (querySpec != null)
             {
                 return JsonConvert.SerializeObject(querySpec);
@@ -143,18 +144,20 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public QueryDefinition ToQueryDefinition(IDictionary<object, string> parameters = null)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions, parameters);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions, parameters);
             return QueryDefinition.CreateFromQuerySpec(querySpec);
         }
 
         public FeedIterator<T> ToFeedIterator()
         {
-            return new FeedIteratorInlineCore<T>(this.CreateFeedIterator(true));
+            return new FeedIteratorInlineCore<T>(this.CreateFeedIterator(true),
+                                                 this.container.ClientContext);
         }
 
         public FeedIterator ToStreamIterator()
         {
-            return new FeedIteratorInlineCore(this.CreateStreamIterator(true));
+            return new FeedIteratorInlineCore(this.CreateStreamIterator(true),
+                                              this.container.ClientContext);
         }
 
         public void Dispose()
@@ -175,45 +178,32 @@ namespace Microsoft.Azure.Cosmos.Linq
         internal async Task<Response<T>> AggregateResultAsync(CancellationToken cancellationToken = default)
         {
             List<T> result = new List<T>();
-            CosmosDiagnosticsContext diagnosticsContext = null;
             Headers headers = new Headers();
-            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(false);
-            while (localFeedIterator.HasMoreResults)
+
+            FeedIterator<T> localFeedIterator = this.CreateFeedIterator(isContinuationExpected: false);
+            FeedIteratorInternal<T> localFeedIteratorInternal = (FeedIteratorInternal<T>)localFeedIterator;
+
+            ITrace rootTrace;
+            using (rootTrace = Trace.GetRootTrace("Aggregate LINQ Operation"))
             {
-                FeedResponse<T> response = await localFeedIterator.ReadNextAsync(cancellationToken);
-                headers.RequestCharge += response.RequestCharge;
-
-                // If the first page has a diagnostic context use that. Else create a new one and add the diagnostic to it.
-                if (response.Diagnostics is CosmosDiagnosticsCore diagnosticsCore)
+                while (localFeedIterator.HasMoreResults)
                 {
-                    if (diagnosticsContext == null)
-                    {
-                        diagnosticsContext = diagnosticsCore.Context;
-                    }
-                    else
-                    {
-                        diagnosticsContext.AddDiagnosticsInternal(diagnosticsCore.Context);
-                    }
-
+                    FeedResponse<T> response = await localFeedIteratorInternal.ReadNextAsync(rootTrace, cancellationToken);
+                    headers.RequestCharge += response.RequestCharge;
+                    result.AddRange(response);
                 }
-                else
-                {
-                    throw new ArgumentException($"Invalid diagnostic object {response.Diagnostics.GetType().FullName}");
-                }
-
-                result.AddRange(response);
             }
 
             return new ItemResponse<T>(
                 System.Net.HttpStatusCode.OK,
                 headers,
                 result.FirstOrDefault(),
-                diagnosticsContext.Diagnostics);
+                rootTrace);
         }
 
         private FeedIteratorInternal CreateStreamIterator(bool isContinuationExcpected)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
 
             return this.container.GetItemQueryStreamIteratorInternal(
                 sqlQuerySpec: querySpec,
@@ -223,14 +213,15 @@ namespace Microsoft.Azure.Cosmos.Linq
                 requestOptions: this.cosmosQueryRequestOptions);
         }
 
-        private FeedIterator<T> CreateFeedIterator(bool isContinuationExcpected)
+        private FeedIterator<T> CreateFeedIterator(bool isContinuationExpected)
         {
-            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.serializationOptions);
+            SqlQuerySpec querySpec = DocumentQueryEvaluator.Evaluate(this.Expression, this.linqSerializationOptions);
 
-            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExcpected);
+            FeedIteratorInternal streamIterator = this.CreateStreamIterator(isContinuationExpected);
             return new FeedIteratorInlineCore<T>(new FeedIteratorCore<T>(
                 streamIterator,
-                this.responseFactory.CreateQueryFeedUserTypeResponse<T>));
+                this.responseFactory.CreateQueryFeedUserTypeResponse<T>),
+                this.container.ClientContext);
         }
     }
 }

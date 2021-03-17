@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class DocumentQueryClient : IDocumentQueryClient
@@ -76,12 +77,12 @@ namespace Microsoft.Azure.Cosmos.Query
 
         async Task<CollectionCache> IDocumentQueryClient.GetCollectionCacheAsync()
         {
-            return await this.innerClient.GetCollectionCacheAsync();
+            return await this.innerClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
         }
 
         async Task<IRoutingMapProvider> IDocumentQueryClient.GetRoutingMapProviderAsync()
         {
-            return await this.innerClient.GetPartitionKeyRangeCacheAsync();
+            return await this.innerClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
 
         public Task<QueryPartitionProvider> GetQueryPartitionProviderAsync()
@@ -117,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
         {
-            return this.innerClient.GetPartitionKeyRangeCacheAsync();
+            return this.innerClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
     }
 }

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// FeedRange that represents an effective partition key range.
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos
         internal override Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            ITrace trace)
         {
             return Task.FromResult(new List<Documents.Routing.Range<string>>() { this.Range });
         }
@@ -41,9 +43,14 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace trace)
         {
-            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(containerRid, this.Range, forceRefresh: false);
+            IReadOnlyList<Documents.PartitionKeyRange> partitionKeyRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                containerRid, 
+                this.Range,
+                trace,
+                forceRefresh: false);
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 
