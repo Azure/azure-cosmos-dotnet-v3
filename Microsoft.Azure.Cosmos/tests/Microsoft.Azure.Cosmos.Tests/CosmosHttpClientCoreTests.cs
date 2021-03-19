@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Sockets;
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     [TestClass]
     public class CosmosHttpClientCoreTests
@@ -44,7 +45,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ResourceType.Collection,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
                 NoOpTrace.Singleton,
-                default);
+                default,
+                new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow));
 
             Assert.AreEqual(httpRequestMessage, responseMessage.RequestMessage);
         }
@@ -114,7 +116,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: currentTimeoutPolicy.Key,
                         trace: NoOpTrace.Singleton,
-                        cancellationToken: default);
+                        cancellationToken: default,
+                        new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow));
 
                 Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
             }
@@ -167,7 +170,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     resourceType: ResourceType.Document,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                     trace: NoOpTrace.Singleton,
-                    cancellationToken: default);
+                    cancellationToken: default,
+                    new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow));
 
             Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
         }

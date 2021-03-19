@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Net;
+    using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Documents;
 
@@ -31,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContactedWithName = new HashSet<(string, Uri)>();
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
+            this.HttpResponseStatisticsList = new List<HttpResponseStatistics>();
         }
 
         public DateTime RequestStartTimeUtc { get; }
@@ -44,6 +47,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public List<Uri> ContactedReplicas { get; set; }
 
         public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
+
+        public List<HttpResponseStatistics> HttpResponseStatisticsList { get; }
 
         public HashSet<Uri> FailedReplicas { get; }
 
@@ -202,6 +207,46 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
+        public void RecordHttpResponse(HttpRequestMessage request, 
+                                       HttpResponseMessage response, 
+                                       ResourceType resourceType,
+                                       DateTime requestStartTimeUtc)
+        {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
+            {
+                this.RequestEndTimeUtc = requestEndTimeUtc;
+            }
+
+            this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                                                                           requestEndTimeUtc,
+                                                                           request.RequestUri,
+                                                                           request.Method,
+                                                                           resourceType,
+                                                                           response,
+                                                                           exception: null));
+        }
+
+        public void RecordHttpException(HttpRequestMessage request,
+                                       Exception exception,
+                                       ResourceType resourceType,
+                                       DateTime requestStartTimeUtc)
+        {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
+            {
+                this.RequestEndTimeUtc = requestEndTimeUtc;
+            }
+
+            this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                                                                           requestEndTimeUtc,
+                                                                           request.RequestUri,
+                                                                           request.Method,
+                                                                           resourceType,
+                                                                           responseMessage: null,
+                                                                           exception: exception));
+        }
+
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
@@ -255,6 +300,35 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public OperationType RequestOperationType { get; }
             public Uri LocationEndpoint { get; }
             public bool IsSupplementalResponse { get; }
+        }
+
+        public sealed class HttpResponseStatistics
+        {
+            public HttpResponseStatistics(
+                DateTime requestStartTime,
+                DateTime requestEndTime,
+                Uri requestUri,
+                HttpMethod httpMethod,
+                ResourceType resourceType,
+                HttpResponseMessage responseMessage,
+                Exception exception)
+            {
+                this.RequestStartTime = requestStartTime;
+                this.RequestEndTime = requestEndTime;
+                this.HttpResponseMessage = responseMessage;
+                this.Exception = exception;
+                this.ResourceType = resourceType;
+                this.HttpMethod = httpMethod;
+                this.RequestUri = requestUri;
+            }
+
+            public DateTime RequestStartTime { get; }
+            public DateTime RequestEndTime { get; }
+            public HttpResponseMessage HttpResponseMessage { get; }
+            public Exception Exception { get; }
+            public ResourceType ResourceType { get; }
+            public HttpMethod HttpMethod { get; }
+            public Uri RequestUri { get; }
         }
     }
 }

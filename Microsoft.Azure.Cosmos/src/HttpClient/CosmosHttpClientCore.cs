@@ -170,6 +170,7 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             ITrace trace,
+            IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken)
         {
             if (uri == null)
@@ -201,7 +202,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 trace,
-                cancellationToken);
+                cancellationToken,
+                clientSideRequestStatistics);
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(
@@ -209,7 +211,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             ITrace trace,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            IClientSideRequestStatistics clientSideRequestStatistics)
         {
             if (createRequestMessageAsync == null)
             {
@@ -221,7 +224,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 trace,
-                cancellationToken);
+                cancellationToken,
+                clientSideRequestStatistics);
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
@@ -229,7 +233,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             ITrace trace,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            IClientSideRequestStatistics clientSideRequestStatistics)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
@@ -249,10 +254,17 @@ namespace Microsoft.Azure.Cosmos
                     {
                         try
                         {
-                            return await this.ExecuteHttpHelperAsync(
+                            HttpResponseMessage responseMessage = await this.ExecuteHttpHelperAsync(
                                 requestMessage,
                                 resourceType,
                                 cancellationTokenSource.Token);
+
+                            if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
+                            {
+                                datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, startDateTimeUtc);
+                            }
+
+                            return responseMessage;
                         }
                         catch (Exception e)
                         {
@@ -270,6 +282,11 @@ namespace Microsoft.Azure.Cosmos
                                       requestUri: requestMessage.RequestUri.OriginalString,
                                       requestSessionToken: null,
                                       responseSessionToken: null));
+
+                            if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
+                            {
+                                datum.RecordHttpException(requestMessage, e, resourceType, startDateTimeUtc);
+                            }
 
                             bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
                                 !timeoutEnumerator.MoveNext(); // No more retries are configured

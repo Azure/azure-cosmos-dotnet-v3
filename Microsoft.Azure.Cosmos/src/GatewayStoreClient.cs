@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
             Func<ValueTask<HttpRequestMessage>> requestMessage,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
+            IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken = default)
         {
             return this.httpClient.SendHttpAsync(
@@ -84,7 +85,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType,
                 timeoutPolicy: timeoutPolicy,
                 trace: NoOpTrace.Singleton,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                clientSideRequestStatistics: clientSideRequestStatistics);
         }
 
         internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
@@ -333,7 +335,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 NoOpTrace.Singleton,
-                cancellationToken);
+                cancellationToken,
+                request.RequestContext.ClientRequestStatistics);
         }
     }
 }

@@ -433,6 +433,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 resourceType: resourceType,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                 trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =
@@ -511,6 +512,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 resourceType: ResourceType.Document,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                 trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                 cancellationToken: default))
             {
                 using (DocumentServiceResponse documentServiceResponse =
