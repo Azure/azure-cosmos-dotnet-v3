@@ -506,8 +506,31 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(onChangesDelegate));
             }
 
-            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate);
-            ChangeFeedProcessorCore<T> changeFeedProcessor = new ChangeFeedProcessorCore<T>(observerFactory);
+            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
+            return new ChangeFeedProcessorBuilder(
+                processorName: processorName,
+                container: this,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangesStreamHandler onChangesDelegate)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
+
+            ChangeFeedObserverFactoryCore observerFactory = new ChangeFeedObserverFactoryCore(onChangesDelegate);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
                 container: this,

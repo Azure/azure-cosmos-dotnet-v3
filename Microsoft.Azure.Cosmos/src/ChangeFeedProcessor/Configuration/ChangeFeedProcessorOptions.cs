@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
-    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore{T}"/> instance.
+    /// Options to control various aspects of partition distribution happening within <see cref="ChangeFeedProcessorCore"/> instance.
     /// </summary>
     internal class ChangeFeedProcessorOptions
     {

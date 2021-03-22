@@ -5,14 +5,14 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     /// <summary>
-    /// Factory class used to create instance(s) of <see cref="ChangeFeedObserver{T}"/>.
+    /// Factory class used to create instance(s) of <see cref="ChangeFeedObserver"/>.
     /// </summary>
-    internal abstract class ChangeFeedObserverFactory<T>
+    internal abstract class ChangeFeedObserverFactory
     {
         /// <summary>
-        /// Creates an instance of a <see cref="ChangeFeedObserver{T}"/>.
+        /// Creates an instance of a <see cref="ChangeFeedObserver"/>.
         /// </summary>
-        /// <returns>An instance of a <see cref="ChangeFeedObserver{T}"/>.</returns>
-        public abstract ChangeFeedObserver<T> CreateObserver();
+        /// <returns>An instance of a <see cref="ChangeFeedObserver"/>.</returns>
+        public abstract ChangeFeedObserver CreateObserver();
     }
 }

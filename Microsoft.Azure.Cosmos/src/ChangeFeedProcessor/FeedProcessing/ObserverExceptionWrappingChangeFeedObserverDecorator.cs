@@ -5,19 +5,19 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
-    using System.Collections.Generic;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
-    internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator<T> : ChangeFeedObserver<T>
+    internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator : ChangeFeedObserver
     {
-        private ChangeFeedObserver<T> changeFeedObserver;
+        private readonly ChangeFeedObserver changeFeedObserver;
 
-        public ObserverExceptionWrappingChangeFeedObserverDecorator(ChangeFeedObserver<T> changeFeedObserver)
+        public ObserverExceptionWrappingChangeFeedObserverDecorator(ChangeFeedObserver changeFeedObserver)
         {
-            this.changeFeedObserver = changeFeedObserver;
+            this.changeFeedObserver = changeFeedObserver ?? throw new ArgumentNullException(nameof(changeFeedObserver));
         }
 
         public override async Task CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason)
@@ -48,11 +48,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, IReadOnlyCollection<T> docs, CancellationToken cancellationToken)
+        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, Stream stream, CancellationToken cancellationToken)
         {
             try
             {
-                await this.changeFeedObserver.ProcessChangesAsync(context, docs, cancellationToken).ConfigureAwait(false);
+                await this.changeFeedObserver.ProcessChangesAsync(context, stream, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception userException)
             {

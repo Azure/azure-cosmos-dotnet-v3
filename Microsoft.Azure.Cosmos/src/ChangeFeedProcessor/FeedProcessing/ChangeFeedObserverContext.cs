@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Threading.Tasks;
 
     /// <summary>
-    /// Represents the context passed to <see cref="ChangeFeedObserver{T}"/> events.
+    /// Represents the context passed to <see cref="ChangeFeedObserver"/> events.
     /// </summary>
     internal abstract class ChangeFeedObserverContext
     {

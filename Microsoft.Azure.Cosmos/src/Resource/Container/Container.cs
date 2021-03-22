@@ -1119,6 +1119,16 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangesStreamHandler(
+            Stream changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Delegate to receive the estimation of pending changes to be read by the associated <see cref="ChangeFeedProcessor"/> instance.
         /// </summary>
         /// <param name="estimatedPendingChanges">An estimation in number of items.</param>
@@ -1138,6 +1148,16 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangesStreamHandler onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.
