@@ -62,7 +62,6 @@ namespace Microsoft.Azure.Cosmos
                 additionalHeaders: new StoreRequestNameValueCollection(),
                 resourceType: ResourceType.Document,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                trace: NoOpTrace.Singleton,
                 clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow),
                 cancellationToken: default);
 

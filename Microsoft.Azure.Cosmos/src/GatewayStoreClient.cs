@@ -84,7 +84,6 @@ namespace Microsoft.Azure.Cosmos
                 createRequestMessageAsync: requestMessage,
                 resourceType: resourceType,
                 timeoutPolicy: timeoutPolicy,
-                trace: NoOpTrace.Singleton,
                 cancellationToken: cancellationToken,
                 clientSideRequestStatistics: clientSideRequestStatistics);
         }
@@ -334,7 +333,6 @@ namespace Microsoft.Azure.Cosmos
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
-                NoOpTrace.Singleton,
                 cancellationToken,
                 request.RequestContext.ClientRequestStatistics);
         }

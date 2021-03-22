@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            ITrace trace,
             IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken);
 
@@ -30,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            ITrace trace,
             CancellationToken cancellationToken,
             IClientSideRequestStatistics clientSideRequestStatistics);
 

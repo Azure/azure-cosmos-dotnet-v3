@@ -44,7 +44,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ValueTask<HttpRequestMessage>(httpRequestMessage),
                 ResourceType.Collection,
                 timeoutPolicy: HttpTimeoutPolicyDefault.Instance,
-                NoOpTrace.Singleton,
                 default,
                 new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow));
 
@@ -115,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                         result: new HttpRequestMessage(HttpMethod.Get, new Uri("http://localhost"))),
                         resourceType: ResourceType.Collection,
                         timeoutPolicy: currentTimeoutPolicy.Key,
-                        trace: NoOpTrace.Singleton,
                         cancellationToken: default,
                         new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow));
 
@@ -169,7 +167,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
                     resourceType: ResourceType.Document,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                    trace: NoOpTrace.Singleton,
                     cancellationToken: default,
                     new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow));
 
