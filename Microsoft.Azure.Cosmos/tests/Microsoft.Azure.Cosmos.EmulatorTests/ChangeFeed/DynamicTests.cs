@@ -46,8 +46,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
+                    this.ValidateContext(context);
                     processedDocCount += docs.Count();
                     foreach (dynamic doc in docs)
                     {
@@ -79,6 +80,61 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         }
 
         [TestMethod]
+        public async Task TestWithRunningProcessor_WithManualCheckpoint()
+        {
+            int partitionKey = 0;
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            int processedDocCount = 0;
+            string accumulator = string.Empty;
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", async (ChangeFeedProcessorContextWithManualCheckpoint context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                {
+                    this.ValidateContext(context);
+                    processedDocCount += docs.Count();
+                    foreach (dynamic doc in docs)
+                    {
+                        accumulator += doc.id.ToString() + ".";
+                    }
+
+                    if (processedDocCount == 3)
+                    {
+                        // Throwing on the 3rd document, since we checkpointed only on the 1st, we would repeat 2nd and 3rd
+                        throw new Exception("Stop here");
+                    }
+
+                    if (processedDocCount == 1) {
+                        // Checkpointing on the first document to be able to have a point to rollback to
+                        (bool isSuccess, CosmosException exception) = await context.TryCheckpointAsync();
+                        Assert.IsTrue(isSuccess);
+                        Assert.IsNull(exception);
+                    }
+
+                    if (processedDocCount == 12)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                })
+                .WithInstanceName("random")
+                .WithMaxItems(1)
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            // Start the processor, insert 1 document to generate a checkpoint
+            await processor.StartAsync();
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            foreach (int id in Enumerable.Range(0, 10))
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString(), pk = partitionKey });
+            }
+
+            bool isStartOk = allDocsProcessed.WaitOne(30 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
+            Assert.AreEqual("0.1.2.1.2.3.4.5.6.7.8.9.", accumulator);
+        }
+
+        [TestMethod]
         public async Task TestWithFixedLeaseContainer()
         {
             await NonPartitionedContainerHelper.CreateNonPartitionedContainer(
@@ -96,8 +152,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 int processedDocCount = 0;
                 string accumulator = string.Empty;
                 ChangeFeedProcessor processor = this.Container
-                    .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                    .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                     {
+                        this.ValidateContext(context);
                         processedDocCount += docs.Count();
                         foreach (dynamic doc in docs)
                         {
@@ -156,8 +213,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
+                    this.ValidateContext(context);
                     processedDocCount += docs.Count();
                     foreach (dynamic doc in docs)
                     {
@@ -211,8 +269,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
+                    this.ValidateContext(context);
                     Assert.IsTrue(docs.Count > 0);
                     processedDocCount += docs.Count;
                     foreach (dynamic doc in docs)
@@ -265,8 +324,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
                 {
+                    this.ValidateContext(context);
                     Assert.IsTrue(docs.Count > 0);
                     processedDocCount += docs.Count;
                     foreach (dynamic doc in docs)
@@ -291,6 +351,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
             Assert.AreEqual("doc5.doc6.doc7.doc8.doc9.", accumulator);
+        }
+
+        private void ValidateContext(ChangeFeedProcessorContext changeFeedProcessorContext)
+        {
+            Assert.IsNotNull(changeFeedProcessorContext.LeaseToken);
+            Assert.IsNotNull(changeFeedProcessorContext.Diagnostics);
+            Assert.IsNotNull(changeFeedProcessorContext.Headers);
+            Assert.IsTrue(changeFeedProcessorContext.Headers.RequestCharge > 0);
         }
     }
 }
