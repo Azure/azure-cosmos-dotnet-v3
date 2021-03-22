@@ -159,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
+            bool allowDCount,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -166,12 +167,13 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync();
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
-                this.QuerySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey);
+                querySpec: this.QuerySpec,
+                partitionKeyDefinition: partitionKeyDefinition,
+                requireFormattableOrderByQuery: requireFormattableOrderByQuery,
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                hasLogicalPartitionKey: hasLogicalPartitionKey,
+                allowDCount: allowDCount);
             if (!tryGetPartitionedQueryExecutionInfo.Succeeded)
             {
                 throw new BadRequestException(tryGetPartitionedQueryExecutionInfo.Exception);

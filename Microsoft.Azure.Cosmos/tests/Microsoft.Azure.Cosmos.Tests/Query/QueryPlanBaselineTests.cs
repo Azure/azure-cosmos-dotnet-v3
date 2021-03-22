@@ -1348,7 +1348,8 @@
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
 
             if (info.Failed)
             {
