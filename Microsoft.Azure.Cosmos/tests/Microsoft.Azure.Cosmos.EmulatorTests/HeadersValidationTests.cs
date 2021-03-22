@@ -981,7 +981,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                 true,
                 false);
-            IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
+            IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result;
             IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(collectionId, fullRange, NoOpTrace.Singleton).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collectionId, ranges.First().Id));
 
@@ -1001,7 +1001,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
                 true,
                 false);
-            IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync().Result;
+            IRoutingMapProvider routingMapProvider = client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton).Result;
             IReadOnlyList<PartitionKeyRange> ranges = routingMapProvider.TryGetOverlappingRangesAsync(collectionId, fullRange, NoOpTrace.Singleton).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collectionId, ranges.First().Id));
 
