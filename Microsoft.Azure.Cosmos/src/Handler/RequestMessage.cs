@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken)
+        internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken, ITrace trace)
         {
             if (this.IsMasterOperation())
             {
@@ -219,9 +219,9 @@ namespace Microsoft.Azure.Cosmos
 #if DEBUG
             try
             {
-                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
+                CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync(trace);
                 ContainerProperties collectionFromCache =
-                    await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken);
+                    await collectionCache.ResolveCollectionAsync(this.ToDocumentServiceRequest(), cancellationToken, trace);
                 if (collectionFromCache.PartitionKey?.Paths?.Count > 0)
                 {
                     Debug.Assert(this.AssertPartitioningPropertiesAndHeaders());
