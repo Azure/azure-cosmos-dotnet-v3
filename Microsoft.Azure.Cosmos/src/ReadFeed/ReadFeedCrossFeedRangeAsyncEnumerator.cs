@@ -51,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 documents,
                 innerReadFeedPage.Page.RequestCharge,
                 innerReadFeedPage.Page.ActivityId,
-                state);
+                state,
+                innerReadFeedPage.Page.AdditionalHeaders);
             this.Current = TryCatch<ReadFeedPage>.FromResult(page);
             return true;
         }

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     internal static class DocumentQueryEvaluator
     {
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static SqlQuerySpec Evaluate(
             Expression expression,
-            CosmosSerializationOptions serializationOptions = null,
+            CosmosLinqSerializerOptions linqSerializerOptions = null,
             IDictionary<object, string> parameters = null)
         {
             switch (expression.NodeType)
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case ExpressionType.Call:
                     {
-                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression, parameters, serializationOptions);
+                        return DocumentQueryEvaluator.HandleMethodCallExpression((MethodCallExpression)expression, parameters, linqSerializerOptions);
                     }
 
                 default:
@@ -75,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlQuerySpec HandleMethodCallExpression(
             MethodCallExpression expression,
             IDictionary<object, string> parameters,
-            CosmosSerializationOptions serializationOptions = null)
+            CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             if (DocumentQueryEvaluator.IsTransformExpression(expression))
             {
@@ -92,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 }
             }
 
-            return SqlTranslator.TranslateQuery(expression, serializationOptions, parameters);
+            return SqlTranslator.TranslateQuery(expression, linqSerializerOptions, parameters);
         }
 
         /// <summary>

@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesSize(int size)
         {
-            _ = new BatchAsyncBatcher(size, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            _ = new BatchAsyncBatcher(size, 1, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
         }
 
         [DataTestMethod]
@@ -327,34 +327,34 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(-1)]
         public void ValidatesByteSize(int size)
         {
-            _ = new BatchAsyncBatcher(1, size, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            _ = new BatchAsyncBatcher(1, size, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesExecutor()
         {
-            _ = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, null, this.Retrier);
+            _ = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, null, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesRetrier()
         {
-            _ = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, this.Executor, null);
+            _ = new BatchAsyncBatcher(1, 1, MockCosmosUtil.Serializer, this.Executor, null, BatchAsyncBatcherTests.MockClientContext());
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void ValidatesSerializer()
         {
-            _ = new BatchAsyncBatcher(1, 1, null, this.Executor, this.Retrier);
+            _ = new BatchAsyncBatcher(1, 1, null, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
         }
 
         [TestMethod]
         public void HasFixedSize()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(this.CreateItemBatchOperation(true)));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(this.CreateItemBatchOperation(true)));
             Assert.IsFalse(batchAsyncBatcher.TryAdd(this.CreateItemBatchOperation(true)));
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation itemBatchOperation = this.CreateItemBatchOperation(true);
             await itemBatchOperation.MaterializeResourceAsync(MockCosmosUtil.Serializer, default);
             // Each operation is 2 bytes
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(3, 4, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(itemBatchOperation));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(itemBatchOperation));
             Assert.IsFalse(batchAsyncBatcher.TryAdd(itemBatchOperation));
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ExceptionsFailOperationsAsync()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithFailure, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithFailure, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
             ItemBatchOperationContext context1 = new ItemBatchOperationContext(string.Empty);
@@ -395,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DispatchProcessInOrderAsync()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             List<ItemBatchOperation> operations = new List<ItemBatchOperation>(10);
             for (int i = 0; i < 10; i++)
             {
@@ -425,8 +425,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task DispatchWithLessResponses()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.ExecutorWithLessResponses, this.Retrier);
-            BatchAsyncBatcher secondAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.ExecutorWithLessResponses, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
+            BatchAsyncBatcher secondAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             List<ItemBatchOperation> operations = new List<ItemBatchOperation>(10);
             for (int i = 0; i < 10; i++)
             {
@@ -479,14 +479,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void IsEmptyWithNoOperations()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(10, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.IsEmpty);
         }
 
         [TestMethod]
         public void IsNotEmptyWithOperations()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(this.CreateItemBatchOperation(true)));
             Assert.IsFalse(batchAsyncBatcher.IsEmpty);
         }
@@ -494,7 +494,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task CannotAddToDispatchedBatch()
         {
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             ItemBatchOperation operation = this.CreateItemBatchOperation();
             operation.AttachContext(new ItemBatchOperationContext(string.Empty));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
@@ -522,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithSplit, retryDelegate.Object);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithSplit, retryDelegate.Object, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
@@ -551,7 +551,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingSplit, retryDelegate.Object);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingSplit, retryDelegate.Object, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
@@ -580,7 +580,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingPartitionMigration, retryDelegate.Object);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithCompletingPartitionMigration, retryDelegate.Object, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
@@ -629,7 +629,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWith413, retryDelegate.Object);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWith413, retryDelegate.Object, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
@@ -658,7 +658,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
-            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWith413, retryDelegate.Object);
+            BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWith413, retryDelegate.Object, BatchAsyncBatcherTests.MockClientContext());
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
@@ -677,6 +677,21 @@ namespace Microsoft.Azure.Cosmos.Tests
             return container.Object;
         }
 
+        private static CosmosClientContext MockClientContext()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.OperationHelperAsync<object>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<object>>>(),
+                It.IsAny<TraceComponent>(),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<object>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+
+            return mockContext.Object;
+        }
+
         private class BatchAsyncBatcherThatOverflows : BatchAsyncBatcher
         {
             public BatchAsyncBatcherThatOverflows(
@@ -684,7 +699,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 int maxBatchByteSize,
                 CosmosSerializerCore serializerCore,
                 BatchAsyncBatcherExecuteDelegate executor,
-                BatchAsyncBatcherRetryDelegate retrier) : base(maxBatchOperationCount, maxBatchByteSize, serializerCore, executor, retrier)
+                BatchAsyncBatcherRetryDelegate retrier) : base(maxBatchOperationCount, maxBatchByteSize, serializerCore, executor, retrier, BatchAsyncBatcherTests.MockClientContext())
             {
 
             }
@@ -715,7 +730,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
             }
 
-            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
+            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
             {
                 return Task.FromResult(this.partitionKeyRangeCache.Object);
             }

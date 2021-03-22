@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         private static readonly string UpdateMessage = $"Please update the Microsoft.Azure.Cosmos.Performance.Tests\\Contracts\\{PerformanceValidation.BaselineBenchmarkResultsFileName} " +
             $" file by using the following results found at {PerformanceValidation.DirectoryPath}\\{PerformanceValidation.CurrentBenchmarkResultsFileName} or by using: ";
 
-        public static bool TryUpdateAllocatedMemoryAverage(IEnumerable<Summary> summaries, Dictionary<string, double> operationToMemoryAllocated)
+        public static bool TryUpdateAllocatedMemoryAverage(IEnumerable<Summary> summaries, SortedDictionary<string, double> operationToMemoryAllocated)
         {
             // If any of the operations have NA then something failed. Returning -1 will cause the gates to fail.
             foreach (Summary summary in summaries)
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return true;
         }
 
-        public static int ValidateSummaryResultsAgainstBaseline(Dictionary<string, double> operationToMemoryAllocated)
+        public static int ValidateSummaryResultsAgainstBaseline(SortedDictionary<string, double> operationToMemoryAllocated)
         {
             // Using dotnet run in the gates puts the current directory at the root of the github project rather than the execute folder.
             string currentDirectory = Directory.GetCurrentDirectory();
