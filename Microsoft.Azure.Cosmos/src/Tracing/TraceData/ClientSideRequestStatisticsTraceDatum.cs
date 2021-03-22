@@ -213,15 +213,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
-            DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
-
-            this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+            lock (this.lockObject)
+            {
+                DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
+                this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
                                                                            request.Method,
                                                                            resourceType,
                                                                            response,
                                                                            exception: null));
+            }
         }
 
         public void RecordHttpException(HttpRequestMessage request,
@@ -229,15 +231,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
-            DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
-
-            this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+            lock (this.lockObject)
+            {
+                DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
+                this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
                                                                            request.Method,
                                                                            resourceType,
                                                                            responseMessage: null,
                                                                            exception: exception));
+            }
         }
 
         private DateTime RecordHttpResponseEndTime()
