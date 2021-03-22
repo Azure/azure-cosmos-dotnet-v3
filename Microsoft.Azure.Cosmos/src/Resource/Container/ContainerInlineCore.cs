@@ -373,6 +373,20 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
         }
 
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate)
+        {
+            return base.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
+        {
+            return base.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
+        }
+
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
             ChangesStreamHandler onChangesDelegate)

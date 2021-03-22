@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.IO;
@@ -15,32 +15,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         public AutoCheckpointer(ChangeFeedObserver observer)
         {
-            if (observer == null)
-            {
-                throw new ArgumentNullException(nameof(observer));
-            }
-
-            this.observer = observer;
+            this.observer = observer ?? throw new ArgumentNullException(nameof(observer));
         }
 
-        public override Task OpenAsync(ChangeFeedObserverContext context)
+        public override Task OpenAsync(string leaseToken)
         {
-            return this.observer.OpenAsync(context);
+            return this.observer.OpenAsync(leaseToken);
         }
 
-        public override Task CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason)
+        public override Task CloseAsync(string leaseToken, ChangeFeedObserverCloseReason reason)
         {
-            return this.observer.CloseAsync(context, reason);
+            return this.observer.CloseAsync(leaseToken, reason);
         }
 
         public override async Task ProcessChangesAsync(
-            ChangeFeedObserverContext context,
+            ChangeFeedProcessorContext context,
             Stream stream,
             CancellationToken cancellationToken)
         {
             await this.observer.ProcessChangesAsync(context, stream, cancellationToken).ConfigureAwait(false);
 
-            await context.CheckpointAsync().ConfigureAwait(false);
+            ChangeFeedProcessorContextWithManualCheckpoint contextWithCheckpoint = context as ChangeFeedProcessorContextWithManualCheckpoint;
+            (bool isSuccess, CosmosException exception) = await contextWithCheckpoint.TryCheckpointAsync();
+            if (!isSuccess)
+            {
+                throw exception;
+            }
         }
     }
 }

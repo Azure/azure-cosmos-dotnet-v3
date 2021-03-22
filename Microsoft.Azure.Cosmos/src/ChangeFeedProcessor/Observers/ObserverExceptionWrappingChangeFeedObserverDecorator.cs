@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.IO;
@@ -20,11 +20,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             this.changeFeedObserver = changeFeedObserver ?? throw new ArgumentNullException(nameof(changeFeedObserver));
         }
 
-        public override async Task CloseAsync(ChangeFeedObserverContext context, ChangeFeedObserverCloseReason reason)
+        public override async Task CloseAsync(string leaseToken, ChangeFeedObserverCloseReason reason)
         {
             try
             {
-                await this.changeFeedObserver.CloseAsync(context, reason).ConfigureAwait(false);
+                await this.changeFeedObserver.CloseAsync(leaseToken, reason).ConfigureAwait(false);
             }
             catch (Exception userException)
             {
@@ -34,11 +34,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        public override async Task OpenAsync(ChangeFeedObserverContext context)
+        public override async Task OpenAsync(string leaseToken)
         {
             try
             {
-                await this.changeFeedObserver.OpenAsync(context).ConfigureAwait(false);
+                await this.changeFeedObserver.OpenAsync(leaseToken).ConfigureAwait(false);
             }
             catch (Exception userException)
             {
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
         }
 
-        public override async Task ProcessChangesAsync(ChangeFeedObserverContext context, Stream stream, CancellationToken cancellationToken)
+        public override async Task ProcessChangesAsync(ChangeFeedProcessorContext context, Stream stream, CancellationToken cancellationToken)
         {
             try
             {

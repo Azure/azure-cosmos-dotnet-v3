@@ -1113,7 +1113,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="changes">The changes that happened.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         public delegate Task ChangesHandler<T>(
             IReadOnlyCollection<T> changes,
             CancellationToken cancellationToken);
@@ -1121,10 +1120,36 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
         /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangeFeedHandler<T>(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
+            ChangeFeedProcessorContextWithManualCheckpoint context,
+            IReadOnlyCollection<T> changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
         /// <param name="changes">The changes that happened.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
         public delegate Task ChangesStreamHandler(
+            ChangeFeedProcessorContext context,
             Stream changes,
             CancellationToken cancellationToken);
 
@@ -1148,6 +1173,26 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing.

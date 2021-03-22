@@ -40,8 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 FeedPollDelay = this.changeFeedProcessorOptions.FeedPollDelay,
                 MaxItemCount = this.changeFeedProcessorOptions.MaxItemCount,
                 StartFromBeginning = this.changeFeedProcessorOptions.StartFromBeginning,
-                StartTime = this.changeFeedProcessorOptions.StartTime,
-                SessionToken = this.changeFeedProcessorOptions.SessionToken,
+                StartTime = this.changeFeedProcessorOptions.StartTime
             };
 
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);

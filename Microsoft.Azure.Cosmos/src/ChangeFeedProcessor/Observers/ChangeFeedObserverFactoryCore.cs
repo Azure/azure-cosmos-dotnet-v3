@@ -2,12 +2,11 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
@@ -30,14 +29,36 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
     internal sealed class ChangeFeedObserverFactoryCore<T> : ChangeFeedObserverFactory
     {
-        private readonly ChangesHandler<T> onChanges;
+        private readonly ChangesHandler<T> legacyOnChanges;
+        private readonly ChangeFeedHandler<T> onChanges;
+        private readonly ChangeFeedHandlerWithManualCheckpoint<T> onChangesWithManualCheckpoint;
         private readonly CosmosSerializerCore serializerCore;
 
         public ChangeFeedObserverFactoryCore(
             ChangesHandler<T> onChanges,
             CosmosSerializerCore serializerCore)
+            : this(serializerCore)
+        {
+            this.legacyOnChanges = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
+        }
+
+        public ChangeFeedObserverFactoryCore(
+            ChangeFeedHandler<T> onChanges,
+            CosmosSerializerCore serializerCore)
+            : this(serializerCore)
         {
             this.onChanges = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
+        }
+
+        public ChangeFeedObserverFactoryCore(
+            ChangeFeedHandlerWithManualCheckpoint<T> onChanges,
+            CosmosSerializerCore serializerCore)
+            : this(serializerCore)
+        {
+            this.onChangesWithManualCheckpoint = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
+        }
+        private ChangeFeedObserverFactoryCore(CosmosSerializerCore serializerCore)
+        {
             this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
         }
 
@@ -47,28 +68,42 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         }
 
         private Task ChangesStreamHandlerAsync(
-            Stream changes, 
+            ChangeFeedProcessorContext context,
+            Stream stream,
             CancellationToken cancellationToken)
         {
-            IReadOnlyCollection<T> asFeedResponse;
+            IReadOnlyCollection<T> changes = this.AsIReadOnlyCollection(stream);
+            if (changes.Count == 0)
+            {
+                return Task.CompletedTask;
+            }
+
+            if (this.legacyOnChanges != null)
+            {
+                return this.legacyOnChanges(changes, cancellationToken);
+            }
+
+            if (this.onChanges != null)
+            {
+                return this.onChanges(context, changes, cancellationToken);
+            }
+
+            return this.onChangesWithManualCheckpoint(context as ChangeFeedProcessorContextWithManualCheckpoint, changes, cancellationToken);
+        }
+
+        private IReadOnlyCollection<T> AsIReadOnlyCollection(Stream stream)
+        {
             try
             {
-                asFeedResponse = CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
+                return CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
                                     this.serializerCore,
-                                    changes);
-
-                if (!asFeedResponse.Any())
-                {
-                    return Task.CompletedTask;
-                }
+                                    stream);
             }
             catch (Exception serializationException)
             {
                 // Error using custom serializer to parse stream
                 throw new ObserverException(serializationException);
             }
-
-            return this.onChanges(asFeedResponse, cancellationToken);
         }
     }
 }

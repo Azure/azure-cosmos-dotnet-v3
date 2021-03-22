@@ -97,7 +97,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string containerRid,
             Routing.PartitionKeyRangeCache partitionKeyRangeCache)
         {
-            CheckpointerObserverFactory factory = new CheckpointerObserverFactory(this.observerFactory, this.changeFeedProcessorOptions.CheckpointFrequency);
             PartitionSynchronizerCore synchronizer = new PartitionSynchronizerCore(
                 this.monitoredContainer,
                 this.documentServiceLeaseStoreManager.LeaseContainer,
@@ -107,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 containerRid);
             BootstrapperCore bootstrapper = new BootstrapperCore(synchronizer, this.documentServiceLeaseStoreManager.LeaseStore, BootstrapperCore.DefaultLockTime, BootstrapperCore.DefaultSleepTime);
             PartitionSupervisorFactoryCore partitionSuperviserFactory = new PartitionSupervisorFactoryCore(
-                factory,
+                this.observerFactory,
                 this.documentServiceLeaseStoreManager.LeaseManager,
                 new FeedProcessorFactoryCore(this.monitoredContainer, this.changeFeedProcessorOptions, this.documentServiceLeaseStoreManager.LeaseCheckpointer),
                 this.changeFeedLeaseOptions);

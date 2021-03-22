@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (Stream stream, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                 {
                     IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 int processedDocCount = 0;
                 string accumulator = string.Empty;
                 ChangeFeedProcessor processor = this.Container
-                    .GetChangeFeedProcessorBuilder("test", (Stream stream, CancellationToken token) =>
+                    .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                     {
                         IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
 
@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (Stream stream, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                 {
                     IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
 
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (Stream stream, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                 {
                     IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
 

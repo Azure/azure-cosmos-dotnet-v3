@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
+namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     /// <summary>
     /// Factory class used to create instance(s) of <see cref="ChangeFeedObserver"/>.

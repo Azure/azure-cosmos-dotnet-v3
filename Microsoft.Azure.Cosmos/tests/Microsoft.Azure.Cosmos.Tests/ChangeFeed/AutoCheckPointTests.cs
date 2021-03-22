@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     public class AutoCheckPointTests
     {
         private readonly ChangeFeedObserver changeFeedObserver;
-        private readonly ChangeFeedObserverContext observerContext;
+        private readonly ChangeFeedProcessorContext observerContext;
         private readonly AutoCheckpointer sut;
         private readonly Stream stream;
         private readonly PartitionCheckpointer partitionCheckpointer;
@@ -35,28 +35,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.stream = Mock.Of<Stream>();
 
-            this.observerContext = Mock.Of<ChangeFeedObserverContext>();
-            Mock.Get(this.observerContext)
-                .Setup(context => context.CheckpointAsync())
-                .Returns(this.partitionCheckpointer.CheckpointPartitionAsync("token"));
+            this.observerContext = Mock.Of<ChangeFeedProcessorContext>();
         }
 
         [TestMethod]
         public async Task OpenAsync_WhenCalled_ShouldOpenObserver()
         {
-            await this.sut.OpenAsync(this.observerContext);
+            await this.sut.OpenAsync(this.observerContext.LeaseToken);
 
             Mock.Get(this.changeFeedObserver)
-                .Verify(observer => observer.OpenAsync(this.observerContext), Times.Once);
+                .Verify(observer => observer.OpenAsync(this.observerContext.LeaseToken), Times.Once);
         }
 
         [TestMethod]
         public async Task CloseAsync_WhenCalled_ShouldCloseObserver()
         {
-            await this.sut.CloseAsync(this.observerContext, ChangeFeedObserverCloseReason.ResourceGone);
+            await this.sut.CloseAsync(this.observerContext.LeaseToken, ChangeFeedObserverCloseReason.ResourceGone);
 
             Mock.Get(this.changeFeedObserver)
-                .Verify(observer => observer.CloseAsync(this.observerContext, ChangeFeedObserverCloseReason.ResourceGone), Times.Once);
+                .Verify(observer => observer.CloseAsync(this.observerContext.LeaseToken, ChangeFeedObserverCloseReason.ResourceGone), Times.Once);
         }
 
         [TestMethod]
@@ -71,10 +68,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public async Task ProcessChanges_WhenCheckpointThrows_ShouldThrow()
         {
-            ChangeFeedObserverContext observerContext = Mock.Of<ChangeFeedObserverContext>();
-            Mock.Get(observerContext).Setup(abs => abs.CheckpointAsync()).Throws(new LeaseLostException());
+            ChangeFeedProcessorContextWithManualCheckpoint observerContext = Mock.Of<ChangeFeedProcessorContextWithManualCheckpoint>();
+            CosmosException original = null;
+            Mock.Get(observerContext).Setup(abs => abs.TryCheckpointAsync()).Returns(Task.FromResult((false, original)));
 
-            await Assert.ThrowsExceptionAsync<LeaseLostException>(() => this.sut.ProcessChangesAsync(observerContext, this.stream, CancellationToken.None));
+            CosmosException caught = await Assert.ThrowsExceptionAsync<CosmosException>(() => this.sut.ProcessChangesAsync(observerContext, this.stream, CancellationToken.None));
+            Assert.AreEqual(original, caught);
         }
     }
 }

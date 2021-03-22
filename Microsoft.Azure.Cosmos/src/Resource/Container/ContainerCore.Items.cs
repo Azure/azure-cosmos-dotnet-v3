@@ -506,7 +506,59 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(onChangesDelegate));
             }
 
-            ChangeFeedObserverFactoryCore<T> observerFactory = new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore);
+            ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
+                new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
+                withManualCheckpointing: false);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
+            return new ChangeFeedProcessorBuilder(
+                processorName: processorName,
+                container: this,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
+
+            ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
+                new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
+                withManualCheckpointing: false);
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
+            return new ChangeFeedProcessorBuilder(
+                processorName: processorName,
+                container: this,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
+
+            ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
+                new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
+                withManualCheckpointing: true);
             ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,
@@ -529,7 +581,9 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(onChangesDelegate));
             }
 
-            ChangeFeedObserverFactoryCore observerFactory = new ChangeFeedObserverFactoryCore(onChangesDelegate);
+            ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
+                new ChangeFeedObserverFactoryCore(onChangesDelegate),
+                withManualCheckpointing: false);
             ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
             return new ChangeFeedProcessorBuilder(
                 processorName: processorName,

@@ -5,35 +5,36 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
 
     /// <summary>
-    /// Factory class used to create instance(s) of <see cref="ChangeFeedObserver"/>.
+    /// Factory class used to create instance(s) of <see cref="ChangeFeedObserver"/> wrapping with the desired checkpoint logic.
     /// </summary>
     internal sealed class CheckpointerObserverFactory : ChangeFeedObserverFactory
     {
         private readonly ChangeFeedObserverFactory observerFactory;
-        private readonly CheckpointFrequency checkpointFrequency;
+        private readonly bool withManualCheckpointing;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CheckpointerObserverFactory"/> class.
         /// </summary>
         /// <param name="observerFactory">Instance of Observer Factory</param>
-        /// <param name="checkpointFrequency">Defined <see cref="CheckpointFrequency"/></param>
-        public CheckpointerObserverFactory(ChangeFeedObserverFactory observerFactory, CheckpointFrequency checkpointFrequency)
+        /// <param name="withManualCheckpointing">Should it automatically checkpoint or not.</param>
+        public CheckpointerObserverFactory(
+            ChangeFeedObserverFactory observerFactory, 
+            bool withManualCheckpointing)
         {
             this.observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
-            this.checkpointFrequency = checkpointFrequency ?? throw new ArgumentNullException(nameof(checkpointFrequency));
+            this.withManualCheckpointing = withManualCheckpointing;
         }
 
         /// <summary>
-        /// Creates a new instance of <see cref="ChangeFeedObserver"/>.
+        /// Creates a new instance of <see cref="ChangeFeedObserver"/> with either automatic checkpoint or manual.
         /// </summary>
         /// <returns>Created instance of <see cref="ChangeFeedObserver"/>.</returns>
         public override ChangeFeedObserver CreateObserver()
         {
             ChangeFeedObserver observer = new ObserverExceptionWrappingChangeFeedObserverDecorator(this.observerFactory.CreateObserver());
-            if (this.checkpointFrequency.ExplicitCheckpoint)
+            if (this.withManualCheckpointing)
             {
                 return observer;
             }
