@@ -1936,6 +1936,11 @@
     "Microsoft.Azure.Cosmos.CosmosDiagnostics;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String ToString()": {
           "Type": "Method",
           "Attributes": [],

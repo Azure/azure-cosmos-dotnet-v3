@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
     [Serializable]
@@ -27,13 +28,15 @@ namespace Microsoft.Azure.Cosmos
         internal abstract Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition);
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            ITrace trace);
 
         internal abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            ITrace trace);
 
         internal abstract void Accept(IFeedRangeVisitor visitor);
 

@@ -222,8 +222,8 @@
             datum.FailedReplicas.Add(uri1);
             datum.FailedReplicas.Add(uri2);
 
-            datum.RegionsContacted.Add(uri1);
-            datum.RegionsContacted.Add(uri2);
+            datum.RegionsContactedWithName.Add(("local", uri1));
+            datum.RegionsContactedWithName.Add(("local", uri2));
 
             datum.RequestEndTimeUtc = DateTime.MaxValue;
 
@@ -348,6 +348,7 @@
           "ResourceType": "Document",
           "OperationType": "Query",
           "LocationEndpoint": "http://someuri1.com/",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
           "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null"
         }
       ]
@@ -376,7 +377,7 @@
 
             datum.FailedReplicas.Add(default);
 
-            datum.RegionsContacted.Add(default);
+            datum.RegionsContactedWithName.Add(default);
 
             datum.RequestEndTimeUtc = default;
 
@@ -489,6 +490,7 @@
           "ResourceType": "Database",
           "OperationType": "Create",
           "LocationEndpoint": null,
+          "ActivityId": null,
           "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null"
         }
       ]

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     TimeSpan.FromSeconds(.6),
                     TimeSpan.FromSeconds(5.1),
-                    TimeSpan.FromSeconds(10.1)
+                    TimeSpan.FromSeconds(65.1)
                 }},
             };
 

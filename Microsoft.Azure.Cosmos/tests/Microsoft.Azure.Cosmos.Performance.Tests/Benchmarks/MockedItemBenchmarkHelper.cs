@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
+    using System;
     using System.IO;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
@@ -17,19 +18,24 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public static readonly string NonExistingItemId = "cant-see-me";
 
         public static readonly PartitionKey ExistingPartitionId = new PartitionKey(MockedItemBenchmarkHelper.ExistingItemId);
+        private readonly bool IncludeDiagnosticsToString;
 
         internal ToDoActivity TestItem { get; }
         internal CosmosClient TestClient { get; }
         internal Container TestContainer { get; }
+        
         internal byte[] TestItemBytes { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MockedItemBenchmark"/> class.
         /// </summary>
-        public MockedItemBenchmarkHelper(bool useCustomSerializer = false)
+        public MockedItemBenchmarkHelper(
+            bool useCustomSerializer = false,
+            bool includeDiagnosticsToString = false)
         {
             this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer);
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
+            this.IncludeDiagnosticsToString = includeDiagnosticsToString;
 
             using (FileStream tmp = File.OpenRead("samplepayload.json"))
             using (MemoryStream ms = new MemoryStream())
@@ -42,6 +48,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 string payloadContent = File.ReadAllText("samplepayload.json");
                 this.TestItem = JsonConvert.DeserializeObject<ToDoActivity>(payloadContent);
+            }
+        }
+
+        public void IncludeDiagnosticToStringHelper(
+            CosmosDiagnostics cosmosDiagnostics)
+        {
+            if (!this.IncludeDiagnosticsToString)
+            {
+                return;
+            }
+
+            string diagnostics = cosmosDiagnostics.ToString();
+            if (string.IsNullOrEmpty(diagnostics))
+            {
+                throw new Exception();
             }
         }
 

@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal abstract class TransactionalBatchInternal : TransactionalBatch
     {
-#if !INTERNAL
+#if !PREVIEW
         /// <summary>
         /// Adds an operation to patch an item into the batch.
         /// </summary>

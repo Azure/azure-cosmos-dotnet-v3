@@ -1171,6 +1171,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToReplace);
         }
 
+        [TestMethod]
+        public async Task EncryptionTransactionalBatchConflictResponse()
+        {
+            string partitionKey = "thePK";
+            string dek1 = LegacyEncryptionTests.dekId;
+
+            ItemResponse<TestDoc> doc1CreatedResponse = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToCreateAgain = doc1CreatedResponse.Resource;
+            doc1ToCreateAgain.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToCreateAgain.Sensitive = Guid.NewGuid().ToString();
+
+            TransactionalBatchResponse batchResponse = await LegacyEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreateAgain, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.AreEqual(1, batchResponse.Count);
+        }
+        
         private static async Task ValidateSprocResultsAsync(Container container, TestDoc expectedDoc)
         {
             string sprocId = Guid.NewGuid().ToString();
