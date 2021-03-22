@@ -651,10 +651,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionTransactionalBatchConflictResponse()
+        {
+            string partitionKey = "thePK";
+
+            ItemResponse<TestDoc> doc1CreatedResponse = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer, partitionKey);
+            TestDoc doc1ToCreateAgain = doc1CreatedResponse.Resource;
+            doc1ToCreateAgain.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToCreateAgain.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            TransactionalBatchResponse batchResponse = await MdeEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreateAgain)
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.AreEqual(1, batchResponse.Count);
+        }
+
+        [TestMethod]
         public async Task EncryptionChangeFeedDecryptionSuccessful()
         {
-
-
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
             TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 

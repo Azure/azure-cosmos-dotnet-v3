@@ -17,6 +17,7 @@
 └── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            ├── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                 └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -71,6 +72,20 @@
           "duration in milliseconds": 0,
           "data": {},
           "children": [
+            {
+              "name": "Waiting for Initialization of client to complete",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Unknown",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            },
             {
               "name": "Send Async",
               "id": "00000000-0000-0000-0000-000000000000",
