@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Antlr4.Runtime.Tree;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task GatewayRequestStatsHappyPathTest()
+        public async Task GatewayRequestStatsTest()
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(item);
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync(item);
-            HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler())
+            HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler(maxRetries: 3))
             {
                 Timeout = TimeSpan.FromSeconds(1)
             };
@@ -63,6 +64,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
                 ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value);
                 Assert.IsNotNull(datum.HttpResponseStatisticsList);
+                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 3);
+                Assert.IsTrue(datum.HttpResponseStatisticsList[0].Exception is OperationCanceledException);
+                Assert.IsTrue(datum.HttpResponseStatisticsList[1].Exception is OperationCanceledException);
+                Assert.IsNull(datum.HttpResponseStatisticsList[2].Exception);
+                Assert.IsNotNull(datum.HttpResponseStatisticsList[2].HttpResponseMessage);
+                Assert.AreEqual(datum.HttpResponseStatisticsList[2].RequestEndTime, datum.RequestEndTimeUtc);
             }
         }
 
@@ -91,9 +98,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private class TimeOutHttpClientHandler : DelegatingHandler
         {
             private int retries;
-            public TimeOutHttpClientHandler() : base(new HttpClientHandler())
+            private readonly int maxRetries;
+            public TimeOutHttpClientHandler(int maxRetries) : base(new HttpClientHandler())
             {
                 this.retries = 0;
+                this.maxRetries = maxRetries;
             }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -101,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (request.RequestUri.ToString().Contains("doc"))
                 {
                     this.retries++;
-                    if(this.retries < 3)
+                    if(this.retries < this.maxRetries)
                     {
                         throw new OperationCanceledException();
                     }

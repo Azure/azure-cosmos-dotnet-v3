@@ -460,6 +460,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
                     inputs.Add(new Input("Client Side Request Stats Default", rootTrace, startLineNumber, endLineNumber));
                 }
+
+                {
+                    startLineNumber = GetLineNumber();
+                    TraceForBaselineTesting rootTrace;
+                    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                    {
+                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue)
+                        {
+                            RequestEndTimeUtc = DateTime.MaxValue
+                        };
+
+                        HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            new Uri("http://someUri1.com"),
+                            HttpMethod.Get,
+                            ResourceType.Document,
+                            new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
+                            exception: null
+                            );
+                        datum.HttpResponseStatisticsList.Add(httpResponseStatistics);
+
+                        HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            new Uri("http://someUri1.com"),
+                            HttpMethod.Get,
+                            ResourceType.Document,
+                            responseMessage: null,
+                            exception: new OperationCanceledException()
+                            );
+                        datum.HttpResponseStatisticsList.Add(httpResponseStatisticsException);
+
+                        rootTrace.AddDatum("Client Side Request Stats", datum);
+                    }
+                    endLineNumber = GetLineNumber();
+
+                    inputs.Add(new Input("Client Side Request Stats For Gateway Request", rootTrace, startLineNumber, endLineNumber));
+                }
             }
             //----------------------------------------------------------------
 
