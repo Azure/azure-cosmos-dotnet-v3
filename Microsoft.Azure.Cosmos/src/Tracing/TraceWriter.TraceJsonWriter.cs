@@ -252,6 +252,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteFieldName("HttpMethod");
                 jsonWriter.WriteStringValue(stat.HttpMethod.ToString());
 
+                jsonWriter.WriteFieldName("ActivityId");
+                this.WriteStringValueOrNull(stat.ActivityId);
+
                 if (stat.Exception != null)
                 {
                     jsonWriter.WriteFieldName("ExceptionType");

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -72,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                        new StoreRequestNameValueCollection()))
                 {
                     request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
+                    request.RequestContext.ClientRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
 
                     (string authorizationToken, string payload) = await this.tokenProvider.GetUserAuthorizationAsync(
                         request.ResourceAddress,
@@ -93,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         {
                             using (DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request))
                             {
+                                childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
                                 return CosmosResource.FromStream<ContainerProperties>(response);
                             }
                         }

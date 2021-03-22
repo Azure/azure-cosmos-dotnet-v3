@@ -29,8 +29,8 @@ namespace Microsoft.Azure.Cosmos
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            CancellationToken cancellationToken,
-            IClientSideRequestStatistics clientSideRequestStatistics);
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken);
 
         protected abstract void Dispose(bool disposing);
 

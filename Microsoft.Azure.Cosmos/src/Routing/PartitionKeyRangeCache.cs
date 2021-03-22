@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -262,12 +263,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
 
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                    request.RequestContext.ClientRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
 
                     using (new ActivityScope(Guid.NewGuid()))
                     {
                         try
                         {
-                            return await this.storeModel.ProcessMessageAsync(request);
+                            DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request);
+                            childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
+                            return response;
                         }
                         catch (DocumentClientException ex)
                         {

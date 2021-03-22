@@ -200,16 +200,16 @@ namespace Microsoft.Azure.Cosmos
                 CreateRequestMessage,
                 resourceType,
                 timeoutPolicy,
-                cancellationToken,
-                clientSideRequestStatistics);
+                clientSideRequestStatistics,
+                cancellationToken);
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            CancellationToken cancellationToken,
-            IClientSideRequestStatistics clientSideRequestStatistics)
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken)
         {
             if (createRequestMessageAsync == null)
             {
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
-                            datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, startDateTimeUtc);
+                            datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, DateTime.UtcNow);
                         }
 
                         return responseMessage;
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
-                            datum.RecordHttpException(requestMessage, e, resourceType, startDateTimeUtc);
+                            datum.RecordHttpException(requestMessage, e, resourceType, DateTime.UtcNow);
                         }
 
                         bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
@@ -282,16 +282,8 @@ namespace Microsoft.Azure.Cosmos
                                 // the request timed out and was not user canceled operation.
                                 if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
                                 {
-                                    // throw timeout if the cancellationToken is not canceled (i.e. httpClient timed out)
-                                    string message =
-                                        $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
-                                    throw CosmosExceptionFactory.CreateRequestTimeoutException(
-                                        message,
-                                        headers: new Headers()
-                                        {
-                                            ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
-                                        },
-                                        innerException: operationCanceledException);
+                                    // throw current exception (caught in transport handler)
+                                    throw;
                                 }
 
                                 break;

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
@@ -212,11 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
-            DateTime requestEndTimeUtc = DateTime.UtcNow;
-            if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
-            {
-                this.RequestEndTimeUtc = requestEndTimeUtc;
-            }
+            DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
 
             this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
@@ -232,11 +229,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
-            DateTime requestEndTimeUtc = DateTime.UtcNow;
-            if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
-            {
-                this.RequestEndTimeUtc = requestEndTimeUtc;
-            }
+            DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
 
             this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
@@ -245,6 +238,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            resourceType,
                                                                            responseMessage: null,
                                                                            exception: exception));
+        }
+
+        private DateTime RecordHttpResponseEndTime()
+        {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
+            {
+                this.RequestEndTimeUtc = requestEndTimeUtc;
+            }
+
+            return requestEndTimeUtc;
         }
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
@@ -302,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public bool IsSupplementalResponse { get; }
         }
 
-        public sealed class HttpResponseStatistics
+        public readonly struct HttpResponseStatistics
         {
             public HttpResponseStatistics(
                 DateTime requestStartTime,
@@ -320,6 +324,16 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.ResourceType = resourceType;
                 this.HttpMethod = httpMethod;
                 this.RequestUri = requestUri;
+
+                if (responseMessage != null)
+                {
+                    Headers headers = new Headers(GatewayStoreClient.ExtractResponseHeaders(responseMessage));
+                    this.ActivityId = headers.ActivityId ?? Trace.CorrelationManager.ActivityId.ToString();
+                }
+                else
+                {
+                    this.ActivityId = Trace.CorrelationManager.ActivityId.ToString();
+                }
             }
 
             public DateTime RequestStartTime { get; }
@@ -329,6 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public ResourceType ResourceType { get; }
             public HttpMethod HttpMethod { get; }
             public Uri RequestUri { get; }
+            public string ActivityId { get; }
         }
     }
 }

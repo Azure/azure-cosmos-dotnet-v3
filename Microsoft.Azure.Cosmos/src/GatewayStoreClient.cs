@@ -84,8 +84,8 @@ namespace Microsoft.Azure.Cosmos
                 createRequestMessageAsync: requestMessage,
                 resourceType: resourceType,
                 timeoutPolicy: timeoutPolicy,
-                cancellationToken: cancellationToken,
-                clientSideRequestStatistics: clientSideRequestStatistics);
+                clientSideRequestStatistics: clientSideRequestStatistics,
+                cancellationToken: cancellationToken);
         }
 
         internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
@@ -333,8 +333,8 @@ namespace Microsoft.Azure.Cosmos
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
-                cancellationToken,
-                request.RequestContext.ClientRequestStatistics);
+                request.RequestContext.ClientRequestStatistics,
+                cancellationToken);
         }
     }
 }

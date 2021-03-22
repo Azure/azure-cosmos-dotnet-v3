@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(item);
-            ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value);
+            ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, "Transport");
             Assert.IsNotNull(datum.HttpResponseStatisticsList);
             Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 1);
             Assert.IsNotNull(datum.HttpResponseStatisticsList[0].HttpResponseMessage);
@@ -49,43 +49,54 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task GatewayRetryRequestStatsTest()
+        [DataRow("docs/", "Transport Request", true)]
+        [DataRow("colls/", "Read Collection", true)]
+        [DataRow("addresses/", "Transport Request", false)]
+        public async Task GatewayRetryRequestStatsTest(string uriToThrow, string traceToFind, bool useGateway)
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync(item);
-            HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler(maxRetries: 3))
+            HttpClient httpClient = new HttpClient(new TimeOutHttpClientHandler(maxRetries: 3, uriToThrow: uriToThrow))
             {
                 Timeout = TimeSpan.FromSeconds(1)
             };
 
-            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(x => x.WithConnectionModeGateway().WithHttpClientFactory(() => httpClient)))
+            CosmosClientOptions options = new CosmosClientOptions
+            {
+                ConnectionMode = useGateway ? ConnectionMode.Gateway : ConnectionMode.Direct,
+                HttpClientFactory = () => httpClient
+            };
+
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(options))
             {
                 Container container = cosmosClient.GetContainer(this.Database.Id, this.Container.Id);
                 ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
-                ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value);
+                ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, traceToFind);
                 Assert.IsNotNull(datum.HttpResponseStatisticsList);
                 Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 3);
                 Assert.IsTrue(datum.HttpResponseStatisticsList[0].Exception is OperationCanceledException);
                 Assert.IsTrue(datum.HttpResponseStatisticsList[1].Exception is OperationCanceledException);
                 Assert.IsNull(datum.HttpResponseStatisticsList[2].Exception);
                 Assert.IsNotNull(datum.HttpResponseStatisticsList[2].HttpResponseMessage);
-                Assert.AreEqual(datum.HttpResponseStatisticsList[2].RequestEndTime, datum.RequestEndTimeUtc);
             }
         }
 
-        private ClientSideRequestStatisticsTraceDatum GetClientSideRequestStatsFromTrace(ITrace trace)
+        private ClientSideRequestStatisticsTraceDatum GetClientSideRequestStatsFromTrace(ITrace trace, string traceToFind)
         {
-            foreach (object datum in trace.Data.Values)
+            if (trace.Name.Contains(traceToFind))
             {
-                if (datum is ClientSideRequestStatisticsTraceDatum clientSideStats)
+                foreach (object datum in trace.Data.Values)
                 {
-                    return clientSideStats;
+                    if (datum is ClientSideRequestStatisticsTraceDatum clientSideStats)
+                    {
+                        return clientSideStats;
+                    }
                 }
             }
 
             foreach (ITrace child in trace.Children)
             {
-                ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(child);
+                ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(child, traceToFind);
                 if (datum != null)
                 {
                     return datum;
@@ -99,15 +110,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             private int retries;
             private readonly int maxRetries;
-            public TimeOutHttpClientHandler(int maxRetries) : base(new HttpClientHandler())
+            private readonly string uriToThrow;
+            public TimeOutHttpClientHandler(int maxRetries, string uriToThrow) : base(new HttpClientHandler())
             {
                 this.retries = 0;
                 this.maxRetries = maxRetries;
+                this.uriToThrow = uriToThrow;
             }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                if (request.RequestUri.ToString().Contains("doc"))
+                if (request.RequestUri.ToString().Contains(this.uriToThrow))
                 {
                     this.retries++;
                     if(this.retries < this.maxRetries)
