@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
-            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
 
             string containerRId;
             containerRId = await this.GetCachedRIDAsync(
@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
-            IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IRoutingMapProvider routingMapProvider = await this.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
             string containerRid = await this.GetCachedRIDAsync(
                 forceRefresh: false,
                 trace,
@@ -499,7 +499,7 @@ namespace Microsoft.Azure.Cosmos
                 trace: NoOpTrace.Singleton,
                 cancellationToken);
 
-            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            PartitionKeyRangeCache partitionKeyRangeCache = await this.ClientContext.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             CollectionRoutingMap collectionRoutingMap = await partitionKeyRangeCache.TryLookupAsync(
                 collectionRid,
                 previousValue: null,

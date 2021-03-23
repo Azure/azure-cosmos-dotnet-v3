@@ -70,6 +70,7 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.TargetIdentity = result.TargetServiceIdentity;
             request.RequestContext.ResolvedPartitionKeyRange = result.TargetPartitionKeyRange;
             request.RequestContext.RegionName = this.location;
+            request.RequestContext.LocalRegionRequest = result.Addresses.IsLocalRegion;
 
             await this.requestSigner.SignRequestAsync(request, cancellationToken);
 
