@@ -13,12 +13,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using static Microsoft.Azure.Cosmos.Container;
 
     [TestClass]
     [TestCategory("ChangeFeed")]

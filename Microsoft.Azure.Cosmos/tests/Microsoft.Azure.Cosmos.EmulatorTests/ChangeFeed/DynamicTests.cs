@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     [TestCategory("ChangeFeed")]
     public class DynamicTests : BaseChangeFeedClientHelper
     {
+        private ContainerInternal Container;
 
         [TestInitialize]
         public async Task TestInitialize()
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
-            this.Container = response;
+            this.Container = (ContainerInternal)response;
         }
 
         [TestCleanup]

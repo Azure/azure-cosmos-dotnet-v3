@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using static Microsoft.Azure.Cosmos.Container;
+    using static Microsoft.Azure.Cosmos.ContainerInternal;
 
     internal sealed class ChangeFeedObserverFactoryCore : ChangeFeedObserverFactory
     {

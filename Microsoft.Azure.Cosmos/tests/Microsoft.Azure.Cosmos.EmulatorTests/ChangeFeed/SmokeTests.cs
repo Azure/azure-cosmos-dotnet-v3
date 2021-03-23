@@ -18,10 +18,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     [TestCategory("ChangeFeed")]
     public class SmokeTests : BaseChangeFeedClientHelper
     {
+        private Container Container;
+
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.ChangeFeedTestInit();
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: "monitored", partitionKeyPath: "/pk"),
+                cancellationToken: this.cancellationToken);
+            this.Container = response;
         }
 
         [TestCleanup]

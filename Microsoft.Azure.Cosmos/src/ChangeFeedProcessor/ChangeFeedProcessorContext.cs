@@ -7,7 +7,13 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Context that is related to the set of delivered changes.
     /// </summary>
-    public abstract class ChangeFeedProcessorContext
+
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    abstract class ChangeFeedProcessorContext
     {
         /// <summary>
         /// Gets the token representative of the current lease from which the changes come from.
