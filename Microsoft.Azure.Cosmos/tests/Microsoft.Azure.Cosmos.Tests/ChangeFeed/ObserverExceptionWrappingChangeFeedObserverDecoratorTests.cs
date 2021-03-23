@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     {
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly Mock<ChangeFeedObserver> observer;
-        private readonly ChangeFeedProcessorContext changeFeedObserverContext;
+        private readonly ChangeFeedProcessorContextWithManualCheckpoint changeFeedObserverContext;
         private readonly ObserverExceptionWrappingChangeFeedObserverDecorator observerWrapper;
         private readonly IReadOnlyList<MyDocument> documents;
         private readonly CosmosSerializerCore serializerCore;
@@ -30,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public ObserverExceptionWrappingChangeFeedObserverDecoratorTests()
         {
             this.observer = new Mock<ChangeFeedObserver>();
-            this.changeFeedObserverContext = Mock.Of<ChangeFeedProcessorContext>();
+            this.changeFeedObserverContext = Mock.Of<ChangeFeedProcessorContextWithManualCheckpoint>();
             this.observerWrapper = new ObserverExceptionWrappingChangeFeedObserverDecorator(this.observer.Object);
 
             this.serializerCore = new CosmosSerializerCore();
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
-                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(),
+                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContextWithManualCheckpoint>(),
                             It.Is<MemoryStream>(stream => this.ValidateStream(stream)),
                             It.IsAny<CancellationToken>()
                         ),
@@ -82,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             using Stream stream = this.serializerCore.ToStream(this.documents);
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContextWithManualCheckpoint>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                 .Throws(new Exception());
 
             try
@@ -97,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
-                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(),
+                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContextWithManualCheckpoint>(),
                             It.Is<MemoryStream>(stream => this.ValidateStream(stream)),
                             It.IsAny<CancellationToken>()
                         ),
@@ -110,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             using Stream stream = this.serializerCore.ToStream(this.documents);
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
-                    .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
+                    .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContextWithManualCheckpoint>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
                 .Throws(new Documents.DocumentClientException("Some message", (HttpStatusCode) 429, Documents.SubStatusCodes.Unknown));
 
             try
@@ -125,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.observer.Object)
                 .Verify(feedObserver => feedObserver
-                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContext>(),
+                        .ProcessChangesAsync(It.IsAny<ChangeFeedProcessorContextWithManualCheckpoint>(),
                             It.Is<MemoryStream>(stream => this.ValidateStream(stream)),
                             It.IsAny<CancellationToken>()
                         ),

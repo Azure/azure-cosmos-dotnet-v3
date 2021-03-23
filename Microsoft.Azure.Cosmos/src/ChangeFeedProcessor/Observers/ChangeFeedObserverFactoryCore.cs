@@ -14,16 +14,35 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
     internal sealed class ChangeFeedObserverFactoryCore : ChangeFeedObserverFactory
     {
-        private readonly ChangesStreamHandler onChanges;
+        private readonly ChangeFeedStreamHandler onChanges;
+        private readonly ChangeFeedStreamHandlerWithManualCheckpoint onChangesWithManualCheckpoint;
 
-        public ChangeFeedObserverFactoryCore(ChangesStreamHandler onChanges)
+        public ChangeFeedObserverFactoryCore(ChangeFeedStreamHandler onChanges)
         {
             this.onChanges = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
         }
 
+        public ChangeFeedObserverFactoryCore(ChangeFeedStreamHandlerWithManualCheckpoint onChanges)
+        {
+            this.onChangesWithManualCheckpoint = onChanges ?? throw new ArgumentNullException(nameof(onChanges));
+        }
+
         public override ChangeFeedObserver CreateObserver()
         {
-            return new ChangeFeedObserverBase(this.onChanges);
+            return new ChangeFeedObserverBase(this.ChangesStreamHandlerAsync);
+        }
+
+        private Task ChangesStreamHandlerAsync(
+            ChangeFeedProcessorContextWithManualCheckpoint context,
+            Stream stream,
+            CancellationToken cancellationToken)
+        {
+            if (this.onChanges != null)
+            {
+                return this.onChanges(context, stream, cancellationToken);
+            }
+
+            return this.onChangesWithManualCheckpoint(context, stream, cancellationToken);
         }
     }
 
@@ -68,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         private Task ChangesStreamHandlerAsync(
-            ChangeFeedProcessorContext context,
+            ChangeFeedProcessorContextWithManualCheckpoint context,
             Stream stream,
             CancellationToken cancellationToken)
         {
@@ -88,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 return this.onChanges(context, changes, cancellationToken);
             }
 
-            return this.onChangesWithManualCheckpoint(context as ChangeFeedProcessorContextWithManualCheckpoint, changes, cancellationToken);
+            return this.onChangesWithManualCheckpoint(context, changes, cancellationToken);
         }
 
         private IReadOnlyCollection<T> AsIReadOnlyCollection(Stream stream)

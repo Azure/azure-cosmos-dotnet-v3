@@ -7,9 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -18,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     public class AutoCheckPointTests
     {
         private readonly ChangeFeedObserver changeFeedObserver;
-        private readonly ChangeFeedProcessorContext observerContext;
+        private readonly ChangeFeedProcessorContextWithManualCheckpoint observerContext;
         private readonly AutoCheckpointer sut;
         private readonly Stream stream;
         private readonly PartitionCheckpointer partitionCheckpointer;
@@ -35,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.stream = Mock.Of<Stream>();
 
-            this.observerContext = Mock.Of<ChangeFeedProcessorContext>();
+            this.observerContext = Mock.Of<ChangeFeedProcessorContextWithManualCheckpoint>();
         }
 
         [TestMethod]

@@ -358,6 +358,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsNotNull(changeFeedProcessorContext.LeaseToken);
             Assert.IsNotNull(changeFeedProcessorContext.Diagnostics);
             Assert.IsNotNull(changeFeedProcessorContext.Headers);
+            Assert.IsNotNull(changeFeedProcessorContext.Headers.Session);
             Assert.IsTrue(changeFeedProcessorContext.Headers.RequestCharge > 0);
         }
     }

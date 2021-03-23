@@ -389,7 +389,14 @@ namespace Microsoft.Azure.Cosmos
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
-            ChangesStreamHandler onChangesDelegate)
+            ChangeFeedStreamHandler onChangesDelegate)
+        {
+            return base.GetChangeFeedProcessorBuilder(processorName, onChangesDelegate);
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
         {
             return base.GetChangeFeedProcessorBuilder(processorName, onChangesDelegate);
         }

@@ -1130,7 +1130,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         /// <summary>
-        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
         /// </summary>
         /// <param name="context">The context related to the changes.</param>
         /// <param name="changes">The changes that happened.</param>
@@ -1148,8 +1148,20 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="changes">The changes that happened.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
-        public delegate Task ChangesStreamHandler(
+        public delegate Task ChangeFeedStreamHandler(
             ChangeFeedProcessorContext context,
+            Stream changes,
+            CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution with manual checkpoint.
+        /// </summary>
+        /// <param name="context">The context related to the changes.</param>
+        /// <param name="changes">The changes that happened.</param>
+        /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
+        public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
+            ChangeFeedProcessorContextWithManualCheckpoint context,
             Stream changes,
             CancellationToken cancellationToken);
 
@@ -1202,7 +1214,17 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
-            ChangesStreamHandler onChangesDelegate);
+            ChangeFeedStreamHandler onChangesDelegate);
+
+        /// <summary>
+        /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed processing with manual checkpoint.
+        /// </summary>
+        /// <param name="processorName">A name that identifies the Processor and the particular work it will do.</param>
+        /// <param name="onChangesDelegate">Delegate to receive changes.</param>
+        /// <returns>An instance of <see cref="ChangeFeedProcessorBuilder"/></returns>
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 
         /// <summary>
         /// Initializes a <see cref="ChangeFeedProcessorBuilder"/> for change feed monitoring.

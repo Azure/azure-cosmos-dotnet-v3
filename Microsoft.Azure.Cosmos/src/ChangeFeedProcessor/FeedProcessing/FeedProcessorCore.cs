@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private Task DispatchChangesAsync(ResponseMessage response, CancellationToken cancellationToken)
         {
-            ChangeFeedProcessorContext context = new ChangeFeedObserverContextCore(this.options.LeaseToken, response, this.checkpointer);
+            ChangeFeedProcessorContextWithManualCheckpoint context = new ChangeFeedObserverContextCore(this.options.LeaseToken, response, this.checkpointer);
             return this.observer.ProcessChangesAsync(context, response.Content, cancellationToken);
         }
     }

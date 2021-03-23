@@ -509,12 +509,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: false);
-            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
-            return new ChangeFeedProcessorBuilder(
-                processorName: processorName,
-                container: this,
-                changeFeedProcessor: changeFeedProcessor,
-                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -534,12 +529,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: false);
-            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
-            return new ChangeFeedProcessorBuilder(
-                processorName: processorName,
-                container: this,
-                changeFeedProcessor: changeFeedProcessor,
-                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -559,17 +549,12 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore<T>(onChangesDelegate, this.ClientContext.SerializerCore),
                 withManualCheckpointing: true);
-            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
-            return new ChangeFeedProcessorBuilder(
-                processorName: processorName,
-                container: this,
-                changeFeedProcessor: changeFeedProcessor,
-                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
-            ChangesStreamHandler onChangesDelegate)
+            ChangeFeedStreamHandler onChangesDelegate)
         {
             if (processorName == null)
             {
@@ -584,12 +569,27 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
                 new ChangeFeedObserverFactoryCore(onChangesDelegate),
                 withManualCheckpointing: false);
-            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
-            return new ChangeFeedProcessorBuilder(
-                processorName: processorName,
-                container: this,
-                changeFeedProcessor: changeFeedProcessor,
-                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
+        {
+            if (processorName == null)
+            {
+                throw new ArgumentNullException(nameof(processorName));
+            }
+
+            if (onChangesDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(onChangesDelegate));
+            }
+
+            ChangeFeedObserverFactory observerFactory = new CheckpointerObserverFactory(
+                new ChangeFeedObserverFactoryCore(onChangesDelegate),
+                withManualCheckpointing: true);
+            return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(
@@ -1216,6 +1216,18 @@ namespace Microsoft.Azure.Cosmos
                 requestEnricher: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
+        }
+
+        private ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderPrivate(
+            string processorName,
+            ChangeFeedObserverFactory observerFactory)
+        {
+            ChangeFeedProcessorCore changeFeedProcessor = new ChangeFeedProcessorCore(observerFactory);
+            return new ChangeFeedProcessorBuilder(
+                processorName: processorName,
+                container: this,
+                changeFeedProcessor: changeFeedProcessor,
+                applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration);
         }
     }
 }

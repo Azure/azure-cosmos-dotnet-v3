@@ -29,14 +29,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         public override async Task ProcessChangesAsync(
-            ChangeFeedProcessorContext context,
+            ChangeFeedProcessorContextWithManualCheckpoint context,
             Stream stream,
             CancellationToken cancellationToken)
         {
             await this.observer.ProcessChangesAsync(context, stream, cancellationToken).ConfigureAwait(false);
 
-            ChangeFeedProcessorContextWithManualCheckpoint contextWithCheckpoint = context as ChangeFeedProcessorContextWithManualCheckpoint;
-            (bool isSuccess, CosmosException exception) = await contextWithCheckpoint.TryCheckpointAsync();
+            (bool isSuccess, CosmosException exception) = await context.TryCheckpointAsync();
             if (!isSuccess)
             {
                 throw exception;
