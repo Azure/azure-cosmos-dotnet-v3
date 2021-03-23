@@ -43,8 +43,13 @@ namespace Microsoft.Azure.Cosmos
         public EncryptionKeyWrapMetadata(EncryptionKeyWrapMetadata source)
             : this(source?.Type, source?.Name, source?.Value)
         {
-        }  
+        }
 
+        /// <summary>
+        /// Serialized form of metadata.
+        /// Note: This value is saved in the Cosmos DB service.
+        /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
+        /// </summary>
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
         public string Type { get; private set; }
 
