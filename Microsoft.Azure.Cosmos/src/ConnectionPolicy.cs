@@ -45,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
+            this.EnableClientTelemetry = false;
         }
 
         /// <summary>
@@ -205,6 +206,8 @@ namespace Microsoft.Azure.Cosmos
             get;
             set;
         }
+
+        public bool EnableClientTelemetry { get; set; }
 
         /// <summary>
         /// Gets the default connection policy used to connect to the Azure Cosmos DB service.

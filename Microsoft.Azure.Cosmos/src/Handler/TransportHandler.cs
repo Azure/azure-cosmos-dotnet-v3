@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             {
                 ResponseMessage response = await this.ProcessMessageAsync(request, cancellationToken);
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
+
                 return response;
             }
             //catch DocumentClientException and exceptions that inherit it. Other exception types happen before a backend request

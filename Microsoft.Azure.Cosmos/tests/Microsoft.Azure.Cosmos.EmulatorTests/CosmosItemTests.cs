@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -134,12 +135,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
+            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            Assert.IsNotNull(telemetryInfo);
+
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Resource);
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+
+            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            Assert.IsNotNull(telemetryInfo);
 
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
@@ -148,6 +155,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+
+            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            Assert.IsNotNull(telemetryInfo);
         }
 
         [TestMethod]
@@ -2731,40 +2741,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(regionsContacted.Count, 1);
             Assert.AreEqual(regionsContacted[0].region, Regions.SouthCentralUS);
             Assert.IsNotNull(regionsContacted[0].uri);
-        }
-
-        [TestMethod]
-        public async Task HaLayerDoesNotThrowNullOnGoneExceptionTest()
-        {
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
-            {
-                TransportClientHandlerFactory = (x) =>
-                    new TransportClientWrapper(client: x, interceptor: (uri, resource, dsr) =>
-                    {
-                        dsr.RequestContext.ClientRequestStatistics.GetType().GetProperty("IsCpuOverloaded").SetValue(
-                            dsr.RequestContext.ClientRequestStatistics, true);
-                        if (resource.operationType.IsReadOperation())
-                        {
-                            throw Documents.Rntbd.TransportExceptions.GetGoneException(
-                                uri,
-                                Guid.NewGuid());
-                        }
-                    })
-            };
-
-            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
-            Container container = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            await container.CreateItemAsync<ToDoActivity>(testItem);
-
-            try
-            {
-                await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
-            }
-            catch (CosmosException ex)
-            {
-                Assert.AreEqual(ex.StatusCode, HttpStatusCode.ServiceUnavailable);
-            }
         }
 
 #if PREVIEW

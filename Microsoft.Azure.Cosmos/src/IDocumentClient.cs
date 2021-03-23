@@ -78,6 +78,8 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Microsoft.Azure.Cosmos.ConsistencyLevel"/>
         Documents.ConsistencyLevel ConsistencyLevel { get; }
 
+        ClientTelemetry clientTelemetry { get; set; }
+
         #endregion
 
         #region Account operation

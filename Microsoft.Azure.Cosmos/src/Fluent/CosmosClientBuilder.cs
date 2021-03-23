@@ -521,6 +521,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
+        internal CosmosClientBuilder WithTelemetryEnabled()
+        {
+            this.clientOptions.EnableClientTelemetry = true;
+            return this;
+        }
+
         /// <summary>
         /// Enabled partition level failover in the SDK
         /// </summary>

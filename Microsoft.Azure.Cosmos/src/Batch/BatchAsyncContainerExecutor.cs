@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly TimerWheel timerWheel;
         private readonly RetryOptions retryOptions;
         private readonly int defaultMaxDegreeOfConcurrency = 50;
+        private readonly bool enableClientTelemetry = false;
 
         /// <summary>
         /// For unit testing.
@@ -68,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
             this.timerWheel = TimerWheel.CreateTimerWheel(BatchAsyncContainerExecutor.TimerWheelResolution, BatchAsyncContainerExecutor.TimerWheelBucketCount);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy(cosmosClientContext.Client.ClientId).RetryOptions;
+            this.enableClientTelemetry = cosmosClientContext.ClientOptions.GetConnectionPolicy().EnableClientTelemetry;
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
