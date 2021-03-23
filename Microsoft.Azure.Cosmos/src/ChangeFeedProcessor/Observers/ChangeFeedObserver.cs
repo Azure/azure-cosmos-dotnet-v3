@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -35,6 +36,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         /// <param name="stream">The document streams that contain the change feed events.</param>
         /// <param name="cancellationToken">Token to signal that the partition processing is going to finish.</param>
         /// <returns>A Task to allow asynchronous execution.</returns>
-        public abstract Task ProcessChangesAsync(ChangeFeedProcessorContextWithManualCheckpoint context, Stream stream, CancellationToken cancellationToken);
+        public abstract Task ProcessChangesAsync(
+            ChangeFeedObserverContextCore context, 
+            Stream stream,
+            CancellationToken cancellationToken);
     }
 }

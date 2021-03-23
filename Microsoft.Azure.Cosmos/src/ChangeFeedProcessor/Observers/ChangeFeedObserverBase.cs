@@ -7,13 +7,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using static Microsoft.Azure.Cosmos.Container;
 
     internal sealed class ChangeFeedObserverBase : ChangeFeedObserver
     {
-        private readonly ChangeFeedStreamHandlerWithManualCheckpoint onChanges;
+        internal delegate Task ChangeFeedObserverBaseHandler(
+            ChangeFeedObserverContextCore context,
+            Stream stream,
+            CancellationToken cancellationToken);
 
-        public ChangeFeedObserverBase(ChangeFeedStreamHandlerWithManualCheckpoint onChanges)
+        private readonly ChangeFeedObserverBaseHandler onChanges;
+
+        public ChangeFeedObserverBase(ChangeFeedObserverBaseHandler onChanges)
         {
             this.onChanges = onChanges;
         }
@@ -31,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         public override Task ProcessChangesAsync(
-            ChangeFeedProcessorContextWithManualCheckpoint context, 
+            ChangeFeedObserverContextCore context, 
             Stream stream, 
             CancellationToken cancellationToken)
         {

@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         }
 
         public override async Task ProcessChangesAsync(
-            ChangeFeedProcessorContextWithManualCheckpoint context,
+            ChangeFeedObserverContextCore context,
             Stream stream,
             CancellationToken cancellationToken)
         {

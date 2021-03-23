@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
-        public override async Task ProcessChangesAsync(ChangeFeedProcessorContextWithManualCheckpoint context, Stream stream, CancellationToken cancellationToken)
+        public override async Task ProcessChangesAsync(ChangeFeedObserverContextCore context, Stream stream, CancellationToken cancellationToken)
         {
             try
             {

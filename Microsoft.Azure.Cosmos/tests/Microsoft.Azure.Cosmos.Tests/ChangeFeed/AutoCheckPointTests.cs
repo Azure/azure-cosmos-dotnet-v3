@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
+    using System;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -17,16 +18,16 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     public class AutoCheckPointTests
     {
         private readonly ChangeFeedObserver changeFeedObserver;
-        private readonly ChangeFeedProcessorContextWithManualCheckpoint observerContext;
+        private readonly ChangeFeedObserverContextCore observerContext;
         private readonly AutoCheckpointer sut;
         private readonly Stream stream;
-        private readonly PartitionCheckpointer partitionCheckpointer;
+        private readonly Mock<PartitionCheckpointer> partitionCheckpointer;
 
         public AutoCheckPointTests()
         {
             this.changeFeedObserver = Mock.Of<ChangeFeedObserver>();
-            this.partitionCheckpointer = Mock.Of<PartitionCheckpointer>();
-            Mock.Get(this.partitionCheckpointer)
+            this.partitionCheckpointer = new Mock<PartitionCheckpointer>();
+            this.partitionCheckpointer
                 .Setup(checkPointer => checkPointer.CheckpointPartitionAsync(It.IsAny<string>()))
                 .Returns(Task.CompletedTask);
 
@@ -34,8 +35,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.stream = Mock.Of<Stream>();
 
-            this.observerContext = Mock.Of<ChangeFeedProcessorContextWithManualCheckpoint>();
-            Mock.Get(this.observerContext).Setup(abs => abs.TryCheckpointAsync()).Returns(Task.FromResult((true, (CosmosException) null)));
+            ResponseMessage responseMessage = new ResponseMessage();
+            responseMessage.Headers.ContinuationToken = Guid.NewGuid().ToString();
+            this.observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, this.partitionCheckpointer.Object);
         }
 
         [TestMethod]
@@ -63,14 +65,20 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.changeFeedObserver)
                 .Verify(observer => observer.ProcessChangesAsync(this.observerContext, this.stream, CancellationToken.None), Times.Once);
+
+            this.partitionCheckpointer.Verify(c => c.CheckpointPartitionAsync(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
         public async Task ProcessChanges_WhenCheckpointThrows_ShouldThrow()
         {
-            ChangeFeedProcessorContextWithManualCheckpoint observerContext = Mock.Of<ChangeFeedProcessorContextWithManualCheckpoint>();
             CosmosException original = CosmosExceptionFactory.CreateThrottledException("throttled", new Headers());
-            Mock.Get(observerContext).Setup(abs => abs.TryCheckpointAsync()).Returns(Task.FromResult((false, original)));
+            Mock<PartitionCheckpointer> checkpointer = new Mock<PartitionCheckpointer>();
+            checkpointer.Setup(c => c.CheckpointPartitionAsync(It.IsAny<string>())).ThrowsAsync(original);
+
+            ResponseMessage responseMessage = new ResponseMessage();
+            responseMessage.Headers.ContinuationToken = Guid.NewGuid().ToString();
+            ChangeFeedObserverContextCore observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, checkpointer.Object);
 
             CosmosException caught = await Assert.ThrowsExceptionAsync<CosmosException>(() => this.sut.ProcessChangesAsync(observerContext, this.stream, CancellationToken.None));
             Assert.AreEqual(original, caught);

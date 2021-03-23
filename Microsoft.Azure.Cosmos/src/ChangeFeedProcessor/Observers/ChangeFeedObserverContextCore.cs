@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// <summary>
     /// The context passed to <see cref="ChangeFeedObserver"/> events.
     /// </summary>
-    internal sealed class ChangeFeedObserverContextCore : ChangeFeedProcessorContextWithManualCheckpoint
+    internal sealed class ChangeFeedObserverContextCore
     {
         private readonly PartitionCheckpointer checkpointer;
         private readonly ResponseMessage responseMessage;
@@ -31,13 +31,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.checkpointer = checkpointer;
         }
 
-        public override string LeaseToken { get; }
+        public string LeaseToken { get; }
 
-        public override CosmosDiagnostics Diagnostics => this.responseMessage.Diagnostics;
+        public CosmosDiagnostics Diagnostics => this.responseMessage.Diagnostics;
 
-        public override Headers Headers => this.responseMessage.Headers;
+        public Headers Headers => this.responseMessage.Headers;
 
-        public override async Task<(bool isSuccess, CosmosException error)> TryCheckpointAsync()
+        public async Task<(bool isSuccess, CosmosException error)> TryCheckpointAsync()
         {
             try
             {
@@ -69,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     innerException: exception);
                 return (isSuccess: false, error: cosmosException);
             }
+        }
+
+        public static implicit operator ChangeFeedProcessorContext(ChangeFeedObserverContextCore contextCore)
+        {
+            return new ChangeFeedProcessorContextCore(contextCore);
         }
     }
 }
