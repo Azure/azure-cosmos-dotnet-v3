@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
+        private readonly TelemetryHandler telemetryHandler;
+
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
@@ -38,6 +40,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
+
+            this.telemetryHandler = new TelemetryHandler(client);
+            Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
@@ -139,6 +144,9 @@ namespace Microsoft.Azure.Cosmos
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
+            current = current.InnerHandler;
+
+            current.InnerHandler = this.telemetryHandler;
             current = current.InnerHandler;
 
             // Have a router handler

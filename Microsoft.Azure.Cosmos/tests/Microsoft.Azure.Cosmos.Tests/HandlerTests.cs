@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 typeof(RequestInvokerHandler),
                 typeof(DiagnosticsHandler),
                 typeof(RetryHandler),
+                typeof(TelemetryHandler),
                 typeof(RouterHandler)
             };
 

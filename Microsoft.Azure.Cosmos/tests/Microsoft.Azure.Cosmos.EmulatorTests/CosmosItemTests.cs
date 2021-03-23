@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
+    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -133,12 +134,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
+            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            Assert.IsNotNull(telemetryInfo);
+
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Resource);
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+
+            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            Assert.IsNotNull(telemetryInfo);
 
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
@@ -147,6 +154,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+
+            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            Assert.IsNotNull(telemetryInfo);
         }
 
         [TestMethod]

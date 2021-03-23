@@ -76,7 +76,8 @@ namespace Microsoft.Azure.Cosmos
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
-               sessionContainer: clientOptions.SessionContainer);
+               sessionContainer: clientOptions.SessionContainer,
+               enableClientTelemetry: clientOptions.EnableClientTelemetry);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -187,7 +188,8 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentClient.ValidateResource(resourceId);
         }
 
-        internal override Task<TResult> OperationHelperAsync<TResult>(
+        internal override Task<TResult> 
+            OperationHelperAsync<TResult>(
             string operationName,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,

@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly TimerWheel timerWheel;
         private readonly RetryOptions retryOptions;
         private readonly int defaultMaxDegreeOfConcurrency = 50;
+        private readonly bool enableClientTelemetry = false;
 
         /// <summary>
         /// For unit testing.
@@ -68,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
             this.timerWheel = TimerWheel.CreateTimerWheel(BatchAsyncContainerExecutor.TimerWheelResolution, BatchAsyncContainerExecutor.TimerWheelBucketCount);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
+            this.enableClientTelemetry = cosmosClientContext.ClientOptions.GetConnectionPolicy().EnableClientTelemetry;
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
@@ -249,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         trace: trace,
                         cancellationToken: cancellationToken).ConfigureAwait(false);
-
+                    
                     TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                         responseMessage,
                         serverRequest,
@@ -258,10 +260,26 @@ namespace Microsoft.Azure.Cosmos
                         trace,
                         cancellationToken).ConfigureAwait(false);
 
-                    return new PartitionKeyRangeBatchExecutionResult(
+                    PartitionKeyRangeBatchExecutionResult result = new PartitionKeyRangeBatchExecutionResult(
                         serverRequest.PartitionKeyRangeId,
                         serverRequest.Operations,
                         serverResponse);
+
+                   /* if (this.enableClientTelemetry)
+                    {
+                        this.cosmosClientContext.DocumentClient.clientTelemetry.Collect(
+                            this.cosmosClientContext.Client,
+                            serverResponse.Diagnostics,
+                            serverResponse.StatusCode,
+                            serverResponse.Headers.ContentLength == null ? 0 : Int32.Parse(serverResponse.Headers.ContentLength),
+                            this.cosmosContainer.Database.Id,
+                            this.cosmosContainer.Id,
+                            OperationType.Batch,
+                            ResourceType.Document,
+                            null,
+                            serverResponse.RequestCharge);
+                    }*/
+                    return result;
                 }
             }
         }
