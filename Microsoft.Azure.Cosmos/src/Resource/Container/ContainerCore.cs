@@ -416,8 +416,9 @@ namespace Microsoft.Azure.Cosmos
                     HttpConstants.Versions.CurrentVersion,
                     this.LinkUri,
                     forceRefresh,
-                    cancellationToken,
-                    trace);
+                    trace: trace,
+                    clientSideRequestStatistics: null,
+                    cancellationToken: cancellationToken);
             }
             catch (DocumentClientException ex)
             {

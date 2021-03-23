@@ -36,30 +36,39 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.sessionContainer = sessionContainer;
         }
 
-        protected override Task<ContainerProperties> GetByRidAsync(string apiVersion, string collectionRid, CancellationToken cancellationToken, ITrace trace)
+        protected override Task<ContainerProperties> GetByRidAsync(string apiVersion, 
+                                                    string collectionRid, 
+                                                    ITrace trace,
+                                                    IClientSideRequestStatistics clientSideRequestStatistics,
+                                                    CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
-                  () => this.ReadCollectionAsync(PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false), cancellationToken, retryPolicyInstance, trace),
+                  () => this.ReadCollectionAsync(PathsHelper.GeneratePath(ResourceType.Collection, collectionRid, false), retryPolicyInstance, trace, clientSideRequestStatistics, cancellationToken),
                   retryPolicyInstance,
                   cancellationToken);
         }
 
-        protected override Task<ContainerProperties> GetByNameAsync(string apiVersion, string resourceAddress, CancellationToken cancellationToken, ITrace trace)
+        protected override Task<ContainerProperties> GetByNameAsync(string apiVersion, 
+                                                string resourceAddress,
+                                                ITrace trace,
+                                                IClientSideRequestStatistics clientSideRequestStatistics,
+                                                CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             IDocumentClientRetryPolicy retryPolicyInstance = new ClearingSessionContainerClientRetryPolicy(this.sessionContainer, this.retryPolicy.GetRequestPolicy());
             return TaskHelper.InlineIfPossible(
-                () => this.ReadCollectionAsync(resourceAddress, cancellationToken, retryPolicyInstance, trace),
+                () => this.ReadCollectionAsync(resourceAddress, retryPolicyInstance, trace, clientSideRequestStatistics, cancellationToken),
                 retryPolicyInstance,
                 cancellationToken);
         }
 
         private async Task<ContainerProperties> ReadCollectionAsync(string collectionLink,
-                                                                    CancellationToken cancellationToken,
                                                                     IDocumentClientRetryPolicy retryPolicyInstance,
-                                                                    ITrace trace)
+                                                                    ITrace trace,
+                                                                    IClientSideRequestStatistics clientSideRequestStatistics,
+                                                                    CancellationToken cancellationToken)
         {
             using (ITrace childTrace = trace.StartChild("Read Collection", TraceComponent.Transport, TraceLevel.Info))
             { 
@@ -73,7 +82,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                        new StoreRequestNameValueCollection()))
                 {
                     request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
-                    request.RequestContext.ClientRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+
+                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
 
                     (string authorizationToken, string payload) = await this.tokenProvider.GetUserAuthorizationAsync(
                         request.ResourceAddress,
@@ -95,7 +105,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                         {
                             using (DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request))
                             {
-                                childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
+                                if (clientSideRequestStatistics == null)
+                                {
+                                    childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
+                                }
+
                                 return CosmosResource.FromStream<ContainerProperties>(response);
                             }
                         }

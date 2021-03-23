@@ -49,10 +49,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow("docs/", "Transport Request", true)]
-        [DataRow("colls/", "Read Collection", true)]
-        [DataRow("addresses/", "Transport Request", false)]
-        public async Task GatewayRetryRequestStatsTest(string uriToThrow, string traceToFind, bool useGateway)
+        [DataRow("docs/", "Transport Request", true, 3)]
+        [DataRow("colls/", "Transport Request", true, 3)]
+        public async Task GatewayRetryRequestStatsTest(string uriToThrow, string traceToFind, bool useGateway, int expectedHttpCalls)
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
             ItemResponse<ToDoActivity> createResponse = await this.Container.CreateItemAsync(item);
@@ -73,12 +72,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
                 ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, traceToFind);
                 Assert.IsNotNull(datum.HttpResponseStatisticsList);
-                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 3);
+                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, expectedHttpCalls);
                 Assert.IsTrue(datum.HttpResponseStatisticsList[0].Exception is OperationCanceledException);
                 Assert.IsTrue(datum.HttpResponseStatisticsList[1].Exception is OperationCanceledException);
                 Assert.IsNull(datum.HttpResponseStatisticsList[2].Exception);
                 Assert.IsNotNull(datum.HttpResponseStatisticsList[2].HttpResponseMessage);
             }
+        }
+
+        [TestMethod]
+        public async Task RequestStatsForDirectMode()
+        {
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            await this.Container.CreateItemAsync(item);
+
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient(useGateway: false))
+            {
+                Container container = cosmosClient.GetContainer(this.Database.Id, this.Container.Id);
+                ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
+                ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, "Transport Request");
+                Assert.IsNotNull(datum.HttpResponseStatisticsList);
+                // One call for collection cache, 2 calls for PK range cache and 1 call for Address Resolution
+                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 4);
+            }
+
         }
 
         private ClientSideRequestStatisticsTraceDatum GetClientSideRequestStatsFromTrace(ITrace trace, string traceToFind)
