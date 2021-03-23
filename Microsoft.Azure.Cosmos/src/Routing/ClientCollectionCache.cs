@@ -84,6 +84,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
 
                     request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+                    if (clientSideRequestStatistics == null)
+                    {
+                        childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
+                    }
 
                     (string authorizationToken, string payload) = await this.tokenProvider.GetUserAuthorizationAsync(
                         request.ResourceAddress,
@@ -105,11 +109,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                         {
                             using (DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request))
                             {
-                                if (clientSideRequestStatistics == null)
-                                {
-                                    childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
-                                }
-
                                 return CosmosResource.FromStream<ContainerProperties>(response);
                             }
                         }

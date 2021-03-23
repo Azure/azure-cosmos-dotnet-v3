@@ -273,17 +273,16 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
                     request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+                    if (clientSideRequestStatistics == null)
+                    {
+                        childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
+                    }
 
                     using (new ActivityScope(Guid.NewGuid()))
                     {
                         try
                         {
                             DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request);
-                            if (clientSideRequestStatistics == null)
-                            {
-                                childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
-                            }
-
                             return response;
                         }
                         catch (DocumentClientException ex)

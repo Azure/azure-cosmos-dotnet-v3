@@ -456,13 +456,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Used by typed API only. Exceptions are allowed.
         /// </summary>
+        /// <param name="trace"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>Returns the partition key path</returns>
-        public override async Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(CancellationToken cancellationToken = default)
+        public override async Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
             ContainerProperties containerProperties = await this.GetCachedContainerPropertiesAsync(
                 forceRefresh: false,
-                trace: NoOpTrace.Singleton,
+                trace: trace,
                 cancellationToken: cancellationToken);
             if (containerProperties == null)
             {
