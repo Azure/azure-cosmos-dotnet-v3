@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -34,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             this.stream = Mock.Of<Stream>();
 
             this.observerContext = Mock.Of<ChangeFeedProcessorContextWithManualCheckpoint>();
+            Mock.Get(this.observerContext).Setup(abs => abs.TryCheckpointAsync()).Returns(Task.FromResult((true, (CosmosException) null)));
         }
 
         [TestMethod]
@@ -67,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task ProcessChanges_WhenCheckpointThrows_ShouldThrow()
         {
             ChangeFeedProcessorContextWithManualCheckpoint observerContext = Mock.Of<ChangeFeedProcessorContextWithManualCheckpoint>();
-            CosmosException original = null;
+            CosmosException original = CosmosExceptionFactory.CreateThrottledException("throttled", new Headers());
             Mock.Get(observerContext).Setup(abs => abs.TryCheckpointAsync()).Returns(Task.FromResult((false, original)));
 
             CosmosException caught = await Assert.ThrowsExceptionAsync<CosmosException>(() => this.sut.ProcessChangesAsync(observerContext, this.stream, CancellationToken.None));

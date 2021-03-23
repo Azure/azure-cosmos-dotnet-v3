@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// The context passed to <see cref="ChangeFeedObserver"/> events.
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     message: "Lease was lost due to load balancing and will be processed by another instance",
                     stackTrace: leaseLostException.StackTrace,
                     headers: new Headers(),
-                    trace: null,
+                    trace: NoOpTrace.Singleton,
                     error: null,
                     innerException: leaseLostException);
                 return (isSuccess: false, error: cosmosException);
