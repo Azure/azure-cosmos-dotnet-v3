@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         }  
 
         [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
-        internal string Type { get; set; }
+        public string Type { get; private set; }
 
         /// <summary>
         /// Serialized form of metadata.
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>
         [JsonProperty(PropertyName = "name", NullValueHandling = NullValueHandling.Ignore)]
-        public string Name { get; set; }
+        public string Name { get; private set; }
 
         /// <summary>
         /// Serialized form of metadata.
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>
         [JsonProperty(PropertyName = "value", NullValueHandling = NullValueHandling.Ignore)]
-        public string Value { get; set; }
+        public string Value { get; private set; }
 
         /// <inheritdoc/>
         public override bool Equals(object obj)
