@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await GatewayStoreModel.ApplySessionTokenAsync(request,
                                                            Cosmos.ConsistencyLevel.Session,
                                                            sessionContainer,
-                                                           await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(),
+                                                           await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton),
                                                            await this.cosmosClient.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
 
             string sessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await GatewayStoreModel.ApplySessionTokenAsync(request,
                                                                Cosmos.ConsistencyLevel.Session,
                                                                client.DocumentClient.sessionContainer,
-                                                               await client.DocumentClient.GetPartitionKeyRangeCacheAsync(),
+                                                               await client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton),
                                                                await client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton));
 
                 string readSessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
