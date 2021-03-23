@@ -598,6 +598,7 @@
           "RequestUri": "http://someuri1.com/",
           "ResourceType": "Document",
           "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
           "StatusCode": "OK"
         },
         {
@@ -606,6 +607,7 @@
           "RequestUri": "http://someuri1.com/",
           "ResourceType": "Document",
           "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
           "ExceptionType": "System.OperationCanceledException",
           "ExceptionMessage": "The operation was canceled."
         }

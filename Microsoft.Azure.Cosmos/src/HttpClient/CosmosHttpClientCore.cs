@@ -283,6 +283,9 @@ namespace Microsoft.Azure.Cosmos
                                 if (isOutOfRetries || !timeoutPolicy.IsSafeToRetry(requestMessage.Method))
                                 {
                                     // throw current exception (caught in transport handler)
+                                    string message =
+                                            $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
+                                    e.Data.Add("Message", message);
                                     throw;
                                 }
 

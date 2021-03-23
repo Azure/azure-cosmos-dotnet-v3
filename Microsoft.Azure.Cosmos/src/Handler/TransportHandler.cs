@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 Debug.Assert(System.Diagnostics.Trace.CorrelationManager.ActivityId != Guid.Empty, "Trace activity id is missing");
                 CosmosException cosmosException = CosmosExceptionFactory.CreateRequestTimeoutException(
-                                                            message: "GatewayStoreClient Request Timeout",
+                                                            message: ex.Data?["Message"].ToString(),
                                                             headers: new Headers()
                                                             {
                                                                 ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
