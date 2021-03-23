@@ -731,7 +731,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;
