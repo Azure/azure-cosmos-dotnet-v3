@@ -61,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters
             }
 
             JToken typeToken = token["type"];
-            if (typeToken.Type != JTokenType.String)
+            if (typeToken == null 
+                || typeToken.Type != JTokenType.String)
             {
                 throw new JsonSerializationException(RMResources.SpatialInvalidGeometryType);
             }

@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         async Task<IRoutingMapProvider> IDocumentQueryClient.GetRoutingMapProviderAsync()
         {
-            return await this.innerClient.GetPartitionKeyRangeCacheAsync();
+            return await this.innerClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
 
         public Task<QueryPartitionProvider> GetQueryPartitionProviderAsync()
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
         public Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
         {
-            return this.innerClient.GetPartitionKeyRangeCacheAsync();
+            return this.innerClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
     }
 }

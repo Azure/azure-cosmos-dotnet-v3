@@ -28,10 +28,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         public async Task MissingPKForCreateThrows()
         {
             Mock<Database> mockContainers = new Mock<Database>();
-
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 null);
 
@@ -53,6 +53,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 .ReturnsAsync(mockContainerResponse.Object);
 
             Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
@@ -65,7 +67,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 null);
 
@@ -79,6 +80,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.IsAny<ContainerProperties>(),
@@ -92,7 +95,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -111,6 +113,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
 #pragma warning disable CS0612 // Type or member is obsolete
@@ -126,7 +130,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -148,6 +151,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
@@ -161,7 +166,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -181,6 +185,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.DefaultTimeToLive.Equals((int)timeToLive.TotalSeconds)),
@@ -194,7 +200,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -214,6 +219,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => IndexingMode.None.Equals(settings.IndexingPolicy.IndexingMode) && !settings.IndexingPolicy.Automatic),
@@ -227,7 +234,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 partitionKey);
 
@@ -250,6 +256,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         {
             Mock<ContainerResponse> mockContainerResponse = new Mock<ContainerResponse>();
             Mock<Database> mockContainers = new Mock<Database>();
+            Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
+            mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
                     It.Is<ContainerProperties>((settings) => settings.UniqueKeyPolicy.UniqueKeys.Count == 1 && path.Equals(settings.UniqueKeyPolicy.UniqueKeys[0].Paths[0])),
@@ -263,7 +271,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
 
             ContainerBuilder containerFluentDefinitionForCreate = new ContainerBuilder(
                 mockContainers.Object,
-                GetContext(),
                 containerName,
                 partitionKey);
 

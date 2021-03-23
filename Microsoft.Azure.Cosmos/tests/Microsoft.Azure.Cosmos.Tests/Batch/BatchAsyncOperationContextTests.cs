@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
             }
 
-            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
+            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
             {
                 return Task.FromResult(this.partitionKeyRangeCache.Object);
             }
