@@ -61,6 +61,7 @@ namespace Cosmos.Samples.AzureFunctions
             }
             catch (CosmosException cosmosException)
             {
+                log.LogError("Creating item failed with error {0}", cosmosException.ToString());
                 return new BadRequestObjectResult($"Failed to create item. Cosmos Status Code {cosmosException.StatusCode}, Sub Status Code {cosmosException.SubStatusCode}: {cosmosException.Message}.");
             }
         }
