@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 if (PartitionKeyRangeWriteFailoverHandler.TryCreate(
                     client.GetAccountConsistencyLevelAsync,
                     () => documentClient.GlobalEndpointManager.ReadEndpoints,
-                    documentClient.AddressResolver,
+                    new Lazy<Documents.IAddressResolver>(() => client.DocumentClient.AddressResolver),
                     requestedClientConsistencyLevel,
                     connectionMode,
                     out RequestHandler partitionKeyRangeWriteFailoverHandler))

@@ -5,22 +5,17 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class PartitionKeyRangeWriteFailoverHandlerTests
@@ -28,10 +23,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TryCreateTests()
         {
+            Mock<IAddressResolver> mockAddressResolver = new Mock<IAddressResolver>();
+            Lazy<IAddressResolver> lazyAddressResolver = new Lazy<IAddressResolver>(() => mockAddressResolver.Object);
+
             Assert.IsTrue(PartitionKeyRangeWriteFailoverHandler.TryCreate(
                 () => Task.FromResult(Cosmos.ConsistencyLevel.Strong),
                 () => new List<Uri>() { new Uri("") },
-                new Mock<IAddressResolver>().Object,
+                lazyAddressResolver,
                 null,
                 ConnectionMode.Direct,
                 out RequestHandler requestHandler));
@@ -39,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(PartitionKeyRangeWriteFailoverHandler.TryCreate(
                () => Task.FromResult(Cosmos.ConsistencyLevel.Strong),
                () => new List<Uri>() { new Uri("") },
-               new Mock<IAddressResolver>().Object,
+               lazyAddressResolver,
                Cosmos.ConsistencyLevel.Strong,
                ConnectionMode.Direct,
                out requestHandler));
@@ -47,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(PartitionKeyRangeWriteFailoverHandler.TryCreate(
                   () => Task.FromResult(Cosmos.ConsistencyLevel.Strong),
                   () => new List<Uri>() { new Uri("") },
-                  new Mock<IAddressResolver>().Object,
+                  lazyAddressResolver,
                   Cosmos.ConsistencyLevel.Strong,
                   ConnectionMode.Gateway,
                   out requestHandler));
@@ -57,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsFalse(PartitionKeyRangeWriteFailoverHandler.TryCreate(
                    () => Task.FromResult(Cosmos.ConsistencyLevel.Strong),
                    () => new List<Uri>() { new Uri("") },
-                   new Mock<IAddressResolver>().Object,
+                   lazyAddressResolver,
                    consistencyLevel,
                    ConnectionMode.Direct,
                    out requestHandler));
@@ -65,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsFalse(PartitionKeyRangeWriteFailoverHandler.TryCreate(
                    () => Task.FromResult(Cosmos.ConsistencyLevel.Strong),
                    () => new List<Uri>() { new Uri("") },
-                   new Mock<IAddressResolver>().Object,
+                   lazyAddressResolver,
                    consistencyLevel,
                    ConnectionMode.Gateway,
                    out requestHandler));
@@ -75,10 +73,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task PositiveScenarioAsync()
         {
+            Mock<IAddressResolver> mockAddressResolver = new Mock<IAddressResolver>();
+            Lazy<IAddressResolver> lazyAddressResolver = new Lazy<IAddressResolver>(() => mockAddressResolver.Object);
             Assert.IsTrue(PartitionKeyRangeWriteFailoverHandler.TryCreate(
                 () => throw new Exception("Shouldn't be checking consistency"),
                 () => throw new Exception("Shouldn't be getting URI list"),
-                new Mock<IAddressResolver>().Object,
+                lazyAddressResolver,
                 null,
                 ConnectionMode.Direct,
                 out RequestHandler requestHandler));
@@ -106,42 +106,21 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task RetryScenarioAsync()
         {
             List<Uri> regions = new List<Uri>() { new Uri("https://FirstRegion"), new Uri("https://SecondRegion") };
-            Mock<IAddressResolver> mockAddressResolver = new Mock<IAddressResolver>();
-            
-            Assert.IsTrue(PartitionKeyRangeWriteFailoverHandler.TryCreate(
-                () => Task.FromResult(Cosmos.ConsistencyLevel.Strong),
-                () => regions,
-                mockAddressResolver.Object,
-                null,
-                ConnectionMode.Direct,
-                out RequestHandler requestHandler));
+            this.MockAndCreatePartitionKeyRangeWriteFailoverHandler(
+                regions,
+                out RequestHandler requestHandler);
 
             RequestMessage requestMessage = new RequestMessage(
                 HttpMethod.Put,
                 "/dbs/testdb/colls/testColl/docs/123",
                 NoOpTrace.Singleton)
-            { 
+            {
                 ResourceType = ResourceType.Document,
                 OperationType = OperationType.Create
             };
 
             DocumentServiceRequest documentServiceRequest = requestMessage.ToDocumentServiceRequest();
             documentServiceRequest.RequestContext.RouteToLocation(regions[0]);
-
-            mockAddressResolver.Setup(x => x.ResolveAsync(
-                 documentServiceRequest,
-                 false,
-                 It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionAddressInformation(new AddressInformation[]
-                 {
-                    new AddressInformation()
-                    {
-                        IsPrimary = true,
-                        IsPublic = true,
-                        PhysicalUri = "https://FirstPysicalUri",
-                        Protocol = Documents.Client.Protocol.Tcp
-                    }
-
-                 })));
 
             Mock<RequestHandler> mockRequestHandler = new Mock<RequestHandler>();
             Headers headers = new Headers
@@ -170,6 +149,86 @@ namespace Microsoft.Azure.Cosmos.Tests
                 default);
 
             Assert.AreEqual(successResponse.StatusCode, responseFromHandler.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task HttpRetryScenarioAsync()
+        {
+            List<Uri> regions = new List<Uri>() { new Uri("https://FirstRegion"), new Uri("https://SecondRegion") };
+            this.MockAndCreatePartitionKeyRangeWriteFailoverHandler(
+                regions,
+                out RequestHandler requestHandler);
+
+            RequestMessage requestMessage = new RequestMessage(
+                HttpMethod.Put,
+                "/dbs/testdb/colls/testColl/docs/123",
+                NoOpTrace.Singleton)
+            {
+                ResourceType = ResourceType.Document,
+                OperationType = OperationType.Create
+            };
+
+            DocumentServiceRequest documentServiceRequest = requestMessage.ToDocumentServiceRequest();
+            documentServiceRequest.RequestContext.RouteToLocation(regions[0]);
+
+            Mock<RequestHandler> mockRequestHandler = new Mock<RequestHandler>();
+
+            ResponseMessage successResponse = new ResponseMessage(HttpStatusCode.Created, requestMessage);
+
+            mockRequestHandler.Setup(x => x.SendAsync(It.Is<RequestMessage>((request) => request.ToDocumentServiceRequest().RequestContext.LocationEndpointToRoute == regions[0]), It.IsAny<CancellationToken>()))
+                       .Throws(new HttpRequestException("mock HttpRequestException"));
+            mockRequestHandler.Setup(x => x.SendAsync(It.Is<RequestMessage>((request) => request.ToDocumentServiceRequest().RequestContext.LocationEndpointToRoute == regions[1]), It.IsAny<CancellationToken>()))
+                       .Returns(Task.FromResult(successResponse));
+
+            requestHandler.InnerHandler = mockRequestHandler.Object;
+
+            ResponseMessage responseFromHandler = await requestHandler.SendAsync(
+                requestMessage,
+                default);
+
+            Assert.AreEqual(successResponse.StatusCode, responseFromHandler.StatusCode);
+        }
+
+        private void MockAndCreatePartitionKeyRangeWriteFailoverHandler(
+            List<Uri> regions,
+            out RequestHandler requestHandler)
+        {
+            Mock<DocumentClient> mockDocumentClient = new Mock<DocumentClient>(new Uri("https://localhost:8081"), "");
+            Mock<CosmosClient> client = new Mock<CosmosClient>();
+            client.Setup(x => x.DocumentClient).Returns(mockDocumentClient.Object);
+            Mock<IAddressResolver> mockAddressResolver = new Mock<IAddressResolver>();
+            Lazy<IAddressResolver> lazyAddressResolver = new Lazy<IAddressResolver>(() => mockAddressResolver.Object);
+
+            Assert.IsTrue(PartitionKeyRangeWriteFailoverHandler.TryCreate(
+                () => Task.FromResult(Cosmos.ConsistencyLevel.Strong),
+                () => regions,
+                lazyAddressResolver,
+                null,
+                ConnectionMode.Direct,
+                out requestHandler));
+
+            mockAddressResolver.Setup(x => x.ResolveAsync(
+                 It.IsAny<DocumentServiceRequest>(),
+                 false,
+                 It.IsAny<CancellationToken>())).Returns<DocumentServiceRequest, bool, CancellationToken>((x, y, z) =>
+                 {
+                     x.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+                     {
+                         Id = "0",
+                         MinInclusive = "00",
+                         MaxExclusive = "FF",
+                     };
+                     return Task.FromResult(new PartitionAddressInformation(new AddressInformation[]
+                     {
+                        new AddressInformation()
+                        {
+                            IsPrimary = true,
+                            IsPublic = true,
+                            PhysicalUri = "https://FirstPysicalUri",
+                            Protocol = Documents.Client.Protocol.Tcp
+                        }
+                     }));
+                 });
         }
     }
 }

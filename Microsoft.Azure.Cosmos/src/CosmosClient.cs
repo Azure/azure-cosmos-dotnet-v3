@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal AuthorizationTokenProvider AuthorizationTokenProvider { get; }
 
-        internal DocumentClient DocumentClient => this.ClientContext.DocumentClient;
+        internal virtual DocumentClient DocumentClient => this.ClientContext.DocumentClient;
         internal RequestInvokerHandler RequestHandler => this.ClientContext.RequestHandler;
         internal CosmosClientContext ClientContext { get; }
 

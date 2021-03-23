@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
             else
             {
-                Debug.Fail("DocumentServiceRequest start time not recorded");
+                //Debug.Fail("DocumentServiceRequest start time not recorded");
             }
 
             DateTime responseTime = DateTime.UtcNow;

@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
@@ -33,18 +34,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
     /// </summary>
     internal class PartitionKeyRangeWriteFailoverHandler : RequestHandler
     {
-        private readonly Lazy<ConcurrentDictionary<Uri, Uri>> lazyUriToFailedOverLocation;
+        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, Uri>> lazyUriToFailedOverLocation;
         private readonly Func<IReadOnlyCollection<Uri>> getReadEndpoints;
-        private readonly IAddressResolver addressResolver;
         private readonly Func<Task<Cosmos.ConsistencyLevel>> getAccountConsistencyAsync;
+        private readonly ReaderWriterLockSlim writeFailedOverLock = new ReaderWriterLockSlim();
+        private readonly Lazy<IAddressResolver> addressResolver;
+
+        private Uri? primaryWriteLocationFailedOver = null;
 
         private PartitionKeyRangeWriteFailoverHandler(
             Func<Task<Cosmos.ConsistencyLevel>> getAccountConsistency,
             Func<IReadOnlyCollection<Uri>> getReadEndpoints,
-            IAddressResolver addressResolver)
+            Lazy<IAddressResolver> addressResolver)
         {
             this.getAccountConsistencyAsync = getAccountConsistency ?? throw new ArgumentNullException(nameof(getAccountConsistency));
-            this.lazyUriToFailedOverLocation = new Lazy<ConcurrentDictionary<Uri, Uri>>();
+            this.lazyUriToFailedOverLocation = new Lazy<ConcurrentDictionary<PartitionKeyRange, Uri>>();
             this.getReadEndpoints = getReadEndpoints ?? throw new ArgumentNullException(nameof(getReadEndpoints));
             this.addressResolver = addressResolver ?? throw new ArgumentNullException(nameof(addressResolver));
         }
@@ -52,13 +56,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public static bool TryCreate(
             Func<Task<Cosmos.ConsistencyLevel>> getAccountConsistency,
             Func<IReadOnlyCollection<Uri>> getReadEndpoints,
-            IAddressResolver addressResolver,
+            Lazy<IAddressResolver> addressResolver,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
             ConnectionMode connectionMode,
             out RequestHandler? requestHandler)
         {
             requestHandler = null;
-
+            
             if (connectionMode != ConnectionMode.Direct)
             {
                 return false;
@@ -91,28 +95,102 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 Cosmos.ConsistencyLevel consistencyLevel = await this.getAccountConsistencyAsync();
                 if (consistencyLevel == Cosmos.ConsistencyLevel.Strong)
                 {
-                    return await this.DocumentWritePartitionKeyRangeFailoverHelperAsync(request, cancellationToken);
+                    return await this.WriteRegionDownHelperAsync(
+                        request,
+                        cancellationToken);
                 }
             }
 
             return await base.SendAsync(request, cancellationToken);
         }
 
-        private async Task<ResponseMessage> DocumentWritePartitionKeyRangeFailoverHelperAsync(
+        private async Task<ResponseMessage> WriteRegionDownHelperAsync(
+           RequestMessage request,
+           CancellationToken cancellationToken)
+        {
+            DocumentServiceRequest documentServiceRequest = request.ToDocumentServiceRequest();
+            Uri startingLocation = documentServiceRequest.RequestContext.LocationEndpointToRoute;
+            Lazy<IEnumerator<(Uri endpoint, bool isPrimaryLocation)>> locationToFailover = new Lazy<IEnumerator<(Uri endpoint, bool isPrimaryLocation)>>(
+                () => this.GetLocationsToRetryOn(
+                 this.getReadEndpoints(),
+                 startingLocation));
+
+            if (this.primaryWriteLocationFailedOver != null)
+            {
+                this.writeFailedOverLock.EnterReadLock();
+                if (this.primaryWriteLocationFailedOver != null)
+                {
+                    try
+                    {
+                        documentServiceRequest.RequestContext.RouteToLocation(this.primaryWriteLocationFailedOver);
+                    }
+                    finally
+                    {
+                        this.writeFailedOverLock.ExitReadLock();
+                    }
+                }
+            }
+
+            bool hitHttpRequestException = false;
+            do
+            {
+                try
+                {
+                    (bool isSuccess, ResponseMessage responseMessage) = await this.DocumentWritePartitionKeyRangeFailoverHelperAsync(
+                        request,
+                        documentServiceRequest,
+                        locationToFailover,
+                        cancellationToken);
+
+                    if (hitHttpRequestException &&
+                        isSuccess)
+                    {
+                        this.writeFailedOverLock.EnterWriteLock();
+                        try
+                        {
+                            // The primary region is now the default. No need for additional failover logic
+                            this.primaryWriteLocationFailedOver = this.primaryWriteLocationFailedOver == startingLocation ? null : locationToFailover.Value.Current.endpoint;
+                        }
+                        finally
+                        {
+                            this.writeFailedOverLock.ExitWriteLock();
+                        }
+                    }
+
+                    // If the iterator was created then dispose of it.
+                    if (locationToFailover.IsValueCreated)
+                    {
+                        locationToFailover.Value.Dispose();
+                    }
+
+                    return responseMessage;
+                }
+                catch (HttpRequestException)
+                {
+                    hitHttpRequestException = true;
+                    if (!this.TryUpdateLocation(
+                        documentServiceRequest.RequestContext,
+                        locationToFailover.Value))
+                    {
+                        throw;
+                    }
+                }
+            }
+            while (true);
+        }
+
+        private async Task<(bool isSuccess, ResponseMessage responseMessage)> DocumentWritePartitionKeyRangeFailoverHelperAsync(
             RequestMessage request,
+            DocumentServiceRequest documentServiceRequest,
+            Lazy<IEnumerator<(Uri endpoint, bool isPrimaryLocation)>> locationToFailover,
             CancellationToken cancellationToken)
         {
-            Uri? startingLocation = null;
-            DocumentServiceRequest? documentServiceRequest = null;
-            Uri? primaryReplicaUri = null;
+            PartitionKeyRange? primaryReplicaUri = null;
             bool changedInitialLocation = false;
 
             if (this.lazyUriToFailedOverLocation.IsValueCreated &&
                     this.lazyUriToFailedOverLocation.Value.Any())
             {
-                documentServiceRequest = request.ToDocumentServiceRequest();
-                startingLocation = documentServiceRequest.RequestContext.LocationEndpointToRoute;
-
                 primaryReplicaUri = await this.GetPrimaryReplicaUriAsync(
                     documentServiceRequest,
                     cancellationToken);
@@ -128,34 +206,32 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 }
             }
 
-            IEnumerator<(Uri endpoint, bool isPrimaryLocation)>? locationToFailover = null;
+            bool requestDidPartitionLevelRetry = false;
             while (true)
             {
                 ResponseMessage responseMessage;
+
                 using (request.Trace.StartChild("PartitionKeyRangeWriteFailoverHandler SendAsync"))
                 {
-                     responseMessage = await base.SendAsync(request, cancellationToken);
+                    responseMessage = await base.SendAsync(request, cancellationToken);
                 }
 
                 bool isWriteForbidden = responseMessage.StatusCode == HttpStatusCode.Forbidden &&
                     responseMessage.Headers.SubStatusCode == SubStatusCodes.WriteForbidden;
 
-                bool isServiceUnavailable = responseMessage.StatusCode != HttpStatusCode.ServiceUnavailable;
+                bool isServiceUnavailable = responseMessage.StatusCode == HttpStatusCode.ServiceUnavailable;
 
                 // The request should not be retried in another region
-                if (!isWriteForbidden || !isServiceUnavailable)
+                if (!isWriteForbidden && !isServiceUnavailable)
                 {
                     // No retries occurred. Return original response
-                    if (locationToFailover == null)
+                    if (!requestDidPartitionLevelRetry)
                     {
-                        return responseMessage;
+                        return (true, responseMessage);
                     }
 
-                    // The initial location failed and was retried on other regions
-                    documentServiceRequest ??= request.ToDocumentServiceRequest();
-
                     // The starting location is now the correct location. 
-                    if (locationToFailover.Current.isPrimaryLocation)
+                    if (locationToFailover.Value.Current.isPrimaryLocation)
                     {
                         // Remove the override so it uses default location for future requests.
                         if (changedInitialLocation && primaryReplicaUri != null)
@@ -177,51 +253,54 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         {
                             this.lazyUriToFailedOverLocation.Value.AddOrUpdate(
                                 primaryReplicaUri,
-                                locationToFailover.Current.endpoint,
-                                (key, currentLocation) => locationToFailover.Current.endpoint);
+                                locationToFailover.Value.Current.endpoint,
+                                (key, currentLocation) => locationToFailover.Value.Current.endpoint);
                         }
                     }
 
-                    return responseMessage;
+                    return (true, responseMessage);
                 }
 
-                documentServiceRequest ??= request.ToDocumentServiceRequest();
-                DocumentServiceRequestContext requestContext = documentServiceRequest.RequestContext;
-
-                if (locationToFailover == null)
+                if (!this.TryUpdateLocation(
+                     documentServiceRequest.RequestContext,
+                     locationToFailover.Value))
                 {
-                    using (request.Trace.StartChild("PartitionKeyRangeWriteFailoverHandler locationToFailover null"))
-                    {
-                        startingLocation ??= requestContext.LocationEndpointToRoute;
-                        locationToFailover = this.GetLocationsToRetryOn(
-                            this.getReadEndpoints(),
-                            startingLocation);
-                    }
+                    return (false, responseMessage);
                 }
 
-                // No more location to retry on
-                if (!locationToFailover.MoveNext())
-                {
-                    return responseMessage;
-                }
-
-                // Update the request to use the new location
-                requestContext.ClearRouteToLocation();
-                requestContext.RouteToLocation(locationToFailover.Current.endpoint);
+                requestDidPartitionLevelRetry = true;
             }
         }
 
-        private async Task<Uri> GetPrimaryReplicaUriAsync(
+        private bool TryUpdateLocation(
+            DocumentServiceRequestContext requestContext,
+            IEnumerator<(Uri endpoint, bool isPrimaryLocation)> locationToFailover)
+        {
+            // No more location to retry on
+            if (!locationToFailover.MoveNext())
+            {
+                return false;
+            }
+
+            // Update the request to use the new location
+            requestContext.ClearRouteToLocation();
+            requestContext.RouteToLocation(locationToFailover.Current.endpoint);
+            return true;
+        }
+
+        private async Task<PartitionKeyRange> GetPrimaryReplicaUriAsync(
             DocumentServiceRequest documentServiceRequest,
             CancellationToken cancellationToken)
         {
-            PartitionAddressInformation partitionInfo = await this.addressResolver.ResolveAsync(
-                 documentServiceRequest,
-                 false,
-                 cancellationToken);
+            if (documentServiceRequest.PartitionKeyRangeIdentity == null)
+            {
+                await this.addressResolver.Value.ResolveAsync(
+                     documentServiceRequest,
+                     false,
+                     cancellationToken);
+            }
 
-            Uri primaryReplicaUri = partitionInfo.GetPrimaryUri(documentServiceRequest, Documents.Client.Protocol.Tcp);
-            return primaryReplicaUri;
+            return documentServiceRequest.RequestContext.ResolvedPartitionKeyRange;
         }
 
         private IEnumerator<(Uri endpoint, bool isPrimaryLocation)> GetLocationsToRetryOn(IReadOnlyCollection<Uri> endpoints, Uri startingEndpoint)
@@ -241,8 +320,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 yield return (endpoint, false);
             }
-
-            yield return (startingEndpoint, true);
         }
     }
 }
