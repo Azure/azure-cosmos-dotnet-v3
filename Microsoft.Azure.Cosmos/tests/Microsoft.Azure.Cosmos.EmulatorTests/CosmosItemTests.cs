@@ -866,6 +866,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 createdDateTime = createDateTime,
                 statusCode = HttpStatusCode.Accepted,
                 itemIds = new int[] { 1, 5, 10 },
+                itemcode = new byte?[5] { 0x16, (byte)'\0', 0x3, null, (byte)'}' },
             };
 
             dynamic testItem2 = new
@@ -878,6 +879,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 createdDateTime = createDateTime,
                 statusCode = HttpStatusCode.Accepted,
                 itemIds = new int[] { 1, 5, 10 },
+                itemcode = new byte?[5] { 0x16, (byte)'\0', 0x3, null, (byte)'}' },
             };
 
             //with Custom Serializer.
@@ -899,7 +901,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         || itemType == typeof(string)
                         || itemType == typeof(DateTime)
                         || itemType == typeof(HttpStatusCode)
-                        || itemType == typeof(int[]))
+                        || itemType == typeof(int[])
+                        || itemType == typeof(byte))
                     {
                         toStreamCount++;
                     }
@@ -930,6 +933,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithParameterStream("@statusCode", cosmosSerializerHelper.ToStream<dynamic>(testItem1.statusCode)),
                 new QueryDefinition("select * from t where t.itemIds = @itemIds" )
                 .WithParameterStream("@itemIds", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemIds)),
+                new QueryDefinition("select * from t where t.itemcode = @itemcode" )
+                .WithParameterStream("@itemcode", cosmosSerializerHelper.ToStream<dynamic>(testItem1.itemcode)),
                 new QueryDefinition("select * from t where t.pk = @pk and t.cost = @cost" )
                     .WithParameterStream("@pk", cosmosSerializerHelper.ToStream<dynamic>(testItem1.pk))
                     .WithParameterStream("@cost", cosmosSerializerHelper.ToStream<dynamic>(testItem1.cost)),
