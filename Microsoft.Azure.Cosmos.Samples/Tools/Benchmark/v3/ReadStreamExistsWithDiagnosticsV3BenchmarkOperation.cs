@@ -80,15 +80,17 @@ namespace CosmosBenchmark
 
                 using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
                 {
-                    ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
+                    using (ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
                             inputStream,
-                            new PartitionKey(this.nextExecutionItemPartitionKey));
-
-                    System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
-
-                    if (itemResponse.StatusCode != HttpStatusCode.Created)
+                            new PartitionKey(this.nextExecutionItemPartitionKey)))
                     {
-                        throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+
+                        System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
+
+                        if (itemResponse.StatusCode != HttpStatusCode.Created)
+                        {
+                            throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                        }
                     }
                 }
             }
