@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Indexing policy annotation.
         /// </summary>
-        [JsonProperty(PropertyName = "annotation")]
+        [JsonProperty(PropertyName = "annotation", NullValueHandling = NullValueHandling.Ignore)]
         public string Annotation { get; set; }
 #endif
 

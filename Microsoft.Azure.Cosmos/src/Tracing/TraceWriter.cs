@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Tracing
 {
-    using System.Collections.Generic;
+    using System.Collections.Concurrent;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal static partial class TraceWriter
     {
-        private static readonly Dictionary<string, string> FilePathToName = new Dictionary<string, string>();
+        private static readonly ConcurrentDictionary<string, string> FilePathToName = new ConcurrentDictionary<string, string>();
 
         public static void WriteTrace(
             TextWriter writer,
