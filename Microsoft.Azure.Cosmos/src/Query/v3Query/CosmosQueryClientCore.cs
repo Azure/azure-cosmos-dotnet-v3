@@ -84,15 +84,17 @@ namespace Microsoft.Azure.Cosmos
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
+            bool allowDCount,
             CancellationToken cancellationToken)
         {
             return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey);
+                querySpec: sqlQuerySpec,
+                partitionKeyDefinition: partitionKeyDefinition,
+                requireFormattableOrderByQuery: requireFormattableOrderByQuery,
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                hasLogicalPartitionKey: hasLogicalPartitionKey,
+                allowDCount: allowDCount);
         }
 
         public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
