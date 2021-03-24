@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class GatewayClientSideRequestStats
+    public class GatewayClientSideRequestStatsTests
     {
         private CosmosClient CosmosClient;
         private Container Container;

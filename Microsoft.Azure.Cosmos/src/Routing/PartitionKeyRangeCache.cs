@@ -282,8 +282,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         try
                         {
-                            DocumentServiceResponse response = await this.storeModel.ProcessMessageAsync(request);
-                            return response;
+                            return await this.storeModel.ProcessMessageAsync(request);
                         }
                         catch (DocumentClientException ex)
                         {

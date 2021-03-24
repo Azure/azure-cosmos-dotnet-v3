@@ -220,16 +220,16 @@ namespace Microsoft.Azure.Cosmos
                 createRequestMessageAsync,
                 resourceType,
                 timeoutPolicy,
-                cancellationToken,
-                clientSideRequestStatistics);
+                clientSideRequestStatistics,
+                cancellationToken);
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            CancellationToken cancellationToken,
-            IClientSideRequestStatistics clientSideRequestStatistics)
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            CancellationToken cancellationToken)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
