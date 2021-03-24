@@ -37,16 +37,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public Headers Headers => this.responseMessage.Headers;
 
-        public async Task<(bool isSuccess, CosmosException error)> TryCheckpointAsync()
+        public async Task<(bool isSuccess, Exception error)> TryCheckpointAsync()
         {
             try
             {
                 await this.checkpointer.CheckpointPartitionAsync(this.responseMessage.Headers.ContinuationToken);
                 return (isSuccess: true, error: null);
-            }
-            catch (CosmosException cosmosException)
-            {
-                return (isSuccess: false, error: cosmosException);
             }
             catch (LeaseLostException leaseLostException)
             {
@@ -63,11 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
             catch (Exception exception)
             {
-                CosmosException cosmosException = CosmosExceptionFactory.CreateInternalServerErrorException(
-                    message: exception.Message,
-                    headers: new Headers(),
-                    innerException: exception);
-                return (isSuccess: false, error: cosmosException);
+                return (isSuccess: false, error: exception);
             }
         }
 

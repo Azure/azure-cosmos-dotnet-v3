@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -43,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).Returns(Task.CompletedTask);
             ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
 
-            (bool isSuccess, CosmosException exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
+            (bool isSuccess, Exception exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
             Assert.IsTrue(isSuccess);
             Assert.IsNull(exception);
         }
@@ -59,10 +58,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).ThrowsAsync(new LeaseLostException());
             ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
 
-            (bool isSuccess, CosmosException exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
+            (bool isSuccess, Exception exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
             Assert.IsFalse(isSuccess);
             Assert.IsNotNull(exception);
-            Assert.AreEqual(HttpStatusCode.PreconditionFailed, exception.StatusCode);
+            Assert.AreEqual(HttpStatusCode.PreconditionFailed, (exception as CosmosException).StatusCode);
         }
 
         [TestMethod]
@@ -77,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).ThrowsAsync(cosmosException);
             ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
 
-            (bool isSuccess, CosmosException exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
+            (bool isSuccess, Exception exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
             Assert.IsFalse(isSuccess);
             Assert.IsNotNull(exception);
             Assert.ReferenceEquals(cosmosException, exception);
@@ -95,11 +94,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             checkpointer.Setup(c => c.CheckpointPartitionAsync(It.Is<string>(s => s == continuation))).ThrowsAsync(cosmosException);
             ChangeFeedObserverContextCore changeFeedObserverContextCore = new ChangeFeedObserverContextCore(leaseToken, responseMessage, checkpointer.Object);
 
-            (bool isSuccess, CosmosException exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
+            (bool isSuccess, Exception exception) = await changeFeedObserverContextCore.TryCheckpointAsync();
             Assert.IsFalse(isSuccess);
             Assert.IsNotNull(exception);
-            Assert.AreEqual(HttpStatusCode.InternalServerError, exception.StatusCode);
-            Assert.ReferenceEquals(cosmosException, exception.InnerException);
+            Assert.ReferenceEquals(cosmosException, exception);
         }
     }
 }

@@ -1434,7 +1434,7 @@ namespace Microsoft.Azure.Cosmos
         ///     // consume changes
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, CosmosException error) checkpointResult = await tryCheckpointAsync();
+        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
         ///     if (!isSuccess)
         ///     {
         ///         // log error, could not checkpoint
@@ -1447,7 +1447,7 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<T> changes,
-            Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync,
+            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -1478,7 +1478,7 @@ namespace Microsoft.Azure.Cosmos
         ///     // consume stream
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, CosmosException error) checkpointResult = await tryCheckpointAsync();
+        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
         ///     if (!isSuccess)
         ///     {
         ///         // log error, could not checkpoint
@@ -1491,7 +1491,7 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
             ChangeFeedProcessorContext context,
             Stream changes,
-            Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync,
+            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
             CancellationToken cancellationToken);
 
         /// <summary>

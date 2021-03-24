@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
             await this.observer.ProcessChangesAsync(context, stream, cancellationToken).ConfigureAwait(false);
 
-            (bool isSuccess, CosmosException exception) = await context.TryCheckpointAsync();
+            (bool isSuccess, Exception exception) = await context.TryCheckpointAsync();
             if (!isSuccess)
             {
                 throw exception;
