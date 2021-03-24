@@ -9,7 +9,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Globalization;
     using System.Net;
     using System.Net.Http;
-    using Newtonsoft.Json;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
 
     internal sealed class ClientConfigurationTraceDatum : TraceDatum
     {
@@ -29,6 +30,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             this.ConsistencyConfig = new ConsistencyConfig(cosmosClientContext.ClientOptions.ConsistencyLevel,
                                                     cosmosClientContext.ClientOptions.ApplicationPreferredRegions);
+
+            this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
+            this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
+            this.cachedSerializedJson = this.GetSerializedDatum();
         }
 
         public DateTime ClientCreatedDateTimeUtc { get; }
@@ -41,11 +46,63 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public ConsistencyConfig ConsistencyConfig { get; }
 
+        public ReadOnlyMemory<byte> SerializedJson
+        {
+            get
+            {
+                if ((this.cachedUserAgentString != this.UserAgentContainer.UserAgent) ||
+                    (this.cachedNumberOfClientCreated != CosmosClient.numberOfClientsCreated))
+                {
+                    this.cachedNumberOfClientCreated = CosmosClient.numberOfClientsCreated;
+                    this.cachedUserAgentString = this.UserAgentContainer.UserAgent;
+                    this.cachedSerializedJson = this.GetSerializedDatum();
+                }
+
+                return this.cachedSerializedJson;
+            }
+        }
+
         internal readonly UserAgentContainer UserAgentContainer;
+
+        private ReadOnlyMemory<byte> cachedSerializedJson;
+        private int cachedNumberOfClientCreated;
+        private string cachedUserAgentString;
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
+        }
+
+        private ReadOnlyMemory<byte> GetSerializedDatum()
+        {
+            IJsonWriter jsonTextWriter = JsonWriter.Create(JsonSerializationFormat.Text);
+            jsonTextWriter.WriteObjectStart();
+
+            jsonTextWriter.WriteFieldName("Client Created Time Utc");
+            jsonTextWriter.WriteStringValue(this.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
+
+            jsonTextWriter.WriteFieldName("NumberOfClientsCreated");
+            jsonTextWriter.WriteNumber64Value(this.cachedNumberOfClientCreated);
+            jsonTextWriter.WriteFieldName("User Agent");
+            jsonTextWriter.WriteStringValue(this.cachedUserAgentString);
+
+            jsonTextWriter.WriteFieldName("ConnectionConfig");
+            jsonTextWriter.WriteObjectStart();
+
+            jsonTextWriter.WriteFieldName("gw");
+            jsonTextWriter.WriteStringValue(this.GatewayConnectionConfig.ToString());
+            jsonTextWriter.WriteFieldName("rntbd");
+            jsonTextWriter.WriteStringValue(this.RntbdConnectionConfig.ToString());
+            jsonTextWriter.WriteFieldName("other");
+            jsonTextWriter.WriteStringValue(this.OtherConnectionConfig.ToString());
+
+            jsonTextWriter.WriteObjectEnd();
+
+            jsonTextWriter.WriteFieldName("ConsistencyConfig");
+            jsonTextWriter.WriteStringValue(this.ConsistencyConfig.ToString());
+            jsonTextWriter.WriteObjectEnd();
+
+            return jsonTextWriter.GetResult();
         }
     }
 
@@ -67,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                 (int)requestTimeout.TotalSeconds,
                                 webProxy != null,
                                 httpClientFactory != null));
-            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
+            this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
         }
 
         public int MaxConnectionLimit { get; }
@@ -113,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                 maxRequestsPerEndpoint,
                                 tcpEndpointRediscovery,
                                 portReuseMode.ToString()));
-            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
+            this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
         }
 
         public int ConnectionTimeout { get; }
@@ -149,7 +206,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                  "(ed:{0}, be:{1})",
                                  limitToEndpoint,
                                  allowBulkExecution));
-            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
+            this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
         }
 
         public bool LimitToEndpoint { get; }
@@ -181,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                 "(consistency: {0}, prgns:[{1}])",
                                 consistencyLevel.GetValueOrDefault(),
                                 ConsistencyConfig.PreferredRegionsInternal(preferredRegions)));
-            this.lazyJsonString = new Lazy<string>(() => JsonConvert.SerializeObject(this));
+            this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
         }
 
         public ConsistencyLevel ConsistencyLevel { get; }

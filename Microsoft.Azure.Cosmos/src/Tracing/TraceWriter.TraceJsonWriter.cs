@@ -307,31 +307,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
             {
-                this.jsonWriter.WriteObjectStart();
-
-                this.jsonWriter.WriteFieldName("Client Created Time Utc");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture));
-
-                this.jsonWriter.WriteFieldName("NumberOfClientsCreated");
-                this.jsonWriter.WriteNumber64Value(CosmosClient.numberOfClientsCreated);
-                this.jsonWriter.WriteFieldName("User Agent");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.UserAgentContainer.UserAgent);
-                
-                this.jsonWriter.WriteFieldName("ConnectionConfig");
-                this.jsonWriter.WriteObjectStart();
-
-                this.jsonWriter.WriteFieldName("gw");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.GatewayConnectionConfig.ToString());
-                this.jsonWriter.WriteFieldName("rntbd");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.RntbdConnectionConfig.ToString());
-                this.jsonWriter.WriteFieldName("other");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.OtherConnectionConfig.ToString());
-
-                this.jsonWriter.WriteObjectEnd();
-
-                this.jsonWriter.WriteFieldName("ConsistencyConfig");
-                this.jsonWriter.WriteStringValue(clientConfigurationTraceDatum.ConsistencyConfig.ToString());
-                this.jsonWriter.WriteObjectEnd();
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
+                {
+                    jsonTextWriter.WriteRawJsonValue(clientConfigurationTraceDatum.SerializedJson,
+                                                     isFieldName: false);
+                }
             }
 
             private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)

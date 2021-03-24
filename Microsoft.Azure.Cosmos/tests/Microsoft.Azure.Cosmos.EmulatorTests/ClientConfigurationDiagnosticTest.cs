@@ -73,6 +73,21 @@
 
             ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;
             Assert.AreEqual(consistencyConfig.ConsistencyLevel, ConsistencyLevel.Session);
-        } 
+        }
+        
+        [TestMethod]
+        public async Task CachedSerializationTest()
+        {
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+            ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+            ClientConfigurationTraceDatum clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
+            Assert.IsNotNull(clientConfigurationTraceDatum.SerializedJson);
+            TestCommon.CreateCosmosClient();
+            response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+            trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+            clientConfigurationTraceDatum = (ClientConfigurationTraceDatum)trace.Data["Client Configuration"];
+            Assert.IsNotNull(clientConfigurationTraceDatum.SerializedJson);
+        }
     }
 }
