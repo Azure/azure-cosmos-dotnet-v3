@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(GetPartitionKeyRangesAsync),
                 null,
-                (trace) => base.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
+                (trace) => base.GetPartitionKeyRangesAsync(feedRange, trace, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

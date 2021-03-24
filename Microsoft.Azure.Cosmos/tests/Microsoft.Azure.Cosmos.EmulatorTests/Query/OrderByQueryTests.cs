@@ -92,7 +92,7 @@
         {
             string partitionKey = testArg;
             IDictionary<string, string> idToRangeMinKeyMap = new Dictionary<string, string>();
-            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+            IRoutingMapProvider routingMapProvider = await this.Client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
 
             ContainerProperties containerSettings = await container.ReadContainerAsync();
             foreach (CosmosObject document in documents)
