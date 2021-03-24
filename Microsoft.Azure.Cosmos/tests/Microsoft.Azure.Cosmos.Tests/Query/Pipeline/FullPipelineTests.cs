@@ -370,6 +370,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
+                allowDCount: true,
                 hasLogicalPartitionKey: false);
 
             info.ThrowIfFailed();
