@@ -229,25 +229,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
-            if (response.IsSuccessStatusCode)
+            for (int index = 0; index < response.Count; index++)
             {
-                for (int index = 0; index < response.Count; index++)
+                TransactionalBatchOperationResult result = response[index];
+
+                if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
-                    TransactionalBatchOperationResult result = response[index];
+                    (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
+                        result.ResourceStream,
+                        this.encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
 
-                    if (result.ResourceStream != null)
-                    {
-                        (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
-                            result.ResourceStream,
-                            this.encryptor,
-                            diagnosticsContext,
-                            cancellationToken);
-
-                        result = new EncryptionTransactionalBatchOperationResult(response[index], decryptedStream);
-                    }
-
-                    decryptedTransactionalBatchOperationResults.Add(result);
+                    result = new EncryptionTransactionalBatchOperationResult(response[index], decryptedStream);
                 }
+
+                decryptedTransactionalBatchOperationResults.Add(result);
             }
 
             return new EncryptionTransactionalBatchResponse(

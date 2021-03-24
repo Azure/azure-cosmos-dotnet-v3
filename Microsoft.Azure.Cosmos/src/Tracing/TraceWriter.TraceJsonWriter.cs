@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
 
-                this.WriteJsonUriArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContactedWithName);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
@@ -344,6 +344,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     foreach (Uri contactedReplica in uris)
                     {
                         this.WriteStringValueOrNull(contactedReplica?.ToString());
+                    }
+                }
+
+                this.jsonWriter.WriteArrayEnd();
+            }
+
+            private void WriteRegionsContactedArray(string propertyName, IEnumerable<(string, Uri)> uris)
+            {
+                this.jsonWriter.WriteFieldName(propertyName);
+                this.jsonWriter.WriteArrayStart();
+
+                if (uris != null)
+                {
+                    foreach ((string _, Uri uri) contactedRegion in uris)
+                    {
+                        this.WriteStringValueOrNull(contactedRegion.uri?.ToString());
                     }
                 }
 

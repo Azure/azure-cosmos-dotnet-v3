@@ -373,8 +373,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         datum.FailedReplicas.Add(uri1);
                         datum.FailedReplicas.Add(uri2);
 
-                        datum.RegionsContacted.Add(uri1);
-                        datum.RegionsContacted.Add(uri2);
+                        datum.RegionsContactedWithName.Add(("local", uri1));
+                        datum.RegionsContactedWithName.Add(("local", uri2));
 
                         datum.RequestEndTimeUtc = DateTime.MaxValue;
 
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
                         datum.FailedReplicas.Add(default);
 
-                        datum.RegionsContacted.Add(default);
+                        datum.RegionsContactedWithName.Add(default);
 
                         datum.RequestEndTimeUtc = default;
 
@@ -692,7 +692,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;

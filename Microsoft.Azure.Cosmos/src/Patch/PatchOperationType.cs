@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Type of Patch operation.
     /// </summary>
     [JsonConverter(typeof(StringEnumConverter))]
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
