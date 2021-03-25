@@ -114,6 +114,20 @@ else
 dotnetparameters="$dotnetparameters --ctl_output_event_traces $ctl_output_event_traces"
 fi
 
+if [ -z "$ctl_gateway_mode" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_gateway_mode $ctl_gateway_mode"
+fi
+
+if [ -z "$ctl_logging_context" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_logging_context $ctl_logging_context"
+fi
+
 log_filename="/tmp/dotnetctl.log"
 
 echo "Log file name is $log_filename"
