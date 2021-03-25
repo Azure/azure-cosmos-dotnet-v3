@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedHandler<T> onChangesDelegate);
 
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
 
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos
             string processorName,
             ChangeFeedStreamHandler onChangesDelegate);
 
-        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 #endif

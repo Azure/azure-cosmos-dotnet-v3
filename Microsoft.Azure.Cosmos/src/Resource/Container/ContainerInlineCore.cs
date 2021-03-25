@@ -380,11 +380,11 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
         {
-            return base.GetChangeFeedProcessorBuilder<T>(processorName, onChangesDelegate);
+            return base.GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(processorName, onChangesDelegate);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
@@ -394,11 +394,11 @@ namespace Microsoft.Azure.Cosmos
             return base.GetChangeFeedProcessorBuilder(processorName, onChangesDelegate);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
         {
-            return base.GetChangeFeedProcessorBuilder(processorName, onChangesDelegate);
+            return base.GetChangeFeedProcessorBuilderWithManualCheckpoint(processorName, onChangesDelegate);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName,

@@ -532,7 +532,7 @@ namespace Microsoft.Azure.Cosmos
             return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
         {
@@ -572,7 +572,7 @@ namespace Microsoft.Azure.Cosmos
             return this.GetChangeFeedProcessorBuilderPrivate(processorName, observerFactory);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
         {
