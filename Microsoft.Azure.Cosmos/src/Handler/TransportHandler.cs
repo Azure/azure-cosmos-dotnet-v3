@@ -92,10 +92,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Trace = processMessageAsyncTrace;
 
                 processMessageAsyncTrace.AddDatum("User Agent", this.client.ClientContext.UserAgent);
-                
-                DocumentServiceResponse response = request.OperationType == OperationType.Upsert
-                        ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
-                        : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
+
+                DocumentServiceResponse response = await SpeculativeRetryStore.ProcessMessageAsync(
+                    storeProxy,
+                    TimeSpan.Zero,
+                    serviceRequest,
+                    cancellationToken);
+
+                if (request.OperationType == OperationType.Upsert)
+                {
+                    this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
+                }
 
                 return response.ToCosmosResponseMessage(
                     request,
@@ -119,13 +126,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             return null;
-        }
-
-        private async Task<DocumentServiceResponse> ProcessUpsertAsync(IStoreModel storeProxy, DocumentServiceRequest serviceRequest, CancellationToken cancellationToken)
-        {
-            DocumentServiceResponse response = await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);
-            this.client.DocumentClient.CaptureSessionToken(serviceRequest, response);
-            return response;
         }
     }
 }
