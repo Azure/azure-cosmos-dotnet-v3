@@ -312,6 +312,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     jsonTextWriter.WriteRawJsonValue(clientConfigurationTraceDatum.SerializedJson,
                                                      isFieldName: false);
                 }
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
             }
 
             private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
