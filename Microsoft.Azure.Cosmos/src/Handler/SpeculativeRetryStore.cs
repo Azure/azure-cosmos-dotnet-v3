@@ -68,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             DocumentServiceRequest requestClone = request.Clone();
+            requestClone.Body = request.CloneableBody;
             Task<DocumentServiceResponse> secondRequestTask = storeModel.ProcessMessageAsync(requestClone, cancellationToken);
             Task<DocumentServiceResponse> resultTask = await Task.WhenAny(firstRequestTask, secondRequestTask);
             Task<DocumentServiceResponse> slowTask = firstRequestTask.IsCompleted ? secondRequestTask : firstRequestTask;
