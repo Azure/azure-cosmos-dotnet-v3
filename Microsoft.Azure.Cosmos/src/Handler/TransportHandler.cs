@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private readonly static TimeSpan RetryInterval = TimeSpan.FromMilliseconds(2);
+        private readonly static TimeSpan RetryInterval = TimeSpan.FromMilliseconds(3);
 
         internal async Task<ResponseMessage> ProcessMessageAsync(
             RequestMessage request,
