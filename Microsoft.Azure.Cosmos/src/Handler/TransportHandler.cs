@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
+        private readonly static TimeSpan RetryInterval = TimeSpan.FromMilliseconds(2);
+
         internal async Task<ResponseMessage> ProcessMessageAsync(
             RequestMessage request,
             CancellationToken cancellationToken)
@@ -95,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 DocumentServiceResponse response = await SpeculativeRetryStore.ProcessMessageAsync(
                     storeProxy,
-                    TimeSpan.Zero,
+                    TransportHandler.RetryInterval,
                     serviceRequest,
                     cancellationToken);
 
