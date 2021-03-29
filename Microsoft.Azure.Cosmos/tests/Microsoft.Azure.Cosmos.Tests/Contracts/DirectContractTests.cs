@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Memory", new Version(4, 5, 4) },
                 { "System.Buffers", new Version(4, 5, 1) },
                 { "System.Runtime.CompilerServices.Unsafe", new Version(4, 5, 3) },
-                { "System.Threading.Tasks.Extensions", new Version(4, 5, 2) },
+                { "System.Threading.Tasks.Extensions", new Version(4, 5, 4) },
                 { "System.ValueTuple", new Version(4, 5, 0) },
                 { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
                 { "Azure.Core", new Version(1, 3, 0) },
