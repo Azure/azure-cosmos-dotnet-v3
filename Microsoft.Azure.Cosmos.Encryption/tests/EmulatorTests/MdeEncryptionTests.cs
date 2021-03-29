@@ -139,14 +139,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
-
-                new ClientEncryptionIncludedPath()
-                {
-                    Path = "/Sensitive_Dict",
-                    ClientEncryptionKeyId = "key2",
-                    EncryptionType = "Deterministic",
-                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                },
             };
 
 
@@ -1450,8 +1442,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public Sensitive_NestedObjectL1 Sensitive_NestedObjectFormatL1 { get; set; }
 
-            public Dictionary<string, string> Sensitive_Dict { get; set; }
-
             public TestDoc()
             {
             }
@@ -1584,7 +1574,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_IntFormat = 1965,
                     Sensitive_BoolFormat = true,
                     Sensitive_FloatFormat = 8923.124f,
-                    Sensitive_Dict = new Dictionary<string, string>() { { "key", "value"} },
                     Sensitive_ArrayFormat = new Sensitive_ArrayData[]
                     {
                         new Sensitive_ArrayData
