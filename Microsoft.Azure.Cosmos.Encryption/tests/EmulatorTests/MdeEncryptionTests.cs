@@ -38,7 +38,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public static async Task ClassInitialize(TestContext context)
         {
             MdeEncryptionTests.client = TestCommon.CreateCosmosClient();
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = null
+            };
             MdeEncryptionTests.encryptionCosmosClient = MdeEncryptionTests.client.WithEncryption(testEncryptionKeyStoreProvider);
             MdeEncryptionTests.database = await MdeEncryptionTests.encryptionCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
 

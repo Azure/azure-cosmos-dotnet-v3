@@ -74,24 +74,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Initializes a new instance of the <see cref="CosmosDataEncryptionKeyProvider"/> class.
         /// </summary>
         /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
-        /// <param name="cacheTimeToLive">Time to live for EncryptionKeyStoreProvider's ProtectedDataEncryptionKey before having to refresh. 0 results in no Caching.
-        /// Note: If cacheTimeToLive is null, ProtectedDataEncryptionKey TimeToLive is a static field and will be carried over from previous value set to cacheTimeToLive if any else
-        /// set to Default TimeToToLive of ProtectedDataEncryptionKey. </param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            TimeSpan? cacheTimeToLive = null,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
-            this.PdekCacheTimeToLive = cacheTimeToLive;
+            this.PdekCacheTimeToLive = this.EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive;
             if (this.PdekCacheTimeToLive.HasValue)
             {
                 // set the TTL for Protected Data Encryption.
-                ProtectedDataEncryptionKey.TimeToLive = (TimeSpan)this.PdekCacheTimeToLive;
+                ProtectedDataEncryptionKey.TimeToLive = this.PdekCacheTimeToLive.Value;
+            }
+            else
+            {
+                // arbitrarily large caching period.
+                ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
             }
         }
 
@@ -100,14 +101,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
-        /// <param name="cacheTimeToLive">Time to live for EncryptionKeyStoreProvider ProtectedDataEncryptionKey before having to refresh. 0 results in no Caching.
-        /// Note: If cacheTimeToLive is null, ProtectedDataEncryptionKey TimeToLive is a static field and will be carried over from previous value set to cacheTimeToLive if any else
-        /// set to Default TimeToToLive of ProtectedDataEncryptionKey. </param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            TimeSpan? cacheTimeToLive = null,
             TimeSpan? dekPropertiesTimeToLive = null)
         {
             this.EncryptionKeyWrapProvider = encryptionKeyWrapProvider ?? throw new ArgumentNullException(nameof(encryptionKeyWrapProvider));
@@ -115,11 +112,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.MdeKeyWrapProvider = new MdeKeyWrapProvider(encryptionKeyStoreProvider);
             this.dataEncryptionKeyContainerCore = new DataEncryptionKeyContainerCore(this);
             this.DekCache = new DekCache(dekPropertiesTimeToLive);
-            this.PdekCacheTimeToLive = cacheTimeToLive;
+            this.PdekCacheTimeToLive = this.EncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive;
             if (this.PdekCacheTimeToLive.HasValue)
             {
                 // set the TTL for Protected Data Encryption.
-                ProtectedDataEncryptionKey.TimeToLive = (TimeSpan)this.PdekCacheTimeToLive;
+                ProtectedDataEncryptionKey.TimeToLive = this.PdekCacheTimeToLive.Value;
+            }
+            else
+            {
+                // arbitrarily large caching period.
+                ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
             }
         }
 

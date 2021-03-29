@@ -135,8 +135,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateDekWithNonMdeAlgorithmFails()
         {
             string dekId = "oldDek";
-            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
+            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(3600)
+            };
+
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testKeyStoreProvider);
             try
             {
                 await MdeCustomEncryptionTests.CreateDekAsync(dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
@@ -603,8 +607,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(1, unwrapcount);
 
             // Caching for 30 min.
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, TimeSpan.FromMinutes(30));
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = null
+            };
+
+            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
 
             encryptor = new TestEncryptor(dekProvider);
@@ -616,8 +624,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(1, unwrapcount);
 
             // No caching
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(0));
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
+            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider,TimeSpan.FromMinutes(30));
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
 
             encryptor = new TestEncryptor(dekProvider);

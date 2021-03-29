@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.Container = container ?? throw new ArgumentNullException(nameof(container));
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
             this.isEncryptionSettingsInitDone = false;
-            this.EncryptionSettings = new EncryptionSettings();
+            this.EncryptionSettings = new EncryptionSettings(this);
         }
 
         /// <summary>
@@ -87,18 +88,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 EncryptionType encryptionType = this.EncryptionSettings.GetEncryptionTypeForProperty(propertyToEncrypt);
 
-                EncryptionSettings encryptionSettings = new EncryptionSettings
-                {
-                    ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
-                    EncryptionType = encryptionType,
-                };
+                EncryptionSettingForProperty encryptionSettingsForProperty = new EncryptionSettingForProperty(
+                    propertyToEncrypt.ClientEncryptionKeyId,
+                    encryptionType,
+                    this);
 
                 string propertyName = propertyToEncrypt.Path.Substring(1);
 
                 this.EncryptionSettings.SetEncryptionSettingForProperty(
                     propertyName,
-                    EncryptionSettings.Create(
-                        encryptionSettings));
+                    encryptionSettingsForProperty);
             }
 
             this.isEncryptionSettingsInitDone = true;
@@ -292,14 +291,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                EncryptionSettings settings = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
+                EncryptionSettingForProperty settingforProperty = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName,cancellationToken);
 
-                if (settings == null)
+                if (settingforProperty == null)
                 {
                     throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
-                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settings.BuildEncryptionAlgorithmForSettingAsync(this, cancellationToken: default);
+                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
 
                 this.EncryptProperty(
                     itemJObj,
@@ -447,14 +446,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
                 {
                     string propertyName = path.Path.Substring(1);
-                    EncryptionSettings settings = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, this, cancellationToken);
+                    EncryptionSettingForProperty settingsForProperty = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
 
-                    if (settings == null)
+                    if (settingsForProperty == null)
                     {
                         throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
                     }
 
-                    AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settings.BuildEncryptionAlgorithmForSettingAsync(this, cancellationToken: default);
+                    AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
 
                     this.DecryptProperty(
                         document,

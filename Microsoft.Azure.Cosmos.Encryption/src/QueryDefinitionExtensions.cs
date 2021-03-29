@@ -82,26 +82,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 await encryptionContainer.EncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
 
                 // get the path's encryption setting.
-                EncryptionSettings settings = await encryptionContainer.EncryptionProcessor.EncryptionSettings.GetEncryptionSettingForPropertyAsync(
+                EncryptionSettingForProperty settingsForProperty = await encryptionContainer.EncryptionProcessor.EncryptionSettings.GetEncryptionSettingForPropertyAsync(
                     path.Substring(1),
-                    encryptionContainer.EncryptionProcessor,
                     cancellationToken);
 
-                if (settings == null)
+                if (settingsForProperty == null)
                 {
                     // property not encrypted.
                     queryDefinitionwithEncryptedValues.WithParameter(name, value);
                     return queryDefinitionwithEncryptedValues;
                 }
 
-                if (settings.EncryptionType == EncryptionType.Randomized)
+                if (settingsForProperty.EncryptionType == EncryptionType.Randomized)
                 {
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
-                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settings.BuildEncryptionAlgorithmForSettingAsync(
-                    encryptionContainer.EncryptionProcessor,
-                    cancellationToken: default);
+                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
 
                 JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
                 (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
