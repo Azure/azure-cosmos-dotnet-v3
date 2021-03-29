@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -27,9 +29,11 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -276,6 +280,106 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken: continuationToken,
                 feedRange: null,
                 requestOptions: requestOptions);
+        }
+
+        public async Task<FeedResponse<T>> ReadManyAsync<T>(
+            IReadOnlyList<(string, PartitionKey)> items,
+            CancellationToken cancellationToken = default)
+        {
+            CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
+            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+
+            IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap = new
+                Dictionary<PartitionKeyRange, List<(string, PartitionKey)>>();
+
+            foreach ((string id, PartitionKey pk) item in items)
+            {
+                string effectivePartitionKeyValue = item.pk.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+                PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyValue);
+                if (partitionKeyRangeItemMap.TryGetValue(partitionKeyRange, out List<(string, PartitionKey)> itemList))
+                {
+                    itemList.Add(item);
+                }
+                else
+                {
+                    List<(string, PartitionKey)> newList = new List<(string, PartitionKey)> { item };
+                    partitionKeyRangeItemMap[partitionKeyRange] = newList;
+                }
+            }
+
+            foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
+            {
+                string partitionKeySelector = this.CreatePkSelector(partitionKeyDefinition);
+                QueryDefinition queryDefinition = (partitionKeySelector == "[\"id\"]") ? this.CreateReadManyQueryDefifnitionForId(entry.Value) :
+                                               this.CreateReadManyQueryDefifnitionForOther(entry.Value, partitionKeySelector);
+            }
+        }
+
+        private QueryDefinition CreateReadManyQueryDefifnitionForId(List<(string, PartitionKey)> items)
+        {
+            StringBuilder queryStringBuilder = new StringBuilder();
+
+            queryStringBuilder.Append("SELECT * FROM c WHERE c.id IN ( ");
+            for (int i = 0; i < items.Count; i++)
+            {
+                queryStringBuilder.Append($"'{items[i].Item1}'");
+                if (i < items.Count - 1)
+                {
+                    queryStringBuilder.Append(",");
+                }
+            }
+            queryStringBuilder.Append(" )");
+
+            return new QueryDefinition(queryStringBuilder.ToString());
+        }
+
+        private QueryDefinition CreateReadManyQueryDefifnitionForOther(List<(string, PartitionKey)> items, 
+                                                                        string partitionKeySelector)
+        {
+            StringBuilder queryStringBuilder = new StringBuilder();
+            SqlParameterCollection sqlParameters = new SqlParameterCollection();
+
+            queryStringBuilder.Append("SELECT * FROM c WHERE ( ");
+            for (int i = 0; i < items.Count; i++)
+            {
+                string pkParamName = "@param_pk" + i;
+                sqlParameters.Add(new SqlParameter(pkParamName, items[i].Item2));
+
+                string idParamName = "@param_id" + i;
+                sqlParameters.Add(new SqlParameter(idParamName, items[i].Item2));
+
+                queryStringBuilder.Append("( ");
+                queryStringBuilder.Append("c.id = ");
+                queryStringBuilder.Append(idParamName);
+                queryStringBuilder.Append(" AND ");
+                queryStringBuilder.Append("c");
+                queryStringBuilder.Append(partitionKeySelector);
+                queryStringBuilder.Append(" = ");
+                queryStringBuilder.Append(pkParamName);
+                queryStringBuilder.Append(" )");
+
+                if (i < items.Count - 1)
+                {
+                    queryStringBuilder.Append(" OR ");
+                }
+            }
+            queryStringBuilder.Append(" )");
+
+            return QueryDefinition.CreateFromQuerySpec(new SqlQuerySpec(queryStringBuilder.ToString(), 
+                                                        sqlParameters));
+        }
+
+        private string CreatePkSelector(PartitionKeyDefinition partitionKeyDefinition)
+        {
+            List<string> pathParts = new List<string>();
+            foreach (string path in partitionKeyDefinition.Paths)
+            {
+                // Ignore '/' in the beginning and escaping quote
+                string modifiedString = path.Substring(1).Replace("\"", "\\");
+                pathParts.Add(modifiedString);
+            }
+
+            return string.Join(String.Empty, pathParts);
         }
 
         /// <summary>
