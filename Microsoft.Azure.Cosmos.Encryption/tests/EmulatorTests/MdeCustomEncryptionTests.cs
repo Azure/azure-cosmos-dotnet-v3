@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             _ = context;
             MdeCustomEncryptionTests.testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            MdeCustomEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(),MdeCustomEncryptionTests.testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
+            MdeCustomEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(),MdeCustomEncryptionTests.testKeyStoreProvider);
             MdeCustomEncryptionTests.encryptor = new TestEncryptor(MdeCustomEncryptionTests.dekProvider);
 
             MdeCustomEncryptionTests.client = TestCommon.CreateCosmosClient();
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             /*For Legacy Compatibility*/
             MdeCustomEncryptionTests.legacytestKeyWrapProvider = new TestKeyWrapProvider();
-            MdeCustomEncryptionTests.dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, MdeCustomEncryptionTests.testKeyStoreProvider,cacheTimeToLive: TimeSpan.FromSeconds(0));
+            MdeCustomEncryptionTests.dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, MdeCustomEncryptionTests.testKeyStoreProvider);
             await MdeCustomEncryptionTests.dualDekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
             MdeCustomEncryptionTests.legacyDekProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, MdeCustomEncryptionTests.legacydekId);
             MdeCustomEncryptionTests.encryptorWithDualWrapProvider = new TestEncryptor(MdeCustomEncryptionTests.dualDekProvider);
@@ -582,16 +582,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         [TestMethod]
         public async Task ValidateCachingofProtectedDataEncryptionKey()
-        {
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+        {            
             string dekId = "pDekCache";
             DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
             Assert.AreEqual(
                 new EncryptionKeyWrapMetadata(name: "metadata1", value: MdeCustomEncryptionTests.metadata1.Value),
                 dekProperties.EncryptionKeyWrapMetadata);
 
-            // Caching for 30 min.
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, TimeSpan.FromMinutes(30));
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            // default 2 hours.
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
 
             TestEncryptor encryptor = new TestEncryptor(dekProvider);
@@ -602,22 +602,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int unwrapcount);
             Assert.AreEqual(1, unwrapcount);
 
+            // Caching for 30 min.
             testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            // No caching
-            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(0));
-            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-
-            encryptor = new TestEncryptor(dekProvider);
-            encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
-            for (int i = 0; i < 2; i++)
-                await MdeCustomEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
-
-            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
-            Assert.AreEqual(32, unwrapcount);
-
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            // default 2 hours.
-            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
+            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, TimeSpan.FromMinutes(30));
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
 
             encryptor = new TestEncryptor(dekProvider);
@@ -627,6 +614,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
             Assert.AreEqual(1, unwrapcount);
+
+            // No caching
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(0));
+            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+
+            encryptor = new TestEncryptor(dekProvider);
+            encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
+            for (int i = 0; i < 2; i++)
+                await MdeCustomEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
+            Assert.AreEqual(32, unwrapcount);            
         }
 
         [TestMethod]

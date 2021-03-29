@@ -157,8 +157,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                    keyEncryptionKey,
                    clientEncryptionKeyProperties.WrappedDataEncryptionKey);
 
-            protectedDataEncryptionKey.TimeToLive = (TimeSpan)keyEncryptionKey.KeyStoreProvider.DataEncryptionKeyCacheTimeToLive;
-
             return protectedDataEncryptionKey;
         }
 

@@ -831,14 +831,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task VerifyKekRevokeHandling()
         {
+            CosmosClient clientWithNoCaching = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
+            CosmosClient encryptionCosmosClientWithBulk = clientWithNoCaching.WithEncryption(testEncryptionKeyStoreProvider);
+            Database database = encryptionCosmosClientWithBulk.GetDatabase(MdeEncryptionTests.database.Id);
+
             // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
             // The Dek should be rewrapped if the KEK is revoked.
             // When an access to KeyVault fails, the Dek is fetched from the backend(force refresh to update the stale DEK) and cache is updated.
-            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("revokedKek", "revokedKek-metadata");
-            
-            await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
-               "keywithRevokedKek",
-               revokedKekmetadata);
+            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("revokedKek", "revokedKek-metadata");         
+
+           await database.CreateClientEncryptionKeyAsync(
+                   "keywithRevokedKek",
+                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                   revokedKekmetadata);
 
             ClientEncryptionIncludedPath pathwithRevokedKek = new ClientEncryptionIncludedPath()
             {
@@ -855,9 +867,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
             Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = MdeEncryptionTests.testEncryptionKeyStoreProvider;
+            
             testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+
             // try creating it and it should fail as it has been revoked.
             try
             {
@@ -870,6 +882,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // for unwrap to succeed 
             testEncryptionKeyStoreProvider.RevokeAccessSet = false;
+
             // lets rewrap it.
             await database.RewrapClientEncryptionKeyAsync("keywithRevokedKek", MdeEncryptionTests.metadata2);
 
@@ -877,6 +890,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // Should fail but will try to fetch the lastest from the Backend and updates the cache.
             await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
             testEncryptionKeyStoreProvider.RevokeAccessSet = false;
+            testEncryptionKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(120);
         }
 
         [TestMethod]

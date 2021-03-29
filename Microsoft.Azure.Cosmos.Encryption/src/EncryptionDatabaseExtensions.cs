@@ -85,6 +85,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             byte[] wrappedDataEncryptionKey = protectedDataEncryptionKey.EncryptedValue;
 
+            // cache it.
+            ProtectedDataEncryptionKey.GetOrCreate(
+                   clientEncryptionKeyId,
+                   keyEncryptionKey,
+                   wrappedDataEncryptionKey);
+
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
                 clientEncryptionKeyId,
                 encryptionAlgorithm,
