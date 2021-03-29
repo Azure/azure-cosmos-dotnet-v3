@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos
                 return; // Only apply the session token in case of session consistency and the request is read only
             }
 
-            (bool isSuccess, string sessionToken) = await TryResolveSessionTokenAsync(request, 
+            (bool isSuccess, string sessionToken) = await GatewayStoreModel.TryResolveSessionTokenAsync(request, 
                                                                                       sessionContainer, 
                                                                                       partitionKeyRangeCache, 
                                                                                       clientCollectionCache);
