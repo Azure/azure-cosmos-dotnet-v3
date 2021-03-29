@@ -300,7 +300,8 @@ namespace Microsoft.Azure.Cosmos
                                                                         refreshCache: false);
 
                 if (isSuccess && sessionContainer is SessionContainer gatewaySessionContainer)
-                {   
+                {
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
                     string localSessionToken = gatewaySessionContainer.ResolvePartitionLocalSessionTokenForGateway(request, partitionKeyRange.Id);
                     if (!string.IsNullOrEmpty(localSessionToken))
                     {
