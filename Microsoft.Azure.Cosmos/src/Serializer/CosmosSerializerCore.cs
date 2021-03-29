@@ -28,7 +28,10 @@ namespace Microsoft.Azure.Cosmos
             if (customSerializer == null)
             {
                 this.customSerializer = null;
-                this.sqlQuerySpecSerializer = null;
+                // this would allow us to set the JsonConverter and inturn handle Serialized/Stream Query Parameter Value.
+                this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
+                    cosmosSerializer: null,
+                    propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = null;
             }
             else
@@ -84,8 +87,7 @@ namespace Microsoft.Azure.Cosmos
 
             // All the public types that support query use the custom serializer
             // Internal types like offers will use the default serializer.
-            if (this.customSerializer != null &&
-                (resourceType == ResourceType.Database ||
+            if (resourceType == ResourceType.Database ||
                 resourceType == ResourceType.Collection ||
                 resourceType == ResourceType.Document ||
                 resourceType == ResourceType.Trigger ||
@@ -93,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType == ResourceType.StoredProcedure ||
                 resourceType == ResourceType.Permission ||
                 resourceType == ResourceType.User ||
-                resourceType == ResourceType.Conflict))
+                resourceType == ResourceType.Conflict)
             {
                 serializer = this.sqlQuerySpecSerializer;
             }

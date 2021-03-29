@@ -252,5 +252,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 response,
                 this.cosmosSerializer);
         }
+
+        public override TransactionalBatch PatchItem(
+            string id,
+            IReadOnlyList<PatchOperation> patchOperations,
+            TransactionalBatchPatchItemRequestOptions requestOptions = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
