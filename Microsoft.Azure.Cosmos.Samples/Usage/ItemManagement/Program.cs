@@ -6,6 +6,7 @@
     using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;
@@ -28,8 +29,9 @@
     // 1.3 - Read all items in a container
     // 1.4 - Query for items by a property other than Id
     // 1.5 - Replace a item
-    // 1.6 - Upsert a item
-    // 1.7 - Delete a item
+    // 1.6 - Patch a item
+    // 1.7 - Upsert a item
+    // 1.8 - Delete a item
     //
     // 2. Work with dynamic objects
     //
@@ -137,8 +139,9 @@
         /// 1.3 - Read all items in a Collection
         /// 1.4 - Query for items by a property other than Id
         /// 1.5 - Replace a item
-        /// 1.6 - Upsert a item
-        /// 1.7 - Delete a item
+        /// 1.6 - Patch a item
+        /// 1.7 - Upsert a item
+        /// 1.8 - Delete a item
         /// </summary>
         // <RunBasicOperationsOnStronglyTypedObjects>
         private static async Task RunBasicOperationsOnStronglyTypedObjects()
@@ -152,6 +155,8 @@
             await Program.QueryItems();
 
             await Program.ReplaceItemAsync(result);
+
+            await Program.PatchItemAsync(result);
 
             await Program.UpsertItemAsync();
 
@@ -455,10 +460,64 @@
         }
         // </ReplaceItemAsync>
 
+        // <PatchItemAsync>
+        private static async Task PatchItemAsync(SalesOrder order)
+        {
+            //******************************************************************************************************************
+            // 1.5 - Patch a item
+            //
+            // Just update a property on an existing item and issue a Patch command
+            //******************************************************************************************************************
+            Console.WriteLine("\n1.6 - Patching a item using its Id");
+
+            ItemResponse<SalesOrder> response = await container.PatchItemAsync<SalesOrder>(
+                id: order.Id,
+                partitionKey: new PartitionKey(order.AccountNumber),
+                patchOperations: new[] { PatchOperation.Replace("/TotalDue", 0) });
+
+            SalesOrder updated = response.Resource;
+            Console.WriteLine($"TotalDue of updated item: {updated.TotalDue}");
+
+            PatchItemRequestOptions patchItemRequestOptions = new PatchItemRequestOptions
+            {
+                FilterPredicate = "from c where (c.TotalDue = 0 OR NOT IS_DEFINED(c.TotalDue))"
+            };
+            response = await container.PatchItemAsync<SalesOrder>(
+                id: order.Id,
+                partitionKey: new PartitionKey(order.AccountNumber),
+                patchOperations: new[] { PatchOperation.Replace("/ShippedDate", DateTime.UtcNow) },
+                patchItemRequestOptions);
+
+            updated = response.Resource;
+            Console.WriteLine($"\n1.6.2 - Shipped date of updated item: {updated.ShippedDate}");
+
+            IReadOnlyList<PatchOperation> patchOperations = new[] { PatchOperation.Replace("/ShippedDate", DateTime.UtcNow) };
+            using (Stream stream = Program.ToStream<IReadOnlyList<PatchOperation>>(patchOperations))
+            {
+                using (ResponseMessage responseMessage = await container.PatchItemStreamAsync(
+                    id: order.Id,
+                    partitionKey: new PartitionKey(order.AccountNumber),
+                    patchOperations: patchOperations))
+                {
+                    // Item stream operations do not throw exceptions for better performance
+                    if (responseMessage.IsSuccessStatusCode)
+                    {
+                        SalesOrder streamResponse = FromStream<SalesOrder>(responseMessage.Content);
+                        Console.WriteLine($"\n1.6.3 - Item Patch via stream {streamResponse.Id}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Patch item from stream failed. Status code: {responseMessage.StatusCode} Message: {responseMessage.ErrorMessage}");
+                    }
+                }
+            }
+        }
+        // </PatchItemAsync>
+
         // <UpsertItemAsync>
         private static async Task UpsertItemAsync()
         {
-            Console.WriteLine("\n1.6 - Upserting a item");
+            Console.WriteLine("\n1.7 - Upserting a item");
 
             SalesOrder upsertOrder = GetSalesOrderSample("SalesOrder3");
             
@@ -511,7 +570,7 @@
         // <DeleteItemAsync>
         private static async Task DeleteItemAsync()
         {
-            Console.WriteLine("\n1.7 - Deleting a item");
+            Console.WriteLine("\n1.8 - Deleting a item");
             ItemResponse<SalesOrder> response = await container.DeleteItemAsync<SalesOrder>(
                 partitionKey: new PartitionKey("Account1"),
                 id: "SalesOrder3");
