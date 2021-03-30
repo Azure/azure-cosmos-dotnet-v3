@@ -346,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string dekId,
             DatabaseInlineCore databaseInlineCore)
         {
-            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("cmk-" + dekId, dekId, "tempMetadata");
+            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("custom", dekId, "tempMetadata");
 
             byte[] wrappedDataEncryptionKey = new byte[32];
             // Generate random bytes cryptographically.
