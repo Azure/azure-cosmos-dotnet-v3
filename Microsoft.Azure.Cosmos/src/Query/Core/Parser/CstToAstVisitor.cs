@@ -787,6 +787,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             {
                 sqlObject = this.Visit(context.in_scalar_expression());
             }
+            else if (context.like_scalar_expression() != null)
+            {
+                sqlObject = this.Visit(context.like_scalar_expression());
+            }
             else
             {
                 throw new NotImplementedException();
