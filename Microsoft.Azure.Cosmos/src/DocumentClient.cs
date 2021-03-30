@@ -950,6 +950,8 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
+            gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
                 this.StoreModel = this.GatewayStoreModel;
