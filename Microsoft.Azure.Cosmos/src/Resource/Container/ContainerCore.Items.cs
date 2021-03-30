@@ -284,6 +284,7 @@ namespace Microsoft.Azure.Cosmos
 
         public async Task<FeedResponse<T>> ReadManyAsync<T>(
             IReadOnlyList<(string, PartitionKey)> items,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
@@ -315,59 +316,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private QueryDefinition CreateReadManyQueryDefifnitionForId(List<(string, PartitionKey)> items)
-        {
-            StringBuilder queryStringBuilder = new StringBuilder();
 
-            queryStringBuilder.Append("SELECT * FROM c WHERE c.id IN ( ");
-            for (int i = 0; i < items.Count; i++)
-            {
-                queryStringBuilder.Append($"'{items[i].Item1}'");
-                if (i < items.Count - 1)
-                {
-                    queryStringBuilder.Append(",");
-                }
-            }
-            queryStringBuilder.Append(" )");
-
-            return new QueryDefinition(queryStringBuilder.ToString());
-        }
-
-        private QueryDefinition CreateReadManyQueryDefifnitionForOther(List<(string, PartitionKey)> items, 
-                                                                        string partitionKeySelector)
-        {
-            StringBuilder queryStringBuilder = new StringBuilder();
-            SqlParameterCollection sqlParameters = new SqlParameterCollection();
-
-            queryStringBuilder.Append("SELECT * FROM c WHERE ( ");
-            for (int i = 0; i < items.Count; i++)
-            {
-                string pkParamName = "@param_pk" + i;
-                sqlParameters.Add(new SqlParameter(pkParamName, items[i].Item2));
-
-                string idParamName = "@param_id" + i;
-                sqlParameters.Add(new SqlParameter(idParamName, items[i].Item2));
-
-                queryStringBuilder.Append("( ");
-                queryStringBuilder.Append("c.id = ");
-                queryStringBuilder.Append(idParamName);
-                queryStringBuilder.Append(" AND ");
-                queryStringBuilder.Append("c");
-                queryStringBuilder.Append(partitionKeySelector);
-                queryStringBuilder.Append(" = ");
-                queryStringBuilder.Append(pkParamName);
-                queryStringBuilder.Append(" )");
-
-                if (i < items.Count - 1)
-                {
-                    queryStringBuilder.Append(" OR ");
-                }
-            }
-            queryStringBuilder.Append(" )");
-
-            return QueryDefinition.CreateFromQuerySpec(new SqlQuerySpec(queryStringBuilder.ToString(), 
-                                                        sqlParameters));
-        }
 
         private string CreatePkSelector(PartitionKeyDefinition partitionKeyDefinition)
         {
