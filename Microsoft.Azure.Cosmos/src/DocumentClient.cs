@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -1359,6 +1360,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return builder.ToString();
+        }
+
+        internal RntbdConnectionConfig RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+        {
+            return new RntbdConnectionConfig(this.openConnectionTimeoutInSeconds,
+                                this.idleConnectionTimeoutInSeconds,
+                                this.maxRequestsPerRntbdChannel,
+                                this.maxRntbdChannels,
+                                this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
+                                this.rntbdPortReuseMode);
         }
 
         private void ThrowIfDisposed()
