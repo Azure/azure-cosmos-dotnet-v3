@@ -378,17 +378,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
 
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);           
-
             try
             {
-                await encryptionContainer.InitializeEncryptionAsync();
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                Assert.Fail("Expected item creation should fail since client encryption policy is configured with unknown key.");
+                await database.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("Expected container creation should fail since client encryption policy is configured with unknown key.");
             }
-            catch (Exception ex)
+            catch (CosmosException ex)
             {
-                Assert.IsTrue(ex is InvalidOperationException);
+                Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("ClientEncryptionKey with id '[unknownKey]' does not exist."));
             }
         }
 

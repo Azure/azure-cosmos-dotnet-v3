@@ -1323,6 +1323,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ClientEncryptionPolicyTest()
         {
+            DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.cosmosDatabase;
+            await TestCommon.CreateClientEncryptionKey("dekId1", databaseInlineCore);
+            await TestCommon.CreateClientEncryptionKey("dekId2", databaseInlineCore);
+
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
@@ -1371,6 +1375,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+
+            // replace without updating CEP should be successful
+            readResponse.Resource.IndexingPolicy = new Cosmos.IndexingPolicy()
+            {
+                IndexingMode = Cosmos.IndexingMode.None,
+                Automatic = false
+            };
+
+            containerResponse = await container.ReplaceContainerAsync(readResponse.Resource);
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(Cosmos.IndexingMode.None, containerResponse.Resource.IndexingPolicy.IndexingMode);
+            Assert.IsFalse(containerResponse.Resource.IndexingPolicy.Automatic);
+
+            // update CEP and attempt replace
+            readResponse.Resource.ClientEncryptionPolicy = null;
+            try
+            {
+                await container.ReplaceContainerAsync(readResponse.Resource);
+
+                Assert.Fail("ReplaceCollection with update to ClientEncryptionPolicy should have failed.");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("'clientEncryptionPolicy' cannot be changed as part of collection replace operation."));
+            }
         }
 
         [TestMethod]
