@@ -96,12 +96,11 @@ in_scalar_expression
 	;
 
 like_scalar_expression
-	: binary_scalar_expression K_NOT? K_LIKE binary_scalar_expression opt_escape
+	: binary_scalar_expression K_NOT? K_LIKE binary_scalar_expression escape_expression?
 	;
 
-opt_escape
-	: 
-	| K_ESCAPE STRING_LITERAL
+escape_expression
+	: K_ESCAPE STRING_LITERAL
 	;
 
 binary_scalar_expression

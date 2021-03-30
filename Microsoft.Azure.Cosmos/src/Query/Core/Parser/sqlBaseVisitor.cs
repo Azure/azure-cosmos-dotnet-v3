@@ -397,7 +397,7 @@ public partial class sqlBaseVisitor<Result> : AbstractParseTreeVisitor<Result>, 
 	/// <return>The visitor result.</return>
 	public virtual Result VisitLike_scalar_expression([NotNull] sqlParser.Like_scalar_expressionContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="sqlParser.opt_escape"/>.
+	/// Visit a parse tree produced by <see cref="sqlParser.escape_expression"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -405,7 +405,7 @@ public partial class sqlBaseVisitor<Result> : AbstractParseTreeVisitor<Result>, 
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitOpt_escape([NotNull] sqlParser.Opt_escapeContext context) { return VisitChildren(context); }
+	public virtual Result VisitEscape_expression([NotNull] sqlParser.Escape_expressionContext context) { return VisitChildren(context); }
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="sqlParser.binary_scalar_expression"/>.
 	/// <para>

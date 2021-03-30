@@ -601,21 +601,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             SqlScalarExpression expression = (SqlScalarExpression)this.Visit(context.binary_scalar_expression()[0]);
             SqlScalarExpression pattern = (SqlScalarExpression)this.Visit(context.binary_scalar_expression()[1]);
             bool not = context.K_NOT() != null;
-            SqlStringLiteral escapeSequence = (SqlStringLiteral)this.Visit(context.opt_escape());
+            SqlStringLiteral escapeSequence = (context.escape_expression() != null) ? (SqlStringLiteral)this.Visit(context.escape_expression()) : null;
+            
             return SqlLikeScalarExpression.Create(expression, pattern, not, escapeSequence); 
         }
 
-        public override SqlObject VisitOpt_escape([NotNull] sqlParser.Opt_escapeContext context) {
+        public override SqlObject VisitEscape_expression([NotNull] sqlParser.Escape_expressionContext context) {
             Contract.Requires(context != null);
 
-            if (context.K_ESCAPE() == null)
-            {
-                return null;
-            }
-            else
-            {
-                return (SqlStringLiteral)this.Visit(context.STRING_LITERAL());
-            }
+            return (SqlStringLiteral)this.Visit(context.STRING_LITERAL());
         }
 
         public override SqlObject VisitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context)
