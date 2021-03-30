@@ -5,15 +5,19 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
 
-    internal abstract class ReadManyHelper : IDisposable
+    internal abstract class ReadManyHelper
     {
-        public abstract Task<ResponseMessage> ExecuteReadManyRequestAsync(CancellationToken cancellationToken = default);
+        public abstract Task<ResponseMessage> ExecuteReadManyRequestAsync(IReadOnlyList<(string, PartitionKey)> items,
+                                                                        ITrace trace,
+                                                                        CancellationToken cancellationToken = default);
 
-        public abstract Task<FeedResponse<T>> ExecuteReadManyRequestAsync<T>(CancellationToken cancellationToken = default);
-
-        public abstract void Dispose();
+        public abstract Task<FeedResponse<T>> ExecuteReadManyRequestAsync<T>(IReadOnlyList<(string, PartitionKey)> items,
+                                                                            ITrace trace,
+                                                                            CancellationToken cancellationToken = default);
     }
 }

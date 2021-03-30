@@ -282,53 +282,15 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
-        public async Task<FeedResponse<T>> ReadManyAsync<T>(
+        public async Task<ResponseMessage> ReadManyAsync<T>(
             IReadOnlyList<(string, PartitionKey)> items,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
-            CollectionRoutingMap collectionRoutingMap = await this.GetRoutingMapAsync(cancellationToken);
-            PartitionKeyDefinition partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync(cancellationToken);
+            ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
+                                                                    this);
 
-            IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap = new
-                Dictionary<PartitionKeyRange, List<(string, PartitionKey)>>();
-
-            foreach ((string id, PartitionKey pk) item in items)
-            {
-                string effectivePartitionKeyValue = item.pk.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
-                PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyValue);
-                if (partitionKeyRangeItemMap.TryGetValue(partitionKeyRange, out List<(string, PartitionKey)> itemList))
-                {
-                    itemList.Add(item);
-                }
-                else
-                {
-                    List<(string, PartitionKey)> newList = new List<(string, PartitionKey)> { item };
-                    partitionKeyRangeItemMap[partitionKeyRange] = newList;
-                }
-            }
-
-            foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
-            {
-                string partitionKeySelector = this.CreatePkSelector(partitionKeyDefinition);
-                QueryDefinition queryDefinition = (partitionKeySelector == "[\"id\"]") ? this.CreateReadManyQueryDefifnitionForId(entry.Value) :
-                                               this.CreateReadManyQueryDefifnitionForOther(entry.Value, partitionKeySelector);
-            }
-        }
-
-
-
-        private string CreatePkSelector(PartitionKeyDefinition partitionKeyDefinition)
-        {
-            List<string> pathParts = new List<string>();
-            foreach (string path in partitionKeyDefinition.Paths)
-            {
-                // Ignore '/' in the beginning and escaping quote
-                string modifiedString = path.Substring(1).Replace("\"", "\\");
-                pathParts.Add(modifiedString);
-            }
-
-            return string.Join(String.Empty, pathParts);
+            return await readManyHelper.ExecuteReadManyRequestAsync(items, trace, cancellationToken);
         }
 
         /// <summary>

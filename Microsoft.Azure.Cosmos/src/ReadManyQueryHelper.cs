@@ -10,35 +10,37 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     internal sealed class ReadManyQueryHelper : ReadManyHelper
     {
-        private readonly IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap;
         private readonly string partitionKeySelector;
-        private readonly ITrace trace;
         private readonly int maxConcurrency = Environment.ProcessorCount * 10;
         private readonly ContainerCore container;
         
-        public ReadManyQueryHelper(IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap,
-                                   PartitionKeyDefinition partitionKeyDefinition,
-                                   ContainerCore container,
-                                   ITrace trace)
+        public ReadManyQueryHelper(PartitionKeyDefinition partitionKeyDefinition,
+                                   ContainerCore container)
         {
-            this.partitionKeyRangeItemMap = partitionKeyRangeItemMap;
             this.partitionKeySelector = this.CreatePkSelector(partitionKeyDefinition);
             this.container = container;
-            this.trace = trace;
         }
 
-        public async Task<ResponseMessage> ExecuteReadManyRequestAsync(CancellationToken cancellationToken = default)
+        public override async Task<ResponseMessage> ExecuteReadManyRequestAsync(IReadOnlyList<(string, PartitionKey)> items,
+                                                                                ITrace trace, 
+                                                                                CancellationToken cancellationToken = default)
         {
-            SemaphoreSlim semaphore = new SemaphoreSlim(0, this.maxConcurrency);
-            List<Task<List<byte[]>>> tasks = new List<Task<List<byte[]>>>();
+            IDictionary<string, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
+                                await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
 
-            foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in this.partitionKeyRangeItemMap)
+            SemaphoreSlim semaphore = new SemaphoreSlim(0, this.maxConcurrency);
+            List<Task<List<ResponseMessage>>> tasks = new List<Task<List<ResponseMessage>>>();
+
+            foreach (KeyValuePair<string, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
             {
                 tasks.Add(Task.Run(async () =>
                 {
@@ -51,16 +53,15 @@ namespace Microsoft.Azure.Cosmos
                                                    this.CreateReadManyQueryDefifnitionForId(entry.Value) :
                                                    this.CreateReadManyQueryDefifnitionForOther(entry.Value);
 
-                        List<byte[]> pages = new List<byte[]>();
-                        FeedIterator feedIterator = this.container.GetItemQueryStreamIterator(new FeedRangePartitionKeyRange(entry.Key.Id),
+                        List<ResponseMessage> pages = new List<ResponseMessage>();
+                        FeedIteratorInternal feedIterator = (FeedIteratorInternal)this.container.GetItemQueryStreamIterator(new FeedRangePartitionKeyRange(entry.Key),
                                                                         queryDefinition);
                         while (feedIterator.HasMoreResults)
                         {
-                            using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken))
+                            using (ResponseMessage responseMessage = await feedIterator.ReadNextAsync(trace, cancellationToken))
                             {
-                                pages.Add(Cosmos)
+                                pages.Add(responseMessage);
                             }
-                            pages.Add();
                         }
 
                         return pages;
@@ -76,12 +77,66 @@ namespace Microsoft.Azure.Cosmos
             semaphore.Release(this.maxConcurrency);
 
             List<ResponseMessage>[] queryResponses = await Task.WhenAll(tasks);
-
+            return this.CombineStreamsFromQueryResponses(queryResponses);
         }
 
-        internal static ResponseMessage CombineMultipleStreams(List<ResponseMessage> responseMessages)
+        public override Task<FeedResponse<T>> ExecuteReadManyRequestAsync<T>(IReadOnlyList<(string, PartitionKey)> items,
+                                                                            ITrace trace,
+                                                                            CancellationToken cancellationToken = default)
         {
+            throw new NotImplementedException();
+        }
 
+        private async Task<IDictionary<string, List<(string, PartitionKey)>>> CreatePartitionKeyRangeItemListMapAsync(
+            IReadOnlyList<(string, PartitionKey)> items,
+            CancellationToken cancellationToken = default)
+        {
+            CollectionRoutingMap collectionRoutingMap = await this.container.GetRoutingMapAsync(cancellationToken);
+            PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+
+            IDictionary<string, List<(string, PartitionKey)>> partitionKeyRangeItemMap = new
+                Dictionary<string, List<(string, PartitionKey)>>();
+
+            foreach ((string id, PartitionKey pk) item in items)
+            {
+                string effectivePartitionKeyValue = item.pk.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
+                PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyValue);
+                if (partitionKeyRangeItemMap.TryGetValue(partitionKeyRange.Id, out List<(string, PartitionKey)> itemList))
+                {
+                    itemList.Add(item);
+                }
+                else
+                {
+                    List<(string, PartitionKey)> newList = new List<(string, PartitionKey)> { item };
+                    partitionKeyRangeItemMap[partitionKeyRange.Id] = newList;
+                }
+            }
+
+            return partitionKeyRangeItemMap;
+        }
+
+        private ResponseMessage CombineStreamsFromQueryResponses(List<ResponseMessage>[] queryResponses)
+        {
+            List<CosmosElement> cosmosElements = new List<CosmosElement>();
+            foreach (List<ResponseMessage> responseMessagesForSinglePartition in queryResponses)
+            {
+                foreach (ResponseMessage responseMessage in responseMessagesForSinglePartition)
+                {
+                    if (responseMessage is QueryResponse queryResponse) 
+                    {
+                        cosmosElements.AddRange(queryResponse.CosmosElements);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException("Read Many is being used with Query");
+                    }
+                }
+            }
+
+            return new ResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = CosmosElementSerializer.ToStream(string.Empty, cosmosElements, ResourceType.Document)
+            };
         }
 
         private QueryDefinition CreateReadManyQueryDefifnitionForId(List<(string, PartitionKey)> items)
