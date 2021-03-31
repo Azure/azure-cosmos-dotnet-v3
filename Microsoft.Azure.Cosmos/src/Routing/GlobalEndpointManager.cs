@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IList<string> locations,
             Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
         {
-            Task<(AccountProperties? accountProperties, Exception? globalException)> globalEndpointTask = GlobalEndpointManager.TryGetAccountPropertiesAsync(
+            Task<(AccountProperties? accountProperties, Exception? globalException)> globalEndpointTask = ThreadSafeGetAccountHelper.TryGetAccountPropertiesAsync(
                 defaultEndpoint,
                 getDatabaseAccountFn);
 
@@ -107,17 +107,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (locations == null || !locations.Any())
             {
                 (AccountProperties? globalAccountProperties, Exception? globalException) = await globalEndpointTask;
-                if (globalException != null)
+                if (globalAccountProperties != null)
                 {
-                    throw globalException;
+                    return globalAccountProperties;
                 }
 
-                if (globalAccountProperties == null)
+                if (globalException == null)
                 {
                     throw new ArgumentException("The account properties and exception are both null");
                 }
 
-                return globalAccountProperties;
+                throw globalException;
             }
 
             // Start a timer to start secondary requests in parallel.
@@ -147,74 +147,27 @@ namespace Microsoft.Azure.Cosmos.Routing
                 isGlobalEndpointTaskRunning = false;
             }
 
-            DefaultTrace.TraceInformation(DateTime.UtcNow + "GlobalEndpoint did not respond within 5 seconds. Trying local regions.");
-            // The timer task completed first. Try going to the top 2 regions in the preferred region list in parallel to reduce latency
-            (AccountProperties? topEndpointsAccountProperties, Exception? lastException) = await TryGetAccountInfoFromTop2RegionalEndpointsAsync(
-                defaultEndpoint,
-                locations[0],
-                locations.Count >= 1 ? locations[1] : null,
-                getDatabaseAccountFn,
-                isGlobalEndpointTaskRunning ? globalEndpointTask : null);
-
-            if (topEndpointsAccountProperties != null)
-            {
-                return topEndpointsAccountProperties;
-            }
-
-            // If the global endpoint and the 2 highest priority regions also fail try going through the rest of the
-            // regions in serial. This will likely also fail since the first 2 regions failed.
-            for (int i = 2; i < locations.Count; i++)
-            {
-                (AccountProperties? regionalAccountProperties, Exception? exception) = await TryGetAccountPropertiesFromRegionalEndpointAsync(
-                   defaultEndpoint,
-                   locations[i],
-                   getDatabaseAccountFn);
-
-                if (regionalAccountProperties != null)
-                {
-                    return regionalAccountProperties;
-                }
-
-                lastException = exception;
-            }
-
-            if (lastException == null)
-            {
-                throw new ArgumentException("All endpoints failed and lastException is null");
-            }
-
-            throw lastException;
-        }
-
-        private static async Task<(AccountProperties?, Exception?)> TryGetAccountInfoFromTop2RegionalEndpointsAsync(
-            Uri defaultEndpoint,
-            string firstRegion,
-            string? secondRegion,
-            Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
-            Task<(AccountProperties? accountProperties, Exception? globalException)>? globalEndpointTask)
-        {
-            // The global endpoint failed. Possible region outage. Attempt going to 2 secondary regions in parallel.
-            // The reason to do both regions in parallel is it not possible to determine which region the global endpoint
-            // is pointing to. It is likely the same region as the primary listed in the preferred region list. If the region
-            // is down it will cause another delay before going to the actual secondary region. This avoids that additional latency
+            DefaultTrace.TraceInformation("GlobalEndpoint did not respond within 5 seconds. Trying local regions. {0}", DateTime.UtcNow);
+            // The timer task completed first. Try going to the preferred region list in 2 tasks to reduce latency.
+            // The reason to do 2 tasks in parallel is it not possible to determine which region the global endpoint
+            // is pointing to. By having 2 tasks it if 1 of the tasks gets stuck on the same region the other task will continue with the other regions.
             HashSet<Task<(AccountProperties? accountProperties, Exception? exception)>> tasksToWaitOn = new HashSet<Task<(AccountProperties?, Exception?)>>();
-            if (globalEndpointTask != null)
+
+            // It's possible the globalEndpointTask completed between now and the previous check
+            // so use a flag to make sure it is included if it was not previously checked.
+            if (isGlobalEndpointTaskRunning)
             {
                 tasksToWaitOn.Add(globalEndpointTask);
             }
 
-            tasksToWaitOn.Add(TryGetAccountPropertiesFromRegionalEndpointAsync(
+            ThreadSafeGetAccountHelper threadSafeGetAccountHelper = new ThreadSafeGetAccountHelper(
                 defaultEndpoint,
-                firstRegion,
-                getDatabaseAccountFn));
+                locations.GetEnumerator(),
+                getDatabaseAccountFn);
 
-            if (secondRegion != null)
-            {
-                tasksToWaitOn.Add(TryGetAccountPropertiesFromRegionalEndpointAsync(
-                   defaultEndpoint,
-                   secondRegion,
-                   getDatabaseAccountFn));
-            }
+            // This creates two thread safe tasks to go to through the list of preferred regions
+            tasksToWaitOn.Add(threadSafeGetAccountHelper.TryGetAccountPropertiesFromAllLocationsAsync());
+            tasksToWaitOn.Add(threadSafeGetAccountHelper.TryGetAccountPropertiesFromAllLocationsAsync());
 
             Exception? lastException = null;
             while (tasksToWaitOn.Any())
@@ -223,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 (AccountProperties? accountProperties, Exception? exception) = completedTask.Result;
                 if (accountProperties != null)
                 {
-                    return (accountProperties, null);
+                    return accountProperties;
                 }
 
                 if (exception == null)
@@ -240,31 +193,113 @@ namespace Microsoft.Azure.Cosmos.Routing
                 tasksToWaitOn.Remove(completedTask);
             }
 
-            return (null, lastException);
-        }
-
-        private static Task<(AccountProperties?, Exception?)> TryGetAccountPropertiesFromRegionalEndpointAsync(
-            Uri defaultEndpoint,
-            string location,
-            Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
-        {
-            return TryGetAccountPropertiesAsync(LocationHelper.GetLocationEndpoint(defaultEndpoint, location), getDatabaseAccountFn);
-        }
-
-        private static async Task<(AccountProperties?, Exception?)> TryGetAccountPropertiesAsync(
-            Uri endpoint,
-            Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
-        {
-            try
+            if (lastException == null)
             {
-                DefaultTrace.TraceInformation($"{DateTime.UtcNow} Trying to go to endpoint {endpoint}");
-                AccountProperties databaseAccount = await getDatabaseAccountFn(endpoint);
-                return (databaseAccount, null);
+                throw new ArgumentException("None of the tasks completed successfully and there is no last exception to throw");
             }
-            catch (Exception e)
+
+            throw lastException;
+        }
+
+        private class ThreadSafeGetAccountHelper
+        {
+            private readonly Uri DefaultEndpoint;
+            private readonly IEnumerator<string> Locations;
+            private readonly Func<Uri, Task<AccountProperties>> GetDatabaseAccountFn;
+            private AccountProperties? AccountProperties = null;
+
+            public ThreadSafeGetAccountHelper(
+                Uri defaultEndpoint,
+                IEnumerator<string> locations,
+                Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
             {
-                DefaultTrace.TraceInformation(DateTime.UtcNow + "Fail to reach location {0}, {1}", endpoint, e.ToString());
-                return (null, e);
+                this.DefaultEndpoint = defaultEndpoint;
+                this.Locations = locations;
+                this.GetDatabaseAccountFn = getDatabaseAccountFn;
+            }
+
+            public async Task<(AccountProperties?, Exception?)> TryGetAccountPropertiesFromAllLocationsAsync()
+            {
+                Exception? lastException = null;
+                while (this.TryMoveNextLocationThreadSafe(
+                        out string? location))
+                {
+                    if (this.AccountProperties != null)
+                    {
+                        return (this.AccountProperties, null);
+                    }
+
+                    if (location == null)
+                    {
+                        throw new ArgumentNullException(nameof(location));
+                    }
+
+                    (AccountProperties? accountProperties, Exception? exception) = await this.TryGetAccountPropertiesFromRegionalEndpointsAsync(location);
+                    if (accountProperties != null)
+                    {
+                        this.AccountProperties = accountProperties;
+                        return (accountProperties, null);
+                    }
+
+                    if (exception == null)
+                    {
+                        throw new ArgumentException("Account properties and exception are null");
+                    }
+
+                    lastException = exception;
+                }
+
+                if (lastException == null)
+                {
+                    lastException = new Exception("No locations left to get account properties from.");
+                }
+
+                return (null, lastException);
+            }
+
+            private bool TryMoveNextLocationThreadSafe(
+                out string? location)
+            {
+                if (this.AccountProperties != null)
+                {
+                    location = null;
+                    return false;
+                }
+
+                lock (this.Locations)
+                {
+                    if (!this.Locations.MoveNext())
+                    {
+                        location = null;
+                        return false;
+                    }
+
+                    location = this.Locations.Current;
+                    return true;
+                }
+            }
+
+            private Task<(AccountProperties?, Exception?)> TryGetAccountPropertiesFromRegionalEndpointsAsync(string location)
+            {
+                return TryGetAccountPropertiesAsync(
+                    LocationHelper.GetLocationEndpoint(this.DefaultEndpoint, location),
+                    this.GetDatabaseAccountFn);
+            }
+
+            public static async Task<(AccountProperties?, Exception?)> TryGetAccountPropertiesAsync(
+                Uri endpoint,
+                Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
+            {
+                try
+                {
+                    AccountProperties databaseAccount = await getDatabaseAccountFn(endpoint);
+                    return (databaseAccount, null);
+                }
+                catch (Exception e)
+                {
+                    DefaultTrace.TraceInformation(DateTime.UtcNow + "Fail to reach location {0}, {1}", endpoint, e.ToString());
+                    return (null, e);
+                }
             }
         }
 
