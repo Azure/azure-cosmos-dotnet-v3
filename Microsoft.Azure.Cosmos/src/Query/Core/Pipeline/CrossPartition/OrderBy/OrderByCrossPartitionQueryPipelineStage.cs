@@ -405,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 responseLengthInBytes: 0,
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
-                                additionalHeaders: default,
+                                additionalHeaders: currentEnumerator.Current.Result.Page.AdditionalHeaders,
                                 state: this.state));
                         return new ValueTask<bool>(true);
                     }
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     responseLengthInBytes: 0,
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
-                    additionalHeaders: default,
+                    additionalHeaders: currentEnumerator?.Current.Result.Page.AdditionalHeaders,
                     state: this.state));
 
             if (state == null)
