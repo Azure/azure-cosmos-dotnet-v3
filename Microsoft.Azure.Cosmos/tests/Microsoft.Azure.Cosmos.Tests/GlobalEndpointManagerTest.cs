@@ -111,11 +111,12 @@ namespace Microsoft.Azure.Cosmos
 
             GetAccountRequestInjector slowPrimaryRegionHelper = new GetAccountRequestInjector()
             {
-                ShouldFailRequest = (uri) => uri == defaultEndpoint || uri == new Uri(databaseAccount.ReadLocationsInternal.First().Endpoint),
+                ShouldFailRequest = (uri) => false,
+                ShouldDelayRequest = (uri) => false,
                 SuccessResponse = databaseAccount,
             };
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
+            // Happy path where global succeeds
             AccountProperties globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 defaultEndpoint: defaultEndpoint,
                 locations: new List<string>(){
@@ -123,70 +124,109 @@ namespace Microsoft.Azure.Cosmos
                    "southeastasia",
                    "northcentralus"
                 },
-                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.SlowRequestHelper(uri));
-
-            stopwatch.Stop();
-            Assert.AreEqual(globalEndpointResult, databaseAccount);
-            Assert.AreEqual(2, slowPrimaryRegionHelper.FailedEndpointCount);
-            Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
-            Assert.IsTrue(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
-
-            slowPrimaryRegionHelper.ReturnedSuccess = false;
-            slowPrimaryRegionHelper.FailedEndpointCount = 0;
-
-            globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                defaultEndpoint: defaultEndpoint,
-                locations: new List<string>(){
-                   "westus",
-                   "southeastasia",
-                   "northcentralus"
-                },
-                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.HttpRequestExceptionHelper(uri));
-
-            Assert.AreEqual(globalEndpointResult, databaseAccount);
-            Assert.AreEqual(2, slowPrimaryRegionHelper.FailedEndpointCount);
-            Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
-
-            slowPrimaryRegionHelper.ReturnedSuccess = false;
-            slowPrimaryRegionHelper.FailedEndpointCount = 0;
-            slowPrimaryRegionHelper.ShouldFailRequest = (uri) => uri != new Uri(databaseAccount.ReadLocationsInternal.Last().Endpoint);
-
-            globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                defaultEndpoint: defaultEndpoint,
-                locations: new List<string>(){
-                   "westus",
-                   "southeastasia",
-                   "northcentralus"
-                },
-                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.HttpRequestExceptionHelper(uri));
-
-            Assert.AreEqual(globalEndpointResult, databaseAccount);
-            Assert.AreEqual(3, slowPrimaryRegionHelper.FailedEndpointCount);
-            Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
-
-            slowPrimaryRegionHelper.ReturnedSuccess = false;
-            slowPrimaryRegionHelper.FailedEndpointCount = 0;
-            slowPrimaryRegionHelper.ShouldFailRequest = (uri) => false;
-
-            globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                defaultEndpoint: defaultEndpoint,
-                locations: new List<string>(){
-                   "westus",
-                   "southeastasia",
-                   "northcentralus"
-                },
-                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.HttpRequestExceptionHelper(uri));
+                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
 
             Assert.AreEqual(globalEndpointResult, databaseAccount);
             Assert.AreEqual(0, slowPrimaryRegionHelper.FailedEndpointCount);
+            Assert.AreEqual(0, slowPrimaryRegionHelper.SlowEndpointCount);
             Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
+
+            // global and primary slow and fail
+            { 
+                slowPrimaryRegionHelper.Reset();
+                slowPrimaryRegionHelper.ShouldDelayRequest = (uri) => uri == defaultEndpoint || uri == new Uri(databaseAccount.ReadLocationsInternal.First().Endpoint);
+                slowPrimaryRegionHelper.ShouldFailRequest = slowPrimaryRegionHelper.ShouldDelayRequest;
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+                stopwatch.Stop();
+
+                Assert.AreEqual(globalEndpointResult, databaseAccount);
+                Assert.AreEqual(2, slowPrimaryRegionHelper.SlowEndpointCount);
+                Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
+                Assert.IsTrue(stopwatch.Elapsed > TimeSpan.FromSeconds(5));
+                Assert.IsTrue(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
+            }
+
+            // All but the last URI succeeds
+            {
+                slowPrimaryRegionHelper.Reset();
+                slowPrimaryRegionHelper.ShouldDelayRequest = (uri) => false;
+                slowPrimaryRegionHelper.ShouldFailRequest = (uri) => uri != new Uri(databaseAccount.ReadLocationsInternal.Last().Endpoint);
+
+                globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+
+                Assert.AreEqual(globalEndpointResult, databaseAccount);
+                Assert.AreEqual(3, slowPrimaryRegionHelper.FailedEndpointCount);
+                Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
+            }
+
+            // All request but middle is delayed
+            {
+                slowPrimaryRegionHelper.Reset();
+                slowPrimaryRegionHelper.ShouldDelayRequest = (uri) => uri != new Uri(databaseAccount.ReadLocationsInternal[1].Endpoint);
+                slowPrimaryRegionHelper.ShouldFailRequest = (uri) => false;
+
+                globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+
+                Assert.AreEqual(globalEndpointResult, databaseAccount);
+                Assert.AreEqual(0, slowPrimaryRegionHelper.FailedEndpointCount);
+                Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
+            }
+
+            // Delay global and primary region, then only last region should succeed.
+            {
+                slowPrimaryRegionHelper.Reset();
+                slowPrimaryRegionHelper.ShouldFailRequest = (uri) => !uri.ToString().Contains("westus7");
+                slowPrimaryRegionHelper.ShouldDelayRequest = (uri) => uri == defaultEndpoint || uri == new Uri(databaseAccount.ReadLocationsInternal.First().Endpoint);
+
+                globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "westus2",
+                       "westus3",
+                       "westus4",
+                       "westus5",
+                       "westus6",
+                       "westus7",
+                    },
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+
+                Assert.AreEqual(globalEndpointResult, databaseAccount);
+                Assert.AreEqual(5, slowPrimaryRegionHelper.FailedEndpointCount);
+                Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
+            }
         }
 
         private sealed class GetAccountRequestInjector
         {
             public Func<Uri, bool> ShouldFailRequest { get; set;}
+            public Func<Uri, bool> ShouldDelayRequest { get; set; }
             public AccountProperties SuccessResponse { get; set; }
 
+            public int SlowEndpointCount = 0;
             public int FailedEndpointCount = 0;
             public bool ReturnedSuccess { get; set; } = false;
 
@@ -197,13 +237,18 @@ namespace Microsoft.Azure.Cosmos
                 return Task.FromResult(this.SuccessResponse);
             }
 
-            public async Task<AccountProperties> SlowRequestHelper(
+            public async Task<AccountProperties> RequestHelper(
                 Uri endpoint)
             {
+                if (this.ShouldDelayRequest(endpoint))
+                {
+                    Interlocked.Increment(ref this.SlowEndpointCount);
+                    await Task.Delay(TimeSpan.FromMinutes(1));
+                }
+
                 if (this.ShouldFailRequest(endpoint))
                 {
                     Interlocked.Increment(ref this.FailedEndpointCount);
-                    await Task.Delay(TimeSpan.FromMinutes(1));
                     throw new HttpRequestException("Mocked failed request");
                 }
 
@@ -211,17 +256,13 @@ namespace Microsoft.Azure.Cosmos
                 return this.SuccessResponse;
             }
 
-            public Task<AccountProperties> HttpRequestExceptionHelper(
-                Uri endpoint)
+            public void Reset()
             {
-                if (this.ShouldFailRequest(endpoint))
-                {
-                    Interlocked.Increment(ref this.FailedEndpointCount);
-                    throw new HttpRequestException("Mocked failed request");
-                }
-
-                this.ReturnedSuccess = true;
-                return Task.FromResult(this.SuccessResponse);
+                this.ShouldDelayRequest = null;
+                this.ShouldFailRequest = null;
+                this.ReturnedSuccess = false;
+                this.SlowEndpointCount = 0;
+                this.FailedEndpointCount = 0;
             }
         }
 
