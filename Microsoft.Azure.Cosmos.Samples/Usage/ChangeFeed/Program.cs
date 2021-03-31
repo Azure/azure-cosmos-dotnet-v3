@@ -312,7 +312,7 @@
             // Wait for processor to shutdown completely so the next items generate lag
             await Task.Delay(5000);
 
-            Console.WriteLine("Generating 10 items that will be picked up by the delegate and reported by the Estimator...");
+            Console.WriteLine("Generating 10 items that will be seen by the Estimator...");
             await Program.GenerateItems(10, client.GetContainer(databaseId, Program.monitoredContainer));
 
             Console.WriteLine("Checking estimation...");
