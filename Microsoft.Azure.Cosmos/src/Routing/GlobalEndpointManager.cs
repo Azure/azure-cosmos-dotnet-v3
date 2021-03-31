@@ -81,6 +81,19 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
 
+        /// <summary>
+        /// This gets the account information
+        /// 
+        /// Source Task        
+        /// Creates Task 1,2 ->                |    Task 1                         |    Task 2          |                 
+        ///                                    | Global endpoint -> 10 sec -> fail | Timer wait 5 sec   |
+        /// Waits for Any on (Task1, Task2)    | still waiting on response         | Timer is done      |
+        /// Creates Task3, Task4                                                                        |     Task 3                                |     Task 4                                 |   
+        ///                                                                                             | 1st preferred location -> 10 sec -> fail  | 2nd preferred location -> 2 sec -> success |
+        ///                                                                                             | still waiting on response                 | returns success                            |
+        /// Waits for Any on (Task1, Task3, Task 4). Task 4 is done return the account information.
+        /// Other tasks log the exception or just ignore the response
+        /// </summary>
         public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint,
             IList<string> locations,

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net.Http;
     using System.Threading;
@@ -114,6 +115,7 @@ namespace Microsoft.Azure.Cosmos
                 SuccessResponse = databaseAccount,
             };
 
+            Stopwatch stopwatch = Stopwatch.StartNew();
             AccountProperties globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                 defaultEndpoint: defaultEndpoint,
                 locations: new List<string>(){
@@ -123,9 +125,11 @@ namespace Microsoft.Azure.Cosmos
                 },
                 getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.SlowRequestHelper(uri));
 
+            stopwatch.Stop();
             Assert.AreEqual(globalEndpointResult, databaseAccount);
             Assert.AreEqual(2, slowPrimaryRegionHelper.FailedEndpointCount);
             Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
+            Assert.IsTrue(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
 
             slowPrimaryRegionHelper.ReturnedSuccess = false;
             slowPrimaryRegionHelper.FailedEndpointCount = 0;
@@ -159,6 +163,23 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(globalEndpointResult, databaseAccount);
             Assert.AreEqual(3, slowPrimaryRegionHelper.FailedEndpointCount);
             Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
+
+            slowPrimaryRegionHelper.ReturnedSuccess = false;
+            slowPrimaryRegionHelper.FailedEndpointCount = 0;
+            slowPrimaryRegionHelper.ShouldFailRequest = (uri) => false;
+
+            globalEndpointResult = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                defaultEndpoint: defaultEndpoint,
+                locations: new List<string>(){
+                   "westus",
+                   "southeastasia",
+                   "northcentralus"
+                },
+                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.HttpRequestExceptionHelper(uri));
+
+            Assert.AreEqual(globalEndpointResult, databaseAccount);
+            Assert.AreEqual(0, slowPrimaryRegionHelper.FailedEndpointCount);
+            Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
         }
 
         private sealed class GetAccountRequestInjector
@@ -168,6 +189,14 @@ namespace Microsoft.Azure.Cosmos
 
             public int FailedEndpointCount = 0;
             public bool ReturnedSuccess { get; set; } = false;
+
+            public Task<AccountProperties> SuccessHelper(
+                Uri endpoint)
+            {
+                this.ReturnedSuccess = true;
+                return Task.FromResult(this.SuccessResponse);
+            }
+
             public async Task<AccountProperties> SlowRequestHelper(
                 Uri endpoint)
             {
