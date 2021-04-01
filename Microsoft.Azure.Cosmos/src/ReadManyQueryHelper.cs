@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class ReadManyQueryHelper : ReadManyHelper
     {
-        private readonly string partitionKeySelector;
+        private readonly List<string> partitionKeySelectors;
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly int maxConcurrency = Environment.ProcessorCount * 10;
         private readonly ContainerCore container;
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
                                    CancellationToken cancellationToken)
         {
             this.partitionKeyDefinition = partitionKeyDefinition;
-            this.partitionKeySelector = this.CreatePkSelector(partitionKeyDefinition);
+            this.partitionKeySelectors = this.CreatePkSelectors(partitionKeyDefinition);
             this.container = container;
             this.cancellationToken = cancellationToken;
         }
@@ -84,10 +84,6 @@ namespace Microsoft.Azure.Cosmos
 
                         try
                         {
-                            QueryDefinition queryDefinition = (this.partitionKeySelector == "[\"id\"]") ?
-                                                        this.CreateReadManyQueryDefifnitionForId(entry.Value) :
-                                                        this.CreateReadManyQueryDefifnitionForOther(entry.Value);
-
                             return await generateResponsesForPartition(entry.Value, entry.Key, childTrace);
                         }
                         finally
@@ -209,10 +205,10 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < items.Count; i++)
             {
                 string pkParamName = "@param_pk" + i;
-                sqlParameters.Add(new SqlParameter(pkParamName, items[i].Item2));
+                sqlParameters.Add(new SqlParameter(pkParamName, items[i].Item2.InternalKey.ToObjectArray()[0]));
 
                 string idParamName = "@param_id" + i;
-                sqlParameters.Add(new SqlParameter(idParamName, items[i].Item2));
+                sqlParameters.Add(new SqlParameter(idParamName, items[i].Item1));
 
                 queryStringBuilder.Append("( ");
                 queryStringBuilder.Append("c.id = ");
@@ -235,24 +231,24 @@ namespace Microsoft.Azure.Cosmos
                                                         sqlParameters));
         }
 
-        private string CreatePkSelector(PartitionKeyDefinition partitionKeyDefinition)
+        private List<string> CreatePkSelectors(PartitionKeyDefinition partitionKeyDefinition)
         {
-            List<string> pathParts = new List<string>();
+            List<string> pathSelectors = new List<string>();
             foreach (string path in partitionKeyDefinition.Paths)
             {
-                // Ignore '/' in the beginning and escaping quote
-                string modifiedString = path.Substring(1).Replace("\"", "\\");
-                pathParts.Add(modifiedString);
+                IReadOnlyList<string> pathParts = PathParser.GetPathParts(path);
+                string selector = String.Join(string.Empty, pathParts);
+                pathSelectors.Add(selector);
             }
 
-            return string.Join(String.Empty, pathParts);
+            return pathSelectors;
         }
 
         private async Task<List<ResponseMessage>> GenerateStreamResponsesForPartitionAsync(List<(string, PartitionKey)> items,
                                                                                   PartitionKeyRange partitionKeyRange,
                                                                                   ITrace trace)
         {
-            QueryDefinition queryDefinition = (this.partitionKeySelector == "[\"id\"]") ?
+            QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
                                                    this.CreateReadManyQueryDefifnitionForId(items) :
                                                    this.CreateReadManyQueryDefifnitionForOther(items);
 
@@ -273,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
                                                                           PartitionKeyRange partitionKeyRange,
                                                                           ITrace trace)
         {
-            QueryDefinition queryDefinition = (this.partitionKeySelector == "[\"id\"]") ?
+            QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
                                                    this.CreateReadManyQueryDefifnitionForId(items) :
                                                    this.CreateReadManyQueryDefifnitionForOther(items);
 
