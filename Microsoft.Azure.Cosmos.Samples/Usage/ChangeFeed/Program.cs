@@ -68,9 +68,11 @@
                     await Program.RunStartTimeChangeFeed("changefeed-time", client);
                     Console.WriteLine($"\n3. Listening for changes that happen since the container was created.");
                     await Program.RunStartFromBeginningChangeFeed("changefeed-beginning", client);
-                    Console.WriteLine($"\n4. Generate Estimator metrics to expose current Change Feed Processor progress.");
+                    Console.WriteLine($"\n4. Generate Estimator metrics to expose current Change Feed Processor progress as a push notification.");
                     await Program.RunEstimatorChangeFeed("changefeed-estimator", client);
-                    Console.WriteLine($"\n5. Code migration template from existing Change Feed Processor library V2.");
+                    Console.WriteLine($"\n5. Generate Estimator metrics to expose current Change Feed Processor progress on demand.");
+                    await Program.RunEstimatorPullChangeFeed("changefeed-estimator-detailed", client);
+                    Console.WriteLine($"\n6. Code migration template from existing Change Feed Processor library V2.");
                     await Program.RunMigrationSample("changefeed-migration", client, configuration);
                 }
             }
@@ -247,6 +249,89 @@
             Console.ReadKey();
             await changeFeedProcessor.StopAsync();
             await changeFeedEstimator.StopAsync();
+        }
+
+        /// <summary>
+        /// Exposing progress with the Estimator with the detailed iterator.
+        /// </summary>
+        /// <remarks>
+        /// The Estimator uses the same processorName and the same lease configuration as the existing processor to measure progress.
+        /// The iterator exposes detailed, per-lease, information on estimation and ownership.
+        /// </remarks>
+        public static async Task RunEstimatorPullChangeFeed(
+            string databaseId,
+            CosmosClient client)
+        {
+            await Program.InitializeAsync(databaseId, client);
+
+            // <StartProcessorEstimatorDetailed>
+            Container leaseContainer = client.GetContainer(databaseId, Program.leasesContainer);
+            Container monitoredContainer = client.GetContainer(databaseId, Program.monitoredContainer);
+            ChangeFeedProcessor changeFeedProcessor = monitoredContainer
+                .GetChangeFeedProcessorBuilder<ToDoItem>("changeFeedEstimator", Program.HandleChangesAsync)
+                    .WithInstanceName("consoleHost")
+                    .WithLeaseContainer(leaseContainer)
+                    .Build();
+            // </StartProcessorEstimatorDetailed>
+
+            Console.WriteLine($"Starting Change Feed Processor...");
+            await changeFeedProcessor.StartAsync();
+            Console.WriteLine("Change Feed Processor started.");
+
+            // Wait some seconds for instances to acquire leases
+            await Task.Delay(5000);
+
+            Console.WriteLine("Generating 10 items that will be picked up by the delegate...");
+            await Program.GenerateItems(10, client.GetContainer(databaseId, Program.monitoredContainer));
+
+            // Wait random time for the delegate to output all messages after initialization is done
+            await Task.Delay(5000);
+
+            // <StartEstimatorDetailed>
+            ChangeFeedEstimator changeFeedEstimator = monitoredContainer
+                .GetChangeFeedEstimator("changeFeedEstimator", leaseContainer);
+            // </StartEstimatorDetailed>
+
+            // <GetIteratorEstimatorDetailed>
+            Console.WriteLine("Checking estimation...");
+            using FeedIterator<ChangeFeedProcessorState> estimatorIterator = changeFeedEstimator.GetCurrentStateIterator();
+            while (estimatorIterator.HasMoreResults)
+            {
+                FeedResponse<ChangeFeedProcessorState> states = await estimatorIterator.ReadNextAsync();
+                foreach (ChangeFeedProcessorState leaseState in states)
+                {
+                    string host = leaseState.InstanceName == null ? $"not owned by any host currently" : $"owned by host {leaseState.InstanceName}";
+                    Console.WriteLine($"Lease [{leaseState.LeaseToken}] {host} reports {leaseState.EstimatedLag} as estimated lag.");
+                }
+            }
+            // </GetIteratorEstimatorDetailed>
+
+            Console.WriteLine("Stopping processor to show how the lag increases if no processing is happening.");
+            await changeFeedProcessor.StopAsync();
+
+            // Wait for processor to shutdown completely so the next items generate lag
+            await Task.Delay(5000);
+
+            Console.WriteLine("Generating 10 items that will be seen by the Estimator...");
+            await Program.GenerateItems(10, client.GetContainer(databaseId, Program.monitoredContainer));
+
+            Console.WriteLine("Checking estimation...");
+            using FeedIterator<ChangeFeedProcessorState> estimatorIteratorAfter = changeFeedEstimator.GetCurrentStateIterator();
+            while (estimatorIteratorAfter.HasMoreResults)
+            {
+                FeedResponse<ChangeFeedProcessorState> states = await estimatorIteratorAfter.ReadNextAsync();
+                foreach (ChangeFeedProcessorState leaseState in states)
+                {
+                    // Host ownership should be empty as we have already stopped the estimator
+                    string host = leaseState.InstanceName == null ? $"not owned by any host currently" : $"owned by host {leaseState.InstanceName}";
+                    Console.WriteLine($"Lease [{leaseState.LeaseToken}] {host} reports {leaseState.EstimatedLag} as estimated lag.");
+                }
+            }
+
+
+
+            Console.WriteLine("Press any key to continue with the next demo...");
+            Console.ReadKey();
         }
 
         /// <summary>
