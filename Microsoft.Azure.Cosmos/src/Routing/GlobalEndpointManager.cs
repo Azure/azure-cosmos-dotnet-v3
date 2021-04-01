@@ -147,10 +147,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     throw this.NonRetriableException;
                 }
 
-                HashSet<Task> tasksToWaitOn = new HashSet<Task>();
-                tasksToWaitOn.Add(globalEndpointTask);
-                tasksToWaitOn.Add(this.TryGetAccountPropertiesFromAllLocationsAsync());
-                tasksToWaitOn.Add(this.TryGetAccountPropertiesFromAllLocationsAsync());
+                // Start 2 additional tasks to try to get the account information
+                // from the preferred region list since global account has not succeed yet.
+                HashSet<Task> tasksToWaitOn = new HashSet<Task>
+                {
+                    globalEndpointTask,
+                    this.TryGetAccountPropertiesFromAllLocationsAsync(),
+                    this.TryGetAccountPropertiesFromAllLocationsAsync()
+                };
 
                 while (tasksToWaitOn.Any())
                 {
@@ -271,8 +275,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 catch (Exception e)
                 {
                     DefaultTrace.TraceInformation("Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
-                    if (IsNonRetriableException(e))
+                    if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
+                        DefaultTrace.TraceInformation("Exception is not retriable");
                         this.CancellationTokenSource.Cancel();
                         this.NonRetriableException = e;
                     }
