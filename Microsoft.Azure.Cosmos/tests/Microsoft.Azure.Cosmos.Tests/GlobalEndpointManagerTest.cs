@@ -83,6 +83,74 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
         [TestMethod]
+        public async Task GetDatabaseAccountFromAnyLocationsMockNegativeTestAsync()
+        {
+            Uri defaultEndpoint = new Uri("https://testfailover.documents-test.windows-int.net/");
+
+            int count = 0;
+            try
+            {
+                await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: (uri) =>
+                    {
+                        count++;
+                        if (uri == defaultEndpoint)
+                        {
+                            throw new Microsoft.Azure.Documents.UnauthorizedException("Mock failed exception");
+                        }
+
+                        throw new Exception("This should never be hit since it should stop after the global endpoint hit the nonretriable exception");
+                    });
+
+                Assert.Fail("Should throw the UnauthorizedException");
+            }
+            catch (Microsoft.Azure.Documents.UnauthorizedException)
+            {
+                Assert.AreEqual(1, count, "Only request should be made");
+            }
+
+            int countDelayRequests = 0;
+            count = 0;
+            try
+            {
+                await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: async (uri) =>
+                    {
+                        count++;
+                        if (uri == defaultEndpoint)
+                        {
+                            countDelayRequests++;
+                            await Task.Delay(TimeSpan.FromMinutes(1));
+                        }
+
+                        throw new Microsoft.Azure.Documents.UnauthorizedException("Mock failed exception");
+                    });
+
+                Assert.Fail("Should throw the UnauthorizedException");
+            }
+            catch (Microsoft.Azure.Documents.UnauthorizedException)
+            {
+                Assert.IsTrue(count <= 3, "Global endpoint is 1, 2 tasks going to regions parallel");
+                Assert.AreEqual(2, count, "Only request should be made");
+            }
+        }
+
+        /// <summary>
+        /// Tests for <see cref="GlobalEndpointManager"/>
+        /// </summary>
+        [TestMethod]
         public async Task GetDatabaseAccountFromAnyLocationsMockTestAsync()
         {
             AccountProperties databaseAccount = new AccountProperties
@@ -132,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
 
             // global and primary slow and fail
-            { 
+            {
                 slowPrimaryRegionHelper.Reset();
                 slowPrimaryRegionHelper.ShouldDelayRequest = (uri) => uri == defaultEndpoint || uri == new Uri(databaseAccount.ReadLocationsInternal.First().Endpoint);
                 slowPrimaryRegionHelper.ShouldFailRequest = slowPrimaryRegionHelper.ShouldDelayRequest;
@@ -222,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
 
         private sealed class GetAccountRequestInjector
         {
-            public Func<Uri, bool> ShouldFailRequest { get; set;}
+            public Func<Uri, bool> ShouldFailRequest { get; set; }
             public Func<Uri, bool> ShouldDelayRequest { get; set; }
             public AccountProperties SuccessResponse { get; set; }
 
