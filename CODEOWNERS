@@ -7,7 +7,7 @@
 # review when someone opens a pull request.
 *       @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg @sboshra
 Microsoft.Azure.Cosmos/src/Json @neildsh @j82w @kirankumarkolli @sboshra
-Microsoft.Azure.Cosmos/src/Query @neildsh @j82w @kirankumarkolli @sboshra
+Microsoft.Azure.Cosmos/src/Query @neildsh @leminh98 @j82w @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/CosmosElements @neildsh @j82w @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/SqlObjects @leminh98 @j82w @kirankumarkolli @sboshra
 Microsoft.Azure.Cosmos/src/Linq @khdang @j82w @sboshra @kirankumarkolli
