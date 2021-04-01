@@ -204,20 +204,32 @@ namespace Microsoft.Azure.Cosmos
             queryStringBuilder.Append("SELECT * FROM c WHERE ( ");
             for (int i = 0; i < items.Count; i++)
             {
-                string pkParamName = "@param_pk" + i;
-                sqlParameters.Add(new SqlParameter(pkParamName, items[i].Item2.InternalKey.ToObjectArray()[0]));
+                object[] pkValues = items[i].Item2.InternalKey.ToObjectArray();
 
+                if (pkValues.Length != this.partitionKeyDefinition.Paths.Count)
+                {
+                    throw new ArgumentException("Number of components in the partition key value does not match the definition.");
+                }
+
+                string pkParamName = "@param_pk" + i;
                 string idParamName = "@param_id" + i;
                 sqlParameters.Add(new SqlParameter(idParamName, items[i].Item1));
 
                 queryStringBuilder.Append("( ");
                 queryStringBuilder.Append("c.id = ");
                 queryStringBuilder.Append(idParamName);
-                queryStringBuilder.Append(" AND ");
-                queryStringBuilder.Append("c");
-                queryStringBuilder.Append(this.partitionKeySelector);
-                queryStringBuilder.Append(" = ");
-                queryStringBuilder.Append(pkParamName);
+                for (int j = 0; j < this.partitionKeySelectors.Count; j++)
+                {
+                    queryStringBuilder.Append(" AND ");
+                    queryStringBuilder.Append("c");
+                    queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                    queryStringBuilder.Append(" = ");
+
+                    string pkParamNameForSinglePath = pkParamName + j;
+                    sqlParameters.Add(new SqlParameter(pkParamNameForSinglePath, pkValues[j]));
+                    queryStringBuilder.Append(pkParamNameForSinglePath);
+                }
+
                 queryStringBuilder.Append(" )");
 
                 if (i < items.Count - 1)
@@ -237,7 +249,14 @@ namespace Microsoft.Azure.Cosmos
             foreach (string path in partitionKeyDefinition.Paths)
             {
                 IReadOnlyList<string> pathParts = PathParser.GetPathParts(path);
-                string selector = String.Join(string.Empty, pathParts);
+                List<string> modifiedPathParts = new List<string>();
+
+                foreach (string pathPart in pathParts)
+                {
+                    modifiedPathParts.Add("[\"" + pathPart + "\"]");
+                }
+
+                string selector = String.Join(string.Empty, modifiedPathParts);
                 pathSelectors.Add(selector);
             }
 
