@@ -49,6 +49,11 @@ namespace Microsoft.Azure.Cosmos.Common
             return SessionContainer.ResolvePartitionLocalSessionToken(this.state, request, partitionKeyRangeId);
         }
 
+        public string ResolvePartitionLocalSessionTokenForGateway(DocumentServiceRequest request, string partitionKeyRangeId)
+        {
+            return SessionContainer.ResolvePartitionLocalSessionTokenForGateway(this.state, request, partitionKeyRangeId);
+        }
+
         public void ClearTokenByCollectionFullname(string collectionFullname)
         {
             SessionContainer.ClearTokenByCollectionFullname(this.state, collectionFullname);
@@ -137,6 +142,33 @@ namespace Microsoft.Azure.Cosmos.Common
         private static ISessionToken ResolvePartitionLocalSessionToken(SessionContainerState self, DocumentServiceRequest request, string partitionKeyRangeId)
         {
             return SessionTokenHelper.ResolvePartitionLocalSessionToken(request, partitionKeyRangeId, SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request));
+        }
+
+        private static string ResolvePartitionLocalSessionTokenForGateway(SessionContainerState self, 
+                                                                          DocumentServiceRequest request, 
+                                                                          string partitionKeyRangeId)
+        {
+            ConcurrentDictionary<string, ISessionToken> partitionKeyRangeIdToTokenMap = SessionContainer.GetPartitionKeyRangeIdToTokenMap(self, request);
+            if (partitionKeyRangeIdToTokenMap != null)
+            {
+                if (partitionKeyRangeIdToTokenMap.TryGetValue(partitionKeyRangeId, out ISessionToken sessionToken))
+                {
+                    return partitionKeyRangeId + ":" + sessionToken.ConvertToString();
+                }
+                else if (request.RequestContext.ResolvedPartitionKeyRange.Parents != null)
+                {
+                    for (int parentIndex = request.RequestContext.ResolvedPartitionKeyRange.Parents.Count - 1; parentIndex >= 0; parentIndex--)
+                    {
+                        if (partitionKeyRangeIdToTokenMap.TryGetValue(request.RequestContext.ResolvedPartitionKeyRange.Parents[parentIndex], 
+                                                                      out sessionToken))
+                        {
+                            return partitionKeyRangeId + ":" + sessionToken.ConvertToString();
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static void ClearTokenByCollectionFullname(SessionContainerState self, string collectionFullname)

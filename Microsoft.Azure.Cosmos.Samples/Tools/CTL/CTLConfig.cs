@@ -75,6 +75,9 @@ namespace CosmosCTL
         [Option("ctl_output_event_traces", Required = false, HelpText = "Outputs TraceSource to console")]
         public bool OutputEventTraces { get; set; } = false;
 
+        [Option("ctl_gateway_mode", Required = false, HelpText = "Uses gateway mode")]
+        public bool UseGatewayMode { get; set; } = false;
+
         [Option("ctl_reporting_interval", Required = false, HelpText = "Reporting interval")]
         public int ReportingIntervalInSeconds { get; set; } = 10;
 
@@ -112,6 +115,11 @@ namespace CosmosCTL
             {
                 ApplicationName = CTLConfig.UserAgentSuffix
             };
+
+            if (this.UseGatewayMode)
+            {
+                clientOptions.ConnectionMode = ConnectionMode.Gateway;
+            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {
