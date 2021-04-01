@@ -282,15 +282,28 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
-        public async Task<ResponseMessage> ReadManyAsync<T>(
+        public async Task<ResponseMessage> ReadManyItemsStreamAsync(
             IReadOnlyList<(string, PartitionKey)> items,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
             ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
-                                                                    this);
+                                                                    this,
+                                                                    cancellationToken);
 
-            return await readManyHelper.ExecuteReadManyRequestAsync(items, trace, cancellationToken);
+            return await readManyHelper.ExecuteReadManyRequestAsync(items, trace);
+        }
+
+        public async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string, PartitionKey)> items,
+            ITrace trace,
+            CancellationToken cancellationToken = default)
+        {
+            ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
+                                                                    this,
+                                                                    cancellationToken);
+
+            return await readManyHelper.ExecuteReadManyRequestAsync<T>(items, trace);
         }
 
         /// <summary>

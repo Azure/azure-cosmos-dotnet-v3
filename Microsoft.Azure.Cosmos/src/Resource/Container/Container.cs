@@ -632,6 +632,66 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Allows to read multiple items from a container using Id's and PartitionKey values.
+        /// </summary>
+        /// <param name="items">List of item.Id and <see cref="PartitionKey"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the response.
+        /// </returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        /// }
+        /// 
+        /// ToDoActivity test = new ToDoActivity()
+        /// {
+        ///    id = Guid.NewGuid().ToString(),
+        ///    status = "InProgress"
+        /// };
+        ///
+        /// ItemResponse item = await this.container.ReplaceItemAsync<ToDoActivity>(test, test.id, new PartitionKey(test.status));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string, PartitionKey)> items,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Allows to read multiple items from a container using Id's and PartitionKey values.
+        /// </summary>
+        /// <param name="items">List of item.Id and <see cref="PartitionKey"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="FeedResponse{T}"/> which wraps the typed items.
+        /// </returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        /// }
+        /// 
+        /// ToDoActivity test = new ToDoActivity()
+        /// {
+        ///    id = Guid.NewGuid().ToString(),
+        ///    status = "InProgress"
+        /// };
+        ///
+        /// ItemResponse item = await this.container.ReplaceItemAsync<ToDoActivity>(test, test.id, new PartitionKey(test.status));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string, PartitionKey)> items,
+            CancellationToken cancellationToken = default);
+
 #if PREVIEW
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.

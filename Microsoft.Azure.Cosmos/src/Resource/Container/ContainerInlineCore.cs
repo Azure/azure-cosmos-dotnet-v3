@@ -307,6 +307,26 @@ namespace Microsoft.Azure.Cosmos
                 (trace) => base.PatchItemAsync<T>(id, partitionKey, patchOperations, trace, requestOptions, cancellationToken));
         }
 
+        public override Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string, PartitionKey)> items,
+            CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadManyItemsStreamAsync),
+                null,
+                (trace) => base.ReadManyItemsStreamAsync(items, trace, cancellationToken));
+        }
+
+        public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string, PartitionKey)> items,
+            CancellationToken cancellationToken = default)
+        {
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadManyItemsAsync),
+                null,
+                (trace) => base.ReadManyItemsAsync<T>(items, trace, cancellationToken));
+        }
+
         public override FeedIterator GetItemQueryStreamIterator(
                   QueryDefinition queryDefinition,
                   string continuationToken = null,
