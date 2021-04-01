@@ -13,50 +13,45 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 
     internal sealed class ExceptionToCosmosException
     {
-        private static readonly string EmptyGuidString = Guid.Empty.ToString();
-
-        public static CosmosException CreateFromException(Exception exception)
+        public static bool TryCreateFromException(Exception exception, out CosmosException cosmosException)
         {
-            if (exception is CosmosException cosmosException)
+            if (exception is CosmosException ce)
             {
-                return cosmosException;
+                cosmosException = ce;
+                return true;
             }
 
             if (exception is Microsoft.Azure.Documents.DocumentClientException documentClientException)
             {
-                return CreateFromDocumentClientException(documentClientException);
+                cosmosException = CreateFromDocumentClientException(documentClientException);
+                return true;
             }
 
             if (exception is QueryException queryException)
             {
-                return queryException.Accept(QueryExceptionConverter.Singleton);
+                cosmosException = queryException.Accept(QueryExceptionConverter.Singleton);
+                return true;
             }
 
             if (exception is ChangeFeedException changeFeedException)
             {
-                return changeFeedException.Accept(ChangeFeedExceptionConverter.Singleton);
+                cosmosException = changeFeedException.Accept(ChangeFeedExceptionConverter.Singleton);
+                return true;
             }
 
             if (exception is ExceptionWithStackTraceException exceptionWithStackTrace)
             {
-                return CreateFromExceptionWithStackTrace(exceptionWithStackTrace);
+                return TryCreateFromExceptionWithStackTrace(exceptionWithStackTrace, out cosmosException);
             }
 
             if (exception.InnerException != null)
             {
                 // retry with the inner exception
-                return ExceptionToCosmosException.CreateFromException(exception.InnerException);
+                return ExceptionToCosmosException.TryCreateFromException(exception.InnerException, out cosmosException);
             }
 
-            return CosmosExceptionFactory.CreateInternalServerErrorException(
-                message: exception.Message,
-                stackTrace: exception.StackTrace,
-                headers: new Headers()
-                {
-                    ActivityId = EmptyGuidString,
-                },
-                trace: NoOpTrace.Singleton,
-                innerException: exception);
+            cosmosException = default;
+            return false;
         }
 
         private static CosmosException CreateFromDocumentClientException(Microsoft.Azure.Documents.DocumentClientException documentClientException)
@@ -68,17 +63,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             return cosmosException;
         }
 
-        private static CosmosException CreateFromExceptionWithStackTrace(ExceptionWithStackTraceException exceptionWithStackTrace)
+        private static bool TryCreateFromExceptionWithStackTrace(
+            ExceptionWithStackTraceException exceptionWithStackTrace,
+            out CosmosException cosmosException)
         {
             // Use the original stack trace from the inner exception.
             if (exceptionWithStackTrace.InnerException is Microsoft.Azure.Documents.DocumentClientException
                 || exceptionWithStackTrace.InnerException is CosmosException)
             {
-                return ExceptionToCosmosException.CreateFromException(exceptionWithStackTrace.InnerException);
+                return ExceptionToCosmosException.TryCreateFromException(exceptionWithStackTrace.InnerException, out cosmosException);
             }
 
-            CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(exceptionWithStackTrace.InnerException);
-            return CosmosExceptionFactory.Create(
+            if (!ExceptionToCosmosException.TryCreateFromException(exceptionWithStackTrace.InnerException, out cosmosException))
+            {
+                return false;
+            }
+
+            cosmosException = CosmosExceptionFactory.Create(
                 cosmosException.StatusCode,
                 cosmosException.Message,
                 exceptionWithStackTrace.StackTrace,
@@ -86,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 cosmosException.Trace,
                 cosmosException.Error,
                 cosmosException.InnerException);
+            return true;
         }
 
         private sealed class QueryExceptionConverter : QueryExceptionVisitor<CosmosException>
@@ -97,21 +99,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
 
             public override CosmosException Visit(MalformedContinuationTokenException malformedContinuationTokenException) => CosmosExceptionFactory.CreateBadRequestException(
-                    message: malformedContinuationTokenException.Message,
-                    headers: new Headers(),
-                    stackTrace: malformedContinuationTokenException.StackTrace,
-                    innerException: malformedContinuationTokenException);
+                message: malformedContinuationTokenException.Message,
+                headers: new Headers(),
+                stackTrace: malformedContinuationTokenException.StackTrace,
+                innerException: malformedContinuationTokenException);
 
             public override CosmosException Visit(UnexpectedQueryPartitionProviderException unexpectedQueryPartitionProviderException) => CosmosExceptionFactory.CreateInternalServerErrorException(
-                    message: $"{nameof(CosmosException)} due to {nameof(UnexpectedQueryPartitionProviderException)}",
-                    headers: new Headers(),
-                    innerException: unexpectedQueryPartitionProviderException);
+                message: $"{nameof(CosmosException)} due to {nameof(UnexpectedQueryPartitionProviderException)}",
+                headers: new Headers(),
+                innerException: unexpectedQueryPartitionProviderException);
 
             public override CosmosException Visit(ExpectedQueryPartitionProviderException expectedQueryPartitionProviderException) => CosmosExceptionFactory.CreateBadRequestException(
-                    message: expectedQueryPartitionProviderException.Message,
-                    headers: new Headers(),
-                    stackTrace: expectedQueryPartitionProviderException.StackTrace,
-                    innerException: expectedQueryPartitionProviderException);
+                message: expectedQueryPartitionProviderException.Message,
+                headers: new Headers(),
+                stackTrace: expectedQueryPartitionProviderException.StackTrace,
+                innerException: expectedQueryPartitionProviderException);
         }
 
         private sealed class ChangeFeedExceptionConverter : ChangeFeedExceptionVisitor<CosmosException>

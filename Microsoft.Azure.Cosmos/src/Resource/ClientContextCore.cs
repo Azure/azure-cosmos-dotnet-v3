@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
-                    throw new CosmosOperationCanceledException(oe, new CosmosTraceDiagnostics(trace));
+                    throw new CosmosOperationCanceledException(oe, trace);
                 }
             }
         }
