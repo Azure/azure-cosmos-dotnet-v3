@@ -207,7 +207,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             /// This is done in a thread safe way to allow multiple tasks to iterate over the 
             /// list of locations.
             /// </summary>
-            /// <returns></returns>
             private async Task TryGetAccountPropertiesFromAllLocationsAsync()
             {
                 while (this.TryMoveNextLocationThreadSafe(
@@ -248,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             private Task TryGetAccountPropertiesFromRegionalEndpointsAsync(string location)
             {
-                return GetAndUpdateAccountPropertiesAsync(
+                return this.GetAndUpdateAccountPropertiesAsync(
                     LocationHelper.GetLocationEndpoint(this.DefaultEndpoint, location));
             }
 
@@ -271,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("Fail to reach location {0}, {1}", endpoint, e.ToString());
+                    DefaultTrace.TraceInformation("Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
                     if (IsNonRetriableException(e))
                     {
                         this.CancellationTokenSource.Cancel();
