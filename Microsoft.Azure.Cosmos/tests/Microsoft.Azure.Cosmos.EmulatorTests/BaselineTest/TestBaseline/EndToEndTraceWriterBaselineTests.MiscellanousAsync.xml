@@ -15,8 +15,13 @@
     <Output>
       <Text><![CDATA[.
 └── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            ├── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                 └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -24,8 +29,6 @@
                             └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                 └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                         (
-                                            [User Agent]
-                                            Redacted To Not Change The Baselines From Run To Run
                                             [Client Side Request Stats]
                                             Redacted To Not Change The Baselines From Run To Run
                                             [PointOperationStatisticsTraceDatum]
@@ -43,7 +46,9 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
@@ -71,6 +76,20 @@
           "duration in milliseconds": 0,
           "data": {},
           "children": [
+            {
+              "name": "Waiting for Initialization of client to complete",
+              "id": "00000000-0000-0000-0000-000000000000",
+              "component": "Unknown",
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
+              },
+              "start time": "12:00:00:000",
+              "duration in milliseconds": 0,
+              "data": {},
+              "children": []
+            },
             {
               "name": "Send Async",
               "id": "00000000-0000-0000-0000-000000000000",
@@ -148,7 +167,6 @@
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
                                   "data": {
-                                    "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                     "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
                                     "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
                                   },
@@ -187,6 +205,10 @@
     <Output>
       <Text><![CDATA[.
 └── CreateDatabaseAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -195,8 +217,6 @@
                         └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                             └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                     (
-                                        [User Agent]
-                                        Redacted To Not Change The Baselines From Run To Run
                                         [Client Side Request Stats]
                                         Redacted To Not Change The Baselines From Run To Run
                                         [PointOperationStatisticsTraceDatum]
@@ -214,7 +234,9 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
@@ -306,7 +328,6 @@
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
                               "data": {
-                                "User Agent": "Redacted To Not Change The Baselines From Run To Run",
                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
                                 "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
                               },

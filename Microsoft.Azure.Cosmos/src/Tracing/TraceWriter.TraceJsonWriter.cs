@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.WriteJsonUriArrayWithDuplicatesCounted("ContactedReplicas", clientSideRequestStatisticsTraceDatum.ContactedReplicas);
 
-                this.WriteJsonUriArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContacted);
+                this.WriteRegionsContactedArray("RegionsContacted", clientSideRequestStatisticsTraceDatum.RegionsContactedWithName);
                 this.WriteJsonUriArray("FailedReplicas", clientSideRequestStatisticsTraceDatum.FailedReplicas);
 
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
@@ -305,6 +305,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteObjectEnd();
             }
 
+            public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+            {
+                if (this.jsonWriter is IJsonTextWriterExtensions jsonTextWriter)
+                {
+                    jsonTextWriter.WriteRawJsonValue(clientConfigurationTraceDatum.SerializedJson,
+                                                     isFieldName: false);
+                }
+                else
+                {
+                    throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
+                }
+            }
+
             private void WriteJsonUriArray(string propertyName, IEnumerable<Uri> uris)
             {
                 this.jsonWriter.WriteFieldName(propertyName);
@@ -315,6 +328,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     foreach (Uri contactedReplica in uris)
                     {
                         this.WriteStringValueOrNull(contactedReplica?.ToString());
+                    }
+                }
+
+                this.jsonWriter.WriteArrayEnd();
+            }
+
+            private void WriteRegionsContactedArray(string propertyName, IEnumerable<(string, Uri)> uris)
+            {
+                this.jsonWriter.WriteFieldName(propertyName);
+                this.jsonWriter.WriteArrayStart();
+
+                if (uris != null)
+                {
+                    foreach ((string _, Uri uri) contactedRegion in uris)
+                    {
+                        this.WriteStringValueOrNull(contactedRegion.uri?.ToString());
                     }
                 }
 

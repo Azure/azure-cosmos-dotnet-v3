@@ -221,6 +221,8 @@ namespace Microsoft.Azure.Cosmos
 
             using (ITrace trace = disableDiagnostics ? NoOpTrace.Singleton : (ITrace)Tracing.Trace.GetRootTrace(operationName, traceComponent, traceLevel))
             {
+                trace.AddDatum("Client Configuration", this.client.ClientConfigurationTraceDatum);
+
                 return await this.RunWithDiagnosticsHelperAsync(
                     trace,
                     task);
@@ -373,7 +375,8 @@ namespace Microsoft.Azure.Cosmos
                         HttpConstants.Versions.CurrentVersion,
                         containerUri,
                         forceRefesh: false,
-                        cancellationToken);
+                        cancellationToken,
+                        childTrace);
                 }
                 catch (DocumentClientException ex)
                 {

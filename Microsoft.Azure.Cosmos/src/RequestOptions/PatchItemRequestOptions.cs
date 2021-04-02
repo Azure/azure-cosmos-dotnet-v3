@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Cosmos Patch request options
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal

@@ -632,7 +632,7 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
-#if INTERNAL
+#if PREVIEW
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -1088,7 +1088,7 @@ namespace Microsoft.Azure.Cosmos
         ///     //Asynchronous query execution
         ///     while (setIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync())
+        ///         foreach(var item in await setIterator.ReadNextAsync())
         ///         {
         ///             Console.WriteLine(item.Price); 
         ///         }

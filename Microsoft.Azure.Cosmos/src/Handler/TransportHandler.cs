@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
             var clientRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
             serviceRequest.RequestContext.ClientRequestStatistics = clientRequestStatistics;
+            request.Trace.AddDatum("Client Side Request Stats", clientRequestStatistics);
 
             //TODO: extrace auth into a separate handler
             string authorization = await ((ICosmosAuthorizationTokenProvider)this.client.DocumentClient).GetUserAuthorizationTokenAsync(
@@ -91,9 +92,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 Tracing.TraceLevel.Info))
             {
                 request.Trace = processMessageAsyncTrace;
-                processMessageAsyncTrace.AddDatum("User Agent", this.client.ClientContext.UserAgent);
-                processMessageAsyncTrace.AddDatum("Client Side Request Stats", clientRequestStatistics);
-                
+
                 DocumentServiceResponse response = request.OperationType == OperationType.Upsert
                         ? await this.ProcessUpsertAsync(storeProxy, serviceRequest, cancellationToken)
                         : await storeProxy.ProcessMessageAsync(serviceRequest, cancellationToken);

@@ -413,7 +413,10 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
-            return base.GetChangeFeedIterator<T>(changeFeedStartFrom, changeFeedMode, changeFeedRequestOptions);
+            return new FeedIteratorInlineCore<T>(base.GetChangeFeedIterator<T>(changeFeedStartFrom, 
+                                                 changeFeedMode, 
+                                                 changeFeedRequestOptions),
+                                                 this.ClientContext);
         }
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
@@ -423,7 +426,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.OperationHelperAsync(
                 nameof(GetPartitionKeyRangesAsync),
                 null,
-                (trace) => base.GetPartitionKeyRangesAsync(feedRange, cancellationToken));
+                (trace) => base.GetPartitionKeyRangesAsync(feedRange, trace, cancellationToken));
         }
 
         public override FeedIterator GetItemQueryStreamIterator(

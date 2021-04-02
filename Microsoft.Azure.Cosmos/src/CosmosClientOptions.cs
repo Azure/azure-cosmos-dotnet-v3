@@ -401,6 +401,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <example>
         /// An example on how to configure the serialization option to ignore null values
+        /// <code language="c#">
+        /// <![CDATA[
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
         /// {
         ///     SerializerOptions = new CosmosSerializationOptions(){
@@ -409,6 +411,8 @@ namespace Microsoft.Azure.Cosmos
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
         /// </example>
         public CosmosSerializationOptions SerializerOptions
         {
@@ -430,7 +434,9 @@ namespace Microsoft.Azure.Cosmos
         /// SDK owned types such as DatabaseProperties and ContainerProperties will always use the SDK default serializer.
         /// </summary>
         /// <example>
-        /// // An example on how to set a custom serializer. For basic serializer options look at CosmosSerializationOptions
+        /// An example on how to set a custom serializer. For basic serializer options look at CosmosSerializationOptions
+        /// <code language="c#">
+        /// <![CDATA[
         /// CosmosSerializer ignoreNullSerializer = new MyCustomIgnoreNullSerializer();
         ///         
         /// CosmosClientOptions clientOptions = new CosmosClientOptions()
@@ -439,6 +445,8 @@ namespace Microsoft.Azure.Cosmos
         /// };
         /// 
         /// CosmosClient client = new CosmosClient("endpoint", "key", clientOptions);
+        /// ]]>
+        /// </code>
         /// </example>
         [JsonConverter(typeof(ClientOptionJsonConverter))]
         public CosmosSerializer Serializer
