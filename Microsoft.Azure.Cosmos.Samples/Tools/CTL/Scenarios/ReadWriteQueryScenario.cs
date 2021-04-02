@@ -51,7 +51,7 @@ namespace CosmosCTL
                 logger.LogInformation("Created {0} collections for execution", this.initializationResult.CreatedContainers.Count);
             }
 
-            logger.LogInformation("Pre-populating {0} documents", config.Operations);
+            logger.LogInformation("Pre-populating {0} documents", config.PreCreatedDocuments);
             this.createdDocuments = await PopulateDocumentsAsync(config, logger, this.initializationResult.Containers);
         }
 
