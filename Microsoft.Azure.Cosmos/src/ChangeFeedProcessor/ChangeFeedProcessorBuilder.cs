@@ -214,21 +214,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets the start request session continuation token to start looking for changes after.
-        /// </summary>
-        /// <remarks>
-        /// This is only used when lease store is not initialized and is ignored if a lease exists and has continuation token.
-        /// If this is specified, both StartTime and StartFromBeginning are ignored.
-        /// </remarks>
-        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        internal virtual ChangeFeedProcessorBuilder WithSessionContinuationToken(string startContinuation)
-        {
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
-            this.changeFeedProcessorOptions.StartContinuation = startContinuation;
-            return this;
-        }
-
-        /// <summary>
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     /// <summary>
     /// Factory class used to create instance(s) of <see cref="FeedProcessor"/>.
     /// </summary>
-    internal abstract class FeedProcessorFactory<T>
+    internal abstract class FeedProcessorFactory
     {
         /// <summary>
         /// Creates an instance of a <see cref="FeedProcessor"/>.
@@ -17,6 +17,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         /// <param name="lease">Lease to be used for feed processing</param>
         /// <param name="observer">Observer to be used</param>
         /// <returns>An instance of a <see cref="FeedProcessor"/>.</returns>
-        public abstract FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer);
+        public abstract FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer);
     }
 }
