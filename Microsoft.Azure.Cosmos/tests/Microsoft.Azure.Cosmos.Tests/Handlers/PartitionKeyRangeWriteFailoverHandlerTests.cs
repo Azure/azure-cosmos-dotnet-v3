@@ -193,9 +193,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Uri> regions,
             out RequestHandler requestHandler)
         {
-            Mock<DocumentClient> mockDocumentClient = new Mock<DocumentClient>(new Uri("https://localhost:8081"), "");
-            Mock<CosmosClient> client = new Mock<CosmosClient>();
-            client.Setup(x => x.DocumentClient).Returns(mockDocumentClient.Object);
             Mock<IAddressResolver> mockAddressResolver = new Mock<IAddressResolver>();
             Lazy<IAddressResolver> lazyAddressResolver = new Lazy<IAddressResolver>(() => mockAddressResolver.Object);
 

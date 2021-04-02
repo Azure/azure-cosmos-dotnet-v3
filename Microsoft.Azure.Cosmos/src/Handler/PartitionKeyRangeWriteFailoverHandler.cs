@@ -112,8 +112,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Uri startingLocation = documentServiceRequest.RequestContext.LocationEndpointToRoute;
             Lazy<IEnumerator<(Uri endpoint, bool isPrimaryLocation)>> locationToFailover = new Lazy<IEnumerator<(Uri endpoint, bool isPrimaryLocation)>>(
                 () => this.GetLocationsToRetryOn(
-                 this.getReadEndpoints(),
-                 startingLocation));
+                 this.getReadEndpoints()));
 
             if (this.primaryWriteLocationFailedOver != null)
             {
@@ -221,8 +220,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                 bool isServiceUnavailable = responseMessage.StatusCode == HttpStatusCode.ServiceUnavailable;
 
+                bool isBadGateway = responseMessage.StatusCode == HttpStatusCode.BadGateway;
+
                 // The request should not be retried in another region
-                if (!isWriteForbidden && !isServiceUnavailable)
+                if (!isWriteForbidden && !isServiceUnavailable && !isBadGateway)
                 {
                     // No retries occurred. Return original response
                     if (!requestDidPartitionLevelRetry)
@@ -303,21 +304,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return documentServiceRequest.RequestContext.ResolvedPartitionKeyRange;
         }
 
-        private IEnumerator<(Uri endpoint, bool isPrimaryLocation)> GetLocationsToRetryOn(IReadOnlyCollection<Uri> endpoints, Uri startingEndpoint)
+        private IEnumerator<(Uri endpoint, bool isPrimaryLocation)> GetLocationsToRetryOn(IReadOnlyCollection<Uri> endpoints)
         {
-            bool isStartingUriFound = false;
             // Skip the starting point since it was already tried
             foreach (Uri endpoint in endpoints)
             {
-                // Most cases the first endpoint will be the starting point.
-                // This avoid URI comparison overhead for all the other APIs.
-                if (!isStartingUriFound &&
-                    endpoint == startingEndpoint)
-                {
-                    isStartingUriFound = true;
-                    continue;
-                }
-
                 yield return (endpoint, false);
             }
         }
