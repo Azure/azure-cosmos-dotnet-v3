@@ -370,6 +370,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0045:Convert to conditional expression", Justification = "Readability")]
         internal async Task<(byte[], EncryptionKeyWrapMetadata, InMemoryRawDek)> WrapAsync(
             string id,
             byte[] key,
