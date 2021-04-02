@@ -304,7 +304,7 @@ namespace CosmosCTL
                 long successes = 0;
                 long failures = 0;
                 ConcurrentBag<Dictionary<string, string>> createdDocumentsInContainer = new ConcurrentBag<Dictionary<string, string>>();
-                IEnumerable<Dictionary<string, string>> documentsToCreate = GenerateDocuments(config.Operations, config.CollectionPartitionKey);
+                IEnumerable<Dictionary<string, string>> documentsToCreate = GenerateDocuments(config.PreCreatedDocuments, config.CollectionPartitionKey);
                 await Utils.ForEachAsync(documentsToCreate, (Dictionary<string, string> doc)
                     => container.CreateItemAsync(doc).ContinueWith(task =>
                     {
