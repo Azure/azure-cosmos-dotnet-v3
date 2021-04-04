@@ -128,10 +128,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -141,10 +141,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -154,10 +154,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -167,10 +167,10 @@
               "name": "[,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -180,10 +180,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -193,10 +193,10 @@
                       "name": "[,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -206,10 +206,10 @@
                           "name": "Read Feed Transport",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Transport",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file path": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -226,10 +226,10 @@
               "name": "Get Child Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Routing",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -240,10 +240,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -253,10 +253,10 @@
                   "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -266,10 +266,10 @@
                       "name": "Read Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -288,10 +288,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -301,10 +301,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -314,10 +314,10 @@
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -327,10 +327,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -347,10 +347,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -360,10 +360,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -373,10 +373,10 @@
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -386,10 +386,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -406,10 +406,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -419,10 +419,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -432,10 +432,10 @@
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -445,10 +445,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -465,10 +465,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -478,10 +478,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -491,10 +491,10 @@
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -504,10 +504,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -524,10 +524,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -537,10 +537,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -550,10 +550,10 @@
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -563,10 +563,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -583,10 +583,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -596,10 +596,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -609,10 +609,10 @@
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -622,10 +622,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -642,10 +642,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -655,10 +655,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -668,10 +668,10 @@
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -681,10 +681,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -701,10 +701,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -714,10 +714,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -727,10 +727,10 @@
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -740,10 +740,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -760,10 +760,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -773,10 +773,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -786,10 +786,10 @@
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -799,10 +799,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -819,10 +819,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -832,10 +832,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -845,10 +845,10 @@
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -858,10 +858,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -878,10 +878,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -891,10 +891,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -904,10 +904,10 @@
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -917,10 +917,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -937,10 +937,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -950,10 +950,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -963,10 +963,10 @@
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -976,10 +976,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -996,10 +996,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1009,10 +1009,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1022,10 +1022,10 @@
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1035,10 +1035,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1055,10 +1055,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1068,10 +1068,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1081,10 +1081,10 @@
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1094,10 +1094,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1114,10 +1114,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1127,10 +1127,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1140,10 +1140,10 @@
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1153,10 +1153,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1173,10 +1173,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1186,10 +1186,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1199,10 +1199,10 @@
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1212,10 +1212,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1232,10 +1232,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1245,10 +1245,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1258,10 +1258,10 @@
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1271,10 +1271,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1291,10 +1291,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1304,10 +1304,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1317,10 +1317,10 @@
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1330,10 +1330,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1350,10 +1350,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1363,10 +1363,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1376,10 +1376,10 @@
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1389,10 +1389,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1409,10 +1409,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1422,10 +1422,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1435,10 +1435,10 @@
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1448,10 +1448,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1468,10 +1468,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1481,10 +1481,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1494,10 +1494,10 @@
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1507,10 +1507,10 @@
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1527,10 +1527,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ReadFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1540,10 +1540,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1664,10 +1664,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -1677,10 +1677,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1690,10 +1690,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1703,10 +1703,10 @@
               "name": "[,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1716,10 +1716,10 @@
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1729,10 +1729,10 @@
                       "name": "[,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Pagination",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1742,10 +1742,10 @@
                           "name": "Change Feed Transport",
                           "id": "00000000-0000-0000-0000-000000000000",
                           "component": "Transport",
-                          "caller information": {
-                            "member name": "MemberName",
-                            "file path": "FilePath",
-                            "line number": 42
+                          "caller info": {
+                            "member": "MemberName",
+                            "file": "FilePath",
+                            "line": 42
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
@@ -1762,10 +1762,10 @@
               "name": "Get Child Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Routing",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1776,10 +1776,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1789,10 +1789,10 @@
                   "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1802,10 +1802,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -1824,10 +1824,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1837,10 +1837,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1850,10 +1850,10 @@
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1863,10 +1863,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1883,10 +1883,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1896,10 +1896,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1909,10 +1909,10 @@
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1922,10 +1922,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -1942,10 +1942,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -1955,10 +1955,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -1968,10 +1968,10 @@
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -1981,10 +1981,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2001,10 +2001,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2014,10 +2014,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2027,10 +2027,10 @@
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2040,10 +2040,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2060,10 +2060,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2073,10 +2073,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2086,10 +2086,10 @@
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2099,10 +2099,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2119,10 +2119,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2132,10 +2132,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2145,10 +2145,10 @@
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2158,10 +2158,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2178,10 +2178,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2191,10 +2191,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2204,10 +2204,10 @@
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2217,10 +2217,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2237,10 +2237,10 @@
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "ChangeFeed",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2250,10 +2250,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2263,10 +2263,10 @@
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2276,10 +2276,10 @@
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2294,10 +2294,10 @@
           "name": "Drain NotModified Pages",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "ChangeFeed",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2307,10 +2307,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2320,10 +2320,10 @@
                   "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2333,10 +2333,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2351,10 +2351,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2364,10 +2364,10 @@
                   "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2377,10 +2377,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2395,10 +2395,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2408,10 +2408,10 @@
                   "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2421,10 +2421,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2439,10 +2439,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2452,10 +2452,10 @@
                   "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2465,10 +2465,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2483,10 +2483,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2496,10 +2496,10 @@
                   "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2509,10 +2509,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2527,10 +2527,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2540,10 +2540,10 @@
                   "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2553,10 +2553,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2571,10 +2571,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2584,10 +2584,10 @@
                   "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2597,10 +2597,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2615,10 +2615,10 @@
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2628,10 +2628,10 @@
                   "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2641,10 +2641,10 @@
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2747,10 +2747,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -2760,10 +2760,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2773,10 +2773,10 @@
           "name": "Prefetching",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2786,10 +2786,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2799,10 +2799,10 @@
                   "name": "[,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Pagination",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2812,10 +2812,10 @@
                       "name": "Query Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "Transport",
-                      "caller information": {
-                        "member name": "MemberName",
-                        "file path": "FilePath",
-                        "line number": 42
+                      "caller info": {
+                        "member": "MemberName",
+                        "file": "FilePath",
+                        "line": 42
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
@@ -2832,10 +2832,10 @@
           "name": "[,FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2845,10 +2845,10 @@
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2861,10 +2861,10 @@
           "name": "Get Child Ranges",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Routing",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2875,10 +2875,10 @@
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2888,10 +2888,10 @@
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Pagination",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2901,10 +2901,10 @@
                   "name": "Query Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "Transport",
-                  "caller information": {
-                    "member name": "MemberName",
-                    "file path": "FilePath",
-                    "line number": 42
+                  "caller info": {
+                    "member": "MemberName",
+                    "file": "FilePath",
+                    "line": 42
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
@@ -2921,10 +2921,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2934,10 +2934,10 @@
           "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2947,10 +2947,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -2965,10 +2965,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -2978,10 +2978,10 @@
           "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -2991,10 +2991,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3009,10 +3009,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3022,10 +3022,10 @@
           "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3035,10 +3035,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3053,10 +3053,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3066,10 +3066,10 @@
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3079,10 +3079,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3097,10 +3097,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3110,10 +3110,10 @@
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3123,10 +3123,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3141,10 +3141,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3154,10 +3154,10 @@
           "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3167,10 +3167,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3185,10 +3185,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3198,10 +3198,10 @@
           "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3211,10 +3211,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3229,10 +3229,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3242,10 +3242,10 @@
           "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3255,10 +3255,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3273,10 +3273,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3286,10 +3286,10 @@
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3299,10 +3299,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3317,10 +3317,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3330,10 +3330,10 @@
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3343,10 +3343,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3361,10 +3361,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3374,10 +3374,10 @@
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3387,10 +3387,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3405,10 +3405,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3418,10 +3418,10 @@
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3431,10 +3431,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3449,10 +3449,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3462,10 +3462,10 @@
           "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3475,10 +3475,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3493,10 +3493,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3506,10 +3506,10 @@
           "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Pagination",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -3519,10 +3519,10 @@
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "Transport",
-              "caller information": {
-                "member name": "MemberName",
-                "file path": "FilePath",
-                "line number": 42
+              "caller info": {
+                "member": "MemberName",
+                "file": "FilePath",
+                "line": 42
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
@@ -3537,10 +3537,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -3551,10 +3551,10 @@
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Pagination",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,

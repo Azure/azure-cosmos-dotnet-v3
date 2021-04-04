@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -98,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
 
                     try
                     {
-                        ContainerProperties collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                        ContainerProperties collectionInfo = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
 
                         if (collectionInfo == null)
                         {

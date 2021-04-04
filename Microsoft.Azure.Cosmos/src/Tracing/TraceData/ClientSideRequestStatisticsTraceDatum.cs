@@ -7,9 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Text;
     using Microsoft.Azure.Documents;
 
-    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum
+    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
         private readonly object lockObject = new object();
         private readonly long clientSideRequestStatisticsCreateTime;
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.ContactedReplicas = new List<Uri>();
             this.StoreResponseStatisticsList = new List<StoreResponseStatistics>();
             this.FailedReplicas = new HashSet<Uri>();
-            this.RegionsContacted = new HashSet<Uri>();
+            this.RegionsContactedWithName = new HashSet<(string, Uri)>();
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
 
@@ -40,13 +41,15 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime { get; }
 
-        public List<Uri> ContactedReplicas { get; }
+        public List<Uri> ContactedReplicas { get; set; }
 
         public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
 
         public HashSet<Uri> FailedReplicas { get; }
 
         public HashSet<Uri> RegionsContacted { get; }
+
+        public HashSet<(string, Uri)> RegionsContactedWithName { get; }
 
         public TimeSpan RequestLatency
         {
@@ -118,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             DateTime responseTime = DateTime.UtcNow;
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+            string regionName = request.RequestContext.RegionName;
             StoreResponseStatistics responseStatistics = new StoreResponseStatistics(
                 startDateTime,
                 responseTime,
@@ -140,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContacted.Add(locationEndpoint);
+                    this.RegionsContactedWithName.Add((regionName, locationEndpoint));
                 }
 
                 this.StoreResponseStatisticsList.Add(responseStatistics);
@@ -201,6 +205,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
+        }
+
+        public void AppendToBuilder(StringBuilder stringBuilder)
+        {
+            throw new NotImplementedException();
         }
 
         public readonly struct AddressResolutionStatistics

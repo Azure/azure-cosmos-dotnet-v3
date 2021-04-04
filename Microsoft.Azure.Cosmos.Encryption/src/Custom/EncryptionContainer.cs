@@ -644,12 +644,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
+            QueryRequestOptions requestOptions = null,
+            CosmosLinqSerializerOptions linqSerializerOptions = null)
         {
             return this.container.GetItemLinqQueryable<T>(
                 allowSynchronousQueryExecution,
                 continuationToken,
-                requestOptions);
+                requestOptions,
+                linqSerializerOptions);
         }
 
         public override FeedIterator<T> GetItemQueryIterator<T>(
@@ -847,11 +849,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator(
                 this.container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
+                    changeFeedMode,
                     changeFeedRequestOptions),
                 this.Encryptor,
                 this.CosmosSerializer);
@@ -859,13 +863,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override FeedIterator<T> GetChangeFeedIterator<T>(
             ChangeFeedStartFrom changeFeedStartFrom,
+            ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null)
         {
             return new EncryptionFeedIterator<T>(
                 (EncryptionFeedIterator)this.GetChangeFeedStreamIterator(
                     changeFeedStartFrom,
+                    changeFeedMode,
                     changeFeedRequestOptions),
                 this.ResponseFactory);
+        }
+
+        public override Task<ItemResponse<T>> PatchItemAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<ResponseMessage> PatchItemStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }

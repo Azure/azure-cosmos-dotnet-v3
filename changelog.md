@@ -3,6 +3,84 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.18.0-preview"/> [3.18.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.0-preview) - 2021-03-18
+
+#### Added
+- [#2308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2308) Patch: Adds preview support for Patch API
+- [#2312](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2312) Diagnostics: Adds Api for getting all regions contacted by a request
+
+#### Fixed
+- [#2314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2314) Diagnostics: Fixes InvalidOperationException caused by concurrently modifing a dictionary in TraceWriter. Introduced in 3.17.0 PR [#2242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2242)
+- [#2303](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2303) CosmosException : Fixed exception messages to remove JSON formatting
+- [#2311](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2311) Spatial: Fixed deserialization when Json does not represent a Spatial type
+- [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
+- [#2278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2278) Documentation: Fixed typos in comment examples (Thanks to paulomorgado)
+- [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs. Introduced in 3.16.0 PR [#1954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1954)
+- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) Diagnostics: Fixed regression which caused ActivityId to not get included. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
+
+### <a name="3.17.1"/> [3.17.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.1) - 2021-03-19
+
+#### Fixed
+- [#2314](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2314) Diagnostics: Fixes InvalidOperationException caused by concurrently modifying a dictionary in TraceWriter. Introduced in 3.17.0 PR [#2242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2242)
+- [#2303](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2303) CosmosException : Fixed exception messages to remove JSON formatting
+- [#2311](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2311) Spatial: Fixed deserialization when Json does not represent a Spatial type
+- [#2284](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2284) Diagnostics: Adds traces for cache operations. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
+- [#2278](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2278) Documentation: Fixed typos in comment examples (Thanks to paulomorgado)
+- [#2279](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2279) Availability: Fixed region failover logic on control plane hot path when gateway hangs. Introduced in 3.16.0 PR [#1954](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1954)
+- [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) Diagnostics: Fixed regression which caused ActivityId to not get included. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
+
+### <a name="3.17.0"/> [3.17.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0) - 2021-03-02
+
+#### Added
+- [#1870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1870) Batch API: Adds Session token support
+- [#2145](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2145) EnableContentResponseOnWrite: Adds client level support via CosmosClientOptions and CosmosClientBuilder 
+- [#2166](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2166) QueryRequestOption: Adds optimization to avoid duplicating QueryRequestOption
+- [#1830](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1830) & [#2170](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2170) Change Feed Estimator: Adds support for detailed estimation per lease
+- [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097) & [#2204](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2204) & [#2213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2213) & [#2235](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2235) & [#2236](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2236) & [#2242](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2242) & [#2246](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2246) CosmosDiagnostics: Refactored to use ITrace as the default implementation
+- [#2206](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2206) LINQ : Adds User Defined Function Translation Support (Thanks to dpiessens)
+- [#2210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2210) QueryDefinition: Adds API to get query parameters (Thanks to thomaslevesque)
+- [#2197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2197) CosmosClient: Adds CreateAndInitializeAsync method which can be used to avoid latency of warming caches on first operation.
+- [#2220](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2220) LINQ: Adds camelCase support to GetItemLinqQueryable() as optional parameter
+- [#2249](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2249) Performance: Adds HTTP optimization to disable Nagle Algorithm for .NET Framework applications
+
+#### Fixed
+- [#2168](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2168) Query: Fixes a regression in Take operator where it drains the entire query instead of stopping a the take count. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) and reported in issue [#1979](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1979)
+- [#2129](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2129) CosmosDiagnostics: Fixes memory leak caused by pagination library holding on to all diagnostics. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) and reported in issue [#2087](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2087)
+- [#2103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2103) Query: Fixes ORDER BY undefined (and mixed type primitives) continuation token support. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
+- [#2124](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2124) Bulk: Fixes retry logic to handle RequestEntityTooLarge exceptions caused by the underlying batch request being to large. Introduced in [#741](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/741)
+- [#2198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2198) CosmosClientOptions: Fixes a bug causing ConsistentPrefix to be convert to BoundedStaleness. Introduced in 3.1.0 PR [#541](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/541) and reported in issue [#2196](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2196)
+- [#2262](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2262) CosmosException: Fixes the headers not matching CosmosException property values and incorrect SubStatusCode values on client initialization failures
+- [#2269](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2269) PermissionProperties: Fixes PermissionProperties to not take dependency on internal type to fix mocking 
+
+### <a name="3.17.0-Preview1"/> [3.17.0-preview1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0-preview1) - 2021-03-02
+
+#### Added
+- [#2197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2197) CosmosClient: Adds CreateAndInitializeAsync Method
+
+#### Fixed
+- [#2235](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2235) CosmosDiagnostics: Fixes ITrace JsonTraceWriter to include address resolution and store response stats. Introduced in 3.17.0-preview in PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
+- [#2236](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2236) CosmosDiagnostics: Fixes missing POCO deserialization for query operations.
+- [#2218](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2218) (Preview) ChangeFeed pull model: Fixes missing headers on failure path. Introduced in 3.15.0 in PR [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933)
+
+### <a name="3.17.0-Preview"/> [3.17.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.17.0-preview) - 2021-02-15
+
+#### Added
+- [#1870](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1870) Batch API: Adds Session token support
+- [#1952](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1952) & [#1648](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1658) (Preview) Subpartitioning: Adds support for subpartitioning
+- [#2122](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2122) (Preview) Change Feed: Adds Full Fidelity support
+- [#2145](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2145) EnableContentResponseOnWrite: Adds client level support via CosmosClientOptions and CosmosClientBuilder 
+- [#2166](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2166) QueryRequestOption: Adds optimization to avoid duplicating QueryRequestOption
+- [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097) & [#2204](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2204) & [#2213](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2213) CosmosDiagnostics: Refactored to use ITrace as the default implementation
+- [#2206](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2206) LINQ : Adds User Defined Function Translation Support (Thanks to dpiessens)
+- [#2210](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2210) QueryDefinition: Adds API to get query parameters (Thanks to thomaslevesque)
+
+#### Fixed
+- [#2168](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2168) Query: Fixes a regression in Take operator where it drains the entire query instead of stopping a the take count. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) and reported in issue [#1979](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/1979)
+- [#2129](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2129) CosmosDiagnostics: Fixes memory leak caused by pagination library holding on to all diagnostics. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933) and reported in issue [#2087](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2087)
+- [#2103](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2103) Query: Fixes ORDER BY undefined (and mixed type primitives) continuation token support. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
+- [#2124](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2124) Bulk: Fixes retry logic to handle RequestEntityTooLarge exceptions caused by the underlying batch request being to large. Introduced in [#741](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/741)
+- [#2198](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2198) CosmosClientOptions: Fixes a bug causing ConsistentPrefix to be convert to BoundedStaleness. Introduced in 3.1.0 PR [#541](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/541) and reported in issue [#2196](https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2196)
+
 ### <a name="3.16.0"/> [3.16.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.16.0) - 2021-01-12
 
 #### Added
@@ -146,6 +224,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
+- [#1548](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1548) Availability: Fixes SDK failover logic. An HttpClient used the user configured request timeout on metadata request causing an ambiguous OperationCanceledException instead of the HttpRequestException which is used to trigger failovers.
 - [#1720](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1720) Gateway Trace: Fixes a bug where the ActivityId is being set to Guid.Empty
 - [#1728](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1728) Diagnostics: Fixes ActivityScope by moving it to operation level
 - [#1740](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1740) Connection limits: Fixes .NET core to honor gateway connection limit

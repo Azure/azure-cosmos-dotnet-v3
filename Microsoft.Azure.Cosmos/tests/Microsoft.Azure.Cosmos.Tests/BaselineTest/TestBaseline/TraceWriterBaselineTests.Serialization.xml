@@ -17,10 +17,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -80,10 +80,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -116,10 +116,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -129,10 +129,10 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -198,10 +198,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -211,10 +211,10 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -254,10 +254,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -267,10 +267,10 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -281,10 +281,10 @@
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -388,10 +388,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -401,10 +401,10 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -417,10 +417,10 @@
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -505,10 +505,10 @@
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
   "component": "Unknown",
-  "caller information": {
-    "member name": "MemberName",
-    "file path": "FilePath",
-    "line number": 42
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
@@ -518,10 +518,10 @@
       "name": "Child1",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -531,10 +531,10 @@
           "name": "Child1Child1",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -545,10 +545,10 @@
           "name": "Child1Child2",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -561,10 +561,10 @@
       "name": "Child2",
       "id": "00000000-0000-0000-0000-000000000000",
       "component": "Unknown",
-      "caller information": {
-        "member name": "MemberName",
-        "file path": "FilePath",
-        "line number": 42
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
@@ -574,10 +574,10 @@
           "name": "Child2Child1",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -588,10 +588,10 @@
           "name": "Child2Child2",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
@@ -602,10 +602,10 @@
           "name": "Child2Child3",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "Unknown",
-          "caller information": {
-            "member name": "MemberName",
-            "file path": "FilePath",
-            "line number": 42
+          "caller info": {
+            "member": "MemberName",
+            "file": "FilePath",
+            "line": 42
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,

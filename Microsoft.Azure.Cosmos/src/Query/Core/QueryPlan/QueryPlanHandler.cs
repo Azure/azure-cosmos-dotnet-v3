@@ -115,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
+                allowDCount: true,
                 cancellationToken: cancellationToken);
         }
 

@@ -159,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
+            bool allowDCount,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -166,12 +167,13 @@ namespace Microsoft.Azure.Cosmos.Query
 
             QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync();
             TryCatch<PartitionedQueryExecutionInfo> tryGetPartitionedQueryExecutionInfo = queryPartitionProvider.TryGetPartitionedQueryExecutionInfo(
-                this.QuerySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey);
+                querySpec: this.QuerySpec,
+                partitionKeyDefinition: partitionKeyDefinition,
+                requireFormattableOrderByQuery: requireFormattableOrderByQuery,
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                hasLogicalPartitionKey: hasLogicalPartitionKey,
+                allowDCount: allowDCount);
             if (!tryGetPartitionedQueryExecutionInfo.Succeeded)
             {
                 throw new BadRequestException(tryGetPartitionedQueryExecutionInfo.Exception);
@@ -433,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Query
         {
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            PartitionKeyRange range = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId);
+            PartitionKeyRange range = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId, NoOpTrace.Singleton);
             if (range == null && PathsHelper.IsNameBased(this.ResourceLink))
             {
                 // Refresh the cache and don't try to reresolve collection as it is not clear what already
@@ -476,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, NoOpTrace.Singleton);
             if (ranges == null && PathsHelper.IsNameBased(this.ResourceLink))
             {
                 // Refresh the cache and don't try to re-resolve collection as it is not clear what already

@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             if (this.compositeContinuationToken == null)
             {
-                PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                PartitionKeyRangeCache pkRangeCache = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
                 this.containerRid = await this.container.GetCachedRIDAsync(
                     forceRefresh: false, 
                     trace, 

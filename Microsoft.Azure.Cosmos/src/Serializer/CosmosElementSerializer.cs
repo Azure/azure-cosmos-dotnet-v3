@@ -89,65 +89,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
             return GetMemoryStreamFromJsonWriter(jsonWriter);
         }
 
-        public static async Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions)
-        {
-            // Rewrite the payload to be in the specified format.
-            // If it's already in the correct format, then the following will be a memcpy.
-            MemoryStream memoryStream;
-            if (responseMessage.Content is MemoryStream responseContentAsMemoryStream)
-            {
-                memoryStream = responseContentAsMemoryStream;
-            }
-            else
-            {
-                memoryStream = new MemoryStream();
-                await responseMessage.Content.CopyToAsync(memoryStream);
-            }
-
-            ReadOnlyMemory<byte> buffer;
-            if (memoryStream.TryGetBuffer(out ArraySegment<byte> segment))
-            {
-                buffer = segment.Array.AsMemory().Slice(start: segment.Offset, length: segment.Count);
-            }
-            else
-            {
-                buffer = memoryStream.ToArray();
-            }
-
-            IJsonNavigator jsonNavigator = JsonNavigator.Create(buffer);
-            if (jsonNavigator.SerializationFormat == JsonSerializationFormat.Text)
-            {
-                // Exit to avoid the memory allocation.
-                return;
-            }
-
-            IJsonWriter jsonWriter;
-            if (requestOptions?.CosmosSerializationFormatOptions != null)
-            {
-                jsonWriter = requestOptions.CosmosSerializationFormatOptions.CreateCustomWriterCallback();
-            }
-            else
-            {
-                jsonWriter = JsonWriter.Create(JsonSerializationFormat.Text);
-            }
-
-            jsonNavigator.WriteNode(jsonNavigator.GetRootNode(), jsonWriter);
-
-            ReadOnlyMemory<byte> result = jsonWriter.GetResult();
-            MemoryStream rewrittenMemoryStream;
-            if (MemoryMarshal.TryGetArray(result, out ArraySegment<byte> rewrittenSegment))
-            {
-                rewrittenMemoryStream = new MemoryStream(rewrittenSegment.Array, index: rewrittenSegment.Offset, count: rewrittenSegment.Count, writable: false, publiclyVisible: true);
-            }
-            else
-            {
-                byte[] toArray = result.ToArray();
-                rewrittenMemoryStream = new MemoryStream(toArray, index: 0, count: toArray.Length, writable: false, publiclyVisible: true);
-            }
-
-            responseMessage.Content = rewrittenMemoryStream;
-        }
-
         internal static IReadOnlyList<T> GetResources<T>(
             IReadOnlyList<CosmosElement> cosmosArray,
             CosmosSerializerCore serializerCore)

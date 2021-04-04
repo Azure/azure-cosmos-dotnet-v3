@@ -29,30 +29,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 try
                 {
                     return await RetryHandler.ExecuteHttpRequestAsync(
-                        callbackMethod: async (trace) =>
-                        {
-                            using (ITrace childTrace = trace.StartChild("Callback Method"))
-                            {
-                                request.Trace = childTrace;
-                                return await base.SendAsync(request, cancellationToken);
-                            }
-                        },
-                        callShouldRetry: async (cosmosResponseMessage, trace, token) =>
-                        {
-                            using (ITrace shouldRetryTrace = trace.StartChild("Call Should Retry"))
-                            {
-                                request.Trace = shouldRetryTrace;
-                                return await retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
-                            }
-                        },
-                        callShouldRetryException: async (exception, trace, token) =>
-                        {
-                            using (ITrace shouldRetryTrace = trace.StartChild("Call Should Retry Exception"))
-                            {
-                                request.Trace = shouldRetryTrace;
-                                return await retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken);
-                            }
-                        },
+                        callbackMethod: (trace) => base.SendAsync(request, cancellationToken),
+                        callShouldRetry: (cosmosResponseMessage, trace, token) => retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
+                        callShouldRetryException: (exception, trace, token) => retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken),
                         trace: request.Trace,
                         cancellationToken: cancellationToken);
                 }

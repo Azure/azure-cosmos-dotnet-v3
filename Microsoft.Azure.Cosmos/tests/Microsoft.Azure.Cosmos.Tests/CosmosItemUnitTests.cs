@@ -670,16 +670,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ResponseMessage>>>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>>(
-                (operationName, requestOptions, func) => func(NoOpTrace.Singleton));
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<TraceComponent>(),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>>(
-                (operationName, requestOptions, func) => func(NoOpTrace.Singleton));
+                It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>(),
+                It.IsAny<TraceComponent>(),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -897,8 +901,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(request.Headers.PartitionKey);
                 Assert.AreEqual(partitionKeySerialized, request.Headers.PartitionKey);
                 testHandlerHitCount++;
-                response = new ResponseMessage(httpStatusCode, request, errorMessage: null);
-                response.Content = request.Content;
+                response = new ResponseMessage(httpStatusCode, request, errorMessage: null)
+                {
+                    Content = request.Content
+                };
                 return Task.FromResult(response);
             });
 

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -14,9 +15,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
     using System.Collections.Generic;
-    using System.Linq;
 #endif
 
     /// <summary>
@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
                                 nameof(containerProperties.PartitionKey));
                         }
                     }
-#if INTERNAL || SUBPARTITIONING
+#if PREVIEW
                     else
                     {
                         IReadOnlyList<string> retrivedPartitionKeyPaths = retrivedContainerResponse.Resource.PartitionKeyPaths;
@@ -681,17 +681,7 @@ namespace Microsoft.Azure.Cosmos
             string name,
             string partitionKeyPath)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-
-            if (string.IsNullOrEmpty(partitionKeyPath))
-            {
-                throw new ArgumentNullException(nameof(partitionKeyPath));
-            }
-
-            return new ContainerBuilder(this, this.ClientContext, name, partitionKeyPath);
+            return new ContainerBuilder(this, name, partitionKeyPath);
         }
 
 #if PREVIEW
