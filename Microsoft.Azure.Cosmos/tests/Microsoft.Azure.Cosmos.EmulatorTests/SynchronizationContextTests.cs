@@ -5,29 +5,10 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Linq;
-    using System.Net;
-    using System.Text;
     using System.Threading;
-    using System.Threading.Tasks;
-    using System.Xml.Linq;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using JsonReader = Json.JsonReader;
-    using JsonWriter = Json.JsonWriter;
 
     [TestClass]
     public class SynchronizationContextTests
@@ -59,14 +40,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             databaseIterator.ReadNextAsync().GetAwaiter().GetResult();
                         }
 
-                        Container container = database.CreateContainerAsync(Guid.NewGuid().ToString(), "/status").GetAwaiter().GetResult();
-                        container = database.CreateContainerIfNotExistsAsync(container.Id, "/status").GetAwaiter().GetResult();
+                        Container container = database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk").GetAwaiter().GetResult();
+                        container = database.CreateContainerIfNotExistsAsync(container.Id, "/pk").GetAwaiter().GetResult();
 
                         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
                         ItemResponse<ToDoActivity> response = container.CreateItemAsync<ToDoActivity>(item: testItem).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(response);
                         string diagnostics = response.Diagnostics.ToString();
-                        Assert.IsTrue(diagnostics.Contains("SynchronizationContext"));
+                        Assert.IsTrue(diagnostics.Contains("Synchronization Context"));
 
                         using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
@@ -78,10 +59,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             container.CreateItemAsync<ToDoActivity>(item: tempItem, cancellationToken: cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
                             Assert.Fail("Should have thrown a cancellation token");
 
-                        }catch(CosmosOperationCanceledException oe)
+                        }
+                        catch (CosmosOperationCanceledException oe)
                         {
                             string exception = oe.ToString();
-                            Assert.IsTrue(exception.Contains("SynchronizationContext"));
+                            Assert.IsTrue(exception.Contains("Synchronization Context"));
                         }
 
                         // Test read feed
@@ -91,7 +73,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             {
                             }).ToList();
 
-                        FeedIterator feedIterator = container.GetItemLinqQueryable<ToDoActivity>()
+                        FeedIterator feedIterator = container
+                            .GetItemLinqQueryable<ToDoActivity>()
                             .ToStreamIterator();
 
                         while (feedIterator.HasMoreResults)
@@ -136,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         double cost = container.GetItemLinqQueryable<ToDoActivity>(
                             allowSynchronousQueryExecution: true).Select(x => x.cost).Sum();
 
-                        ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.status), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
+                        ItemResponse<ToDoActivity> deleteResponse = container.DeleteItemAsync<ToDoActivity>(partitionKey: new Cosmos.PartitionKey(testItem.pk), id: testItem.id).ConfigureAwait(false).GetAwaiter().GetResult();
                         Assert.IsNotNull(deleteResponse);
                     }
                 }, state: null);

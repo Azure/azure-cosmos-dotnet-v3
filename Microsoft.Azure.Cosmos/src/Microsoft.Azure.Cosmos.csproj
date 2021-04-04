@@ -113,7 +113,7 @@
 
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Serialization.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
@@ -141,8 +141,8 @@
   <ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
     <None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
     <None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-    <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Serialization.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
+    <None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(NugetPackageRoot)\Microsoft.Azure.Cosmos.Direct\$(DirectVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Direct.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
     <None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

@@ -13,9 +13,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [SDK.EmulatorTests.TestClass]
@@ -27,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public async Task TestInitialize()
         {
             await base.TestInit();
-            string PartitionKey = "/status";
+            string PartitionKey = "/pk";
             ContainerResponse response = await this.database.CreateContainerAsync(
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 20000,
@@ -177,17 +180,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead1));
+                await this.Container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead1));
             }
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(pkToRead2));
+                await this.Container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: pkToRead2));
             }
 
             for (int i = 0; i < batchSize; i++)
             {
-                await this.Container.CreateItemAsync(this.CreateRandomToDoActivity(otherPK));
+                await this.Container.CreateItemAsync(ToDoActivity.CreateRandomToDoActivity(pk: otherPK));
             }
 
             // Create one start state for each logical partition key.
@@ -272,6 +275,75 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
         }
 
+        [TestMethod]
+        public async Task TestContentSerializationOptions()
+        {
+            {
+                // Native format
+                IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                    ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                    ChangeFeedMode.Incremental,
+                    new ChangeFeedRequestOptions()
+                    {
+                        JsonSerializationFormatOptions = JsonSerializationFormatOptions.Create(JsonSerializationFormat.Binary)
+                    });
+                await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
+                {
+                    monadicPage.ThrowIfFailed();
+
+                    if (monadicPage.Result.NotModified)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            {
+                // Custom format
+                IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                    ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                    ChangeFeedMode.Incremental,
+                    new ChangeFeedRequestOptions()
+                    {
+                        JsonSerializationFormatOptions = JsonSerializationFormatOptions.Create(
+                            JsonSerializationFormat.Binary,
+                            (content) => JsonNavigator.Create(content))
+                    });
+                await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
+                {
+                    monadicPage.ThrowIfFailed();
+
+                    if (monadicPage.Result.NotModified)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        [Ignore]
+        public async Task TestCustomRequestOptionsAsync()
+        {
+            IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable = this.Container.GetChangeFeedAsyncEnumerable(
+                ChangeFeedCrossFeedRangeState.CreateFromBeginning(),
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions()
+                {
+                     Properties = new Dictionary<string, object>()
+                     {
+                         { HttpConstants.HttpHeaders.SessionToken, "AnInvalidSessionToken" }
+                     }
+                });
+
+            await foreach (TryCatch<ChangeFeedPage> monadicPage in asyncEnumerable)
+            {
+                Assert.IsTrue(monadicPage.Failed);
+                Assert.AreEqual(((CosmosException)monadicPage.InnerMostException).StatusCode, System.Net.HttpStatusCode.BadRequest);
+                break;
+            }
+        }
+
         private static async Task<(int, ChangeFeedCrossFeedRangeState)> PartialDrainAsync(IAsyncEnumerable<TryCatch<ChangeFeedPage>> asyncEnumerable)
         {
             ChangeFeedCrossFeedRangeState state = default;
@@ -308,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
                 for (int j = 0; j < perPKItemCount; j++)
                 {
-                    ToDoActivity temp = this.CreateRandomToDoActivity(pk);
+                    ToDoActivity temp = ToDoActivity.CreateRandomToDoActivity(pk: pk);
 
                     createdList.Add(temp);
 
@@ -317,32 +389,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             return createdList;
-        }
-
-        private ToDoActivity CreateRandomToDoActivity(string pk = null)
-        {
-            if (string.IsNullOrEmpty(pk))
-            {
-                pk = "TBD" + Guid.NewGuid().ToString();
-            }
-
-            return new ToDoActivity()
-            {
-                id = Guid.NewGuid().ToString(),
-                description = "CreateRandomToDoActivity",
-                status = pk,
-                taskNum = 42,
-                cost = double.MaxValue
-            };
-        }
-
-        public class ToDoActivity
-        {
-            public string id { get; set; }
-            public int taskNum { get; set; }
-            public double cost { get; set; }
-            public string description { get; set; }
-            public string status { get; set; }
         }
     }
 }

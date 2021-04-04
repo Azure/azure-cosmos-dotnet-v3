@@ -271,7 +271,6 @@ namespace Microsoft.Azure.Cosmos
               streamPayload: streamPayload,
               requestOptions: requestOptions,
               requestEnricher: null,
-              diagnosticsContext: null,
               trace: NoOpTrace.Singleton,
               cancellationToken: cancellationToken);
 

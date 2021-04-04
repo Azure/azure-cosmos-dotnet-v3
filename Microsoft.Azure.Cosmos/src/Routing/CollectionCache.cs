@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Common
                             "Mapped resourceName {0} to resourceId {1}. '{2}'",
                             request.ResourceAddress,
                             collectionInfo.ResourceId,
-                            Trace.CorrelationManager.ActivityId);
+                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
 
                         request.ResourceId = collectionInfo.ResourceId;
                         request.RequestContext.ResolvedCollectionRid = collectionInfo.ResourceId;
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Common
                         DefaultTrace.TraceVerbose(
                             "Collection with resourceName {0} not found. '{1}'",
                             request.ResourceAddress,
-                            Trace.CorrelationManager.ActivityId);
+                            System.Diagnostics.Trace.CorrelationManager.ActivityId);
                     }
 
                     return collectionInfo;
