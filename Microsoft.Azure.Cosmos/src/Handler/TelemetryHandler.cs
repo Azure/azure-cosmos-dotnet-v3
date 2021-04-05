@@ -28,24 +28,39 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-          /*  if (this.client.ClientOptions.EnableClientTelemetry)
+            if (this.isTelemetryEnabled(request))
             {
-              this.client.DocumentClient.clientTelemetry.Collect(
-              this.client,
-              response.Diagnostics,
-              response.StatusCode,
-              Marshal.SizeOf(response),
-              null,
-              null,
-              request.OperationType,
-              request.ResourceType,
-              this.client.DocumentClient.ConsistencyLevel,
-              request.Headers.RequestCharge);
-            }*/
-           
+                this.client.DocumentClient.clientTelemetry.Collect(
+                  response.Diagnostics, response.StatusCode,
+                  this.GetPayloadSize(response),
+                  request.TelemetryInfo?.ContainerId,
+                  request.TelemetryInfo?.DatabaseId,
+                  request.OperationType,
+                  request.ResourceType,
+                  this.GetConsistencyLevel(request),
+                  request.Headers.RequestCharge);
+            }
             return response;
-            
         }
 
+        private bool isTelemetryEnabled(RequestMessage request)
+        {
+            return this.client
+                .ClientOptions
+                .EnableClientTelemetry && request.TelemetryInfo != null;
+        }
+
+        private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)
+        {
+            ConsistencyLevel? defaultConsistencyLevel = request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault();
+            if (defaultConsistencyLevel == null)
+                return this.client.ClientOptions.ConsistencyLevel.GetValueOrDefault();
+            return defaultConsistencyLevel;     
+        }
+
+        private int GetPayloadSize(ResponseMessage response)
+        {
+            return (int)(response.Content == null ? 0 : response.Content.Length);
+        }
     }
 }

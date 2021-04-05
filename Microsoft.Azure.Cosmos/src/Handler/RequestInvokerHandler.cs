@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -144,7 +145,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             using (ITrace childTrace = trace.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, Tracing.TraceLevel.Info))
             {
-                Console.WriteLine("$$$$$$Task<ResponseMessage> SendAsync$$$$$");
                 try
                 {
                     HttpMethod method = RequestInvokerHandler.GetHttpMethod(resourceType, operationType);
@@ -178,48 +178,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                                 catch (DocumentClientException dce)
                                 {
-                                    if (cosmosContainerCore != null && cosmosContainerCore.ClientContext.ClientOptions.EnableClientTelemetry)
-                                    {
-                                        cosmosContainerCore
-                                            .ClientContext
-                                            .DocumentClient
-                                            .clientTelemetry
-                                            .Collect(
-                                        this.client,
-                                        null,
-                                        (System.Net.HttpStatusCode)dce.StatusCode,
-                                        0,
-                                        cosmosContainerCore.Database.Id,
-                                        cosmosContainerCore.Id,
-                                        request.OperationType,
-                                        request.ResourceType,
-                                        request.RequestOptions?.BaseConsistencyLevel.Value,
-                                        default);
-                                    }
-
                                     return dce.ToCosmosResponseMessage(request);
                                 }
                                 catch (CosmosException ce)
                                 {
-                                    if (cosmosContainerCore != null && cosmosContainerCore.ClientContext.ClientOptions.EnableClientTelemetry)
-                                    {
-                                        cosmosContainerCore
-                                            .ClientContext
-                                            .DocumentClient
-                                            .clientTelemetry
-                                            .Collect(
-                                        this.client,
-                                        ce.Diagnostics,
-                                        ce.StatusCode,
-                                        0,
-                                        cosmosContainerCore.Database.Id,
-                                        cosmosContainerCore.Id,
-                                        request.OperationType,
-                                        request.ResourceType,
-                                        request.RequestOptions?.BaseConsistencyLevel.Value,
-                                        default);
-                                    }
-
                                     return ce.ToCosmosResponseMessage(request);
                                 }
                             }
@@ -262,25 +224,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     subStatusCode: default,
                                     activityId: Guid.Empty.ToString(),
                                     requestCharge: default);
-
-                                if (cosmosContainerCore != null && cosmosContainerCore.ClientContext.ClientOptions.EnableClientTelemetry)
-                                {
-                                    cosmosContainerCore
-                                        .ClientContext
-                                        .DocumentClient
-                                        .clientTelemetry
-                                        .Collect(
-                                    this.client,
-                                    notFound.Diagnostics,
-                                    notFound.StatusCode,
-                                    0,
-                                    cosmosContainerCore.Database.Id,
-                                    cosmosContainerCore.Id,
-                                    request.OperationType,
-                                    request.ResourceType,
-                                    request.RequestOptions?.BaseConsistencyLevel.Value,
-                                    default);
-                                }
                                 return notFound.ToCosmosResponseMessage(request);
                             }
 
@@ -296,25 +239,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                     subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                                     activityId: Guid.NewGuid().ToString(),
                                     requestCharge: default);
-
-                                if (cosmosContainerCore != null && cosmosContainerCore.ClientContext.ClientOptions.EnableClientTelemetry)
-                                {
-                                    cosmosContainerCore
-                                        .ClientContext
-                                        .DocumentClient
-                                        .clientTelemetry
-                                        .Collect(
-                                    this.client,
-                                    goneException.Diagnostics,
-                                    goneException.StatusCode,
-                                    0,
-                                    cosmosContainerCore.Database.Id,
-                                    cosmosContainerCore.Id,
-                                    request.OperationType,
-                                    request.ResourceType,
-                                    request.RequestOptions?.BaseConsistencyLevel.Value,
-                                    default);
-                                }
 
                                 return goneException.ToCosmosResponseMessage(request);
                             }
@@ -359,37 +283,30 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
                     }
 
-                    requestEnricher?.Invoke(request);
-
-                    ResponseMessage response = await this.SendAsync(request, cancellationToken);
-
-                    if (cosmosContainerCore != null && 
-                        cosmosContainerCore.ClientContext.ClientOptions.EnableClientTelemetry)
+                    if (this.isTelemetryEnabled(cosmosContainerCore))
                     {
-                        cosmosContainerCore
-                            .ClientContext
-                            .DocumentClient
-                            .clientTelemetry
-                            .Collect(
-                        this.client,
-                        response.Diagnostics,
-                        response.StatusCode,
-                        (int)(response.Content == null ? 0 : response.Content.Length),
-                        cosmosContainerCore.Database.Id,
-                        cosmosContainerCore.Id,
-                        request.OperationType,
-                        request.ResourceType,
-                        request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault(),
-                        request.Headers.RequestCharge);
+                        TelemetryRequestInfo telemetryRequestInfo = new TelemetryRequestInfo
+                        {
+                            ContainerId = cosmosContainerCore.Database.Id,
+                            DatabaseId = cosmosContainerCore.Id
+                        };
+                        request.TelemetryInfo = telemetryRequestInfo;
                     }
 
-                    return response;
+                    requestEnricher?.Invoke(request);
+
+                    return await this.SendAsync(request, cancellationToken);
                 }
                 finally
                 {
                     activityScope?.Dispose();
                 }
             }
+        }
+
+        private bool isTelemetryEnabled(ContainerInternal cosmosContainerCore)
+        {
+            return cosmosContainerCore != null && this.client.ClientOptions.EnableClientTelemetry;
         }
 
         internal static HttpMethod GetHttpMethod(
