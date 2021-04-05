@@ -104,7 +104,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(responseMessage.Diagnostics);
                 Assert.IsFalse(responseMessage.Diagnostics.ToString().Contains("Gateway QueryPlan"));
             }
-
         }
 
         [TestMethod]
