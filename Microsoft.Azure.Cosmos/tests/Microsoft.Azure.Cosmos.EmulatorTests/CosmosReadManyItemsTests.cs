@@ -107,14 +107,80 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
+        [TestMethod]
+        public async Task ReadManyWithIdasPk()
+        {
+            string PartitionKey = "/id";
+            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            Container container = await this.database.CreateContainerAsync(containerSettings);
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add((i.ToString(), new PartitionKey(i.ToString())));
+            }
+
+            // Create items with different pk values
+            for (int i = 0; i < 5; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+                item.id = i.ToString();
+                ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
+                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+            }
+
+            using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+            {
+                Assert.IsNotNull(responseMessage);
+                Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
+                Assert.IsNotNull(responseMessage.Diagnostics);
+
+                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                                        CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
+                Assert.AreEqual(items.Length, 5);
+            }
+
+            FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+            Assert.IsNotNull(feedResponse);
+            Assert.AreEqual(feedResponse.Count, 5);
+            Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
+            Assert.IsNotNull(feedResponse.Diagnostics);
+        }
+
+        [TestMethod]
+        public async Task ReadManyWithNestedPk()
+        {
+            string PartitionKey = "/NestedObject/pk";
+            ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
+            Container container = await this.database.CreateContainerAsync(containerSettings);
+
+            // Create items with different pk values
+            for (int i = 0; i < 5; i++)
+            {
+                NestedToDoActivity item = NestedToDoActivity.CreateRandomNestedToDoActivity("pk" + i.ToString(), i.ToString());
+                await container.CreateItemAsync(item);
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add((i.ToString(), new PartitionKey("pk" + i.ToString())));
+            }
+
+            FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+            Assert.IsNotNull(feedResponse);
+            Assert.AreEqual(feedResponse.Count, 5);
+            Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
+            Assert.IsNotNull(feedResponse.Diagnostics);
+        }
+
 #if PREVIEW
         [TestMethod]
         public async Task ReadManyMultiplePK()
         {
             IReadOnlyList<string> pkPaths = new List<string> { "/pk", "/description" };
             ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPaths: pkPaths);
-            ContainerResponse response = await this.database.CreateContainerAsync(
-                this.containerSettings);
+            Container container = await this.database.CreateContainerAsync(this.containerSettings);
 
             for (int i = 0; i < 5; i++)
             {
@@ -122,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 item.pk = "pk" + i.ToString();
                 item.id = i.ToString();
                 item.description = "description" + i;
-                ItemResponse<ToDoActivity> itemResponse = await this.Container.CreateItemAsync(item);
+                ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync(item);
                 Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
             }
 
@@ -135,8 +201,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                         .Build();
 
                 itemList.Add((i.ToString(), partitionKey));
-            }  
+            }
+
+            FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+            Assert.IsNotNull(feedResponse);
+            Assert.AreEqual(feedResponse.Count, 5);
+            Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
+            Assert.IsNotNull(feedResponse.Diagnostics);
         }
 #endif
+
+        private class NestedToDoActivity
+        {
+            public ToDoActivity NestedObject { get; set; }
+#pragma warning disable IDE1006 // Naming Styles
+            public string id { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
+
+            public static NestedToDoActivity CreateRandomNestedToDoActivity(string pk, string id)
+            {
+                return new NestedToDoActivity()
+                {
+                    id = id,
+                    NestedObject = ToDoActivity.CreateRandomToDoActivity(pk: pk)
+                };
+            }
+        }
     }
 }

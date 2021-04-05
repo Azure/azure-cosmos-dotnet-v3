@@ -24,15 +24,18 @@ namespace Microsoft.Azure.Cosmos
         private readonly PartitionKeyDefinition partitionKeyDefinition;
         private readonly int maxConcurrency = Environment.ProcessorCount * 10;
         private readonly ContainerCore container;
+        private readonly ReadManyRequestOptions readManyRequestOptions;
         private readonly CancellationToken cancellationToken;
 
         public ReadManyQueryHelper(PartitionKeyDefinition partitionKeyDefinition,
                                    ContainerCore container,
+                                   ReadManyRequestOptions readManyRequestOptions,
                                    CancellationToken cancellationToken)
         {
             this.partitionKeyDefinition = partitionKeyDefinition;
             this.partitionKeySelectors = this.CreatePkSelectors(partitionKeyDefinition);
             this.container = container;
+            this.readManyRequestOptions = readManyRequestOptions;
             this.cancellationToken = cancellationToken;
         }
 
@@ -274,7 +277,9 @@ namespace Microsoft.Azure.Cosmos
             List<ResponseMessage> pages = new List<ResponseMessage>();
             FeedIteratorInternal feedIterator = (FeedIteratorInternal)this.container.GetItemQueryStreamIterator(
                                                     new FeedRangeEpk(partitionKeyRange.ToRange()),
-                                                    queryDefinition);
+                                                    queryDefinition,
+                                                    continuationToken: null,
+                                                    requestOptions: this.readManyRequestOptions?.ConvertToQueryRequestOptions());
             while (feedIterator.HasMoreResults)
             {
                 ResponseMessage responseMessage = await feedIterator.ReadNextAsync(trace, this.cancellationToken);
@@ -295,7 +300,9 @@ namespace Microsoft.Azure.Cosmos
             List<FeedResponse<T>> pages = new List<FeedResponse<T>>();
             FeedIteratorInternal<T> feedIterator = (FeedIteratorInternal<T>)this.container.GetItemQueryIterator<T>(
                                                     new FeedRangeEpk(partitionKeyRange.ToRange()),
-                                                    queryDefinition);
+                                                    queryDefinition,
+                                                    continuationToken: null,
+                                                    requestOptions: this.readManyRequestOptions?.ConvertToQueryRequestOptions());
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<T> feedResponse = await feedIterator.ReadNextAsync(trace, this.cancellationToken);

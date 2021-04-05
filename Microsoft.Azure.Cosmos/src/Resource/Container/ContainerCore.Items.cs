@@ -285,10 +285,22 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ResponseMessage> ReadManyItemsStreamAsync(
             IReadOnlyList<(string, PartitionKey)> items,
             ITrace trace,
+            ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            if (items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
                                                                     this,
+                                                                    readManyRequestOptions,
                                                                     cancellationToken);
 
             return await readManyHelper.ExecuteReadManyRequestAsync(items, trace);
@@ -297,10 +309,22 @@ namespace Microsoft.Azure.Cosmos
         public async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
             IReadOnlyList<(string, PartitionKey)> items,
             ITrace trace,
+            ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            if (items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
             ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
                                                                     this,
+                                                                    readManyRequestOptions,
                                                                     cancellationToken);
 
             return await readManyHelper.ExecuteReadManyRequestAsync<T>(items, trace);
