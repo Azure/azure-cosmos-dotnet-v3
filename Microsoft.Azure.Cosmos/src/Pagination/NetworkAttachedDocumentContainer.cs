@@ -145,9 +145,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 try
                 {
+                    ContainerProperties containerProperties = await this.container.GetCachedContainerPropertiesAsync(
+                        forceRefresh: true,
+                        trace: refreshTrace,
+                        cancellationToken: cancellationToken);
+
                     // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
                     _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
-                        this.container.LinkUri,
+                        containerProperties.ResourceId,
                         FeedRangeEpk.FullRange.Range,
                         forceRefresh: true);
 
