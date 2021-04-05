@@ -6,17 +6,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
-    public class DynamicTests : BaseChangeFeedClientHelper
+    public class DynamicStreamTests : BaseChangeFeedClientHelper
     {
+        private readonly CosmosSerializerCore serializerCore = new CosmosSerializerCore();
         private ContainerInternal Container;
 
         [TestInitialize]
@@ -29,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                 throughput: 10000,
                 cancellationToken: this.cancellationToken);
-            this.Container = (ContainerInternal)response;
+            this.Container = (ContainerInternal) response;
         }
 
         [TestCleanup]
@@ -47,13 +50,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                 {
-                    this.ValidateContext(context);
-                    processedDocCount += docs.Count();
-                    foreach (dynamic doc in docs)
+                    IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
+
+                    processedDocCount += asEnumerable.Count();
+                    foreach (JObject doc in asEnumerable)
                     {
-                        accumulator += doc.id.ToString() + ".";
+                        accumulator += doc["id"].ToString() + ".";
                     }
 
                     if (processedDocCount == 10)
@@ -89,9 +93,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", async (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", async (ChangeFeedProcessorContext context, Stream stream, Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync, CancellationToken token) =>
                 {
                     this.ValidateContext(context);
+
+                    IEnumerable<JObject> docs = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
                     processedDocCount += docs.Count();
                     foreach (dynamic doc in docs)
                     {
@@ -104,7 +110,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                         throw new Exception("Stop here");
                     }
 
-                    if (processedDocCount == 1) {
+                    if (processedDocCount == 1)
+                    {
                         // Checkpointing on the first document to be able to have a point to rollback to
                         (bool isSuccess, Exception exception) = await tryCheckpointAsync();
                         Assert.IsTrue(isSuccess);
@@ -153,13 +160,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 int processedDocCount = 0;
                 string accumulator = string.Empty;
                 ChangeFeedProcessor processor = this.Container
-                    .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                    .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                     {
                         this.ValidateContext(context);
-                        processedDocCount += docs.Count();
-                        foreach (dynamic doc in docs)
+                        IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
+
+                        processedDocCount += asEnumerable.Count();
+                        foreach (JObject doc in asEnumerable)
                         {
-                            accumulator += doc.id.ToString() + ".";
+                            accumulator += doc["id"].ToString() + ".";
                         }
 
                         if (processedDocCount == 10)
@@ -214,13 +223,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                 {
                     this.ValidateContext(context);
-                    processedDocCount += docs.Count();
-                    foreach (dynamic doc in docs)
+                    IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
+
+                    processedDocCount += asEnumerable.Count();
+                    foreach (JObject doc in asEnumerable)
                     {
-                        accumulator += doc.id.ToString() + ".";
+                        accumulator += doc["id"].ToString() + ".";
                     }
 
                     if (processedDocCount == 5)
@@ -237,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 
             // Generate the payload
             await scripts.ExecuteStoredProcedureAsync<object>(
-                sprocId, 
+                sprocId,
                 new PartitionKey(partitionKey),
                 new dynamic[] { 0 });
 
@@ -260,24 +271,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
         {
             int partitionKey = 0;
 
-            foreach (int id in Enumerable.Range(0, 5))
-            {
-                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
-            }
-
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, Stream stream, CancellationToken token) =>
                 {
                     this.ValidateContext(context);
-                    Assert.IsTrue(docs.Count > 0);
-                    processedDocCount += docs.Count;
-                    foreach (dynamic doc in docs)
+                    IEnumerable<JObject> asEnumerable = CosmosFeedResponseSerializer.FromFeedResponseStream<JObject>(this.serializerCore, stream);
+
+                    processedDocCount += asEnumerable.Count();
+                    foreach (JObject doc in asEnumerable)
                     {
-                        accumulator += doc.id.ToString() + ".";
+                        accumulator += doc["id"].ToString() + ".";
                     }
 
                     if (processedDocCount == 5)
@@ -292,66 +299,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithLeaseContainer(this.LeaseContainer).Build();
 
             await processor.StartAsync();
-            // Letting processor initialize and pickup changes
-            bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
-            await processor.StopAsync();
-            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
-            Assert.AreEqual("doc0.doc1.doc2.doc3.doc4.", accumulator);
-        }
-
-        [TestMethod]
-        public async Task TestWithStartTime_CustomTime()
-        {
-            int partitionKey = 0;
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
 
             foreach (int id in Enumerable.Range(0, 5))
             {
                 await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
             }
 
-            await Task.Delay(1000);
-
-            DateTime now = DateTime.UtcNow;
-
-            await Task.Delay(1000);
-
-            foreach (int id in Enumerable.Range(5, 5))
-            {
-                await this.Container.CreateItemAsync<dynamic>(new { id = $"doc{id}", pk = partitionKey });
-            }
-
-            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
-
-            int processedDocCount = 0;
-            string accumulator = string.Empty;
-            ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilder("test", (ChangeFeedProcessorContext context, IReadOnlyCollection<dynamic> docs, CancellationToken token) =>
-                {
-                    this.ValidateContext(context);
-                    Assert.IsTrue(docs.Count > 0);
-                    processedDocCount += docs.Count;
-                    foreach (dynamic doc in docs)
-                    {
-                        accumulator += doc.id.ToString() + ".";
-                    }
-
-                    if (processedDocCount == 5)
-                    {
-                        allDocsProcessed.Set();
-                    }
-
-                    return Task.CompletedTask;
-                })
-                .WithStartTime(now)
-                .WithInstanceName("random")
-                .WithLeaseContainer(this.LeaseContainer).Build();
-
-            await processor.StartAsync();
             // Letting processor initialize and pickup changes
             bool isStartOk = allDocsProcessed.WaitOne(10 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
             await processor.StopAsync();
             Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
-            Assert.AreEqual("doc5.doc6.doc7.doc8.doc9.", accumulator);
+            Assert.AreEqual("doc0.doc1.doc2.doc3.doc4.", accumulator);
         }
 
         private void ValidateContext(ChangeFeedProcessorContext changeFeedProcessorContext)

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly FeedProcessor partitionProcessor;
         private readonly LeaseRenewer leaseRenewer;
-        private readonly ChangeFeedObserver<MyDocument> observer;
+        private readonly ChangeFeedObserver observer;
         private readonly PartitionSynchronizer synchronizer;
         private readonly PartitionController sut;
         private readonly PartitionSupervisorFactory partitionSupervisorFactory;
@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             this.partitionProcessor = MockPartitionProcessor();
             this.leaseRenewer = MockRenewer();
-            this.observer = MockObserver();
-            this.partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(this.lease) == new PartitionSupervisorCore<MyDocument>(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
+            this.observer = Mock.Of<ChangeFeedObserver>();
+            this.partitionSupervisorFactory = Mock.Of<PartitionSupervisorFactory>(f => f.Create(this.lease) == new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
             this.leaseManager = Mock.Of<DocumentServiceLeaseManager>();
             Mock.Get(this.leaseManager).Reset(); // Reset implicit/by default setup of properties.
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             FeedProcessor processorDuplicate = MockPartitionProcessor();
             Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(this.lease))
-                .Returns(new PartitionSupervisorCore<MyDocument>(this.lease, this.observer, processorDuplicate, this.leaseRenewer));
+                .Returns(new PartitionSupervisorCore(this.lease, this.observer, processorDuplicate, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(lease2))
-                .Returns(new PartitionSupervisorCore<MyDocument>(lease2, this.observer, MockPartitionProcessor(), this.leaseRenewer));
+                .Returns(new PartitionSupervisorCore(lease2, this.observer, MockPartitionProcessor(), this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
             await this.sut.AddOrUpdateLeaseAsync(lease2).ConfigureAwait(false);
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             FeedProcessor partitionProcessor2 = MockPartitionProcessor();
             Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(lease2))
-                .Returns(new PartitionSupervisorCore<MyDocument>(lease2, this.observer, partitionProcessor2, this.leaseRenewer));
+                .Returns(new PartitionSupervisorCore(lease2, this.observer, partitionProcessor2, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
             await this.sut.AddOrUpdateLeaseAsync(lease2).ConfigureAwait(false);
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(this.lease))
-                .Returns(new PartitionSupervisorCore<MyDocument>(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
+                .Returns(new PartitionSupervisorCore(this.lease, this.observer, this.partitionProcessor, this.leaseRenewer));
 
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
             await Task.Delay(TimeSpan.FromMilliseconds(100)).ConfigureAwait(false);
@@ -310,17 +310,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .Setup(renewer => renewer.RunAsync(It.IsAny<CancellationToken>()))
                 .Returns<CancellationToken>(token => Task.Delay(TimeSpan.FromMinutes(1), token));
             return mock.Object;
-        }
-
-        private static ChangeFeedObserver<MyDocument> MockObserver()
-        {
-            Mock<ChangeFeedObserver<MyDocument>> mock = new Mock<ChangeFeedObserver<MyDocument>>();
-            return mock.Object;
-        }
-
-        public class MyDocument
-        {
-            public string id { get; set; }
         }
     }
 }

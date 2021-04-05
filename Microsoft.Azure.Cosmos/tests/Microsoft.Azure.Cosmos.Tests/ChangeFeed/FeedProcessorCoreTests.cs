@@ -13,10 +13,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using static Microsoft.Azure.Cosmos.Container;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -31,23 +30,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
-            mockObserver.Setup(o => o.ProcessChangesAsync(
-                    It.IsAny<ChangeFeedObserverContext>(),
-                    It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
-                    It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            ChangesHandler<MyDocument> handler = (changes, cancelationToken) =>
+            {
+                IReadOnlyList<MyDocument> list = changes as IReadOnlyList<MyDocument>;
+                Assert.IsNotNull(list);
+                Assert.AreEqual("test", list[0].id);
+                return Task.CompletedTask;
+            };
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializer serializer = new CustomSerializer();
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(
-                mockObserver.Object,
-                mockIterator.Object,
-                FeedProcessorCoreTests.DefaultSettings,
-                mockCheckpointer.Object,
-                new CosmosSerializerCore(serializer));
+            ChangeFeedObserverFactoryCore<MyDocument> factory = new ChangeFeedObserverFactoryCore<MyDocument>(handler, new CosmosSerializerCore(serializer));
+            FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             try
             {
@@ -58,13 +55,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 // Expected
             }
 
-            Mock.Get(mockObserver.Object)
-                .Verify(o => o.ProcessChangesAsync(
-                    It.IsAny<ChangeFeedObserverContext>(), 
-                    It.Is<IReadOnlyList<MyDocument>>(list => list[0].id.Equals("test")),
-                    It.IsAny<CancellationToken>())
-                    , Times.Once);
-
             Assert.AreEqual(1, serializer.FromStreamCalled, "Should have called FromStream on the custom serializer");
         }
 
@@ -73,19 +63,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(GetResponse(HttpStatusCode.OK, true));
             mockIterator.SetupSequence(i => i.HasMoreResults).Returns(true).Returns(false);
 
             CustomSerializerFails serializer = new CustomSerializerFails();
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(
-                mockObserver.Object,
-                mockIterator.Object,
-                FeedProcessorCoreTests.DefaultSettings,
-                mockCheckpointer.Object,
-                new CosmosSerializerCore(serializer));
+            ChangesHandler<dynamic> handler = (changes, cancelationToken) => Task.CompletedTask;
+            ChangeFeedObserverFactoryCore<dynamic> factory = new ChangeFeedObserverFactoryCore<dynamic>(handler, new CosmosSerializerCore(serializer));
+            FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             ObserverException caughtException = await Assert.ThrowsExceptionAsync<ObserverException>(() => processor.RunAsync(cancellationTokenSource.Token));
             Assert.IsInstanceOfType(caughtException.InnerException, typeof(CustomException));
@@ -98,19 +84,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(
-                mockObserver.Object,
-                mockIterator.Object,
-                FeedProcessorCoreTests.DefaultSettings,
-                mockCheckpointer.Object,
-                MockCosmosUtil.Serializer);
+            FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             await Assert.ThrowsExceptionAsync<FeedRangeGoneException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
@@ -121,19 +102,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(
-                mockObserver.Object,
-                mockIterator.Object,
-                FeedProcessorCoreTests.DefaultSettings,
-                mockCheckpointer.Object,
-                MockCosmosUtil.Serializer);
+            FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
             await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
@@ -144,19 +120,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(1000);
 
-            Mock<ChangeFeedObserver<MyDocument>> mockObserver = new Mock<ChangeFeedObserver<MyDocument>>();
+            Mock<ChangeFeedObserver> mockObserver = new Mock<ChangeFeedObserver>();
 
             Mock<PartitionCheckpointer> mockCheckpointer = new Mock<PartitionCheckpointer>();
             Mock<FeedIterator> mockIterator = new Mock<FeedIterator>();
             mockIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(GetResponse(statusCode, false, subStatusCode));
 
-            FeedProcessorCore<MyDocument> processor = new FeedProcessorCore<MyDocument>(
+            FeedProcessorCore processor = new FeedProcessorCore(
                 mockObserver.Object,
                 mockIterator.Object,
                 FeedProcessorCoreTests.DefaultSettings,
-                mockCheckpointer.Object,
-                MockCosmosUtil.Serializer);
+                mockCheckpointer.Object);
 
             await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => processor.RunAsync(cancellationTokenSource.Token));
         }
@@ -172,8 +147,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             if (includeItem)
             {
-                MyDocument document = new MyDocument();
-                document.id = "test";
+                MyDocument document = new MyDocument
+                {
+                    id = "test"
+                };
 
                 message.Content = new CosmosJsonDotNetSerializer().ToStream(new { Documents = new List<MyDocument>() { document } });
             }
@@ -188,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private class CustomSerializer : CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public int FromStreamCalled = 0;
             public int ToStreamCalled = 0;
 
@@ -207,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private class CustomSerializerFails: CosmosSerializer
         {
-            private CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
+            private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public override T FromStream<T>(Stream stream)
             {
                 throw new CustomException();
