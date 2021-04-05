@@ -128,6 +128,13 @@ else
 dotnetparameters="$dotnetparameters --ctl_logging_context $ctl_logging_context"
 fi
 
+if [ -z "ctl_precreated_documents" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_precreated_documents $ctl_precreated_documents"
+fi
+
 log_filename="/tmp/dotnetctl.log"
 
 echo "Log file name is $log_filename"
