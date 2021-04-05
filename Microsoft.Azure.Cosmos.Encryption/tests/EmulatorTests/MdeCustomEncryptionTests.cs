@@ -52,20 +52,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public static async Task ClassInitialize(TestContext context)
         {
             _ = context;
-            MdeCustomEncryptionTests.testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            MdeCustomEncryptionTests.encryptor = new TestEncryptor(MdeCustomEncryptionTests.dekProvider);
 
             MdeCustomEncryptionTests.client = TestCommon.CreateCosmosClient();
             MdeCustomEncryptionTests.database = await MdeCustomEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
-
             MdeCustomEncryptionTests.keyContainer = await MdeCustomEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
-            await MdeCustomEncryptionTests.dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-
             MdeCustomEncryptionTests.itemContainer = await MdeCustomEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
-            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
-            MdeCustomEncryptionTests.dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, MdeCustomEncryptionTests.dekId);
 
+            MdeCustomEncryptionTests.testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
             await LegacyClassInitializeAsync();
+
+            MdeCustomEncryptionTests.encryptor = new TestEncryptor(MdeCustomEncryptionTests.dekProvider);
+            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
+            await MdeCustomEncryptionTests.dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            MdeCustomEncryptionTests.dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, MdeCustomEncryptionTests.dekId);
         }
 
         [ClassCleanup]
@@ -2127,6 +2126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             MdeCustomEncryptionTests.legacytestKeyWrapProvider = new TestKeyWrapProvider();
             MdeCustomEncryptionTests.dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, MdeCustomEncryptionTests.testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(0));
             await MdeCustomEncryptionTests.dualDekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+
             MdeCustomEncryptionTests.legacyDekProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, MdeCustomEncryptionTests.legacydekId);
             MdeCustomEncryptionTests.encryptorWithDualWrapProvider = new TestEncryptor(MdeCustomEncryptionTests.dualDekProvider);
         }
