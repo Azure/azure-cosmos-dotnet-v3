@@ -1,4 +1,8 @@
-﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -10,6 +14,7 @@
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Threading;
+    using System.Net;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -34,6 +39,7 @@
                 containerId,
                 "/id");
             this.container = container;
+            this.database = database;
 
             this.allowedMetrics = new List<string>(new string[] {
                 ClientTelemetry.RequestChargeName,
@@ -53,7 +59,7 @@
         }
 
         [TestMethod]
-        public async Task DBOperationsTest()
+        public async Task PointOperationsTest()
         {
             using (CosmosClient cosmosClient = this.cosmosClient)
             {
@@ -139,7 +145,7 @@
         }
 
         [TestMethod]
-        public async Task DBStreamOperationsTest()
+        public async Task StreamOperationsTest()
         {
             using (CosmosClient cosmosClient = this.cosmosClient)
             {
@@ -225,7 +231,7 @@
         }
 
         [TestMethod]
-        public async Task DBBatchOperationsTest()
+        public async Task BatchOperationsTest()
         {
             BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(
                 (ContainerInlineCore)this.container, 
@@ -252,6 +258,53 @@
                 Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
             }
             executor.Dispose();
+        }
+
+        [TestMethod]
+        public async Task QueryOperationTest()
+        {
+            ClientTelemetry telemetry = this.cosmosClient.DocumentClient.clientTelemetry;
+            ClientTelemetryInfo telemetryInfo = telemetry.clientTelemetryInfo;
+
+            var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
+            ItemResponse<object> createResponse = await this.container.CreateItemAsync<dynamic>(testItem);
+
+            if (createResponse.StatusCode == HttpStatusCode.Created)
+            {
+                telemetry.Reset();
+
+                string sqlQueryText = "SELECT * FROM c";
+                Console.WriteLine("Running query: {0}\n", sqlQueryText);
+
+                QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
+                FeedIterator<object> queryResultSetIterator = this.container.GetItemQueryIterator<object>(queryDefinition);
+
+                List<object> families = new List<object>();
+                while (queryResultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<object> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                    foreach (object family in currentResultSet)
+                    {
+                        families.Add(family);
+                        Console.WriteLine("\tRead {0}\n", family);
+                    }
+                }
+                telemetry.Read();
+            }
+
+            Assert.IsNull(telemetryInfo.AcceleratedNetworking);
+            Assert.IsNotNull(telemetryInfo.ClientId);
+            Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName);
+            Assert.IsNotNull(telemetryInfo.UserAgent);
+            Assert.AreEqual(2, telemetryInfo.OperationInfoMap.Count);
+
+            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
+            {
+                Assert.AreEqual(Documents.OperationType.Query, entry.Key.Operation);
+                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
+                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
+                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
+            }
         }
 
         private static ItemBatchOperation CreateItem(string itemId)

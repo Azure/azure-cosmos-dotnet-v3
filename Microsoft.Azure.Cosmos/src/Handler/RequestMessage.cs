@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -136,6 +137,8 @@ namespace Microsoft.Azure.Cosmos
         internal bool IsPartitionKeyRangeHandlerRequired => this.OperationType == OperationType.ReadFeed &&
             this.ResourceType.IsPartitioned() && this.PartitionKeyRangeId == null &&
             this.Headers.PartitionKey == null;
+
+        internal TelemetryRequestInfo TelemetryInfo { get; set; }
 
         /// <summary>
         /// Request properties Per request context available to handlers. 

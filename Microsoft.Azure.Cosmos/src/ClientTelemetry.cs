@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class ClientTelemetry
     {
+        internal const String RequestKey = "telemetry";
+
         internal const int OneKbToBytes = 1024;
 
         internal const int RequestLatencyMaxMicroSec = 300000000;
@@ -99,53 +101,7 @@ namespace Microsoft.Azure.Cosmos
             return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
         }
 
-        internal void Collect(CosmosClient client,
-                            HttpStatusCode statusCode,
-                            string containerId,
-                            string databaseId,
-                            OperationType operationType,
-                            ResourceType resourceType,
-                            ConsistencyLevel? consistencyLevel,
-                            double requestCharge,
-                            TimeSpan latency)
-        {
-            ReportPayload reportPayloadLatency = 
-                this.CreateReportPayload(
-                    client, statusCode, containerId, databaseId, operationType, 
-                    resourceType, consistencyLevel, RequestLatencyName, RequestLatencyUnit);
-
-            this.clientTelemetryInfo
-                .OperationInfoMap
-                .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram latencyHistogram);
-            if (latencyHistogram == null)
-            {
-                latencyHistogram = statusCode.IsSuccess()
-                    ? new LongConcurrentHistogram(1, RequestLatencyMaxMicroSec, RequestLatencySuccessPrecision)
-                    : new LongConcurrentHistogram(1, RequestLatencyMaxMicroSec, RequestLatencyFailurePrecision);
-            }
-            latencyHistogram.RecordValue((long)latency.TotalMilliseconds * 1000);
-            this.clientTelemetryInfo.OperationInfoMap[reportPayloadLatency] = latencyHistogram;
-
-            ReportPayload reportPayloadRequestCharge =
-               this.CreateReportPayload(
-                   client, statusCode, containerId, databaseId, operationType,
-                   resourceType, consistencyLevel, RequestChargeName, RequestChargeUnit);
-
-            this.clientTelemetryInfo
-                .OperationInfoMap
-                .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram requestChargeHistogram);
-
-            if (requestChargeHistogram == null)
-            {
-                requestChargeHistogram = new LongConcurrentHistogram(1, RequestChargeMax, RequestChargePrecision);
-            }
-            requestChargeHistogram.RecordValue((long)requestCharge);
-            this.clientTelemetryInfo.OperationInfoMap[reportPayloadRequestCharge] = requestChargeHistogram;
-
-        }
-
-        internal void Collect(CosmosClient client,
-                            CosmosDiagnostics cosmosDiagnostics,
+        internal void Collect(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             int objectSize,
                             string containerId,
@@ -156,8 +112,7 @@ namespace Microsoft.Azure.Cosmos
                             double requestCharge)
         {
             ReportPayload reportPayloadLatency =
-                this.CreateReportPayload(
-                    client, cosmosDiagnostics, statusCode, objectSize, containerId, databaseId, operationType,
+                this.CreateReportPayload(cosmosDiagnostics, statusCode, objectSize, containerId, databaseId, operationType,
                     resourceType, consistencyLevel, RequestLatencyName, RequestLatencyUnit);
 
             this.clientTelemetryInfo
@@ -174,8 +129,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientTelemetryInfo.OperationInfoMap[reportPayloadLatency] = latencyHistogram;
 
             ReportPayload reportPayloadRequestCharge =
-               this.CreateReportPayload(
-                   client, cosmosDiagnostics, statusCode, objectSize, containerId, databaseId, operationType,
+               this.CreateReportPayload(cosmosDiagnostics, statusCode, objectSize, containerId, databaseId, operationType,
                    resourceType, consistencyLevel, RequestChargeName, RequestChargeUnit);
 
             this.clientTelemetryInfo
@@ -190,8 +144,7 @@ namespace Microsoft.Azure.Cosmos
             this.clientTelemetryInfo.OperationInfoMap[reportPayloadRequestCharge] = requestChargeHistogram;
         }
 
-        internal ReportPayload CreateReportPayload(CosmosClient client,
-                                                  CosmosDiagnostics cosmosDiagnostics,
+        internal ReportPayload CreateReportPayload(CosmosDiagnostics cosmosDiagnostics,
                                                   HttpStatusCode statusCode,
                                                   int objectSize,
                                                   string containerId,
@@ -210,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
             ReportPayload reportPayload = new ReportPayload(metricsName, unitName)
             {
                 RegionsContacted = string.Join(",", regionUris),
-                Consistency = consistencyLevel ?? client.ClientOptions.ConsistencyLevel.GetValueOrDefault(),
+                Consistency = consistencyLevel.GetValueOrDefault(),
                 DatabaseName = databaseId,
                 ContainerName = containerId,
                 Operation = operationType,
@@ -224,27 +177,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return reportPayload;
-        }
-
-        internal ReportPayload CreateReportPayload(CosmosClient client,
-                                              HttpStatusCode statusCode,
-                                              string containerId,
-                                              string databaseId,
-                                              OperationType operationType,
-                                              ResourceType resourceType,
-                                              ConsistencyLevel? consistencyLevel,
-                                              string metricsName,
-                                              string unitName)
-        {
-            return new ReportPayload(metricsName, unitName) 
-            { 
-                Consistency = consistencyLevel ?? client.ClientOptions.ConsistencyLevel.GetValueOrDefault(),
-                DatabaseName = databaseId,
-                ContainerName = containerId,
-                Operation = operationType,
-                Resource = resourceType,
-                StatusCode = (int)statusCode
-            };
         }
 
         internal ClientTelemetryInfo Read()
