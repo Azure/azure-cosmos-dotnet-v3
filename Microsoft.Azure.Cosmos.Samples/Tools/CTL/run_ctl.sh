@@ -128,7 +128,7 @@ else
 dotnetparameters="$dotnetparameters --ctl_logging_context $ctl_logging_context"
 fi
 
-if [ -z "ctl_precreated_documents" ]
+if [ -z "$ctl_precreated_documents" ]
 then
 dotnetparameters="$dotnetparameters"
 else
