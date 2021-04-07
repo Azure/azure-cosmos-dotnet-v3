@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 cancellationToken: default);
 
             Assert.IsTrue(result.Succeeded);
-            client.Verify(c => c.TryGetOverlappingRangesAsync(resourceId, FeedRangeEpk.FullRange.Range, true));
+            client.Verify(c => c.TryGetOverlappingRangesAsync(resourceId, FeedRangeEpk.FullRange.Range, true), Times.Once);
         }
 
             [TestMethod]
