@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
             Mock<ContainerInternal> container = new Mock<ContainerInternal>();
             container.Setup(c => c.ClientContext).Returns(context.Object);
-            container.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(resourceId);
+            container.Setup(c => c.GetCachedRIDAsync(false, It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(resourceId);
 
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
