@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -21,6 +22,28 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     public class NetworkAttachedDocumentContainerTests
     {
         [TestMethod]
+        public async Task TestKeyRangeCacheRefresh()
+        {
+            const string resourceId = "resourceId";
+            Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
+            Mock<ContainerInternal> container = new Mock<ContainerInternal>();
+            container.Setup(c => c.ClientContext).Returns(context.Object);
+            container.Setup(c => c.GetCachedRIDAsync(false, It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(resourceId);
+
+            Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
+            NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                container.Object,
+                client.Object);
+
+            TryCatch result = await networkAttachedDocumentContainer.MonadicRefreshProviderAsync(
+                trace: NoOpTrace.Singleton,
+                cancellationToken: default);
+
+            Assert.IsTrue(result.Succeeded);
+            client.Verify(c => c.TryGetOverlappingRangesAsync(resourceId, FeedRangeEpk.FullRange.Range, true), Times.Once);
+        }
+
+            [TestMethod]
         public async Task MonadicChangeFeedAsync_ChangeFeedMode_Incremental()
         {
             Mock<ContainerInternal> container = new Mock<ContainerInternal>();
