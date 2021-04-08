@@ -37,6 +37,11 @@ namespace Microsoft.Azure.Cosmos
         public IReadOnlyDictionary<string, object> Properties { get; set; }
 
         /// <summary>
+        /// Gets or sets a delegate which injects/appends a custom header in the request.
+        /// </summary>
+        public Action<Headers> CustomRequestHeaders { get; set; }
+
+        /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
         /// </summary>
         internal bool IsEffectivePartitionKeyRouting { get; set; }
@@ -79,6 +84,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
             }
+
+            this.CustomRequestHeaders?.Invoke(request.Headers);
         }
 
         /// <summary>

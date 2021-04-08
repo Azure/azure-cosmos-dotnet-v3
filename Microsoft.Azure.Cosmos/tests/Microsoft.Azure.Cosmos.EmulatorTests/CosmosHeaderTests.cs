@@ -46,6 +46,42 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task VerifyRequestOptionCustomRequestHeaders()
+        {
+            CustomHeaderValidationHandler headerValidationHandler = new CustomHeaderValidationHandler();
+            using CosmosClient client = TestCommon.CreateCosmosClient(x => x.AddCustomHandlers(headerValidationHandler));
+            Database database = null;
+            try
+            {
+                database = await client.CreateDatabaseAsync(nameof(VerifyKnownHeaders) + Guid.NewGuid().ToString());
+                Container container = await database.CreateContainerAsync(
+                Guid.NewGuid().ToString(),
+                "/pk");
+
+                ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    CustomRequestHeaders = (headers) => headers["x-ms-cosmos-database-rid"] = "databaseRidValue",
+                };
+
+                await container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk), requestOptions: requestOptions);
+
+                // null pass
+                requestOptions.CustomRequestHeaders = null;
+
+                await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk), requestOptions: requestOptions);
+
+            }
+            finally
+            {
+                if (database != null)
+                {
+                    await database.DeleteStreamAsync();
+                }
+            }
+        }
+
         private class HeaderValidationHandler : RequestHandler
         {
             public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
@@ -74,6 +110,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.Fail($"The lazy dictionary should not be created. Please add the following headers to the {nameof(StoreRequestNameValueCollection)}: {JsonConvert.SerializeObject(lazyNotCommonHeaders.Value)}");
                 }
+            }
+        }
+
+        private class CustomHeaderValidationHandler : RequestHandler
+        {
+            public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.ResourceType != Documents.ResourceType.Document)
+                {
+                    return await base.SendAsync(request, cancellationToken);
+                }
+
+                this.ValidateCustomHeaders(request.Headers.CosmosMessageHeaders);
+
+                ResponseMessage responseMessage = await base.SendAsync(request, cancellationToken);
+
+                return responseMessage;
+            }
+
+            private void ValidateCustomHeaders(CosmosMessageHeadersInternal internalHeaders)
+            {
+                string customHeaderValue = internalHeaders.Get("x-ms-cosmos-database-rid");
+
+                if (!string.IsNullOrEmpty(customHeaderValue))
+                {
+                    Assert.AreEqual("databaseRidValue", customHeaderValue);
+                }                
             }
         }
     }
