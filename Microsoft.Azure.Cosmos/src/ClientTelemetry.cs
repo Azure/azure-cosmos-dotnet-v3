@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
             LongConcurrentHistogram copyHistogram = (LongConcurrentHistogram)histogram.Copy();
             payload.MetricInfo.Count = copyHistogram.TotalCount;
             payload.MetricInfo.Max = copyHistogram.GetMaxValue();
-            payload.MetricInfo.Min = copyHistogram.GetMinValue();
+            //payload.MetricInfo.Min = copyHistogram.GetMinValue();
             payload.MetricInfo.Mean = copyHistogram.GetMean();
             IDictionary<Double, Double> percentile = new Dictionary<Double, Double>
             {
