@@ -150,10 +150,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\HdrHistogram\HdrHistogram.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Update="CosmosElements\Numbers\CosmosNumberCodeGenerator.tt">
 			<Generator>TextTemplatingFileGenerator</Generator>
 			<LastGenOutput>CosmosNumberCodeGenerator.cs</LastGenOutput>
