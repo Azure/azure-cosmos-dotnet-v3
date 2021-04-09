@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Database database = null;
             try
             {
-                database = await client.CreateDatabaseAsync(nameof(VerifyKnownHeaders) + Guid.NewGuid().ToString());
+                database = await client.CreateDatabaseAsync(nameof(VerifyRequestOptionCustomRequestHeaders) + Guid.NewGuid().ToString());
                 Container container = await database.CreateContainerAsync(
                 Guid.NewGuid().ToString(),
                 "/pk");
