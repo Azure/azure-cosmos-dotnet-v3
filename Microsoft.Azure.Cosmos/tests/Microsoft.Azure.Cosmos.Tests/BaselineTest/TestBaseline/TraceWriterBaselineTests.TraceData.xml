@@ -200,8 +200,7 @@
   <Result>
     <Input>
       <Description>Client Side Request Stats</Description>
-      <Setup>
-                      <![CDATA[
+      <Setup><![CDATA[
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
@@ -363,8 +362,7 @@
   <Result>
     <Input>
       <Description>Client Side Request Stats Default</Description>
-      <Setup>
-                      <![CDATA[
+      <Setup><![CDATA[
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
