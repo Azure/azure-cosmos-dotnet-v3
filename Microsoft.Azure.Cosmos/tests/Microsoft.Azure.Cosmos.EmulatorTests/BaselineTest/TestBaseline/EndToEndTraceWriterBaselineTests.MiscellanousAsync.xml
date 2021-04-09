@@ -26,14 +26,13 @@
                 └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                        (
-                                            [Client Side Request Stats]
-                                            Redacted To Not Change The Baselines From Run To Run
-                                            [PointOperationStatisticsTraceDatum]
-                                            Redacted To Not Change The Baselines From Run To Run
-                                        )
+                            └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                    (
+                                        [Client Side Request Stats]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                        [PointOperationStatisticsTraceDatum]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                    )
 ]]></Text>
       <Json><![CDATA[{
   "name": "CreateDatabaseAsync",
@@ -143,9 +142,9 @@
                           "data": {},
                           "children": [
                             {
-                              "name": "Send Async",
+                              "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
+                              "component": "Transport",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
@@ -153,26 +152,11 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
-                              "children": [
-                                {
-                                  "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
-                                  "start time": "12:00:00:000",
-                                  "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                                    "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
-                                }
-                              ]
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                              },
+                              "children": []
                             }
                           ]
                         }
@@ -214,14 +198,13 @@
             └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                 └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                     └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                            └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                    (
-                                        [Client Side Request Stats]
-                                        Redacted To Not Change The Baselines From Run To Run
-                                        [PointOperationStatisticsTraceDatum]
-                                        Redacted To Not Change The Baselines From Run To Run
-                                    )
+                        └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                (
+                                    [Client Side Request Stats]
+                                    Redacted To Not Change The Baselines From Run To Run
+                                    [PointOperationStatisticsTraceDatum]
+                                    Redacted To Not Change The Baselines From Run To Run
+                                )
 ]]></Text>
       <Json><![CDATA[{
   "name": "CreateDatabaseAsync",
@@ -304,9 +287,9 @@
                       "data": {},
                       "children": [
                         {
-                          "name": "Send Async",
+                          "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
+                          "component": "Transport",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
@@ -314,26 +297,11 @@
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Transport",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                                "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                              },
-                              "children": []
-                            }
-                          ]
+                          "data": {
+                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                            "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                          },
+                          "children": []
                         }
                       ]
                     }
