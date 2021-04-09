@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -171,6 +172,72 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(feedResponse.Count, 5);
             Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
             Assert.IsNotNull(feedResponse.Diagnostics);
+        }
+
+        [TestMethod]
+        public async Task ValidateContainerRecreateScenario()
+        {
+            CosmosClient cc1 = TestCommon.CreateCosmosClient();
+            CosmosClient cc2 = TestCommon.CreateCosmosClient();
+
+            Database database = null;
+            try
+            {
+                database = await cc1.CreateDatabaseAsync("ContainerRecreateScenarioDb");
+                Container containerCC1 = await database.CreateContainerAsync("ContainerRecreateContainer", "/pk");
+
+                // Create items with different pk values
+                for (int i = 0; i < 5; i++)
+                {
+                    ItemResponse<ToDoActivity> itemResponse = await containerCC1.CreateItemAsync(
+                        ToDoActivity.CreateRandomToDoActivity("pk" + i, i.ToString()));
+                }
+
+                List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+                for (int i = 0; i < 5; i++)
+                {
+                    itemList.Add((i.ToString(), new PartitionKey("pk" + i)));
+                }
+
+                FeedResponse<ToDoActivity> feedResponse = await containerCC1.ReadManyItemsAsync<ToDoActivity>(itemList);
+                Assert.AreEqual(feedResponse.Count, 5);
+
+                Database databaseCC2 = cc2.GetDatabase("ContainerRecreateScenarioDb");
+                Container containerCC2 = cc2.GetContainer("ContainerRecreateScenarioDb", "ContainerRecreateContainer");
+                await containerCC2.DeleteContainerAsync();
+
+                // Recreate container 
+                containerCC2 = await databaseCC2.CreateContainerAsync("ContainerRecreateContainer", "/pk");
+
+                // Check if recreate scenario works
+                feedResponse = await containerCC1.ReadManyItemsAsync<ToDoActivity>(itemList);
+                Assert.AreEqual(feedResponse.Count, 0);
+                Assert.IsTrue(feedResponse.StatusCode == HttpStatusCode.OK);
+            }
+            finally
+            {
+                await database.DeleteAsync();
+                cc1.Dispose();
+                cc2.Dispose();
+            }
+        }
+
+        [TestMethod]
+        public async Task MultipleQueriesToSamePartitionTest()
+        {
+            for (int i = 0; i < 2500; i++)
+            {
+                await this.Container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity("pk", i.ToString()));
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 1500; i++)
+            {
+                itemList.Add((i.ToString(), new PartitionKey("pk")));
+            }
+
+            FeedResponse<ToDoActivity> feedResponse = await this.Container.ReadManyItemsAsync<ToDoActivity>(itemList);
+            Assert.AreEqual(feedResponse.Count, 2500);
         }
 
 #if PREVIEW

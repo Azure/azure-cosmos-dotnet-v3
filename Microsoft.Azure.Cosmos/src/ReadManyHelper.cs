@@ -13,9 +13,13 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class ReadManyHelper
     {
         public abstract Task<ResponseMessage> ExecuteReadManyRequestAsync(IReadOnlyList<(string, PartitionKey)> items,
-                                                                        ITrace trace);
+                                                                        ReadManyRequestOptions readManyRequestOptions,
+                                                                        ITrace trace,
+                                                                        CancellationToken cancellationToken);
 
         public abstract Task<FeedResponse<T>> ExecuteReadManyRequestAsync<T>(IReadOnlyList<(string, PartitionKey)> items,
-                                                                            ITrace trace);
+                                                                            ReadManyRequestOptions readManyRequestOptions,
+                                                                            ITrace trace,
+                                                                            CancellationToken cancellationToken);
     }
 }

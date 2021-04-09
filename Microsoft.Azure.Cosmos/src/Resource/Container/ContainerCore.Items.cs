@@ -299,11 +299,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
-                                                                    this,
-                                                                    readManyRequestOptions,
-                                                                    cancellationToken);
+                                                                    this);
 
-            return await readManyHelper.ExecuteReadManyRequestAsync(items, trace);
+            return await readManyHelper.ExecuteReadManyRequestAsync(items,
+                                                                    readManyRequestOptions,
+                                                                    trace,
+                                                                    cancellationToken);
         }
 
         public async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
@@ -323,11 +324,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
-                                                                    this,
-                                                                    readManyRequestOptions,
-                                                                    cancellationToken);
+                                                                    this);
 
-            return await readManyHelper.ExecuteReadManyRequestAsync<T>(items, trace);
+            return await readManyHelper.ExecuteReadManyRequestAsync<T>(items,
+                                                                    readManyRequestOptions,
+                                                                    trace,
+                                                                    cancellationToken);
         }
 
         /// <summary>
