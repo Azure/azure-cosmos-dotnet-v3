@@ -7,10 +7,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+    
     [SDK.EmulatorTests.TestClass]
     public class FeedRangeTests : BaseCosmosClientHelper
     {
@@ -157,6 +162,51 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             foreach (string id in resolvedRanges)
             {
                 Assert.IsTrue(ranges.Any(range => range.Id == id));
+            }
+        }
+
+        [TestMethod]
+        public async Task TestKeyRangeCacheRefresh()
+        {
+            bool validate = false;
+            bool pass = false;
+            string expectedPath = null;
+            HttpClientHandlerHelper httpClientHandler = new HttpClientHandlerHelper
+            {
+                RequestCallBack = (HttpRequestMessage request, CancellationToken cancellationToken) =>
+                {
+                    if(validate)
+                    {
+                        pass = request.RequestUri.LocalPath == expectedPath;
+                    }
+
+                    return null;
+                }
+            };
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(builder => builder
+                .WithConnectionModeGateway()
+                .WithHttpClientFactory(() => new HttpClient(httpClientHandler))))
+            {
+                ContainerInternal containerInternal = client.GetContainer(this.database.Id, this.Container.Id) as ContainerInternal;              
+                CosmosQueryClientCore queryClient = new CosmosQueryClientCore(client.ClientContext, containerInternal);
+                NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
+                    containerInternal,
+                    queryClient);
+
+                // warm up the caches
+                _ = await containerInternal.ReadItemStreamAsync("doesnotexist", PartitionKey.Null);
+
+                ContainerProperties containerProperties = await containerInternal.GetCachedContainerPropertiesAsync(false, NoOpTrace.Singleton, default);
+                expectedPath = "/" + containerProperties.SelfLink + "pkranges";
+                validate = true;
+
+                TryCatch result = await networkAttachedDocumentContainer.MonadicRefreshProviderAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
+
+                Assert.IsTrue(result.Succeeded);
+                Assert.IsTrue(pass);
             }
         }
 
