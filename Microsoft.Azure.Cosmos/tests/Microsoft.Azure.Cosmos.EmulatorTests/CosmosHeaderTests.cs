@@ -117,11 +117,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
             {
-                if (request.ResourceType != Documents.ResourceType.Document)
-                {
-                    return await base.SendAsync(request, cancellationToken);
-                }
-
                 if (request.ResourceType == Documents.ResourceType.Document)
                 {
                     this.ValidateCustomHeaders(request.Headers.CosmosMessageHeaders);
