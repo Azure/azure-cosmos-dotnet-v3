@@ -834,8 +834,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
             };
 
-            CosmosClient encryptionCosmosClientWithBulk = clientWithNoCaching.WithEncryption(testEncryptionKeyStoreProvider);
-            Database database = encryptionCosmosClientWithBulk.GetDatabase(MdeEncryptionTests.database.Id);
+            CosmosClient encryptionCosmosClient = clientWithNoCaching.WithEncryption(testEncryptionKeyStoreProvider);
+            Database database = encryptionCosmosClient.GetDatabase(MdeEncryptionTests.database.Id);
 
             // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
             // The Dek should be rewrapped if the KEK is revoked.
@@ -1066,7 +1066,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Container encryptionContainer = database.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
 
             for (int i = 0; i < 2; i++)
+            {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            }
 
             newtestEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
             // expecting just one unwrap.
@@ -1084,7 +1086,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             encryptionContainer = database.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
 
             for (int i = 0; i < 2; i++)
+            {
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            }
 
             newtestEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out unwrapcount);
             Assert.IsTrue(unwrapcount > 1, "The actual unwrap count was not greater than 1");
