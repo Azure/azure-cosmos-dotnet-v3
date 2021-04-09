@@ -122,11 +122,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return await base.SendAsync(request, cancellationToken);
                 }
 
-                this.ValidateCustomHeaders(request.Headers.CosmosMessageHeaders);
+                if (request.ResourceType == Documents.ResourceType.Document)
+                {
+                    this.ValidateCustomHeaders(request.Headers.CosmosMessageHeaders);
+                }
 
-                ResponseMessage responseMessage = await base.SendAsync(request, cancellationToken);
-
-                return responseMessage;
+                return await base.SendAsync(request, cancellationToken);
             }
 
             private void ValidateCustomHeaders(CosmosMessageHeadersInternal internalHeaders)
