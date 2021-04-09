@@ -4,10 +4,16 @@
       <Description>Custom Handler</Description>
       <Setup><![CDATA[
     TimeSpan delayTime = TimeSpan.FromSeconds(2);
+    RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
     CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-        builder.AddCustomHandlers(new RequestHandlerSleepHelper(delayTime)));
+        builder.AddCustomHandlers(requestHandler));
 
     DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+    EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
+        databaseResponse.Diagnostics.ToString(),
+        requestHandler.FullHandlerName,
+        delayTime);
+
     ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
     await databaseResponse.Database.DeleteAsync();
 ]]></Setup>
