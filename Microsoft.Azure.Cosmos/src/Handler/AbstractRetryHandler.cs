@@ -20,20 +20,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            // Keep a reference to the current trace.
-            ITrace trace = request.Trace;
             IDocumentClientRetryPolicy retryPolicyInstance = await this.GetRetryPolicyAsync(request);
             request.OnBeforeSendRequestActions += retryPolicyInstance.OnBeforeSendRequest;
 
             try
             {
                 return await RetryHandler.ExecuteHttpRequestAsync(
-                    callbackMethod: () =>
-                    {
-                        // Reset the trace back to the original to avoid nesting
-                        request.Trace = trace;
-                        return base.SendAsync(request, cancellationToken);
-                    },
+                    callbackMethod: () => base.SendAsync(request, cancellationToken),
                     callShouldRetry: (cosmosResponseMessage, token) => retryPolicyInstance.ShouldRetryAsync(cosmosResponseMessage, cancellationToken),
                     callShouldRetryException: (exception, token) => retryPolicyInstance.ShouldRetryAsync(exception, cancellationToken),
                     cancellationToken: cancellationToken);

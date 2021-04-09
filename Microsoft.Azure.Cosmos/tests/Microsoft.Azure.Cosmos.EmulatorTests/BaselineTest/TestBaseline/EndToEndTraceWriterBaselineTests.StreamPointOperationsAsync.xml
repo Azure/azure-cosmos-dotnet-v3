@@ -24,10 +24,10 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
@@ -63,7 +63,7 @@
       "data": {},
       "children": [
         {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
           "caller info": {
@@ -76,7 +76,7 @@
           "data": {},
           "children": [
             {
-              "name": "Send Async",
+              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
               "caller info": {
@@ -89,7 +89,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "Send Async",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "RequestHandler",
                   "caller info": {
@@ -102,7 +102,7 @@
                   "data": {},
                   "children": [
                     {
-                      "name": "Send Async",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
                       "caller info": {
@@ -163,10 +163,10 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
@@ -202,7 +202,7 @@
       "data": {},
       "children": [
         {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
           "caller info": {
@@ -215,7 +215,7 @@
           "data": {},
           "children": [
             {
-              "name": "Send Async",
+              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
               "caller info": {
@@ -228,7 +228,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "Send Async",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "RequestHandler",
                   "caller info": {
@@ -241,7 +241,7 @@
                   "data": {},
                   "children": [
                     {
-                      "name": "Send Async",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
                       "caller info": {
@@ -310,10 +310,10 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
@@ -349,7 +349,7 @@
       "data": {},
       "children": [
         {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
           "caller info": {
@@ -362,7 +362,7 @@
           "data": {},
           "children": [
             {
-              "name": "Send Async",
+              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
               "caller info": {
@@ -375,7 +375,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "Send Async",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "RequestHandler",
                   "caller info": {
@@ -388,7 +388,7 @@
                   "data": {},
                   "children": [
                     {
-                      "name": "Send Async",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
                       "caller info": {
@@ -452,10 +452,10 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                                 (
                                     [Client Side Request Stats]
@@ -491,7 +491,7 @@
       "data": {},
       "children": [
         {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
           "component": "RequestHandler",
           "caller info": {
@@ -504,7 +504,7 @@
           "data": {},
           "children": [
             {
-              "name": "Send Async",
+              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
               "id": "00000000-0000-0000-0000-000000000000",
               "component": "RequestHandler",
               "caller info": {
@@ -517,7 +517,7 @@
               "data": {},
               "children": [
                 {
-                  "name": "Send Async",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "component": "RequestHandler",
                   "caller info": {
@@ -530,7 +530,7 @@
                   "data": {},
                   "children": [
                     {
-                      "name": "Send Async",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "component": "RequestHandler",
                       "caller info": {
