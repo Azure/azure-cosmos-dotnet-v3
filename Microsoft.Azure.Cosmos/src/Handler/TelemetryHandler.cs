@@ -45,9 +45,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private bool isTelemetryEnabled(RequestMessage request)
         {
-            return this.client
+            return ConfigurationManager
+                .GetEnvironmentVariableInBoolean(ClientTelemetry.EnvPropsClientTelemetryEnabled, 
+                this.client
                 .ClientOptions
-                .EnableClientTelemetry && request.TelemetryInfo != null;
+                .EnableClientTelemetry && request.TelemetryInfo != null);
         }
 
         private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)
