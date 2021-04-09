@@ -1009,7 +1009,8 @@ namespace Microsoft.Azure.Cosmos
                     userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
                     connectionMode: this.ConnectionPolicy.ConnectionMode,
                     globalDatabaseAccountName: this.accountServiceConfiguration.AccountProperties.Id,
-                    httpClient: this.httpClient);
+                    httpClient: this.httpClient,
+                    isClientTelemetryEnabled: this.enableClientTelemetry);
 
             if (this.enableClientTelemetry)
             {

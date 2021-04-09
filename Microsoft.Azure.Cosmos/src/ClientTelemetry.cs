@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Threading.Tasks;
     using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -41,8 +42,14 @@ namespace Microsoft.Azure.Cosmos
         internal const double Percentile99 = 99.0;
         internal const double Percentile999 = 99.9;
 
-        internal readonly ClientTelemetryInfo clientTelemetryInfo;
-        internal readonly CosmosHttpClient httpClient;
+        public const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
+        public const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
+        internal const string DefaultTimeStampInSeconds = "600";
+
+        internal readonly ClientTelemetryInfo ClientTelemetryInfo;
+        internal readonly CosmosHttpClient HttpClient;
+        internal readonly bool IsClientTelemetryEnabled;
+        internal readonly double ClientTelemetrySchedulingInSeconds;
 
         public ClientTelemetry(bool? acceleratedNetworking,
                                string clientId,
@@ -50,13 +57,17 @@ namespace Microsoft.Azure.Cosmos
                                string userAgent,
                                ConnectionMode connectionMode,
                                string globalDatabaseAccountName,
-                               CosmosHttpClient httpClient)
+                               CosmosHttpClient httpClient,
+                               bool isClientTelemetryEnabled)
         {
-            this.clientTelemetryInfo = new ClientTelemetryInfo(clientId, processId, userAgent, connectionMode,
+            this.ClientTelemetryInfo = new ClientTelemetryInfo(clientId, processId, userAgent, connectionMode,
                 globalDatabaseAccountName, acceleratedNetworking);
 
-            this.httpClient = httpClient;
-
+            this.HttpClient = httpClient;
+            this.IsClientTelemetryEnabled = ConfigurationManager
+                .GetEnvironmentVariable<bool>(EnvPropsClientTelemetryEnabled, isClientTelemetryEnabled);
+            this.ClientTelemetrySchedulingInSeconds = ConfigurationManager
+                .GetEnvironmentVariable<double>(EnvPropsClientTelemetrySchedulingInSeconds, DefaultTimeStampInSeconds);
         }
 
         internal async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync()
@@ -75,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
 
                     return new ValueTask<HttpRequestMessage>(request);
                 }
-                using HttpResponseMessage httpResponseMessage = await this.httpClient.SendHttpAsync(
+                using HttpResponseMessage httpResponseMessage = await this.HttpClient.SendHttpAsync(
                     createRequestMessageAsync: CreateRequestMessage,
                     resourceType: ResourceType.Unknown,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
@@ -83,8 +94,8 @@ namespace Microsoft.Azure.Cosmos
                     cancellationToken: default);
                 azMetadata = await ProcessResponseAsync(httpResponseMessage);
 
-                this.clientTelemetryInfo.ApplicationRegion = azMetadata.Location;
-                this.clientTelemetryInfo.HostEnvInfo = String.Concat(azMetadata.OSType, "|", azMetadata.SKU,
+                this.ClientTelemetryInfo.ApplicationRegion = azMetadata.Location;
+                this.ClientTelemetryInfo.HostEnvInfo = String.Concat(azMetadata.OSType, "|", azMetadata.SKU,
                     "|", azMetadata.VMSize, "|", azMetadata.AzEnvironment);
             }
             catch (Exception e)
@@ -115,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
                 this.CreateReportPayload(cosmosDiagnostics, statusCode, objectSize, containerId, databaseId, operationType,
                     resourceType, consistencyLevel, RequestLatencyName, RequestLatencyUnit);
 
-            this.clientTelemetryInfo
+            this.ClientTelemetryInfo
                 .OperationInfoMap
                 .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram latencyHistogram);
 
@@ -126,13 +137,13 @@ namespace Microsoft.Azure.Cosmos
                     : new LongConcurrentHistogram(1, RequestLatencyMaxMicroSec, RequestLatencyFailurePrecision);
             }
             latencyHistogram.RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
-            this.clientTelemetryInfo.OperationInfoMap[reportPayloadLatency] = latencyHistogram;
+            this.ClientTelemetryInfo.OperationInfoMap[reportPayloadLatency] = latencyHistogram;
 
             ReportPayload reportPayloadRequestCharge =
                this.CreateReportPayload(cosmosDiagnostics, statusCode, objectSize, containerId, databaseId, operationType,
                    resourceType, consistencyLevel, RequestChargeName, RequestChargeUnit);
 
-            this.clientTelemetryInfo
+            this.ClientTelemetryInfo
                 .OperationInfoMap
                 .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram requestChargeHistogram);
 
@@ -141,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
                 requestChargeHistogram = new LongConcurrentHistogram(1, RequestChargeMax, RequestChargePrecision);
             }
             requestChargeHistogram.RecordValue((long)requestCharge);
-            this.clientTelemetryInfo.OperationInfoMap[reportPayloadRequestCharge] = requestChargeHistogram;
+            this.ClientTelemetryInfo.OperationInfoMap[reportPayloadRequestCharge] = requestChargeHistogram;
         }
 
         internal ReportPayload CreateReportPayload(CosmosDiagnostics cosmosDiagnostics,
@@ -179,17 +190,38 @@ namespace Microsoft.Azure.Cosmos
             return reportPayload;
         }
 
-        internal ClientTelemetryInfo Read()
+        internal async Task ReadAsync()
         {
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.clientTelemetryInfo.CacheRefreshInfoMap)
+            try
             {
-                this.FillMetricsInfo(entry.Key, entry.Value);
-            }
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.clientTelemetryInfo.OperationInfoMap)
+                await Task.Delay(TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), default);
+
+                if (this.IsClientTelemetryEnabled)
+                {
+                    DefaultTrace.TraceInformation("ReadAsync() - Reading Client Telemetry Information");
+                    foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.ClientTelemetryInfo.CacheRefreshInfoMap)
+                    {
+                        this.FillMetricsInfo(entry.Key, entry.Value);
+                    }
+                    foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.ClientTelemetryInfo.OperationInfoMap)
+                    {
+                        this.FillMetricsInfo(entry.Key, entry.Value);
+                    }
+                } 
+                else
+                {
+                    DefaultTrace.TraceInformation("ReadAsync() - Client Telemetry is disabled");
+                }
+                this.Reset();
+
+                await this.ReadAsync();
+            } 
+            catch (Exception ex)
             {
-                this.FillMetricsInfo(entry.Key, entry.Value);
+                DefaultTrace.TraceCritical("ReadAsync() - Unable to read telemetry information. Exception: {0}", ex.ToString());
+                this.Reset();
+                await this.ReadAsync();
             }
-            return this.clientTelemetryInfo;
         }
 
         private void FillMetricsInfo(ReportPayload payload, LongConcurrentHistogram histogram)
@@ -218,9 +250,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal void Reset()
         {
-            this.clientTelemetryInfo.OperationInfoMap.Clear();
-            this.clientTelemetryInfo.SystemInfoMap.Clear();
-            this.clientTelemetryInfo.CacheRefreshInfoMap.Clear();
+            this.ClientTelemetryInfo.OperationInfoMap.Clear();
+            this.ClientTelemetryInfo.SystemInfoMap.Clear();
+            this.ClientTelemetryInfo.CacheRefreshInfoMap.Clear();
 
         }
 

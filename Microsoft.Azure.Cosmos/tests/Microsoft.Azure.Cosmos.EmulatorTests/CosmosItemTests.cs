@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
-            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ReadAsync();
             Assert.IsNotNull(telemetryInfo);
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
-            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ReadAsync();
             Assert.IsNotNull(telemetryInfo);
 
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
-            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.Read();
+            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ReadAsync();
             Assert.IsNotNull(telemetryInfo);
         }
 

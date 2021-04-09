@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             dynamic testItemCreated = createResponse.Resource;
 
             ClientTelemetry telemetry = this.cosmosClient.DocumentClient.clientTelemetry;
-            ClientTelemetryInfo telemetryInfo = telemetry.clientTelemetryInfo;
+            ClientTelemetryInfo telemetryInfo = telemetry.ClientTelemetryInfo;
 
             Assert.IsNull(telemetryInfo.AcceleratedNetworking);
             Assert.IsNotNull(telemetryInfo.ClientId);
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), 
                 new PartitionKey(testItem.id));
                 
-            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.clientTelemetryInfo;
+            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ClientTelemetryInfo;
 
             Assert.IsNull(telemetryInfo.AcceleratedNetworking);
             Assert.IsNotNull(telemetryInfo.ClientId);
@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await Task.WhenAll(tasks);
 
-            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.clientTelemetryInfo;
+            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ClientTelemetryInfo;
 
             Assert.AreEqual(2, telemetryInfo.OperationInfoMap.Count);
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task QueryOperationTest()
         {
             ClientTelemetry telemetry = this.cosmosClient.DocumentClient.clientTelemetry;
-            ClientTelemetryInfo telemetryInfo = telemetry.clientTelemetryInfo;
+            ClientTelemetryInfo telemetryInfo = telemetry.ClientTelemetryInfo;
 
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             ItemResponse<object> createResponse = await this.container.CreateItemAsync<dynamic>(testItem);
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Console.WriteLine("\tRead {0}\n", family);
                     }
                 }
-                telemetry.Read();
+                telemetry.ReadAsync();
             }
 
             Assert.IsNull(telemetryInfo.AcceleratedNetworking);
