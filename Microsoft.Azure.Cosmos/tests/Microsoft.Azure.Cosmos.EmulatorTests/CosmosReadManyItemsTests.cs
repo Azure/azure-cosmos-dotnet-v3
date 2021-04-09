@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
-            for (int i = 0; i < 1500; i++)
+            for (int i = 0; i < 2500; i++)
             {
                 itemList.Add((i.ToString(), new PartitionKey("pk")));
             }
