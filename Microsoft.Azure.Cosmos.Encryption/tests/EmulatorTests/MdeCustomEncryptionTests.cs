@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task ValidateCachingOfProtectedDataEncryptionKey()
         {
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30)
             };
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeCustomEncryptionTests.CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
-            Assert.AreEqual(1, unwrapcount);            
+            Assert.AreEqual(1, unwrapcount);
         }
 
         [TestMethod]
@@ -2136,15 +2136,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
         private static async Task LegacyClassInitializeAsync()
         {
-            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider
-            {
-                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(3600)
-            };
+            MdeCustomEncryptionTests.testKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(3600);
 
-            MdeCustomEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(), testKeyStoreProvider);
+            MdeCustomEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(), MdeCustomEncryptionTests.testKeyStoreProvider);
             MdeCustomEncryptionTests.legacytestKeyWrapProvider = new TestKeyWrapProvider();
 
-            testKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
             };
