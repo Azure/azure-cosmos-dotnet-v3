@@ -91,7 +91,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             else
             {
-                // arbitrarily large caching period.
+                // If null is passed to DataEncryptionKeyCacheTimeToLive it results in forever caching hence setting
+                // arbitrarily large caching period. ProtectedDataEncryptionKey does not seem to handle TimeSpan.MaxValue.
                 ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
             }
         }
@@ -120,7 +121,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
             else
             {
-                // arbitrarily large caching period.
+                // If null is passed to DataEncryptionKeyCacheTimeToLive it results in forever caching hence setting
+                // arbitrarily large caching period. ProtectedDataEncryptionKey does not seem to handle TimeSpan.MaxValue.
                 ProtectedDataEncryptionKey.TimeToLive = TimeSpan.FromDays(36500);
             }
         }

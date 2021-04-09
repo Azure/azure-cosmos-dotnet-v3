@@ -1058,12 +1058,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task ValidateCachingofProtectedDataEncryptionKey()
         {
-            for (int i = 0; i < 6; i++)
-                await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            // Default cache TTL 2 hours.
+            TestEncryptionKeyStoreProvider newtestEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();           
+            CosmosClient newEncryptionClient = MdeEncryptionTests.client.WithEncryption(newtestEncryptionKeyStoreProvider);
+            Database database = newEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
 
-            testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
+            Container encryptionContainer = database.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
+
+            for (int i = 0; i < 2; i++)
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+
+            newtestEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out int unwrapcount);
+            // expecting just one unwrap.
             Assert.AreEqual(1, unwrapcount);
+
+            // no caching.
+            newtestEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider()
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero,
+            };
+
+            newEncryptionClient = MdeEncryptionTests.client.WithEncryption(newtestEncryptionKeyStoreProvider);
+            database = newEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
+
+            encryptionContainer = database.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
+
+            for (int i = 0; i < 2; i++)
+                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+
+            newtestEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(metadata1.Value, out unwrapcount);
+            Assert.IsTrue(unwrapcount > 1, "The actual unwrap count was not greater than 1");
         }
+
         private static async Task ValidateQueryResultsMultipleDocumentsAsync(
             Container container,
             TestDoc testDoc1,
