@@ -5,16 +5,11 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
-    using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -22,111 +17,71 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class AutoCheckPointTests
     {
-        private readonly ChangeFeedObserver<dynamic> changeFeedObserver;
-        private readonly ChangeFeedObserverContext observerContext;
-        private readonly CheckpointFrequency checkpointFrequency;
-        private readonly AutoCheckpointer<dynamic> sut;
-        private readonly IReadOnlyList<dynamic> documents;
-        private readonly PartitionCheckpointer partitionCheckpointer;
+        private readonly ChangeFeedObserver changeFeedObserver;
+        private readonly ChangeFeedObserverContextCore observerContext;
+        private readonly AutoCheckpointer sut;
+        private readonly Stream stream;
+        private readonly Mock<PartitionCheckpointer> partitionCheckpointer;
 
         public AutoCheckPointTests()
         {
-            changeFeedObserver = Mock.Of<ChangeFeedObserver<dynamic>>();
-            partitionCheckpointer = Mock.Of<PartitionCheckpointer>();
-            Mock.Get(partitionCheckpointer)
+            this.changeFeedObserver = Mock.Of<ChangeFeedObserver>();
+            this.partitionCheckpointer = new Mock<PartitionCheckpointer>();
+            this.partitionCheckpointer
                 .Setup(checkPointer => checkPointer.CheckpointPartitionAsync(It.IsAny<string>()))
                 .Returns(Task.CompletedTask);
 
-            checkpointFrequency = new CheckpointFrequency();
-            sut = new AutoCheckpointer<dynamic>(checkpointFrequency, changeFeedObserver);
+            this.sut = new AutoCheckpointer(this.changeFeedObserver);
 
-            documents = Mock.Of<IReadOnlyList<dynamic>>();
+            this.stream = Mock.Of<Stream>();
 
-            observerContext = Mock.Of<ChangeFeedObserverContext>();
-            Mock.Get(observerContext)
-                .Setup(context => context.CheckpointAsync())
-                .Returns(partitionCheckpointer.CheckpointPartitionAsync("token"));
+            ResponseMessage responseMessage = new ResponseMessage();
+            responseMessage.Headers.ContinuationToken = Guid.NewGuid().ToString();
+            this.observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, this.partitionCheckpointer.Object);
         }
 
         [TestMethod]
         public async Task OpenAsync_WhenCalled_ShouldOpenObserver()
         {
-            await sut.OpenAsync(observerContext);
+            await this.sut.OpenAsync(this.observerContext.LeaseToken);
 
-            Mock.Get(changeFeedObserver)
-                .Verify(observer => observer.OpenAsync(observerContext), Times.Once);
+            Mock.Get(this.changeFeedObserver)
+                .Verify(observer => observer.OpenAsync(this.observerContext.LeaseToken), Times.Once);
         }
 
         [TestMethod]
         public async Task CloseAsync_WhenCalled_ShouldCloseObserver()
         {
-            await sut.CloseAsync(observerContext, ChangeFeedObserverCloseReason.ResourceGone);
+            await this.sut.CloseAsync(this.observerContext.LeaseToken, ChangeFeedObserverCloseReason.ResourceGone);
 
-            Mock.Get(changeFeedObserver)
-                .Verify(observer => observer.CloseAsync(observerContext, ChangeFeedObserverCloseReason.ResourceGone), Times.Once);
+            Mock.Get(this.changeFeedObserver)
+                .Verify(observer => observer.CloseAsync(this.observerContext.LeaseToken, ChangeFeedObserverCloseReason.ResourceGone), Times.Once);
         }
 
         [TestMethod]
         public async Task ProcessChanges_WhenCalled_ShouldPassTheBatch()
         {
-            await sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None);
+            await this.sut.ProcessChangesAsync(this.observerContext, this.stream, CancellationToken.None);
 
-            Mock.Get(changeFeedObserver)
-                .Verify(observer => observer.ProcessChangesAsync(observerContext, documents, CancellationToken.None), Times.Once);
+            Mock.Get(this.changeFeedObserver)
+                .Verify(observer => observer.ProcessChangesAsync(this.observerContext, this.stream, CancellationToken.None), Times.Once);
+
+            this.partitionCheckpointer.Verify(c => c.CheckpointPartitionAsync(It.IsAny<string>()), Times.Once);
         }
 
         [TestMethod]
         public async Task ProcessChanges_WhenCheckpointThrows_ShouldThrow()
         {
-            checkpointFrequency.TimeInterval = TimeSpan.Zero;
+            CosmosException original = CosmosExceptionFactory.CreateThrottledException("throttled", new Headers());
+            Mock<PartitionCheckpointer> checkpointer = new Mock<PartitionCheckpointer>();
+            checkpointer.Setup(c => c.CheckpointPartitionAsync(It.IsAny<string>())).ThrowsAsync(original);
 
-            ChangeFeedObserverContext observerContext = Mock.Of<ChangeFeedObserverContext>();
-            Mock.Get(observerContext).Setup(abs => abs.CheckpointAsync()).Throws(new LeaseLostException());
+            ResponseMessage responseMessage = new ResponseMessage();
+            responseMessage.Headers.ContinuationToken = Guid.NewGuid().ToString();
+            ChangeFeedObserverContextCore observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, checkpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<LeaseLostException>(() => sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None));
-        }
-
-        [TestMethod]
-        public async Task ProcessChanges_WhenPeriodPass_ShouldCheckpoint()
-        {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            checkpointFrequency.TimeInterval = TimeSpan.FromHours(1);
-            await sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None);
-            Mock.Get(observerContext)
-                .Verify(context => context.CheckpointAsync(), Times.Never);
-
-            await Task.Delay(TimeSpan.FromSeconds(1));
-
-            checkpointFrequency.TimeInterval = stopwatch.Elapsed;
-            await sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None);
-            Mock.Get(observerContext)
-                .Verify(context => context.CheckpointAsync(), Times.Once);
-        }
-
-        [TestMethod]
-        public async Task ProcessChanges_WithDocTrigger_ShouldCheckpointWhenAbove()
-        {
-            Mock.Get(documents)
-                .Setup(list => list.Count)
-                .Returns(1);
-
-            checkpointFrequency.ProcessedDocumentCount = 2;
-
-            await sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None);
-            Mock.Get(observerContext)
-                .Verify(context => context.CheckpointAsync(), Times.Never);
-
-            await sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None);
-            Mock.Get(observerContext)
-                .Verify(context => context.CheckpointAsync(), Times.Once);
-
-            await sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None);
-            Mock.Get(observerContext)
-                .Verify(context => context.CheckpointAsync(), Times.Once);
-
-            await sut.ProcessChangesAsync(observerContext, documents, CancellationToken.None);
-            Mock.Get(observerContext)
-                .Verify(context => context.CheckpointAsync(), Times.Exactly(2));
+            CosmosException caught = await Assert.ThrowsExceptionAsync<CosmosException>(() => this.sut.ProcessChangesAsync(observerContext, this.stream, CancellationToken.None));
+            Assert.AreEqual(original, caught);
         }
     }
 }
