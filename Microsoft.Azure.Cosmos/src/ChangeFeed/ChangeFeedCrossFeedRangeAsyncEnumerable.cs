@@ -38,6 +38,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.documentContainer,
                 innerState,
                 this.changeFeedPaginationOptions,
+                this.changeFeedPaginationOptions.Mode.CreateSplitStrategy(
+                    this.documentContainer,
+                    (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
+                        this.documentContainer,
+                        feedRangeState,
+                        this.changeFeedPaginationOptions,
+                        cancellationToken)),
                 cancellationToken);
 
             return new ChangeFeedCrossFeedRangeAsyncEnumerator(

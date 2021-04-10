@@ -133,6 +133,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             IDocumentContainer documentContainer,
             CrossFeedRangeState<ChangeFeedState> state,
             ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ISplitStrategy<ChangeFeedPage, ChangeFeedState> splitStrategy,
             CancellationToken cancellationToken)
         {
             changeFeedPaginationOptions ??= ChangeFeedPaginationOptions.Default;
@@ -152,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 maxConcurrency: default,
                 cancellationToken,
                 state,
-                splitStrategy: changeFeedMode.CreateSplitStrategy(documentContainer, partitionRangeEnumeratorCreator));
+                splitStrategy);
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = new CrossPartitionChangeFeedAsyncEnumerator(
                 crossPartitionEnumerator,

@@ -180,14 +180,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         additionalHeaders = null;
                     }
 
-                    CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
-                        documentContainer,
-                        new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
-                        new ChangeFeedPaginationOptions(
+                    var paginationOptions = new ChangeFeedPaginationOptions(
                             changeFeedMode,
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
-                            additionalHeaders),
+                            additionalHeaders);
+                    CreatePartitionRangePageAsyncEnumerator<Pagination.ChangeFeedPage, ChangeFeedState> partitionRangeEnumeratorCreator =
+                        (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
+                            documentContainer,
+                            feedRangeState,
+                            paginationOptions,
+                            cancellationToken);
+                    var splitStrategy = changeFeedMode.CreateSplitStrategy(documentContainer, partitionRangeEnumeratorCreator);
+
+                    CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                        documentContainer,
+                        new CrossFeedRangeState<ChangeFeedState>(monadicChangeFeedCrossFeedRangeState.Result.FeedRangeStates),
+                        paginationOptions,
+                        splitStrategy,
                         cancellationToken: default);
 
                     TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = TryCatch<CrossPartitionChangeFeedAsyncEnumerator>.FromResult(enumerator);

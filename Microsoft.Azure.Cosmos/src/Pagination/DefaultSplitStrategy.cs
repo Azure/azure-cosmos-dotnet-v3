@@ -8,8 +8,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
 
+    /// <summary>
+    /// Default split strategy just enqueues PartitionRangePageAsyncEnumerator for child ranges.
+    /// </summary>
     internal class DefaultSplitStrategy<TPage, TState> : ISplitStrategy<TPage, TState>
         where TPage : Page<TState>
         where TState : State
@@ -31,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            // TODO: remove this line.
             List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
 
             List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);

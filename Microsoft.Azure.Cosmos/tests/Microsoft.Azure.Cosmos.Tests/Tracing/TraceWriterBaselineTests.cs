@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using System.Linq;
     using System.Net.Http;
     using System.Runtime.CompilerServices;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
     using Microsoft.Azure.Cosmos.ChangeFeed;
@@ -543,6 +544,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     new ChangeFeedPaginationOptions(
                         ChangeFeedMode.Incremental,
                         pageSizeHint: int.MaxValue),
+                    new DefaultSplitStrategy<Microsoft.Azure.Cosmos.ChangeFeed.Pagination.ChangeFeedPage, ChangeFeedState>(
+                    documentContainer,
+                    (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
+                        documentContainer,
+                        feedRangeState,
+                        new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental),
+                        new CancellationTokenSource().Token)),
                     cancellationToken: default);
 
                 int numChildren = 0;

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using System.IO;
     using Microsoft.Azure.Cosmos.Tracing;
     using System.Collections.Immutable;
+    using System.Threading;
 
     [TestClass]
     public sealed class CrossPartitionChangeFeedAsyncEnumeratorTests
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer),
                 cancellationToken: default);
 
             Assert.IsTrue(await enumerator.MoveNextAsync());
@@ -53,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer),
                 cancellationToken: default);
 
             // First page should be true and skip the 304 not modified
@@ -81,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Beginning())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer),
                 cancellationToken: default);
 
             int globalCount = await (useContinuations
@@ -104,6 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Time(DateTime.UtcNow))
                     }),
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer),
                 cancellationToken: default);
 
             for (int i = 0; i < numItems; i++)
@@ -142,6 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                         new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
                     }),
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer),
                 cancellationToken: default);
 
             Assert.AreEqual(0, await (useContinuations
@@ -211,6 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                     documentContainer,
                     enumerator.Current.Result.State,
                     ChangeFeedPaginationOptions.Default,
+                    CreateDefaultSplitStrategy(documentContainer),
                     cancellationToken: default);
             }
 
@@ -295,6 +302,18 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             }
 
             return documentContainer;
+        }
+
+        private static ISplitStrategy<ChangeFeedPage, ChangeFeedState> CreateDefaultSplitStrategy(
+            IDocumentContainer documentContainer)
+        {
+            return new DefaultSplitStrategy<ChangeFeedPage, ChangeFeedState>(
+                documentContainer,
+                (FeedRangeState<ChangeFeedState> feedRangeState) => new ChangeFeedPartitionRangePageAsyncEnumerator(
+                    documentContainer,
+                    feedRangeState,
+                    new ChangeFeedPaginationOptions(ChangeFeedMode.Incremental),
+                    new CancellationTokenSource().Token));
         }
     }
 }

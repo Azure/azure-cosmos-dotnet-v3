@@ -28,6 +28,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         {
             // Check how many parent partitions. If 1 partition -- go to archival rerefence.
 
+            // TODO: remove this line.
+            List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
+            
             List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);
 
             foreach (FeedRangeInternal childRange in childRanges)
