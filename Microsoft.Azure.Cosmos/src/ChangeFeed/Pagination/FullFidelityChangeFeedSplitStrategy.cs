@@ -21,22 +21,21 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         }
 
         public override async Task HandleSplitAsync(
-            FeedRangeInternal range,
-            ChangeFeedState state,
+            CosmosPagination.FeedRangeState<ChangeFeedState> rangeState,
             CosmosPagination.IQueue<CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>> enumerators,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             // Check how many parent partitions. If 1 partition -- go to archival rerefence.
 
-            List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(range, trace, cancellationToken);
+            List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);
 
             foreach (FeedRangeInternal childRange in childRanges)
             {
                 //childRange.GetPartitionKeyRangesAsync();
 
                 CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> childPaginator =
-                    this.partitionRangeEnumeratorCreator(childRange, state);
+                    this.partitionRangeEnumeratorCreator(new CosmosPagination.FeedRangeState<ChangeFeedState>(childRange, rangeState.State));
                 enumerators.Enqueue(childPaginator);
             }
         }

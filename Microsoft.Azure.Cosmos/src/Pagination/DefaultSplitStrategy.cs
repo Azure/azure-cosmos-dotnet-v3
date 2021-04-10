@@ -26,21 +26,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public virtual async Task HandleSplitAsync(
-            FeedRangeInternal range,
-            TState state,
+            FeedRangeState<TState> rangeState,
             IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators,
             ITrace trace,
             CancellationToken cancellationToken)
         {
             List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
 
-            List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(range, trace, cancellationToken);
+            List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);
 
             foreach (FeedRangeInternal childRange in childRanges)
             {
                 PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.partitionRangeEnumeratorCreator(
-                    childRange,
-                    state);
+                    new FeedRangeState<TState>(childRange, rangeState.State));
                 enumerators.Enqueue(childPaginator);
             }
         }
