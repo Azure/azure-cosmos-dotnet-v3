@@ -17,18 +17,14 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
-        private readonly RequestHandler partitionFailoverHandler;
 
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
-            CosmosClientOptions clientOptions,
-            DocumentClient documentClient,
             ConsistencyLevel? requestedClientConsistencyLevel,
-            IReadOnlyCollection<RequestHandler> customHandlers,
-            ConnectionMode connectionMode)
+            IReadOnlyCollection<RequestHandler> customHandlers)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
@@ -43,20 +39,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
-
-            if (clientOptions.EnablePartitionLevelFailover)
-            {
-                if (PartitionKeyRangeWriteFailoverHandler.TryCreate(
-                    client.GetAccountConsistencyLevelAsync,
-                    () => documentClient.GlobalEndpointManager.ReadEndpoints,
-                    new Lazy<Documents.IAddressResolver>(() => client.DocumentClient.AddressResolver),
-                    requestedClientConsistencyLevel,
-                    connectionMode,
-                    out RequestHandler partitionKeyRangeWriteFailoverHandler))
-                {
-                    this.partitionFailoverHandler = partitionKeyRangeWriteFailoverHandler;
-                }
-            }
 
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
@@ -159,12 +141,6 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
             current = current.InnerHandler;
-
-            if (this.partitionFailoverHandler != null)
-            {
-                current.InnerHandler = this.partitionFailoverHandler;
-                current = current.InnerHandler;
-            }
 
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();

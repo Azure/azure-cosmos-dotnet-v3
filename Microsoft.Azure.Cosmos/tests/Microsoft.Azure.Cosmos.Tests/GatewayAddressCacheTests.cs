@@ -138,6 +138,7 @@ namespace Microsoft.Azure.Cosmos
                     mockDocumentClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(databaseAccount);
 
                     GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+                    PartitionKeyRangeLocationCache partitionKeyRangeLocationCache = new PartitionKeyRangeLocationCache(globalEndpointManager);
 
                     ConnectionPolicy connectionPolicy = new ConnectionPolicy
                     {
@@ -146,6 +147,7 @@ namespace Microsoft.Azure.Cosmos
 
                     GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(
                         endpointManager: globalEndpointManager,
+                        partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                         protocol: Documents.Client.Protocol.Tcp,
                         tokenProvider: this.mockTokenProvider.Object,
                         collectionCache: null,

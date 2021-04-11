@@ -559,6 +559,8 @@ namespace Microsoft.Azure.Cosmos
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
+        
+        internal PartitionKeyRangeLocationCache PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
         /// Open the connection to validate that the client initialization is successful in the Azure Cosmos DB service.
@@ -865,6 +867,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
+            this.PartitionKeyRangeLocation = new PartitionKeyRangeLocationCache(this.GlobalEndpointManager);
 
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
@@ -883,7 +886,11 @@ namespace Microsoft.Azure.Cosmos
                 this.sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             }
 
-            this.retryPolicy = new RetryPolicy(this.GlobalEndpointManager, this.ConnectionPolicy);
+            this.retryPolicy = new RetryPolicy(
+                globalEndpointManager: this.GlobalEndpointManager,
+                connectionPolicy: this.ConnectionPolicy,
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
@@ -6452,6 +6459,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.AddressResolver = new GlobalAddressResolver(
                 this.GlobalEndpointManager,
+                this.PartitionKeyRangeLocation,
                 this.ConnectionPolicy.ConnectionProtocol,
                 this,
                 this.collectionCache,

@@ -97,7 +97,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Convert.ToBase64String(randomEntries);
         }
 
-        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
+            this.globalEndpointManager.Object,
+            new ConnectionPolicy(), 
+            new PartitionKeyRangeLocationCache(this.globalEndpointManager.Object));
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
