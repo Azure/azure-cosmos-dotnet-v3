@@ -8,14 +8,18 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Net;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
 
     internal class ClientTelemetry
     {
@@ -34,6 +38,11 @@ namespace Microsoft.Azure.Cosmos
         internal const string RequestChargeName = "RequestCharge";
         internal const string RequestChargeUnit = "RU";
 
+        internal const int CpuMax = 100;
+        internal const int CpuPrecision = 2;
+        internal const String CpuName = "CPU";
+        internal const String CpuUnit = "Percentage";
+
         internal const string VMMetadataURL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
 
         internal const double Percentile50 = 50.0;
@@ -41,15 +50,23 @@ namespace Microsoft.Azure.Cosmos
         internal const double Percentile95 = 95.0;
         internal const double Percentile99 = 99.0;
         internal const double Percentile999 = 99.9;
-
+        internal const string DateFormat = "YYYY-MM-ddTHH:mm:ssZ";
         public const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
         public const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
-        internal const string DefaultTimeStampInSeconds = "600";
+        internal const double DefaultTimeStampInSeconds = 600;
+
+        internal static readonly List<ResourceType> AllowedResourceTypes = new List<ResourceType>(new ResourceType[]
+        {
+            ResourceType.Document
+        });
 
         internal readonly ClientTelemetryInfo ClientTelemetryInfo;
         internal readonly CosmosHttpClient HttpClient;
-        internal readonly bool IsClientTelemetryEnabled;
-        internal readonly double ClientTelemetrySchedulingInSeconds;
+        internal readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+        internal bool IsClientTelemetryEnabled;
+
+        internal double ClientTelemetrySchedulingInSeconds;
 
         public ClientTelemetry(bool? acceleratedNetworking,
                                string clientId,
@@ -62,12 +79,12 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ClientTelemetryInfo = new ClientTelemetryInfo(clientId, processId, userAgent, connectionMode,
                 globalDatabaseAccountName, acceleratedNetworking);
-
             this.HttpClient = httpClient;
-            this.IsClientTelemetryEnabled = ConfigurationManager
+            this.IsClientTelemetryEnabled = CosmosConfigurationManager
                 .GetEnvironmentVariable<bool>(EnvPropsClientTelemetryEnabled, isClientTelemetryEnabled);
-            this.ClientTelemetrySchedulingInSeconds = ConfigurationManager
+            this.ClientTelemetrySchedulingInSeconds = CosmosConfigurationManager
                 .GetEnvironmentVariable<double>(EnvPropsClientTelemetrySchedulingInSeconds, DefaultTimeStampInSeconds);
+            this.cancellationTokenSource = new CancellationTokenSource();
         }
 
         internal async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync()
@@ -190,37 +207,78 @@ namespace Microsoft.Azure.Cosmos
             return reportPayload;
         }
 
+        internal void Dispose()
+        {
+            DefaultTrace.TraceInformation("Dispose() - Client Telemetry");
+
+            if (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                this.cancellationTokenSource.Cancel();
+                this.cancellationTokenSource.Dispose();
+            }
+        }
+
         internal async Task ReadAsync()
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), default);
-
+                if (this.cancellationTokenSource.IsCancellationRequested)
+                {
+                    return;
+                }
                 if (this.IsClientTelemetryEnabled)
                 {
+                    await Task.Delay(
+                        TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), 
+                        this.cancellationTokenSource.Token).ConfigureAwait(false);
+
+                    this.RecordCpuUtilization();
+                    this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(DateFormat);
+
                     DefaultTrace.TraceInformation("ReadAsync() - Reading Client Telemetry Information");
-                    foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.ClientTelemetryInfo.CacheRefreshInfoMap)
-                    {
-                        this.FillMetricsInfo(entry.Key, entry.Value);
-                    }
-                    foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.ClientTelemetryInfo.OperationInfoMap)
-                    {
-                        this.FillMetricsInfo(entry.Key, entry.Value);
-                    }
-                } 
+                    this.RecordOperationAndCacheConfig();
+                    this.Reset();
+                    await this.ReadAsync().ConfigureAwait(false);
+                }
                 else
                 {
                     DefaultTrace.TraceInformation("ReadAsync() - Client Telemetry is disabled");
                 }
-                this.Reset();
-
-                await this.ReadAsync();
+               
             } 
             catch (Exception ex)
             {
                 DefaultTrace.TraceCritical("ReadAsync() - Unable to read telemetry information. Exception: {0}", ex.ToString());
                 this.Reset();
-                await this.ReadAsync();
+                await this.ReadAsync().ConfigureAwait(false);
+            }
+        }
+
+        private void RecordOperationAndCacheConfig()
+        {
+            this.FillMetric(this.ClientTelemetryInfo.CacheRefreshInfoMap);
+            this.FillMetric(this.ClientTelemetryInfo.OperationInfoMap);
+            this.FillMetric(this.ClientTelemetryInfo.SystemInfoMap);
+        }
+
+        private void RecordCpuUtilization()
+        {
+            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1, CpuMax, CpuPrecision);
+            List<double> cpuHistory = DiagnosticsHandlerHelper.Instance.GetCpuDiagnostics();
+
+            foreach (double cpuUtilization in cpuHistory)
+            {
+                cpuHistogram.RecordValue((long)cpuUtilization);
+            }
+            ReportPayload cpuReportPayload = new ReportPayload(CpuName, CpuUnit);
+            this.ClientTelemetryInfo.SystemInfoMap.Add(cpuReportPayload, cpuHistogram);
+        }
+
+        private void FillMetric(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
+        {
+            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in metrics)
+            {
+                this.FillMetricsInfo(entry.Key, entry.Value);
             }
         }
 
@@ -229,7 +287,7 @@ namespace Microsoft.Azure.Cosmos
             LongConcurrentHistogram copyHistogram = (LongConcurrentHistogram)histogram.Copy();
             payload.MetricInfo.Count = copyHistogram.TotalCount;
             payload.MetricInfo.Max = copyHistogram.GetMaxValue();
-            //payload.MetricInfo.Min = copyHistogram.GetMinValue();
+            payload.MetricInfo.Min = copyHistogram.GetMinValue();
             payload.MetricInfo.Mean = copyHistogram.GetMean();
             IDictionary<Double, Double> percentile = new Dictionary<Double, Double>
             {
@@ -242,10 +300,18 @@ namespace Microsoft.Azure.Cosmos
             payload.MetricInfo.Percentiles = percentile;
         }
 
-        internal async Task<AzureVMMetadata> InitAsync()
+        internal async Task InitAsync()
         {
-            //if (this.isClientTelemetryEnabled)
-            return await this.LoadAzureVmMetaDataAsync();
+            if (this.IsClientTelemetryEnabled)
+            {
+                await this.LoadAzureVmMetaDataAsync();
+               // await this.ReadAsync().ConfigureAwait(false);
+            } 
+            else
+            {
+                DefaultTrace.TraceWarning("Client Telemetry is disabled");
+            }
+           
         }
 
         internal void Reset()

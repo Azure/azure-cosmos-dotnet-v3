@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
+    using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -43,6 +44,19 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(metadata.AzEnvironment, "AzurePublicCloud");
             Assert.AreEqual(metadata.OSType, "Linux");
             Assert.AreEqual(metadata.VMSize, "Standard_D2s_v3");
+        }
+
+        [TestMethod]
+        public void DiagnosticsHandlerHelperParseCPUDataTest()
+        {
+            List<double> readingList = new List<double>();
+            DiagnosticsHandlerHelper.Instance.GetDetails(null, readingList);
+            Assert.AreEqual(0, readingList.Count);
+
+            DiagnosticsHandlerHelper.Instance.GetDetails(
+                "(2021-04-11T16:51:17.6899435Z 20.455), (2021-04-11T16:51:27.6951465Z 20.613), (2021-04-11T16:51:38.3777583Z 15.914)", 
+                readingList);
+            Assert.AreEqual(3, readingList.Count);
         }
     }
 }

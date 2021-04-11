@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
-        private const bool DefaultEnableClientTelemetry = true;
+        private const bool DefaultEnableClientTelemetry = false;
 
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
@@ -1011,11 +1011,7 @@ namespace Microsoft.Azure.Cosmos
                     globalDatabaseAccountName: this.accountServiceConfiguration.AccountProperties.Id,
                     httpClient: this.httpClient,
                     isClientTelemetryEnabled: this.enableClientTelemetry);
-
-            if (this.enableClientTelemetry)
-            {
-                await this.clientTelemetry.InitAsync();
-            }
+            await this.clientTelemetry.InitAsync();
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1269,6 +1265,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.queryPartitionProvider != null && this.queryPartitionProvider.IsValueCreated)
             {
                 this.queryPartitionProvider.Value.Dispose();
+            }
+
+            if (this.clientTelemetry != null && this.enableClientTelemetry)
+            {
+                this.clientTelemetry.Dispose();
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);

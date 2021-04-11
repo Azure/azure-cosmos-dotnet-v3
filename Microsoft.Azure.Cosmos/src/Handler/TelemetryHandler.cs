@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Newtonsoft.Json.Linq;
 
     internal class TelemetryHandler : RequestHandler
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (this.isTelemetryEnabled(request))
+            if (this.isAllowed(request))
             {
                 this.client.DocumentClient.clientTelemetry.Collect(
                   response.Diagnostics, response.StatusCode,
@@ -43,13 +44,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return response;
         }
 
-        private bool isTelemetryEnabled(RequestMessage request)
+        private bool IsTelemetryEnabled(RequestMessage request)
         {
-            return ConfigurationManager
-                .GetEnvironmentVariableInBoolean(ClientTelemetry.EnvPropsClientTelemetryEnabled, 
+            return CosmosConfigurationManager
+                .GetEnvironmentVariable<bool>(ClientTelemetry.EnvPropsClientTelemetryEnabled, 
                 this.client
                 .ClientOptions
                 .EnableClientTelemetry && request.TelemetryInfo != null);
+        }
+
+        private bool isAllowed(RequestMessage request)
+        {
+            return this.IsTelemetryEnabled(request) && 
+                ClientTelemetry.AllowedResourceTypes.Contains(request.ResourceType);
         }
 
         private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)

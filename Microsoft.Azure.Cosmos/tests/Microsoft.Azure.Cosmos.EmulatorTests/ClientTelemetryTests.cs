@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Threading;
     using System.Net;
+    using System.Linq;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -22,24 +23,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container container;
         private List<string> allowedMetrics;
         private List<string> allowedUnitnames;
+        private ClientTelemetry telemetry;
+        private ClientTelemetryInfo telemetryInfo;
 
         [TestInitialize]
         public async Task TestInitialize()
         {
+            Environment
+                .SetEnvironmentVariable(ClientTelemetry.EnvPropsClientTelemetryEnabled, "true");
+            Environment
+                .SetEnvironmentVariable(ClientTelemetry.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
             cosmosClientBuilder.WithTelemetryEnabled();
 
             this.cosmosClient = cosmosClientBuilder.Build();
 
-            string databaseId = Guid.NewGuid().ToString();
-            string containerId = Guid.NewGuid().ToString();
-     
-            Database database = await this.cosmosClient.CreateDatabaseAsync(databaseId);
-            Container container = await database.CreateContainerAsync(
-                containerId,
-                "/id");
-            this.container = container;
-            this.database = database;
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            this.container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+
+            this.telemetry = this.cosmosClient.DocumentClient.clientTelemetry;
+            this.telemetryInfo = this.telemetry.ClientTelemetryInfo;
 
             this.allowedMetrics = new List<string>(new string[] {
                 ClientTelemetry.RequestChargeName,
@@ -66,79 +70,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             ItemResponse<dynamic> createResponse = await this.container.CreateItemAsync<dynamic>(testItem);
             dynamic testItemCreated = createResponse.Resource;
-
-            ClientTelemetry telemetry = this.cosmosClient.DocumentClient.clientTelemetry;
-            ClientTelemetryInfo telemetryInfo = telemetry.ClientTelemetryInfo;
-
-            Assert.IsNull(telemetryInfo.AcceleratedNetworking);
-            Assert.IsNotNull(telemetryInfo.ClientId);
-            Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName);
-            Assert.IsNotNull(telemetryInfo.UserAgent);
-            Assert.AreEqual(2, telemetryInfo.OperationInfoMap.Count);
-
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.AreEqual(Documents.OperationType.Create, entry.Key.Operation);
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            List<Documents.OperationType> allowedOperations
+               = new List<Documents.OperationType>(new Documents.OperationType[] {
+                                Documents.OperationType.Create
+               });
+            this.AssertClientTelemetryInfo(allowedOperations, 2);
 
             //Read an Item
             await this.container.ReadItemAsync<dynamic>(testItem.id, new PartitionKey(testItem.id));
-            Assert.AreEqual(4, telemetryInfo.OperationInfoMap.Count);
-
-            List<Documents.OperationType> allowedOperations
-                = new List<Documents.OperationType>(new Documents.OperationType[] {
-                    Documents.OperationType.Create,
-                    Documents.OperationType.Read
-                });
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            allowedOperations.Add(Documents.OperationType.Read);
+            this.AssertClientTelemetryInfo(allowedOperations, 4);
 
             //Upsert an Item
             await this.container.UpsertItemAsync<dynamic>(testItem);
-            Assert.AreEqual(6, telemetryInfo.OperationInfoMap.Count);
 
             allowedOperations.Add(Documents.OperationType.Upsert);
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            this.AssertClientTelemetryInfo(allowedOperations, 6);
 
             // Replace an Item
             await this.container.ReplaceItemAsync<dynamic>(testItemCreated, testItemCreated["id"].ToString());
-            Assert.AreEqual(8, telemetryInfo.OperationInfoMap.Count);
-
             allowedOperations.Add(Documents.OperationType.Replace);
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            this.AssertClientTelemetryInfo(allowedOperations, 8);
+            
+            // Patch an Item
+            await ((ContainerInternal)this.container)
+                .PatchItemAsync<ToDoActivity>(
+                    id: testItem.id,
+                    partitionKey: new Cosmos.PartitionKey(testItem.id),
+                    patchOperations: new List<PatchOperation>() {
+                        PatchOperation.Add("/children/1/id", "patched")
+                    },
+                    new PatchItemRequestOptions());
+
+            allowedOperations.Add(Documents.OperationType.Patch);
+            this.AssertClientTelemetryInfo(allowedOperations, 10);
 
             // Delete an Item
             await this.container.DeleteItemAsync<dynamic>(testItem.id, new PartitionKey(testItem.id));
-            Assert.AreEqual(10, telemetryInfo.OperationInfoMap.Count);
-
             allowedOperations.Add(Documents.OperationType.Delete);
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            this.AssertClientTelemetryInfo(allowedOperations, 12);
         }
 
         [TestMethod]
@@ -147,81 +117,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Patch is not there
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-            ResponseMessage responseMessage = await this.container
+            await this.container
                 .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), 
                 new PartitionKey(testItem.id));
-                
-            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ClientTelemetryInfo;
-
-            Assert.IsNull(telemetryInfo.AcceleratedNetworking);
-            Assert.IsNotNull(telemetryInfo.ClientId);
-            Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName);
-            Assert.IsNotNull(telemetryInfo.UserAgent);
-            Assert.AreEqual(2, telemetryInfo.OperationInfoMap.Count);
-
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.AreEqual(Documents.OperationType.Create, entry.Key.Operation);
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
-
-            //Upsert an Item
-            await this.container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new PartitionKey(testItem.id));
-            Assert.AreEqual(4, telemetryInfo.OperationInfoMap.Count);
 
             List<Documents.OperationType> allowedOperations
                 = new List<Documents.OperationType>(new Documents.OperationType[] {
-                    Documents.OperationType.Create,
-                    Documents.OperationType.Upsert
+                                            Documents.OperationType.Create
                 });
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            this.AssertClientTelemetryInfo(allowedOperations, 2);
+
+            //Upsert an Item
+            await this.container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new PartitionKey(testItem.id));
+            allowedOperations.Add(Documents.OperationType.Upsert);
+            this.AssertClientTelemetryInfo(allowedOperations, 4);
 
             //Read an Item
             await this.container.ReadItemStreamAsync(testItem.id, new PartitionKey(testItem.id));
-            Assert.AreEqual(6, telemetryInfo.OperationInfoMap.Count);
-
             allowedOperations.Add(Documents.OperationType.Read);
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            this.AssertClientTelemetryInfo(allowedOperations, 6);
 
             //Replace an Item
             await this.container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new PartitionKey(testItem.id));
-            Assert.AreEqual(8, telemetryInfo.OperationInfoMap.Count);
-
             allowedOperations.Add(Documents.OperationType.Replace);
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            this.AssertClientTelemetryInfo(allowedOperations, 8);
 
             //Delete an Item
             await this.container.DeleteItemStreamAsync(testItem.id, new PartitionKey(testItem.id));
-            Assert.AreEqual(10, telemetryInfo.OperationInfoMap.Count);
-
             allowedOperations.Add(Documents.OperationType.Delete);
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            this.AssertClientTelemetryInfo(allowedOperations, 10);
         }
 
         [TestMethod]
@@ -241,31 +165,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await Task.WhenAll(tasks);
 
-            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ClientTelemetryInfo;
+            List<Documents.OperationType> allowedOperations
+               = new List<Documents.OperationType>(new Documents.OperationType[] {
+                                            Documents.OperationType.Batch
+               });
+            this.AssertClientTelemetryInfo(allowedOperations, 2);
 
-            Assert.AreEqual(2, telemetryInfo.OperationInfoMap.Count);
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
-            {
-                Assert.AreEqual(entry.Key.Operation, Documents.OperationType.Batch);
-                Assert.AreEqual(entry.Key.Resource, Documents.ResourceType.Document);
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
             executor.Dispose();
         }
 
         [TestMethod]
         public async Task QueryOperationTest()
         {
-            ClientTelemetry telemetry = this.cosmosClient.DocumentClient.clientTelemetry;
-            ClientTelemetryInfo telemetryInfo = telemetry.ClientTelemetryInfo;
-
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             ItemResponse<object> createResponse = await this.container.CreateItemAsync<dynamic>(testItem);
 
             if (createResponse.StatusCode == HttpStatusCode.Created)
             {
-                telemetry.Reset();
+                this.telemetry.Reset();
 
                 string sqlQueryText = "SELECT * FROM c";
                 Console.WriteLine("Running query: {0}\n", sqlQueryText);
@@ -283,18 +200,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Console.WriteLine("\tRead {0}\n", family);
                     }
                 }
-                telemetry.ReadAsync();
             }
 
-            Assert.IsNull(telemetryInfo.AcceleratedNetworking);
-            Assert.IsNotNull(telemetryInfo.ClientId);
-            Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName);
-            Assert.IsNotNull(telemetryInfo.UserAgent);
-            Assert.AreEqual(2, telemetryInfo.OperationInfoMap.Count);
+            List<Documents.OperationType> allowedOperations
+              = new List<Documents.OperationType>(new Documents.OperationType[] {
+                                            Documents.OperationType.Query
+              });
+            this.AssertClientTelemetryInfo(allowedOperations, 2);
+        }
 
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in telemetryInfo.OperationInfoMap)
+        private void AssertClientTelemetryInfo(List<Documents.OperationType> allowedOperations, int OperationInfoMapCount)
+        {
+            Assert.AreEqual(OperationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
+            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
             {
-                Assert.AreEqual(Documents.OperationType.Query, entry.Key.Operation);
+                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
                 Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
                 Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
@@ -306,5 +226,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var testItem = new { id = itemId, Status = itemId };
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
         }
+
+
     }
 }

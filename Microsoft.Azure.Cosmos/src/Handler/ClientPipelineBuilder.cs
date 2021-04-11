@@ -146,6 +146,7 @@ namespace Microsoft.Azure.Cosmos
             current.InnerHandler = this.retryHandler;
             current = current.InnerHandler;
 
+            Debug.Assert(this.telemetryHandler != null, nameof(this.telemetryHandler));
             current.InnerHandler = this.telemetryHandler;
             current = current.InnerHandler;
 
