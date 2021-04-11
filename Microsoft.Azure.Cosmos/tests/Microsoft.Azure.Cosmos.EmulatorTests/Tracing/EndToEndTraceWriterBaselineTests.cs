@@ -960,8 +960,12 @@
             string text = TraceWriter.TraceToText(traceForBaselineTesting);
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
-            // AssertTraceProperites(input.Trace);
-
+            //AssertTraceProperites(input.Trace);
+            Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
+            Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
+            Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
+            Assert.IsTrue(json.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {json}");
+            
             return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
         }
 
