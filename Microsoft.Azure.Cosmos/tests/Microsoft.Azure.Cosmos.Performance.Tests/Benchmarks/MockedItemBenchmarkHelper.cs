@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public MockedItemBenchmarkHelper(
             bool useCustomSerializer = false,
             bool includeDiagnosticsToString = false,
-            bool useBulk = false)
+            bool isClientTelemetryEnabled = false,bool useBulk = false)
         {
-            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, (builder) => builder.WithBulkExecution(useBulk));
+            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, (builder) => builder.WithBulkExecution(useBulk), isClientTelemetryEnabled);
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
 
