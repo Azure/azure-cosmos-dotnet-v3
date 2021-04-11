@@ -12,10 +12,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using System.Threading;
     using System.Net;
     using System.Linq;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -63,9 +65,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task PointOperationsTest()
+        public async Task PointSuccessOperationsTest()
         {
-            //Patch is not there
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             ItemResponse<dynamic> createResponse = await this.container.CreateItemAsync<dynamic>(testItem);
@@ -74,104 +75,184 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                = new List<Documents.OperationType>(new Documents.OperationType[] {
                                 Documents.OperationType.Create
                });
-            this.AssertClientTelemetryInfo(allowedOperations, 2);
+            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
+               = new Dictionary<OperationType, HttpStatusCode>
+               {
+                    { OperationType.Create, HttpStatusCode.Created }
+               };
+            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
 
-            //Read an Item
-            await this.container.ReadItemAsync<dynamic>(testItem.id, new PartitionKey(testItem.id));
+            // Read an Item
+            await this.container.ReadItemAsync<dynamic>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Read);
-            this.AssertClientTelemetryInfo(allowedOperations, 4);
+            expectedOperationCodeMap.Add(Documents.OperationType.Read, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
 
-            //Upsert an Item
+            // Upsert an Item
             await this.container.UpsertItemAsync<dynamic>(testItem);
 
             allowedOperations.Add(Documents.OperationType.Upsert);
-            this.AssertClientTelemetryInfo(allowedOperations, 6);
+            expectedOperationCodeMap.Add(Documents.OperationType.Upsert, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 6, expectedOperationCodeMap);
 
             // Replace an Item
             await this.container.ReplaceItemAsync<dynamic>(testItemCreated, testItemCreated["id"].ToString());
             allowedOperations.Add(Documents.OperationType.Replace);
-            this.AssertClientTelemetryInfo(allowedOperations, 8);
-            
+            expectedOperationCodeMap.Add(Documents.OperationType.Replace, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 8, expectedOperationCodeMap);
+
             // Patch an Item
-            await ((ContainerInternal)this.container)
-                .PatchItemAsync<ToDoActivity>(
-                    id: testItem.id,
-                    partitionKey: new Cosmos.PartitionKey(testItem.id),
-                    patchOperations: new List<PatchOperation>() {
-                        PatchOperation.Add("/children/1/id", "patched")
-                    },
-                    new PatchItemRequestOptions());
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Add("/new", "patched")
+            };
+            await ((ContainerInternal)this.container).PatchItemAsync<dynamic>(
+                testItem.id,
+                new Cosmos.PartitionKey(testItem.id),
+                patch);
 
             allowedOperations.Add(Documents.OperationType.Patch);
-            this.AssertClientTelemetryInfo(allowedOperations, 10);
+            expectedOperationCodeMap.Add(Documents.OperationType.Patch, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 10, expectedOperationCodeMap);
 
             // Delete an Item
-            await this.container.DeleteItemAsync<dynamic>(testItem.id, new PartitionKey(testItem.id));
+            await this.container.DeleteItemAsync<dynamic>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Delete);
-            this.AssertClientTelemetryInfo(allowedOperations, 12);
+            expectedOperationCodeMap.Add(Documents.OperationType.Delete, HttpStatusCode.NoContent);
+            this.AssertClientTelemetryInfo(allowedOperations, 12, expectedOperationCodeMap);
+        }
+
+        [TestMethod]
+        public async Task PointFailureOperationsTest()
+        {
+            // Create an item with invalid Id
+            var testItem = new { 
+                id = "Invalid#/\\?Id",
+                partitionKeyPath = "MyTestPkValue", 
+                details = "it's working", 
+                status = "done" 
+            };
+
+            await this.container.CreateItemAsync<dynamic>(testItem);
+            List<Documents.OperationType> allowedOperations
+               = new List<Documents.OperationType>(new Documents.OperationType[] {
+                                Documents.OperationType.Create
+               });
+            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
+              = new Dictionary<OperationType, HttpStatusCode>
+              {
+                    { OperationType.Create, HttpStatusCode.Created }
+              };
+            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
+
+            // Fail Read
+            try
+            {
+                await this.container.ReadItemAsync<JObject>(
+                    testItem.id, 
+                    new Cosmos.PartitionKey(testItem.partitionKeyPath));
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+            {
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+            }
+            allowedOperations.Add(OperationType.Read);
+            expectedOperationCodeMap.Add(OperationType.Read, HttpStatusCode.NotFound);
+            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
         }
 
         [TestMethod]
         public async Task StreamOperationsTest()
         {
-            //Patch is not there
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
             await this.container
                 .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), 
-                new PartitionKey(testItem.id));
+                new Cosmos.PartitionKey(testItem.id));
 
             List<Documents.OperationType> allowedOperations
                 = new List<Documents.OperationType>(new Documents.OperationType[] {
                                             Documents.OperationType.Create
                 });
-            this.AssertClientTelemetryInfo(allowedOperations, 2);
+            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
+             = new Dictionary<OperationType, HttpStatusCode>
+             {
+                    { OperationType.Create, HttpStatusCode.Created }
+             };
+            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
 
             //Upsert an Item
-            await this.container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new PartitionKey(testItem.id));
+            await this.container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Upsert);
-            this.AssertClientTelemetryInfo(allowedOperations, 4);
+            expectedOperationCodeMap.Add(Documents.OperationType.Upsert, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
 
             //Read an Item
-            await this.container.ReadItemStreamAsync(testItem.id, new PartitionKey(testItem.id));
+            await this.container.ReadItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Read);
-            this.AssertClientTelemetryInfo(allowedOperations, 6);
+            expectedOperationCodeMap.Add(Documents.OperationType.Read, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 6, expectedOperationCodeMap);
 
             //Replace an Item
-            await this.container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new PartitionKey(testItem.id));
+            await this.container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Replace);
-            this.AssertClientTelemetryInfo(allowedOperations, 8);
+            expectedOperationCodeMap.Add(Documents.OperationType.Replace, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 8, expectedOperationCodeMap);
+
+            // Patch an Item
+            List<PatchOperation> patch = new List<PatchOperation>()
+            {
+                PatchOperation.Add("/new", "patched")
+            };
+
+            using (ResponseMessage streamResponse = await ((ContainerInternal)this.container).PatchItemStreamAsync(
+             partitionKey: new Cosmos.PartitionKey(testItem.id),
+             id: testItem.id,
+             patchOperations: patch))
+            {
+                allowedOperations.Add(Documents.OperationType.Patch);
+                expectedOperationCodeMap.Add(Documents.OperationType.Patch, HttpStatusCode.OK);
+                this.AssertClientTelemetryInfo(allowedOperations, 10, expectedOperationCodeMap);
+            }
 
             //Delete an Item
-            await this.container.DeleteItemStreamAsync(testItem.id, new PartitionKey(testItem.id));
+            await this.container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Delete);
-            this.AssertClientTelemetryInfo(allowedOperations, 10);
+            expectedOperationCodeMap.Add(Documents.OperationType.Delete, HttpStatusCode.NoContent);
+            this.AssertClientTelemetryInfo(allowedOperations, 12, expectedOperationCodeMap);
         }
 
         [TestMethod]
         public async Task BatchOperationsTest()
         {
-            BatchAsyncContainerExecutor executor = new BatchAsyncContainerExecutor(
-                (ContainerInlineCore)this.container, 
-                ((ContainerInlineCore)this.container).ClientContext, 
-                20,
-                Documents.Constants.MaxDirectModeBatchRequestBodySizeInBytes);
-
-            List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
-            for (int i = 0; i < 10; i++)
+            using (BatchAsyncContainerExecutor executor = 
+                new BatchAsyncContainerExecutor(
+                    (ContainerInlineCore)this.container, 
+                    ((ContainerInlineCore)this.container).ClientContext,
+                    20,
+                    Documents.Constants.MaxDirectModeBatchRequestBodySizeInBytes)
+                )
             {
-                tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default));
-            }
+                List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
+                for (int i = 0; i < 10; i++)
+                {
+                    tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default));
+                }
 
-            await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks);
 
-            List<Documents.OperationType> allowedOperations
-               = new List<Documents.OperationType>(new Documents.OperationType[] {
+                List<Documents.OperationType> allowedOperations
+                   = new List<Documents.OperationType>(new Documents.OperationType[] {
                                             Documents.OperationType.Batch
-               });
-            this.AssertClientTelemetryInfo(allowedOperations, 2);
-
-            executor.Dispose();
+                   });
+                IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
+                = new Dictionary<OperationType, HttpStatusCode>
+                {
+                    { OperationType.Batch, HttpStatusCode.OK }
+                };
+                this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
+            }
         }
 
         [TestMethod]
@@ -206,18 +287,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
               = new List<Documents.OperationType>(new Documents.OperationType[] {
                                             Documents.OperationType.Query
               });
-            this.AssertClientTelemetryInfo(allowedOperations, 2);
+            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
+           = new Dictionary<OperationType, HttpStatusCode>
+           {
+                    { OperationType.Query, HttpStatusCode.OK }
+           };
+            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
         }
 
-        private void AssertClientTelemetryInfo(List<Documents.OperationType> allowedOperations, int OperationInfoMapCount)
+        private void AssertClientTelemetryInfo(
+            List<Documents.OperationType> allowedOperations, 
+            int OperationInfoMapCount,
+            IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
         {
+            Thread.Sleep(1500);
+
             Assert.AreEqual(OperationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
             {
+                expectedOperationCodeMap.TryGetValue(entry.Key.Operation, out HttpStatusCode expectedStatusCode);
+                
                 Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
+
                 Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
+                Assert.AreEqual((int)expectedStatusCode, entry.Key.StatusCode);
+
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
                 Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
+
+                Assert.AreNotEqual(0, entry.Key.MetricInfo.Count);
+                Assert.AreEqual(5, entry.Key.MetricInfo.Percentiles.Count);
             }
         }
 

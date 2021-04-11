@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System;
     using System.IO;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -62,6 +63,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             string diagnostics = cosmosDiagnostics.ToString();
             if (string.IsNullOrEmpty(diagnostics))
+            {
+                throw new Exception();
+            }
+        }
+
+        public void IncludeTelemetryInformation()
+        {
+            if (!this.TestClient.ClientOptions.EnableClientTelemetry)
+            {
+                return;
+            }
+
+            ClientTelemetryInfo clientTelementry = 
+                this.TestClient.DocumentClient.clientTelemetry.ClientTelemetryInfo;
+            if (clientTelementry.OperationInfoMap.Count == 0)
             {
                 throw new Exception();
             }
