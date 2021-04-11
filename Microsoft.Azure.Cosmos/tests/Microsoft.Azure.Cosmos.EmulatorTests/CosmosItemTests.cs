@@ -135,18 +135,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
-            ClientTelemetryInfo telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ReadAsync();
-            Assert.IsNotNull(telemetryInfo);
-
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Resource);
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
-
-            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ReadAsync();
-            Assert.IsNotNull(telemetryInfo);
 
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.MaxResourceQuota));
             Assert.IsNotNull(response.Headers.GetHeaderValue<string>(Documents.HttpConstants.HttpHeaders.CurrentResourceQuotaUsage));
@@ -155,9 +149,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(response.Diagnostics);
             Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
             Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
-
-            telemetryInfo = this.cosmosClient.DocumentClient.clientTelemetry.ReadAsync();
-            Assert.IsNotNull(telemetryInfo);
         }
 
         [TestMethod]
@@ -427,12 +418,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (e.DocumentServiceRequest != null)
                     {
-                        System.Diagnostics.Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
+                        System.Diagnostics.Trace.TraceInformation($"{e.DocumentServiceRequest}");
                     }
 
                     if (e.HttpRequest != null)
                     {
-                        System.Diagnostics.Trace.TraceInformation($"{e.HttpRequest.ToString()}");
+                        System.Diagnostics.Trace.TraceInformation($"{e.HttpRequest}");
                     }
 
                     if (e.IsHttpRequest()

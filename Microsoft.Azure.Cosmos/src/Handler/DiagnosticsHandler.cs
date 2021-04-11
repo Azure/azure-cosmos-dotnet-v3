@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -31,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// This is a helper class that creates a single static instance to avoid each
         /// client instance from creating a new CPU monitor.
         /// </summary>
-        private class DiagnosticsHandlerHelper
+        internal class DiagnosticsHandlerHelper
         {
             public static readonly DiagnosticsHandlerHelper Instance = new DiagnosticsHandlerHelper();
             private readonly CpuMonitor cpuMonitor = null;
@@ -73,6 +74,30 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     catch (Exception)
                     {
                         this.isCpuMonitorEnabled = false;
+                    }
+                }
+            }
+
+            public List<double> GetCpuDiagnostics()
+            {
+                List<double> readingList = new List<double>();
+                if (this.isCpuMonitorEnabled)
+                {
+                    CpuLoadHistory cpuHistory = this.cpuMonitor.GetCpuLoad();
+                    this.GetDetails(cpuHistory.ToString(), readingList);
+                } 
+                return readingList;            
+            }
+
+            internal void GetDetails(string cpuHistory, List<double> readingList)
+            {
+                if (!string.IsNullOrEmpty(cpuHistory))
+                {
+                    string[] readings = cpuHistory.Split(',');
+                    foreach (string reading in readings)
+                    {
+                        string cleanedUpReading = reading.Trim().Replace(")", string.Empty);
+                        readingList.Add(double.Parse(cleanedUpReading.Split(' ')[1]));
                     }
                 }
             }
