@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-   
+
 
     public static class MockSetupsHelper
     {
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<CancellationToken>()))
                 .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
                 {
-                    if(endpointUri == request.RequestUri)
+                    if (endpointUri == request.RequestUri)
                     {
                         Console.WriteLine("Itworks");
                     }
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             out Uri primaryReplicaUri)
         {
             string basePhysicalUri = $"rntbd://cdb-ms-prod-{regionName}-fd4.documents.azure.com:14382/apps/9dc0394e-d25f-4c98-baa5-72f1c700bf3e/services/060067c7-a4e9-4465-a412-25cb0104cb58/partitions/2cda760c-f81f-4094-85d0-7bcfb2acc4e6/replicas/";
-            
+
             // Use the partition key range id at the end of each replica id to avoid conflicts when setting up multiple partition key ranges
             List<Address> addresses = new List<Address>()
             {
@@ -246,6 +246,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     Console.WriteLine($"WriteForbiddenThrown: {physicalUri}");
                     throw new ForbiddenException($"Mock write forbidden exception on URI:{physicalUri}", SubStatusCodes.WriteForbidden);
+                });
+        }
+
+        internal static void SetupServiceUnavailableException(
+            Mock<TransportClient> mockTransportClient,
+            Uri physicalUri)
+        {
+            mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
+                .Returns(() =>
+                {
+                    Console.WriteLine($"WriteForbiddenThrown: {physicalUri}");
+                    throw new ServiceUnavailableException($"Mock write forbidden exception on URI:{physicalUri}", physicalUri);
                 });
         }
 
