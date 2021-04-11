@@ -205,6 +205,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
             this.InitStoreModels();
+
+            this.clientTelemetry = new ClientTelemetry(acceleratedNetworking: null,
+                        clientId: Guid.NewGuid().ToString(),
+                        processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName,
+                        userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
+                        connectionMode: this.ConnectionPolicy.ConnectionMode,
+                        globalDatabaseAccountName: "testAccount",
+                        httpClient: null,
+                        isClientTelemetryEnabled: true);
+
         }
 
         private void InitStoreModels()

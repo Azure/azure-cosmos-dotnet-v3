@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task ReadAsync()
+        internal async Task CalculateAndSendTelemetryInformationAsync()
         {
             try
             {
@@ -230,31 +230,27 @@ namespace Microsoft.Azure.Cosmos
                 {
                     await Task.Delay(
                         TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), 
-                        this.cancellationTokenSource.Token).ConfigureAwait(false);
+                        this.cancellationTokenSource.Token);
 
                     this.RecordCpuUtilization();
                     this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(DateFormat);
 
                     DefaultTrace.TraceInformation("ReadAsync() - Reading Client Telemetry Information");
-                    this.RecordOperationAndCacheConfig();
-                    this.Reset();
-                    await this.ReadAsync().ConfigureAwait(false);
+                    this.CalculateMetrics();
+                    await this.CalculateAndSendTelemetryInformationAsync();
                 }
                 else
                 {
                     DefaultTrace.TraceInformation("ReadAsync() - Client Telemetry is disabled");
                 }
-               
             } 
             catch (Exception ex)
             {
                 DefaultTrace.TraceCritical("ReadAsync() - Unable to read telemetry information. Exception: {0}", ex.ToString());
-                this.Reset();
-                await this.ReadAsync().ConfigureAwait(false);
             }
         }
 
-        private void RecordOperationAndCacheConfig()
+        private void CalculateMetrics()
         {
             this.FillMetric(this.ClientTelemetryInfo.CacheRefreshInfoMap);
             this.FillMetric(this.ClientTelemetryInfo.OperationInfoMap);
@@ -305,7 +301,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.IsClientTelemetryEnabled)
             {
                 await this.LoadAzureVmMetaDataAsync();
-               // await this.ReadAsync().ConfigureAwait(false);
+                _ = Task.Run(this.CalculateAndSendTelemetryInformationAsync);
             } 
             else
             {
