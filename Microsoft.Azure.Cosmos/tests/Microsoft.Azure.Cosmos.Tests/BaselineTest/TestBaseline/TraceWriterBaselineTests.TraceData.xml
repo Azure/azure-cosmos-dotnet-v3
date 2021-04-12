@@ -246,7 +246,8 @@
                     itemLSN: 15,
                     sessionToken: new SimpleSessionToken(42),
                     usingLocalLSN: true,
-                    activityId: Guid.Empty.ToString()),
+                    activityId: Guid.Empty.ToString(),
+                    backendRequestDurationInMs:"0"),
                 ResourceType.Document,
                 OperationType.Query,
                 uri1);
@@ -349,7 +350,7 @@
           "OperationType": "Query",
           "LocationEndpoint": "http://someuri1.com/",
           "ActivityId": "00000000-0000-0000-0000-000000000000",
-          "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null"
+          "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null, BELatencyMs: 0"
         }
       ]
     }
@@ -400,7 +401,8 @@
                     itemLSN: default,
                     sessionToken: default,
                     usingLocalLSN: default,
-                    activityId: default),
+                    activityId: default,
+                    backendRequestDurationInMs: default),
                 resourceType: default,
                 operationType: default,
                 locationEndpoint: default); ;
@@ -491,7 +493,7 @@
           "OperationType": "Create",
           "LocationEndpoint": null,
           "ActivityId": null,
-          "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null"
+          "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null, BELatencyMs:"
         }
       ]
     }

@@ -397,7 +397,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 itemLSN: 15,
                                 sessionToken: new SimpleSessionToken(42),
                                 usingLocalLSN: true,
-                                activityId: Guid.Empty.ToString()),
+                                activityId: Guid.Empty.ToString(),
+                                backendRequestDurationInMs: "0"),
                             ResourceType.Document,
                             OperationType.Query,
                             uri1);
@@ -449,7 +450,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 itemLSN: default,
                                 sessionToken: default,
                                 usingLocalLSN: default,
-                                activityId: default),
+                                activityId: default,
+                                backendRequestDurationInMs: default),
                             resourceType: default,
                             operationType: default,
                             locationEndpoint: default); ;
