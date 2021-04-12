@@ -154,10 +154,7 @@ namespace Microsoft.Azure.Cosmos
                     IndexingDirectiveStrings.FromIndexingDirective(this.IndexingDirective.Value));
             }
 
-            if (this.DedicatedGatewayRequestOptions != null && this.DedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness != null)
-            {
-                request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, this.DedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness.ToString());
-            }
+            DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
 
             RequestOptions.SetSessionToken(request, this.SessionToken);
             base.PopulateRequestOptions(request);

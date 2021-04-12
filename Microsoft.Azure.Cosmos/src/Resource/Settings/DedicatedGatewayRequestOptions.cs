@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Globalization;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Dedicated Gateway request options
@@ -24,5 +26,13 @@ namespace Microsoft.Azure.Cosmos
         /// Value defaults to null. 
         /// </remarks> 
         public TimeSpan? MaxIntegratedCacheStaleness { get; set; }
+
+        public void PopulateMaxIntegratedCacheStalenessOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
+        {
+            if (dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
+            {
+                request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, dedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness.Value.ToString("c", CultureInfo.InvariantCulture));
+            }
+        }
     }
 }

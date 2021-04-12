@@ -242,10 +242,7 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Set(HttpConstants.HttpHeaders.EnumerationDirection, this.EnumerationDirection.Value.ToString());
             }
 
-            if (this.DedicatedGatewayRequestOptions != null && this.DedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness != null)
-            {
-                request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, this.DedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness.ToString());
-            }
+            DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);
 
             request.Headers.Add(HttpConstants.HttpHeaders.PopulateQueryMetrics, bool.TrueString);
 
