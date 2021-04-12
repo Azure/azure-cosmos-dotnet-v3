@@ -9,17 +9,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
-    internal sealed class PartitionSupervisorFactoryCore<T> : PartitionSupervisorFactory
+    internal sealed class PartitionSupervisorFactoryCore : PartitionSupervisorFactory
     {
-        private readonly ChangeFeedObserverFactory<T> observerFactory;
+        private readonly ChangeFeedObserverFactory observerFactory;
         private readonly DocumentServiceLeaseManager leaseManager;
         private readonly ChangeFeedLeaseOptions changeFeedLeaseOptions;
-        private readonly FeedProcessorFactory<T> partitionProcessorFactory;
+        private readonly FeedProcessorFactory partitionProcessorFactory;
 
         public PartitionSupervisorFactoryCore(
-            ChangeFeedObserverFactory<T> observerFactory,
+            ChangeFeedObserverFactory observerFactory,
             DocumentServiceLeaseManager leaseManager,
-            FeedProcessorFactory<T> partitionProcessorFactory,
+            FeedProcessorFactory partitionProcessorFactory,
             ChangeFeedLeaseOptions options)
         {
             this.observerFactory = observerFactory ?? throw new ArgumentNullException(nameof(observerFactory));
@@ -35,11 +35,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                 throw new ArgumentNullException(nameof(lease));
             }
 
-            ChangeFeedObserver<T> changeFeedObserver = this.observerFactory.CreateObserver();
+            ChangeFeedObserver changeFeedObserver = this.observerFactory.CreateObserver();
             FeedProcessor processor = this.partitionProcessorFactory.Create(lease, changeFeedObserver);
             LeaseRenewerCore renewer = new LeaseRenewerCore(lease, this.leaseManager, this.changeFeedLeaseOptions.LeaseRenewInterval);
 
-            return new PartitionSupervisorCore<T>(lease, changeFeedObserver, processor, renewer);
+            return new PartitionSupervisorCore(lease, changeFeedObserver, processor, renewer);
         }
     }
 }

@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'."));
+                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized' or 'Plaintext'."));
             }
 
             path1.EncryptionType = "Deterministic";
