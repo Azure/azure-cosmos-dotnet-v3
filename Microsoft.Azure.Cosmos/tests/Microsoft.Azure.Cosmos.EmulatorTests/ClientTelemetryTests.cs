@@ -205,16 +205,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 PatchOperation.Add("/new", "patched")
             };
-
-            using (ResponseMessage streamResponse = await ((ContainerInternal)this.container).PatchItemStreamAsync(
-             partitionKey: new Cosmos.PartitionKey(testItem.id),
-             id: testItem.id,
-             patchOperations: patch))
-            {
-                allowedOperations.Add(Documents.OperationType.Patch);
-                expectedOperationCodeMap.Add(Documents.OperationType.Patch, HttpStatusCode.OK);
-                this.AssertClientTelemetryInfo(allowedOperations, 10, expectedOperationCodeMap);
-            }
+            await ((ContainerInternal)this.container).PatchItemStreamAsync(
+                partitionKey: new Cosmos.PartitionKey(testItem.id),
+                id: testItem.id,
+                patchOperations: patch);
+            allowedOperations.Add(Documents.OperationType.Patch);
+            expectedOperationCodeMap.Add(Documents.OperationType.Patch, HttpStatusCode.OK);
+            this.AssertClientTelemetryInfo(allowedOperations, 10, expectedOperationCodeMap);
 
             //Delete an Item
             await this.container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
@@ -297,12 +294,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private void AssertClientTelemetryInfo(
             List<Documents.OperationType> allowedOperations, 
-            int OperationInfoMapCount,
+            int operationInfoMapCount,
             IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
         {
-            Thread.Sleep(1500);
+            Thread.Sleep(2000);
 
-            Assert.AreEqual(OperationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
+            Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
             {
                 expectedOperationCodeMap.TryGetValue(entry.Key.Operation, out HttpStatusCode expectedStatusCode);
@@ -314,9 +311,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
                 Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-
-                Assert.AreNotEqual(0, entry.Key.MetricInfo.Count);
-                Assert.AreEqual(5, entry.Key.MetricInfo.Percentiles.Count);
+                
+                Assert.AreEqual(5, entry.Key.MetricInfo.Percentiles.Count, "Percentile count Not matched");
             }
         }
 
