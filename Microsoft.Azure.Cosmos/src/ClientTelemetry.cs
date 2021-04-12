@@ -220,13 +220,14 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task CalculateAndSendTelemetryInformationAsync()
         {
-            try
+            if (this.cancellationTokenSource.IsCancellationRequested)
             {
-                if (this.cancellationTokenSource.IsCancellationRequested)
-                {
-                    return;
-                }
-                if (this.IsClientTelemetryEnabled)
+                return;
+            }
+           
+            if (this.IsClientTelemetryEnabled)
+            {
+                try
                 {
                     await Task.Delay(
                         TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), 
@@ -239,15 +240,17 @@ namespace Microsoft.Azure.Cosmos
                     this.CalculateMetrics();
                     await this.CalculateAndSendTelemetryInformationAsync();
                 }
-                else
+                catch (Exception ex)
                 {
-                    DefaultTrace.TraceInformation("ReadAsync() - Client Telemetry is disabled");
+                    DefaultTrace.TraceCritical("ReadAsync() - Unable to read telemetry information. Exception: {0}", ex.ToString());
+                    await this.CalculateAndSendTelemetryInformationAsync();
                 }
-            } 
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceCritical("ReadAsync() - Unable to read telemetry information. Exception: {0}", ex.ToString());
             }
+            else
+            {
+                DefaultTrace.TraceInformation("ReadAsync() - Client Telemetry is disabled");
+            }
+            
         }
 
         private void CalculateMetrics()
