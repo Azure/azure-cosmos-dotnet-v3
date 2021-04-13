@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks> 
         public TimeSpan? MaxIntegratedCacheStaleness { get; set; }
 
-        public static void PopulateMaxIntegratedCacheStalenessOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
+        internal static void PopulateMaxIntegratedCacheStalenessOption(DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions, RequestMessage request)
         {
             if (dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
             {

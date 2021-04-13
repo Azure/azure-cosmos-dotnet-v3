@@ -247,7 +247,7 @@
                     sessionToken: new SimpleSessionToken(42),
                     usingLocalLSN: true,
                     activityId: Guid.Empty.ToString(),
-                    backendRequestDurationInMs:"0"),
+                    backendRequestDurationInMs: "0"),
                 ResourceType.Document,
                 OperationType.Query,
                 uri1);
@@ -493,7 +493,7 @@
           "OperationType": "Create",
           "LocationEndpoint": null,
           "ActivityId": null,
-          "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null, BELatencyMs:"
+          "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null, BELatencyMs: "
         }
       ]
     }
