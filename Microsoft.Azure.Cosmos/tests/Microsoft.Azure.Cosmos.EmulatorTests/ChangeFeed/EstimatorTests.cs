@@ -9,17 +9,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
     public class EstimatorTests : BaseChangeFeedClientHelper
     {
+        private Container Container;
+
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.ChangeFeedTestInit();
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: "monitored", partitionKeyPath: "/pk"),
+                cancellationToken: this.cancellationToken);
+            this.Container = response;
+
         }
 
         [TestCleanup]
