@@ -4,7 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Documents;
@@ -120,10 +119,12 @@ namespace Microsoft.Azure.Cosmos
         public bool? EnableContentResponseOnWrite { get; set; }
 
         /// <summary> 
-        /// Gets or sets the <see cref="DedicatedGatewayRequestOptions"/> for requests against the dedicated gateway. Learn more about dedicated gateway <a href="https://azure.microsoft.com/en-us/services/cosmos-db/">here</a>. 
+        /// Gets or sets the <see cref="DedicatedGatewayRequestOptions"/> for requests against the dedicated gateway.
         /// These options are only exercised when <see cref="ConnectionMode"/> is set to ConnectionMode.Gateway and the dedicated gateway endpoint is used for sending requests. 
-        /// These options have no effect otherwise.
         /// </summary>
+        /// <remarks>
+        /// Learn more about dedicated gateway <a href="https://azure.microsoft.com/services/cosmos-db/">here</a>. 
+        /// </remarks>
 #if PREVIEW
         public
 #else
