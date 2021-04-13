@@ -1408,5 +1408,91 @@
                 }
             }
         }
+
+        class OrderByRequestChargeArgs
+        {
+            public string Query { get; set; }
+            public double ExpectedRequestCharge { get; set; }
+        }
+
+        [TestMethod]
+        public async Task TestQueryCrossPartitionRequestChargesAsync()
+        {
+            string[] documents = new[]
+            {
+                @"{""id"":""documentId1"",""key"":""A""}",
+                @"{""id"":""documentId2"",""key"":""A"",""prop"":3}",
+                @"{""id"":""documentId3"",""key"":""A""}",
+                @"{""id"":""documentId4"",""key"":5}",
+                @"{""id"":""documentId5"",""key"":5,""prop"":2}",
+                @"{""id"":""documentId6"",""key"":5}",
+                @"{""id"":""documentId7"",""key"":2}",
+                @"{""id"":""documentId8"",""key"":2,""prop"":1}",
+                @"{""id"":""documentId9"",""key"":2}",
+            };
+
+            // Matches no documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionRequestChargesHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r WHERE r.prop = 'A' ORDER BY r.prop DESC",
+                    ExpectedRequestCharge = 13.95
+                },
+                "/key");
+
+            // Matches some documents
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionRequestChargesHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC",
+                    ExpectedRequestCharge = 16.86
+                },
+                "/key");
+
+            // Matches some documents, skipped with OFFSET LIMIT
+            await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                documents,
+                this.TestQueryCrossPartitionRequestChargesHelper,
+                new OrderByRequestChargeArgs
+                {
+                    Query = "SELECT r.id FROM r ORDER BY r.prop DESC OFFSET 10 LIMIT 1",
+                    ExpectedRequestCharge = 16.86
+                },
+                "/key");
+        }
+
+        private async Task TestQueryCrossPartitionRequestChargesHelper(
+            Container container,
+            IReadOnlyList<CosmosObject> documents,
+            OrderByRequestChargeArgs args)
+        {
+            await QueryTestsBase.NoOp();
+
+            double totalRUs = 0;
+            await foreach (FeedResponse<CosmosElement> query in QueryTestsBase.RunSimpleQueryAsync<CosmosElement>(
+                container,
+                args.Query,
+                new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    MaxConcurrency = 1,
+                }))
+            {
+                totalRUs += query.RequestCharge;
+            }
+
+            Assert.AreEqual(args.ExpectedRequestCharge, totalRUs, 0.01);
+        }
+
     }
 }

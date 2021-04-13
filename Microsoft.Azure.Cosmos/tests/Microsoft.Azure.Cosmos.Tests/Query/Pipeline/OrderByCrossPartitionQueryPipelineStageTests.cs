@@ -242,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
 
-                Assert.AreNotEqual(0, queryPage.RequestCharge);
+                Assert.AreEqual(42, queryPage.RequestCharge);
             }
 
             Assert.AreEqual(numItems, documents.Count);
