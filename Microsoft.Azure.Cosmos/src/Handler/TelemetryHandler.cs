@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            if (this.isAllowed(request))
+            if (this.IsAllowed(request))
             {
                 this.client.DocumentClient.clientTelemetry.Collect(
                   response.Diagnostics, response.StatusCode,
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 .EnableClientTelemetry && request.TelemetryInfo != null);
         }
 
-        private bool isAllowed(RequestMessage request)
+        private bool IsAllowed(RequestMessage request)
         {
             return this.IsTelemetryEnabled(request) && 
                 ClientTelemetry.AllowedResourceTypes.Contains(request.ResourceType);
