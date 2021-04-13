@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
-        internal const string VMMetadataURL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
+        internal const string VmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
 
         internal const double Percentile50 = 50.0;
         internal const double Percentile90 = 90.0;
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal readonly ClientTelemetryInfo ClientTelemetryInfo;
         internal readonly CosmosHttpClient HttpClient;
-        internal readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+        internal readonly CancellationTokenSource CancellationTokenSource;
 
         internal bool IsClientTelemetryEnabled;
 
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
                 .GetEnvironmentVariable<bool>(EnvPropsClientTelemetryEnabled, isClientTelemetryEnabled);
             this.ClientTelemetrySchedulingInSeconds = CosmosConfigurationManager
                 .GetEnvironmentVariable<double>(EnvPropsClientTelemetrySchedulingInSeconds, DefaultTimeStampInSeconds);
-            this.cancellationTokenSource = new CancellationTokenSource();
+            this.CancellationTokenSource = new CancellationTokenSource();
         }
 
         internal async Task<AzureVMMetadata> LoadAzureVmMetaDataAsync()
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
                     HttpRequestMessage request = new HttpRequestMessage
                     {
                         Method = HttpMethod.Get,
-                        RequestUri = new Uri(VMMetadataURL)
+                        RequestUri = new Uri(VmMetadataUrL)
                     };
                     request.Headers.Add("Metadata", "true");
 
@@ -211,16 +211,16 @@ namespace Microsoft.Azure.Cosmos
         {
             DefaultTrace.TraceInformation("Dispose() - Client Telemetry");
 
-            if (!this.cancellationTokenSource.IsCancellationRequested)
+            if (!this.CancellationTokenSource.IsCancellationRequested)
             {
-                this.cancellationTokenSource.Cancel();
-                this.cancellationTokenSource.Dispose();
+                this.CancellationTokenSource.Cancel();
+                this.CancellationTokenSource.Dispose();
             }
         }
 
         internal async Task CalculateAndSendTelemetryInformationAsync()
         {
-            if (this.cancellationTokenSource.IsCancellationRequested)
+            if (this.CancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     await Task.Delay(
                         TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), 
-                        this.cancellationTokenSource.Token);
+                        this.CancellationTokenSource.Token);
 
                     this.RecordCpuUtilization();
                     this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(DateFormat);
