@@ -31,32 +31,29 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                this.client.DocumentClient.clientTelemetry.Collect(
-                  response.Diagnostics, response.StatusCode,
-                  this.GetPayloadSize(response),
-                  request.TelemetryInfo?.ContainerId,
-                  request.TelemetryInfo?.DatabaseId,
-                  request.OperationType,
-                  request.ResourceType,
-                  this.GetConsistencyLevel(request),
-                  request.Headers.RequestCharge);
+                this.client
+                    .DocumentClient
+                    .clientTelemetry
+                    .Collect(
+                          cosmosDiagnostics: response.Diagnostics,
+                          statusCode: response.StatusCode,
+                          responseSizeInBytes: this.GetPayloadSize(response),
+                          containerId: request.ContainerId,
+                          databaseId: request.DatabaseId,
+                          operationType: request.OperationType,
+                          resourceType: request.ResourceType,
+                          consistencyLevel: this.GetConsistencyLevel(request),
+                          requestCharge: request.Headers.RequestCharge);
             }
             return response;
         }
 
-        private bool IsTelemetryEnabled(RequestMessage request)
-        {
-            return CosmosConfigurationManager
-                .GetEnvironmentVariable<bool>(ClientTelemetry.EnvPropsClientTelemetryEnabled, 
-                this.client
-                .ClientOptions
-                .EnableClientTelemetry && request.TelemetryInfo != null);
-        }
-
         private bool IsAllowed(RequestMessage request)
-        {
-            return this.IsTelemetryEnabled(request) && 
-                ClientTelemetry.AllowedResourceTypes.Contains(request.ResourceType);
+        { 
+            return ClientTelemetry.IsTelemetryEnabled(this.client
+                       .ClientOptions
+                       .EnableClientTelemetry) && 
+                   ClientTelemetry.AllowedResourceTypes.Contains(request.ResourceType);
         }
 
         private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)

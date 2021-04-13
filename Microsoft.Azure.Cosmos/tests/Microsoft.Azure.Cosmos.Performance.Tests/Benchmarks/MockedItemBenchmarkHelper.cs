@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             bool includeDiagnosticsToString = false,
             bool isClientTelemetryEnabled = false,bool useBulk = false)
         {
-            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, (builder) => builder.WithBulkExecution(useBulk), isClientTelemetryEnabled);
+            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, isClientTelemetryEnabled, (builder) => builder.WithBulkExecution(useBulk));
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
 
