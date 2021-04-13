@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos
                 await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() => client.GetContainer("test", "test").ReadItemAsync<dynamic>("id", partitionKey: new Cosmos.PartitionKey("id"), cancellationToken: cancellationToken),
                     "Should have surfaced OperationCanceledException because the token was canceled.");
 
-                ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once , "Should had marked the endpoint unavailable");
+                ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once, "Should had marked the endpoint unavailable");
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.RefreshLocationAsync(It.IsAny<AccountProperties>(), It.Is<bool>(refresh => refresh == false)), Times.Once, "Should had refreshed the account information");
             }
         }
@@ -239,10 +239,10 @@ namespace Microsoft.Azure.Cosmos
                         if (++refreshes > 1)
                         {
                             cancellationTokenSource.Cancel();
+                            throw new HttpRequestException();
                         }
-
-                        throw new HttpRequestException();
-                    });
+                    })
+                    .ReturnsAsync(new PartitionAddressInformation(addressInformation));
 
             ReplicationPolicy replicationPolicy = new ReplicationPolicy
             {
