@@ -135,9 +135,11 @@ namespace Microsoft.Azure.Cosmos
         /// 5. ClientRetryPolicy should get it, mark the region unavailable on the GlobalEndpointManager.
         /// 6. Initiate retry, which should be canceled because the token was canceled.
         /// </summary>
-        [TestMethod]
+        [DataTestMethod]
         [Timeout(5000)]
-        public async Task CancellationTokenDoesNotCancelFailover()
+        [DataRow(ConsistencyLevel.Eventual)]
+        [DataRow(ConsistencyLevel.Session)]
+        public async Task CancellationTokenDoesNotCancelFailover(ConsistencyLevel consistencyLevel)
         {
             using (CancellationTokenSource source = new CancellationTokenSource())
             {
@@ -163,9 +165,9 @@ namespace Microsoft.Azure.Cosmos
 
                 using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
                 client.DocumentClient.GatewayStoreModel = MockGatewayStoreModel(sendFunc);
-                client.DocumentClient.StoreModel = MockServerStoreModel(client.DocumentClient.Session, source, sendDirectFunc);
+                client.DocumentClient.StoreModel = MockServerStoreModel(client.DocumentClient.Session, (Documents.ConsistencyLevel)consistencyLevel, source, sendDirectFunc);
 
-                await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() => client.GetContainer("test", "test").ReadItemAsync<dynamic>("id", partitionKey: new Cosmos.PartitionKey("id"), cancellationToken: cancellationToken),
+                CosmosOperationCanceledException ex = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() => client.GetContainer("test", "test").ReadItemAsync<dynamic>("id", partitionKey: new Cosmos.PartitionKey("id"), cancellationToken: cancellationToken),
                     "Should have surfaced OperationCanceledException because the token was canceled.");
 
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once, "Should had marked the endpoint unavailable");
@@ -209,6 +211,7 @@ namespace Microsoft.Azure.Cosmos
         // Creates a StoreModel that will return addresses for normal requests and throw for address refresh
         private static ServerStoreModel MockServerStoreModel(
             object sessionContainer,
+            Documents.ConsistencyLevel consistencyLevel,
             CancellationTokenSource cancellationTokenSource,
             Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> sendDirectFunc)
         {
@@ -224,6 +227,10 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<DocumentServiceRequest>(),
                     It.Is<bool>(forceRefresh => forceRefresh == false),
                     It.IsAny<CancellationToken>()))
+                    .Callback((DocumentServiceRequest dsr, bool refresh, CancellationToken ct) =>
+                    {
+                        dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0" };
+                    })
                     .ReturnsAsync(new PartitionAddressInformation(addressInformation));
 
             // Return HttpRequestException for address refresh
@@ -235,6 +242,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<CancellationToken>()))
                     .Callback((DocumentServiceRequest dsr, bool refresh, CancellationToken ct) =>
                     {
+                        dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0" };
                         // First refresh comes from a background task
                         if (++refreshes > 1)
                         {
@@ -252,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockServiceConfigReader.SetupGet(x => x.UserReplicationPolicy).Returns(replicationPolicy);
-            mockServiceConfigReader.SetupGet(x => x.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Eventual);
+            mockServiceConfigReader.SetupGet(x => x.DefaultConsistencyLevel).Returns(consistencyLevel);
 
             return new ServerStoreModel(new StoreClient(
                         mockAddressCache.Object,
