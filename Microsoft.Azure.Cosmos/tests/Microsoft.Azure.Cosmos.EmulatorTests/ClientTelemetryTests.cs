@@ -31,6 +31,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
+            Environment.SetEnvironmentVariable(ClientTelemetry.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
             cosmosClientBuilder.WithTelemetryEnabled();
 
@@ -258,7 +260,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.telemetry.Reset();
 
                 string sqlQueryText = "SELECT * FROM c";
-                Console.WriteLine("Running query: {0}\n", sqlQueryText);
 
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
                 FeedIterator<object> queryResultSetIterator = this.container.GetItemQueryIterator<object>(queryDefinition);
@@ -270,20 +271,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     foreach (object family in currentResultSet)
                     {
                         families.Add(family);
-                        Console.WriteLine("\tRead {0}\n", family);
                     }
                 }
             }
 
             List<Documents.OperationType> allowedOperations
-              = new List<Documents.OperationType>(new Documents.OperationType[] {
+               = new List<Documents.OperationType>(new Documents.OperationType[] {
                                             Documents.OperationType.Query
-              });
+               });
             IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
-           = new Dictionary<OperationType, HttpStatusCode>
-           {
-                    { OperationType.Query, HttpStatusCode.OK }
-           };
+               = new Dictionary<OperationType, HttpStatusCode>
+               {
+                   { OperationType.Query, HttpStatusCode.OK }
+               };
             this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
         }
 

@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using HdrHistogram;
     using System.Net.Http;
+    using Handler;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;

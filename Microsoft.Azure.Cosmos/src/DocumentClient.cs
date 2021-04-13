@@ -684,8 +684,7 @@ namespace Microsoft.Azure.Cosmos
                 string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
                 if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
                 {
-                    int maxConcurrentConnectionOpenRequestOverrideInt = 0;
-                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
+                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out int maxConcurrentConnectionOpenRequestOverrideInt))
                     {
                         this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
                     }
@@ -694,8 +693,7 @@ namespace Microsoft.Azure.Cosmos
                 string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
                 {
-                    int openConnectionTimeoutInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
+                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out int openConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
                     }
@@ -704,8 +702,7 @@ namespace Microsoft.Azure.Cosmos
                 string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
                 {
-                    int idleConnectionTimeoutInSecondsOverrideInt = 0;
-                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
+                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out int idleConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
                     }
