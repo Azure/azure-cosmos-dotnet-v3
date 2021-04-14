@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await this.ValidateChangeFeedIteratorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
 
             // change feed processor
-            // await this.ValidateChangeFeedProcessorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedProcessorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
         }
 
         [TestMethod]
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             FeedIterator<DecryptableItem> queryResponseIterator = LegacyEncryptionTests.encryptionContainer.GetItemQueryIterator<DecryptableItem>(query);
             FeedResponse<DecryptableItem> readDocsLazily = await queryResponseIterator.ReadNextAsync();
-            await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+            await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = LegacyEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
@@ -445,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     readDocsLazily = await changeIterator.ReadNextAsync();
                     if (readDocsLazily.Resource != null)
                     {
-                        await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+                        await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
                     }
                 }
                 catch (CosmosException ex)
@@ -455,7 +455,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
             }
 
-            // await this.ValidateChangeFeedProcessorResponse(LegacyEncryptionTests.itemContainerCore, testDoc1, testDoc2, false);
+            // validate changeFeedProcessor handling
+            Container leaseContainer = await LegacyEncryptionTests.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leasesContainer", partitionKeyPath: "/id"));
+
+            List<DecryptableItem> changeFeedReturnedDocs = new List<DecryptableItem>();
+            ChangeFeedProcessor cfp = LegacyEncryptionTests.encryptionContainer.GetChangeFeedProcessorBuilder(
+                "testCFPFailure",
+                (IReadOnlyCollection<DecryptableItem> changes, CancellationToken cancellationToken) =>
+                {
+                    changeFeedReturnedDocs.AddRange(changes);
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("dummy")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
+                .Build();
+
+            await cfp.StartAsync();
+            await Task.Delay(2000);
+            await cfp.StopAsync();
+
+            Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
+            await this.ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
+
             LegacyEncryptionTests.encryptor.FailDecryption = false;
         }
 
@@ -1122,6 +1145,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc1,
             TestDoc testDoc2)
         {
+            Container leaseContainer = await LegacyEncryptionTests.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
                 "testCFP",
@@ -1131,8 +1157,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     changeFeedReturnedDocs.AddRange(changes);
                     return Task.CompletedTask;
                 })
-                //.WithInMemoryLeaseContainer()
-                //.WithStartFromBeginning()
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
                 .Build();
 
             await cfp.StartAsync();
@@ -1155,17 +1182,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         private async Task ValidateLazyDecryptionResponse(
-            FeedResponse<DecryptableItem> readDocsLazily,
+            IEnumerator<DecryptableItem> readDocsLazily,
             string failureDek)
         {
             int decryptedDoc = 0;
             int failedDoc = 0;
 
-            foreach (DecryptableItem doc in readDocsLazily)
+            while (readDocsLazily.MoveNext())
             {
                 try
                 {
-                    (_, _) = await doc.GetItemAsync<dynamic>();
+                    (_, _) = await readDocsLazily.Current.GetItemAsync<dynamic>();
                     decryptedDoc++;
                 }
                 catch (EncryptionException encryptionException)

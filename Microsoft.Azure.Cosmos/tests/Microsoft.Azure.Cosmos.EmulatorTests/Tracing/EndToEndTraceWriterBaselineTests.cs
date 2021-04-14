@@ -921,10 +921,16 @@
             {
                 startLineNumber = GetLineNumber();
                 TimeSpan delayTime = TimeSpan.FromSeconds(2);
+                RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
                 CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.AddCustomHandlers(new RequestHandlerSleepHelper(delayTime)));
+                    builder.AddCustomHandlers(requestHandler));
 
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
+                    databaseResponse.Diagnostics.ToString(),
+                    requestHandler.FullHandlerName,
+                    delayTime);
+
                 ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
                 await databaseResponse.Database.DeleteAsync();
                 endLineNumber = GetLineNumber();
@@ -960,7 +966,7 @@
             string text = TraceWriter.TraceToText(traceForBaselineTesting);
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
-            //AssertTraceProperites(input.Trace);
+            AssertTraceProperites(input.Trace);
             Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
             Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
             Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
@@ -986,6 +992,54 @@
 
             return convertedTrace;
         }
+
+        private static void AssertCustomHandlerTime(
+            string diagnostics, 
+            string handlerName,
+            TimeSpan delay)
+        {
+            JObject jObject = JObject.Parse(diagnostics);
+            JObject handlerChild = EndToEndTraceWriterBaselineTests.FindChild(
+                handlerName, 
+                jObject);
+            Assert.IsNotNull(handlerChild);
+            JToken delayToken = handlerChild["duration in milliseconds"];
+            Assert.IsNotNull(delayToken);
+            double itraceDelay = delayToken.ToObject<double>();
+            Assert.IsTrue(TimeSpan.FromMilliseconds(itraceDelay) > delay);
+        }
+
+        private static JObject FindChild(
+            string name,
+            JObject jObject)
+        {
+            if(jObject == null)
+            {
+                return null;
+            }
+
+            JToken nameToken = jObject["name"];
+            if(nameToken != null && nameToken.ToString() == name)
+            {
+                return jObject;
+            }
+
+            JArray jArray = jObject["children"]?.ToObject<JArray>();
+            if(jArray != null)
+            {
+                foreach(JObject child in jArray)
+                {
+                    JObject response = EndToEndTraceWriterBaselineTests.FindChild(name, child);
+                    if(response != null)
+                    {
+                        return response;
+                    }
+                }
+            }
+
+            return null;
+        }
+
 
         private static void AssertTraceProperites(ITrace trace)
         {
