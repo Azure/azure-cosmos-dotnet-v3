@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly int maxConcurrency = Environment.ProcessorCount * 10;
         private readonly int maxItemsPerQuery = 1000;
         private readonly ContainerCore container;
+        private readonly CosmosClientContext clientContext;
 
         public ReadManyQueryHelper(PartitionKeyDefinition partitionKeyDefinition,
                                    ContainerCore container)
@@ -32,6 +33,7 @@ namespace Microsoft.Azure.Cosmos
             this.partitionKeyDefinition = partitionKeyDefinition;
             this.partitionKeySelectors = this.CreatePkSelectors(partitionKeyDefinition);
             this.container = container;
+            this.clientContext = container.ClientContext;
         }
 
         public override async Task<ResponseMessage> ExecuteReadManyRequestAsync(IReadOnlyList<(string, PartitionKey)> items,
@@ -42,8 +44,7 @@ namespace Microsoft.Azure.Cosmos
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
                                 await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
 
-            List<ResponseMessage>[] queryResponses = await this.ReadManyTaskHelperAsync<ResponseMessage>(partitionKeyRangeItemMap,
-                                                                this.GenerateStreamResponsesForPartitionAsync,
+            List<ResponseMessage>[] queryResponses = await this.ReadManyTaskHelperAsync(partitionKeyRangeItemMap,
                                                                 readManyRequestOptions,
                                                                 trace,
                                                                 cancellationToken);
@@ -63,58 +64,55 @@ namespace Microsoft.Azure.Cosmos
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
                                 await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
 
-            List<FeedResponse<T>>[] queryResponses = await this.ReadManyTaskHelperAsync<FeedResponse<T>>(partitionKeyRangeItemMap,
-                                                                this.GenerateTypedResponsesForPartitionAsync<T>,
+            List<ResponseMessage>[] queryResponses = await this.ReadManyTaskHelperAsync(partitionKeyRangeItemMap,
                                                                 readManyRequestOptions,
                                                                 trace,
                                                                 cancellationToken);
 
-            return this.CombineFeedResponseFromQueryResponses(queryResponses, trace);
+            return this.CombineFeedResponseFromQueryResponses<T>(queryResponses, trace);
         }
 
-        internal Task<List<TResult>[]> ReadManyTaskHelperAsync<TResult>(IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap,
-                                  Func<QueryDefinition, PartitionKeyRange, ReadManyRequestOptions, ITrace, CancellationToken, Task<List<TResult>>> generateResponsesForPartition,
+        internal Task<List<ResponseMessage>[]> ReadManyTaskHelperAsync(IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap,
                                   ReadManyRequestOptions readManyRequestOptions,
                                   ITrace trace,
                                   CancellationToken cancellationToken)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(0, this.maxConcurrency);
-            List<Task<List<TResult>>> tasks = new List<Task<List<TResult>>>();
+            List<Task<List<ResponseMessage>>> tasks = new List<Task<List<ResponseMessage>>>();
 
             foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
             {
                 // Fit MaxItemsPerQuery items in a single query to BE
                 for (int startIndex = 0; startIndex < entry.Value.Count; startIndex += this.maxItemsPerQuery)
                 {
-                    using (ITrace childTrace = trace.StartChild("Execute query for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info))
+                    ITrace childTrace = trace.StartChild("Execute query for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
+                    int indexCopy = startIndex;
+                    tasks.Add(Task.Run(async () =>
                     {
-                        int indexCopy = startIndex;
-                        tasks.Add(Task.Run(async () =>
-                        {
                             // Only allow 'maxConcurrency' number of queries at a time
-                            await semaphore.WaitAsync();
+                        await semaphore.WaitAsync();
 
-                            try
-                            {
-                                QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
-                                                   this.CreateReadManyQueryDefinitionForId(entry.Value, indexCopy) :
-                                                   this.CreateReadManyQueryDefinitionForOther(entry.Value, indexCopy);
+                        try
+                        {
+                            QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
+                                               this.CreateReadManyQueryDefinitionForId(entry.Value, indexCopy) :
+                                               this.CreateReadManyQueryDefinitionForOther(entry.Value, indexCopy);
 
-                                return await generateResponsesForPartition(queryDefinition, 
-                                                                           entry.Key, 
-                                                                           readManyRequestOptions, 
-                                                                           childTrace,
-                                                                           cancellationToken);
-                            }
-                            finally
-                            {
-                                semaphore.Release();
-                            }
-                        }));
-                    }
+                            return await this.GenerateStreamResponsesForPartitionAsync(queryDefinition,
+                                                                       entry.Key,
+                                                                       readManyRequestOptions,
+                                                                       childTrace,
+                                                                       cancellationToken);
+                        }
+                        finally
+                        {
+                            semaphore.Release();
+                            childTrace.Dispose();
+                        }
+                    }));
                 }
             }
-
+            
             // Restore semaphore to max Count and allow tasks to run
             semaphore.Release(this.maxConcurrency);
             return Task.WhenAll(tasks);
@@ -181,16 +179,33 @@ namespace Microsoft.Azure.Cosmos
             return combinedResponseMessage;
         }
 
-        private FeedResponse<T> CombineFeedResponseFromQueryResponses<T>(List<FeedResponse<T>>[] queryResponses,
+        private FeedResponse<T> CombineFeedResponseFromQueryResponses<T>(List<ResponseMessage>[] queryResponses,
                                                                          ITrace trace)
         {
-            // Implement new IEnumerable to avoid combining the array of lists
-            ReadManyFeedResponseEnumerable<T> enumerable = new ReadManyFeedResponseEnumerable<T>(queryResponses);
-            (int count, double requestCharge) = enumerable.GetCountAndRequestCharge();
+            int count = 0;
+            double requestCharge = 0;
+            List<FeedResponse<T>> typedResponses = new List<FeedResponse<T>>();
+            foreach (List<ResponseMessage> responseMessages in queryResponses)
+            {
+                foreach (ResponseMessage responseMessage in responseMessages)
+                {
+                    using (responseMessage)
+                    {
+                        FeedResponse<T> feedResponse = this.clientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>(responseMessage);
+                        count += feedResponse.Count;
+                        requestCharge += feedResponse.RequestCharge;
+                        typedResponses.Add(feedResponse);
+                    }
+                }
+            }
+
             Headers headers = new Headers
             {
                 RequestCharge = requestCharge
             };
+
+            ReadManyFeedResponseEnumerable<T> enumerable =
+                    new ReadManyFeedResponseEnumerable<T>(typedResponses);
 
             return new ReadFeedResponse<T>(System.Net.HttpStatusCode.OK,
                                         enumerable,
@@ -293,7 +308,11 @@ namespace Microsoft.Azure.Cosmos
                                                                                   ITrace trace,
                                                                                   CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return null;
+            }
+
             List<ResponseMessage> pages = new List<ResponseMessage>();
             FeedIteratorInternal feedIterator = (FeedIteratorInternal)this.container.GetItemQueryStreamIterator(
                                                     new FeedRangeEpk(partitionKeyRange.ToRange()),
@@ -321,58 +340,22 @@ namespace Microsoft.Azure.Cosmos
             return pages;
         }
 
-        private async Task<List<FeedResponse<T>>> GenerateTypedResponsesForPartitionAsync<T>(QueryDefinition queryDefinition,
-                                                                          PartitionKeyRange partitionKeyRange,
-                                                                          ReadManyRequestOptions readManyRequestOptions,
-                                                                          ITrace trace,
-                                                                          CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            List<FeedResponse<T>> pages = new List<FeedResponse<T>>();
-            FeedIteratorInternal<T> feedIterator = (FeedIteratorInternal<T>)this.container.GetItemQueryIterator<T>(
-                                                    new FeedRangeEpk(partitionKeyRange.ToRange()),
-                                                    queryDefinition,
-                                                    continuationToken: null,
-                                                    requestOptions: readManyRequestOptions?.ConvertToQueryRequestOptions());
-            while (feedIterator.HasMoreResults)
-            {
-                try
-                {
-                    FeedResponse<T> feedResponse = await feedIterator.ReadNextAsync(trace, cancellationToken);
-                    pages.Add(feedResponse);
-                }
-                catch
-                {
-                    using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-                    {
-                        cancellationTokenSource.Cancel();
-                    }
-                    throw;
-                }
-            }
-
-            return pages;
-        }
-
         private class ReadManyFeedResponseEnumerable<T> : IEnumerable<T>
         {
-            private readonly List<FeedResponse<T>>[] queryResponses;
+            private readonly List<FeedResponse<T>> typedResponses;
 
-            public ReadManyFeedResponseEnumerable(List<FeedResponse<T>>[] queryResponses)
+            public ReadManyFeedResponseEnumerable(List<FeedResponse<T>> queryResponses)
             {
-                this.queryResponses = queryResponses;
+                this.typedResponses = queryResponses;
             }
 
             public IEnumerator<T> GetEnumerator()
             {
-                foreach (List<FeedResponse<T>> singlePartitionResponses in this.queryResponses)
+                foreach (FeedResponse<T> feedResponse in this.typedResponses)
                 {
-                    foreach (FeedResponse<T> feedResponse in singlePartitionResponses)
+                    foreach (T item in feedResponse)
                     {
-                        foreach (T item in feedResponse)
-                        {
-                            yield return item;
-                        }
+                        yield return item;
                     }
                 }
             }
@@ -380,23 +363,6 @@ namespace Microsoft.Azure.Cosmos
             IEnumerator IEnumerable.GetEnumerator()
             {
                 return this.GetEnumerator();
-            }
-
-            public (int, double) GetCountAndRequestCharge()
-            {
-                int count = 0;
-                double requestCharge = 0;
-
-                foreach (List<FeedResponse<T>> singlePartitionResponses in this.queryResponses)
-                {
-                    foreach (FeedResponse<T> feedResponse in singlePartitionResponses)
-                    {
-                        requestCharge += feedResponse.RequestCharge;
-                        count += feedResponse.Count;
-                    }
-                }
-
-                return (count, requestCharge);
             }
         }
     }

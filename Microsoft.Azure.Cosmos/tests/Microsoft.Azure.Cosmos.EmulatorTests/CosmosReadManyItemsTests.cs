@@ -66,6 +66,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(feedResponse.Count, 10);
             Assert.IsTrue(feedResponse.Headers.RequestCharge > 0);
             Assert.IsNotNull(feedResponse.Diagnostics);
+
+            int count = 0;
+            foreach (ToDoActivity item in feedResponse)
+            {
+                count++;
+                Assert.IsNotNull(item);
+            }
+            Assert.AreEqual(count, 10);
         }
 
         [TestMethod]
