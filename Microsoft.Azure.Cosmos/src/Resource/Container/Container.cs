@@ -328,13 +328,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using (Stream responseStream = await response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(responseStream))
-        ///         {
-        ///             string responseContentAsString = await streamReader.ReadToEndAsync();
-        ///         }
+        ///         string responseContentAsString = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// ]]>
@@ -405,13 +402,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content =  streamReader.ReadToEndAsync();
-        ///         }
+        ///         string content = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// 
@@ -488,13 +482,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader  streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content =  streamReader.ReadToEndAsync();
-        ///         }
+        ///         string content = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// ]]>
@@ -572,13 +563,10 @@ namespace Microsoft.Azure.Cosmos
         ///         return;
         ///     }
         ///     
-        ///     using(Stream stream = response.ReadBodyAsync())
+        ///     //Read or do other operations with the stream
+        ///     using (StreamReader streamReader = new StreamReader(response.Content))
         ///     {
-        ///         //Read or do other operations with the stream
-        ///         using (StreamReader streamReader = new StreamReader(stream))
-        ///         {
-        ///             string content =  streamReader.ReadToEndAsync();
-        ///         }
+        ///         string content = await streamReader.ReadToEndAsync();
         ///     }
         /// }
         /// ]]>

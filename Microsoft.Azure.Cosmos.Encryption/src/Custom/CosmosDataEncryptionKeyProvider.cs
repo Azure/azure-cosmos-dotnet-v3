@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="encryptionKeyWrapProvider">A provider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             TimeSpan? dekPropertiesTimeToLive = null)
@@ -95,6 +96,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptionKeyStoreProvider"> MDE EncryptionKeyStoreProvider for Wrapping/UnWrapping services. </param>
         /// <param name="cacheTimeToLive">Time to live for EncryptionKeyStoreProvider ProtectedDataEncryptionKey before having to refresh. 0 results in no Caching.</param>
         /// <param name="dekPropertiesTimeToLive">Time to live for DEK properties before having to refresh.</param>
+        [Obsolete("Please use the constructor with EncryptionKeyStoreProvider only.")]
         public CosmosDataEncryptionKeyProvider(
             EncryptionKeyWrapProvider encryptionKeyWrapProvider,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
