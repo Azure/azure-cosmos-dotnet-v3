@@ -632,7 +632,8 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedEstimatorCore(
                 processorName: processorName,
                 monitoredContainer: this,
-                leaseContainer: (ContainerInternal)leaseContainer);
+                leaseContainer: (ContainerInternal)leaseContainer,
+                documentServiceLeaseContainer: default);
         }
 
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)

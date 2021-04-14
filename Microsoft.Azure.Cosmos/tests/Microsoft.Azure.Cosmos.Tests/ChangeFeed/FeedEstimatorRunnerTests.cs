@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -51,6 +52,46 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
 
             Assert.IsTrue(detectedEstimationCorrectly);
+        }
+
+        [TestMethod]
+        public async Task FeedEstimatorRunner_TransientErrorsShouldContinue()
+        {
+            const long estimation = 10;
+            bool detectedEstimationCorrectly = false;
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource(500);
+            Task estimatorDispatcher(long detectedEstimation, CancellationToken token)
+            {
+                detectedEstimationCorrectly = estimation == detectedEstimation;
+                cancellationTokenSource.Cancel();
+                return Task.CompletedTask;
+            }
+
+            Mock<FeedResponse<ChangeFeedProcessorState>> mockedResponse = new Mock<FeedResponse<ChangeFeedProcessorState>>();
+            mockedResponse.Setup(r => r.Count).Returns(1);
+            mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<ChangeFeedProcessorState>() { new ChangeFeedProcessorState(string.Empty, estimation, string.Empty) }.GetEnumerator());
+
+            Mock<FeedIterator<ChangeFeedProcessorState>> mockedIterator = new Mock<FeedIterator<ChangeFeedProcessorState>>();
+            mockedIterator.SetupSequence(i => i.ReadNextAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(CosmosExceptionFactory.CreateThrottledException("throttled", new Headers()))
+                .ReturnsAsync(mockedResponse.Object);
+
+            Mock<ChangeFeedEstimator> mockedEstimator = new Mock<ChangeFeedEstimator>();
+            mockedEstimator.Setup(e => e.GetCurrentStateIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
+
+            FeedEstimatorRunner estimatorCore = new FeedEstimatorRunner(estimatorDispatcher, mockedEstimator.Object, TimeSpan.FromMilliseconds(10));
+
+            try
+            {
+                await estimatorCore.RunAsync(cancellationTokenSource.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                // expected
+            }
+
+            Assert.IsTrue(detectedEstimationCorrectly);
+            mockedIterator.Verify(i => i.ReadNextAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
