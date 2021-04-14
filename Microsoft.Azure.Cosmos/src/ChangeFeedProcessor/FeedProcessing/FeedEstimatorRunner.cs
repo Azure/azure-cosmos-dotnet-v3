@@ -57,9 +57,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private async Task EstimateAsync(CancellationToken cancellationToken)
         {
-            long estimation = await this.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                long estimation = await this.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
                 await this.dispatchEstimation(estimation, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception userException)
