@@ -1412,7 +1412,6 @@
         class OrderByRequestChargeArgs
         {
             public string Query { get; set; }
-            public double ExpectedRequestCharge { get; set; }
         }
 
         [TestMethod]
@@ -1433,14 +1432,13 @@
 
             // Matches no documents
             await this.CreateIngestQueryDeleteAsync<OrderByRequestChargeArgs>(
-                ConnectionModes.Gateway,
+                ConnectionModes.Direct,
                 CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionRequestChargesHelper,
                 new OrderByRequestChargeArgs
                 {
                     Query = "SELECT r.id FROM r WHERE r.prop = 'A' ORDER BY r.prop DESC",
-                    ExpectedRequestCharge = 13.95
                 },
                 "/key");
 
@@ -1453,7 +1451,6 @@
                 new OrderByRequestChargeArgs
                 {
                     Query = "SELECT r.id FROM r ORDER BY r.prop DESC",
-                    ExpectedRequestCharge = 16.86
                 },
                 "/key");
 
@@ -1466,7 +1463,6 @@
                 new OrderByRequestChargeArgs
                 {
                     Query = "SELECT r.id FROM r ORDER BY r.prop DESC OFFSET 10 LIMIT 1",
-                    ExpectedRequestCharge = 16.86
                 },
                 "/key");
         }
@@ -1477,6 +1473,8 @@
             OrderByRequestChargeArgs args)
         {
             await QueryTestsBase.NoOp();
+
+            base.DirectRequestChargeHandler.StartTracking();
 
             double totalRUs = 0;
             await foreach (FeedResponse<CosmosElement> query in QueryTestsBase.RunSimpleQueryAsync<CosmosElement>(
@@ -1491,7 +1489,8 @@
                 totalRUs += query.RequestCharge;
             }
 
-            Assert.AreEqual(args.ExpectedRequestCharge, totalRUs, 0.01);
+            double expectedRequestCharge = base.DirectRequestChargeHandler.StopTracking();
+            Assert.AreEqual(expectedRequestCharge, totalRUs, 0.01);
         }
 
     }

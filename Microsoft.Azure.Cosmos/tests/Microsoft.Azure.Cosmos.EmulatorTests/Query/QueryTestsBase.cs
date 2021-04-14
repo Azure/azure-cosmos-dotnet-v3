@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
+    using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
@@ -33,9 +34,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     public abstract class QueryTestsBase
     {
         internal static readonly string[] NoDocuments = new string[] { };
-        internal CosmosClient GatewayClient = TestCommon.CreateCosmosClient(true);
-        internal CosmosClient Client = TestCommon.CreateCosmosClient(false);
+        internal RequestChargeTrackingHandler GatewayRequestChargeHandler = new RequestChargeTrackingHandler();
+        internal RequestChargeTrackingHandler DirectRequestChargeHandler = new RequestChargeTrackingHandler();
+        internal CosmosClient GatewayClient;
+        internal CosmosClient Client;
         internal Cosmos.Database database;
+
+        public QueryTestsBase()
+        {
+            this.GatewayClient = TestCommon.CreateCosmosClient(true, builder => builder.AddCustomHandlers(this.GatewayRequestChargeHandler));
+            this.Client = TestCommon.CreateCosmosClient(false, builder => builder.AddCustomHandlers(this.DirectRequestChargeHandler));
+        }
 
         [FlagsAttribute]
         internal enum ConnectionModes
@@ -859,6 +868,55 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public long IncrementBy(long incrementBy)
             {
                 return Interlocked.Add(ref this.value, incrementBy);
+            }
+        }
+
+        internal class RequestChargeTrackingHandler : RequestHandler
+        {
+            private double totalRequestCharge;
+            private bool isEnabled;
+
+            public void StartTracking()
+            {
+                this.isEnabled = true;
+            }
+
+            public double StopTracking()
+            {
+                double requestCharge = this.totalRequestCharge;
+                this.isEnabled = false;
+                this.totalRequestCharge = 0;
+                return requestCharge;
+            }
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                ResponseMessage response = await base.SendAsync(request, cancellationToken);
+
+                if (this.isEnabled)
+                {
+                    this.AddRequestCharge(response.Headers.RequestCharge);
+                }
+
+                return response;
+            }
+
+            private void AddRequestCharge(double requestCharge)
+            {
+                if (requestCharge == 0)
+                {
+                    return;
+                }
+
+                double startValue;
+                double currentValue = this.totalRequestCharge;
+
+                do
+                {
+                    startValue = currentValue;
+                    double targetValue = currentValue + requestCharge;
+                    currentValue = Interlocked.CompareExchange(ref this.totalRequestCharge, targetValue, startValue);
+                } while (currentValue != startValue);
             }
         }
     }
