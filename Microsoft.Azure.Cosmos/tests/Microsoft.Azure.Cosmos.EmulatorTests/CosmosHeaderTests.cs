@@ -62,13 +62,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
                 ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
-                    CustomRequestHeaders = (headers) => headers["x-ms-cosmos-database-rid"] = "databaseRidValue",
+                    AddRequestHeaders = (headers) => headers["x-ms-cosmos-database-rid"] = "databaseRidValue",
                 };
 
                 await container.CreateItemAsync(toDoActivity, new PartitionKey(toDoActivity.pk), requestOptions: requestOptions);
 
                 // null pass
-                requestOptions.CustomRequestHeaders = null;
+                requestOptions.AddRequestHeaders = null;
 
                 await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk), requestOptions: requestOptions);
 
