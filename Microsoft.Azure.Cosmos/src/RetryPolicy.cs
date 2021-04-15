@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class RetryPolicy : IRetryPolicyFactory
     {
-        private readonly PartitionKeyRangeLocationCache partitionKeyRangeLocationCache;
+        private readonly GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly bool enableEndpointDiscovery;
         private readonly RetryOptions retryOptions;
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         public RetryPolicy(
             GlobalEndpointManager globalEndpointManager, 
             ConnectionPolicy connectionPolicy,
-            PartitionKeyRangeLocationCache partitionKeyRangeLocationCache)
+            GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache)
         {
             this.enableEndpointDiscovery = connectionPolicy.EnableEndpointDiscovery;
             this.globalEndpointManager = globalEndpointManager;

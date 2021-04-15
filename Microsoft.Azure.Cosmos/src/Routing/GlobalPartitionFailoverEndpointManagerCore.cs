@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
-    internal sealed class PartitionKeyRangeLocationCacheCore : PartitionKeyRangeLocationCache
+    internal sealed class GlobalPartitionFailoverEndpointManagerCore : GlobalPartitionFailoverEndpointManager
     {
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocation = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
-        public PartitionKeyRangeLocationCacheCore(
+        public GlobalPartitionFailoverEndpointManagerCore(
             GlobalEndpointManager globalEndpointManager)
         {
             this.globalEndpointManager = globalEndpointManager;

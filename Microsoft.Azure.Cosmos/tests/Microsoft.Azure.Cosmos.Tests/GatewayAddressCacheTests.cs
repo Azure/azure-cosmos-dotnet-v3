@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos
                     mockDocumentClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(databaseAccount);
 
                     GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-                    PartitionKeyRangeLocationCache partitionKeyRangeLocationCache = new PartitionKeyRangeLocationCacheCore(globalEndpointManager);
+                    GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionFailoverEndpointManagerCore(globalEndpointManager);
 
                     ConnectionPolicy connectionPolicy = new ConnectionPolicy
                     {

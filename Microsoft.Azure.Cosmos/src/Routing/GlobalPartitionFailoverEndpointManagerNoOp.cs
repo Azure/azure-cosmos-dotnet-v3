@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using Microsoft.Azure.Documents;
 
-    internal sealed class PartitionKeyRangeLocationCacheNoOp : PartitionKeyRangeLocationCache
+    internal sealed class GlobalPartitionFailoverEndpointManagerNoOp : GlobalPartitionFailoverEndpointManager
     {
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)

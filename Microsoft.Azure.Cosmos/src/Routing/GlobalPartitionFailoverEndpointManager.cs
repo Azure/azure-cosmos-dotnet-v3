@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using Microsoft.Azure.Documents;
 
-    internal abstract class PartitionKeyRangeLocationCache
+    internal abstract class GlobalPartitionFailoverEndpointManager
     {
         /// <summary>
         /// Updates the DocumentServiceRequest routing location to point

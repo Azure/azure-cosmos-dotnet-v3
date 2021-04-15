@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
-        private readonly PartitionKeyRangeLocationCache partitionKeyRangeLocationCache;
+        private readonly GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private int failoverRetryCount;
 
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
-            PartitionKeyRangeLocationCache partitionKeyRangeLocationCache,
+            GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache,
             bool enableEndpointDiscovery,
             RetryOptions retryOptions)
         {

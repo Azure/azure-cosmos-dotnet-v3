@@ -560,7 +560,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
         
-        internal PartitionKeyRangeLocationCache PartitionKeyRangeLocation { get; private set; }
+        internal GlobalPartitionFailoverEndpointManager PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
         /// Open the connection to validate that the client initialization is successful in the Azure Cosmos DB service.
@@ -869,11 +869,11 @@ namespace Microsoft.Azure.Cosmos
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
             if (connectionPolicy.EnablePartitionLevelFailover)
             {
-                this.PartitionKeyRangeLocation = new PartitionKeyRangeLocationCacheCore(this.GlobalEndpointManager);
+                this.PartitionKeyRangeLocation = new GlobalPartitionFailoverEndpointManagerCore(this.GlobalEndpointManager);
             }
             else
             {
-                this.PartitionKeyRangeLocation = new PartitionKeyRangeLocationCacheNoOp();
+                this.PartitionKeyRangeLocation = new GlobalPartitionFailoverEndpointManagerNoOp();
             }
 
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
