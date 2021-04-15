@@ -94,7 +94,8 @@ namespace Microsoft.Azure.Cosmos
                     method: requestMessage?.Method,
                     requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
-                    responseSessionToken: headers.Session);
+                    responseSessionToken: headers.Session,
+                    beLatencyInMs: headers.BELatencyInMs);
 
                 requestMessage.Trace.AddDatum(nameof(PointOperationStatisticsTraceDatum), pointOperationStatistics);
             }
@@ -141,7 +142,8 @@ namespace Microsoft.Azure.Cosmos
                     method: requestMessage?.Method,
                     requestUri: requestMessage?.RequestUriString,
                     requestSessionToken: requestMessage?.Headers?.Session,
-                    responseSessionToken: cosmosException.Headers.Session);
+                    responseSessionToken: cosmosException.Headers.Session,
+                    beLatencyInMs: cosmosException.Headers.BELatencyInMs);
 
                 requestMessage?.Trace.AddDatum("Point Operation Statistics", pointOperationStatistics);
             }

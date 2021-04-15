@@ -195,6 +195,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.QueryMetrics = value;
         }
 
+        internal virtual string BELatencyInMs
+        {
+            get => this.CosmosMessageHeaders.QueryMetrics;
+            set => this.CosmosMessageHeaders.QueryMetrics = value;
+        }
+
         /// <summary>
         /// Creates a new instance of <see cref="Headers"/>.
         /// </summary>
