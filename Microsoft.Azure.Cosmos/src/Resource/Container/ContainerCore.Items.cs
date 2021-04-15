@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<ResponseMessage> ReadManyItemsStreamAsync(
-            IReadOnlyList<(string, PartitionKey)> items,
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ITrace trace,
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
-            IReadOnlyList<(string, PartitionKey)> items,
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ITrace trace,
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)

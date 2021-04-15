@@ -72,12 +72,12 @@ namespace Microsoft.Azure.Cosmos
             return this.CombineFeedResponseFromQueryResponses<T>(queryResponses, trace);
         }
 
-        internal Task<List<ResponseMessage>[]> ReadManyTaskHelperAsync(IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap,
+        internal async Task<List<ResponseMessage>[]> ReadManyTaskHelperAsync(IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap,
                                   ReadManyRequestOptions readManyRequestOptions,
                                   ITrace trace,
                                   CancellationToken cancellationToken)
         {
-            SemaphoreSlim semaphore = new SemaphoreSlim(0, this.maxConcurrency);
+            SemaphoreSlim semaphore = new SemaphoreSlim(this.maxConcurrency, this.maxConcurrency);
             List<Task<List<ResponseMessage>>> tasks = new List<Task<List<ResponseMessage>>>();
 
             foreach (KeyValuePair<PartitionKeyRange, List<(string, PartitionKey)>> entry in partitionKeyRangeItemMap)
@@ -85,13 +85,13 @@ namespace Microsoft.Azure.Cosmos
                 // Fit MaxItemsPerQuery items in a single query to BE
                 for (int startIndex = 0; startIndex < entry.Value.Count; startIndex += this.maxItemsPerQuery)
                 {
+                    // Only allow 'maxConcurrency' number of queries at a time
+                    await semaphore.WaitAsync();
+
                     ITrace childTrace = trace.StartChild("Execute query for a partitionkeyrange", TraceComponent.Query, TraceLevel.Info);
                     int indexCopy = startIndex;
                     tasks.Add(Task.Run(async () =>
                     {
-                            // Only allow 'maxConcurrency' number of queries at a time
-                        await semaphore.WaitAsync();
-
                         try
                         {
                             QueryDefinition queryDefinition = ((this.partitionKeySelectors.Count == 1) && (this.partitionKeySelectors[0] == "[\"id\"]")) ?
@@ -113,9 +113,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
             
-            // Restore semaphore to max Count and allow tasks to run
-            semaphore.Release(this.maxConcurrency);
-            return Task.WhenAll(tasks);
+            return await Task.WhenAll(tasks);
         }
 
         private async Task<IDictionary<PartitionKeyRange, List<(string, PartitionKey)>>> CreatePartitionKeyRangeItemListMapAsync(
