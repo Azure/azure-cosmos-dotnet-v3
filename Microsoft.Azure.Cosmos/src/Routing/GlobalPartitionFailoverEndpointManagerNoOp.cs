@@ -9,6 +9,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal sealed class GlobalPartitionFailoverEndpointManagerNoOp : GlobalPartitionFailoverEndpointManager
     {
+        public static readonly GlobalPartitionFailoverEndpointManager Instance = new GlobalPartitionFailoverEndpointManagerNoOp();
+
+        private GlobalPartitionFailoverEndpointManagerNoOp()
+        {
+        }
+
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)
         {

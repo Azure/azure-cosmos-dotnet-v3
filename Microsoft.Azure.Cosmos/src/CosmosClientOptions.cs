@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enable partition key level failover
         /// </summary>
-        public bool EnablePartitionLevelFailover { get; set; }
+        internal bool EnablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
         /// Gets or sets the connection protocol when connecting to the Azure Cosmos service.
