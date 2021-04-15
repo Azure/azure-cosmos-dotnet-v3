@@ -1,206 +1,260 @@
-﻿//------------------------------------------------------------
+﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
-//------------------------------------------------------------
+// ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.Handlers;
+    using System.Text;
+    using Microsoft.Azure.Documents;
 
-    internal class ClientPipelineBuilder
+    internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
-        private readonly CosmosClient client;
-        private readonly ConsistencyLevel? requestedClientConsistencyLevel;
-        private readonly DiagnosticsHandler diagnosticsHandler;
-        private readonly RequestHandler invalidPartitionExceptionRetryHandler;
-        private readonly RequestHandler transportHandler;
-        private IReadOnlyCollection<RequestHandler> customHandlers;
-        private RequestHandler retryHandler;
+        private readonly object lockObject = new object();
+        private readonly long clientSideRequestStatisticsCreateTime;
 
-        public ClientPipelineBuilder(
-            CosmosClient client,
-            ConsistencyLevel? requestedClientConsistencyLevel,
-            IReadOnlyCollection<RequestHandler> customHandlers)
+        private long? firstStartRequestTimestamp;
+        private long? lastStartRequestTimestamp;
+        private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
+        private bool received429ResponseSinceLastStartRequest = false;
+
+        public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
         {
-            this.client = client ?? throw new ArgumentNullException(nameof(client));
-            this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
-            this.transportHandler = new TransportHandler(client);
-            Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
-
-            this.invalidPartitionExceptionRetryHandler = new NamedCacheRetryHandler();
-            Debug.Assert(this.invalidPartitionExceptionRetryHandler.InnerHandler == null, "The invalidPartitionExceptionRetryHandler.InnerHandler must be null to allow other handlers to be linked.");
-
-            this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
-            Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
-
-            this.diagnosticsHandler = new DiagnosticsHandler();
-            Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
-
-            this.UseRetryPolicy();
-            this.AddCustomHandlers(customHandlers);
+            this.RequestStartTimeUtc = startTime;
+            this.RequestEndTimeUtc = null;
+            this.EndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
+            this.RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
+            this.ContactedReplicas = new List<Uri>();
+            this.StoreResponseStatisticsList = new List<StoreResponseStatistics>();
+            this.FailedReplicas = new HashSet<Uri>();
+            this.RegionsContactedWithName = new HashSet<(string, Uri)>();
+            this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
         }
 
-        internal IReadOnlyCollection<RequestHandler> CustomHandlers
+        public DateTime RequestStartTimeUtc { get; }
+
+        public DateTime? RequestEndTimeUtc { get; set; }
+
+        public Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
+
+        private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime { get; }
+
+        public List<Uri> ContactedReplicas { get; set; }
+
+        public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
+
+        public HashSet<Uri> FailedReplicas { get; }
+
+        public HashSet<Uri> RegionsContacted { get; }
+
+        public HashSet<(string, Uri)> RegionsContactedWithName { get; }
+
+        public TimeSpan RequestLatency
         {
-            get => this.customHandlers;
-            private set
+            get
             {
-                if (value != null && value.Any(x => x?.InnerHandler != null))
+                if (this.RequestEndTimeUtc.HasValue)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(this.CustomHandlers));
+                    return this.RequestEndTimeUtc.Value - this.RequestStartTimeUtc;
                 }
 
-                this.customHandlers = value;
+                return TimeSpan.MaxValue;
             }
         }
 
-        internal RequestHandler PartitionKeyRangeHandler { get; set; }
+        public bool IsCpuOverloaded { get; private set; } = false;
 
-        /// <summary>
-        /// This is the cosmos pipeline logic for the operations. 
-        /// 
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |    RequestInvokerHandler    |
-        ///                                    |                             |
-        ///                                    +-----------------------------+
-        ///                                                 |
-        ///                                                 |
-        ///                                                 |
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |       UserHandlers          |
-        ///                                    |                             |
-        ///                                    +-----------------------------+
-        ///                                                 |
-        ///                                                 |
-        ///                                                 |
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |       RetryHandler          |-> RetryPolicy -> ResetSessionTokenRetryPolicyFactory -> ClientRetryPolicy -> ResourceThrottleRetryPolicy
-        ///                                    |                             |
-        ///                                    +-----------------------------+
-        ///                                                 |
-        ///                                                 |
-        ///                                                 |
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |       RouteHandler          | 
-        ///                                    |                             |
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |                             |
-        ///                                    |                             |
-        ///                  +-----------------------------+         +---------------------------------------+
-        ///                  | !IsPartitionedFeedOperation |         |    IsPartitionedFeedOperation         |
-        ///                  |      TransportHandler       |         | invalidPartitionExceptionRetryHandler |
-        ///                  |                             |         |                                       |
-        ///                  +-----------------------------+         +---------------------------------------+
-        ///                                                                          |
-        ///                                                                          |
-        ///                                                                          |
-        ///                                                          +---------------------------------------+
-        ///                                                          |                                       |
-        ///                                                          |     PartitionKeyRangeHandler          |
-        ///                                                          |                                       |
-        ///                                                          +---------------------------------------+
-        ///                                                                          |
-        ///                                                                          |
-        ///                                                                          |
-        ///                                                          +---------------------------------------+
-        ///                                                          |                                       |
-        ///                                                          |         TransportHandler              |
-        ///                                                          |                                       |
-        ///                                                          +---------------------------------------+
-        /// </summary>
-        /// <returns>The request invoker handler used to do calls to Cosmos DB</returns>
-        public RequestInvokerHandler Build()
+        public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
+
+        public TimeSpan EstimatedClientDelayFromAllCauses
         {
-            RequestInvokerHandler root = new RequestInvokerHandler(
-                this.client,
-                this.requestedClientConsistencyLevel);
-
-            RequestHandler current = root;
-            if (this.CustomHandlers != null && this.CustomHandlers.Any())
+            get
             {
-                foreach (RequestHandler handler in this.CustomHandlers)
+                if (!this.lastStartRequestTimestamp.HasValue || !this.firstStartRequestTimestamp.HasValue)
                 {
-                    current.InnerHandler = handler;
-                    current = current.InnerHandler;
+                    return TimeSpan.Zero;
                 }
+
+                // Stopwatch ticks are not equivalent to DateTime ticks
+                long clientDelayInStopWatchTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
+                return TimeSpan.FromSeconds(clientDelayInStopWatchTicks / (double)Stopwatch.Frequency);
+            }
+        }
+
+        public void RecordRequest(DocumentServiceRequest request)
+        {
+            lock (this.lockObject)
+            {
+                long timestamp = Stopwatch.GetTimestamp();
+                if (this.received429ResponseSinceLastStartRequest)
+                {
+                    long lastTimestamp = this.lastStartRequestTimestamp ?? this.clientSideRequestStatisticsCreateTime;
+                    this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks += timestamp - lastTimestamp;
+                }
+
+                if (!this.firstStartRequestTimestamp.HasValue)
+                {
+                    this.firstStartRequestTimestamp = timestamp;
+                }
+
+                this.lastStartRequestTimestamp = timestamp;
+                this.received429ResponseSinceLastStartRequest = false;
             }
 
-            Debug.Assert(this.diagnosticsHandler != null, nameof(this.diagnosticsHandler));
-            current.InnerHandler = this.diagnosticsHandler;
-            current = current.InnerHandler;
-
-            Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
-            current.InnerHandler = this.retryHandler;
-            current = current.InnerHandler;
-
-            // Have a router handler
-            RequestHandler feedHandler = this.CreateDocumentFeedPipeline();
-
-            Debug.Assert(feedHandler != null, nameof(feedHandler));
-            Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
-            RequestHandler routerHandler = new RouterHandler(
-                documentFeedHandler: feedHandler,
-                pointOperationHandler: this.transportHandler);
-
-            current.InnerHandler = routerHandler;
-            current = current.InnerHandler;
-
-            return root;
+            this.RecordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
         }
 
-        internal static RequestHandler CreatePipeline(params RequestHandler[] requestHandlers)
+        public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
-            RequestHandler head = null;
-            int handlerCount = requestHandlers.Length;
-            for (int i = handlerCount - 1; i >= 0; i--)
+            // One DocumentServiceRequest can map to multiple store results
+            DateTime? startDateTime = null;
+            if (this.RecordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
             {
-                RequestHandler indexHandler = requestHandlers[i];
-                if (indexHandler.InnerHandler != null)
-                {
-                    throw new ArgumentOutOfRangeException($"The requestHandlers[{i}].InnerHandler is required to be null to allow the pipeline to chain the handlers.");
-                }
-
-                if (head != null)
-                {
-                    indexHandler.InnerHandler = head;
-                }
-                head = indexHandler;
+                startDateTime = startRequestTime;
+            }
+            else
+            {
+                Debug.Fail("DocumentServiceRequest start time not recorded");
             }
 
-            return head;
-        }
+            DateTime responseTime = DateTime.UtcNow;
+            Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
+            string regionName = request.RequestContext.RegionName;
+            StoreResponseStatistics responseStatistics = new StoreResponseStatistics(
+                startDateTime,
+                responseTime,
+                storeResult,
+                request.ResourceType,
+                request.OperationType,
+                locationEndpoint);
 
-        private ClientPipelineBuilder UseRetryPolicy()
-        {
-            this.retryHandler = new RetryHandler(this.client);
-            Debug.Assert(this.retryHandler.InnerHandler == null, "The retryHandler.InnerHandler must be null to allow other handlers to be linked.");
-            return this;
-        }
+            if (storeResult?.IsClientCpuOverloaded ?? false)
+            {
+                this.IsCpuOverloaded = true;
+            }
 
-        private ClientPipelineBuilder AddCustomHandlers(IReadOnlyCollection<RequestHandler> customHandlers)
-        {
-            this.CustomHandlers = customHandlers;
-            return this;
-        }
-
-        private RequestHandler CreateDocumentFeedPipeline()
-        {
-            RequestHandler[] feedPipeline = new RequestHandler[]
+            lock (this.lockObject)
+            {
+                if (!this.RequestEndTimeUtc.HasValue || responseTime > this.RequestEndTimeUtc)
                 {
-                    this.invalidPartitionExceptionRetryHandler,
-                    this.PartitionKeyRangeHandler,
-                    this.transportHandler,
-                };
+                    this.RequestEndTimeUtc = responseTime;
+                }
 
-            return ClientPipelineBuilder.CreatePipeline(feedPipeline);
+                if (locationEndpoint != null)
+                {
+                    this.RegionsContactedWithName.Add((regionName, locationEndpoint));
+                }
+
+                this.StoreResponseStatisticsList.Add(responseStatistics);
+
+                if (!this.received429ResponseSinceLastStartRequest &&
+                    storeResult.StatusCode == StatusCodes.TooManyRequests)
+                {
+                    this.received429ResponseSinceLastStartRequest = true;
+                }
+            }
+        }
+
+        public string RecordAddressResolutionStart(Uri targetEndpoint)
+        {
+            string identifier = Guid.NewGuid().ToString();
+            AddressResolutionStatistics resolutionStats = new AddressResolutionStatistics(
+                startTime: DateTime.UtcNow,
+                endTime: DateTime.MaxValue,
+                targetEndpoint: targetEndpoint == null ? "<NULL>" : targetEndpoint.ToString());
+
+            lock (this.lockObject)
+            {
+                this.EndpointToAddressResolutionStatistics.Add(identifier, resolutionStats);
+            }
+
+            return identifier;
+        }
+
+        public void RecordAddressResolutionEnd(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+            {
+                return;
+            }
+
+            DateTime responseTime = DateTime.UtcNow;
+            lock (this.lockObject)
+            {
+                if (!this.EndpointToAddressResolutionStatistics.ContainsKey(identifier))
+                {
+                    throw new ArgumentException("Identifier {0} does not exist. Please call start before calling end.", identifier);
+                }
+
+                if (!this.RequestEndTimeUtc.HasValue || responseTime > this.RequestEndTimeUtc)
+                {
+                    this.RequestEndTimeUtc = responseTime;
+                }
+
+                AddressResolutionStatistics start = this.EndpointToAddressResolutionStatistics[identifier];
+
+                this.EndpointToAddressResolutionStatistics[identifier] = new AddressResolutionStatistics(
+                    start.StartTime,
+                    responseTime,
+                    start.TargetEndpoint);
+            }
+        }
+
+        internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
+        {
+            traceDatumVisitor.Visit(this);
+        }
+
+        public void AppendToBuilder(StringBuilder stringBuilder)
+        {
+            throw new NotImplementedException();
+        }
+
+        public readonly struct AddressResolutionStatistics
+        {
+            public AddressResolutionStatistics(
+                DateTime startTime,
+                DateTime endTime,
+                string targetEndpoint)
+            {
+                this.StartTime = startTime;
+                this.EndTime = endTime;
+                this.TargetEndpoint = targetEndpoint ?? throw new ArgumentNullException(nameof(startTime));
+            }
+
+            public DateTime StartTime { get; }
+            public DateTime? EndTime { get; }
+            public string TargetEndpoint { get; }
+        }
+
+        public sealed class StoreResponseStatistics
+        {
+            public StoreResponseStatistics(
+                DateTime? requestStartTime,
+                DateTime requestResponseTime,
+                StoreResult storeResult,
+                ResourceType resourceType,
+                OperationType operationType,
+                Uri locationEndpoint)
+            {
+                this.RequestStartTime = requestStartTime;
+                this.RequestResponseTime = requestResponseTime;
+                this.StoreResult = storeResult;
+                this.RequestResourceType = resourceType;
+                this.RequestOperationType = operationType;
+                this.LocationEndpoint = locationEndpoint;
+                this.IsSupplementalResponse = operationType == OperationType.Head || operationType == OperationType.HeadFeed;
+            }
+
+            public DateTime? RequestStartTime { get; }
+            public DateTime RequestResponseTime { get; }
+            public StoreResult StoreResult { get; }
+            public ResourceType RequestResourceType { get; }
+            public OperationType RequestOperationType { get; }
+            public Uri LocationEndpoint { get; }
+            public bool IsSupplementalResponse { get; }
         }
     }
 }
