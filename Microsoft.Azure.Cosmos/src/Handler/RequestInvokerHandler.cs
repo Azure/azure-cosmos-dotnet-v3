@@ -48,38 +48,33 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(request));
             }
 
-            using (ITrace childTrace = request.Trace.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, Tracing.TraceLevel.Info))
+            RequestOptions promotedRequestOptions = request.RequestOptions;
+            if (promotedRequestOptions != null)
             {
-                request.Trace = childTrace;
-
-                RequestOptions promotedRequestOptions = request.RequestOptions;
-                if (promotedRequestOptions != null)
-                {
-                    // Fill request options
-                    promotedRequestOptions.PopulateRequestOptions(request);
-                }
-
-                // Adds the NoContent header if not already added based on Client Level flag
-                if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(
-                    request.RequestOptions,
-                    this.client.ClientOptions,
-                    request.OperationType,
-                    request.ResourceType))
-                {
-                    request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
-                }
-
-                await this.ValidateAndSetConsistencyLevelAsync(request);
-                (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, childTrace);
-                if (isError)
-                {
-                    return errorResponse;
-                }
-
-                await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, childTrace);
-                this.FillMultiMasterContext(request);
-                return await base.SendAsync(request, cancellationToken);
+                // Fill request options
+                promotedRequestOptions.PopulateRequestOptions(request);
             }
+
+            // Adds the NoContent header if not already added based on Client Level flag
+            if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(
+                request.RequestOptions,
+                this.client.ClientOptions,
+                request.OperationType,
+                request.ResourceType))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+            }
+
+            await this.ValidateAndSetConsistencyLevelAsync(request);
+            (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
+            if (isError)
+            {
+                return errorResponse;
+            }
+
+            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
+            this.FillMultiMasterContext(request);
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(

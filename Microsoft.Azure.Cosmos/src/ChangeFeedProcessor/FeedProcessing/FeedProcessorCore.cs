@@ -17,26 +17,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
-    internal sealed class FeedProcessorCore<T> : FeedProcessor
+    internal sealed class FeedProcessorCore : FeedProcessor
     {
         private readonly ProcessorOptions options;
         private readonly PartitionCheckpointer checkpointer;
-        private readonly ChangeFeedObserver<T> observer;
+        private readonly ChangeFeedObserver observer;
         private readonly FeedIterator resultSetIterator;
-        private readonly CosmosSerializerCore serializerCore;
 
         public FeedProcessorCore(
-            ChangeFeedObserver<T> observer,
+            ChangeFeedObserver observer,
             FeedIterator resultSetIterator,
             ProcessorOptions options,
-            PartitionCheckpointer checkpointer,
-            CosmosSerializerCore serializerCore)
+            PartitionCheckpointer checkpointer)
         {
-            this.observer = observer;
-            this.options = options;
-            this.checkpointer = checkpointer;
-            this.resultSetIterator = resultSetIterator;
-            this.serializerCore = serializerCore;
+            this.observer = observer ?? throw new ArgumentNullException(nameof(observer));
+            this.options = options ?? throw new ArgumentNullException(nameof(options));
+            this.checkpointer = checkpointer ?? throw new ArgumentNullException(nameof(checkpointer));
+            this.resultSetIterator = resultSetIterator ?? throw new ArgumentNullException(nameof(resultSetIterator));
         }
 
         public override async Task RunAsync(CancellationToken cancellationToken)
@@ -116,29 +113,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private Task DispatchChangesAsync(ResponseMessage response, CancellationToken cancellationToken)
         {
-            ChangeFeedObserverContext context = new ChangeFeedObserverContextCore<T>(this.options.LeaseToken, response, this.checkpointer);
-            IEnumerable<T> asFeedResponse;
-            try
-            {
-                asFeedResponse = CosmosFeedResponseSerializer.FromFeedResponseStream<T>(
-                    this.serializerCore,
-                    response.Content);
-            }
-            catch (Exception serializationException)
-            {
-                // Error using custom serializer to parse stream
-                throw new ObserverException(serializationException);
-            }
-
-            // When StartFromBeginning is used, the first request returns OK but no content
-            if (!asFeedResponse.Any())
-            {
-                return Task.CompletedTask;
-            }
-
-            List<T> asReadOnlyList = new List<T>(asFeedResponse);
-
-            return this.observer.ProcessChangesAsync(context, asReadOnlyList, cancellationToken);
+            ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.options.LeaseToken, response, this.checkpointer);
+            return this.observer.ProcessChangesAsync(context, response.Content, cancellationToken);
         }
     }
 }
