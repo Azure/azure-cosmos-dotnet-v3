@@ -5599,6 +5599,18 @@
         }
       },
       "Members": {
+        "System.Action`1[Microsoft.Azure.Cosmos.Headers] CustomRequestHeaders": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] CustomRequestHeaders;CanRead:True;CanWrite:True;System.Action`1[Microsoft.Azure.Cosmos.Headers] get_CustomRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CustomRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_CustomRequestHeaders()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_CustomRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5639,6 +5651,13 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_CustomRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_CustomRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_IfMatchEtag(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
