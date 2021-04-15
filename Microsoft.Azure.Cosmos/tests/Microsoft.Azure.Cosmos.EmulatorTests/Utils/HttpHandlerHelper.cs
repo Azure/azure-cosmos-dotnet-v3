@@ -19,15 +19,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (this.RequestCallBack != null)
+            if(this.RequestCallBack != null)
             {
                 Task<HttpResponseMessage> response = this.RequestCallBack(request, cancellationToken);
-                if (response != null)
+                if(response != null)
                 {
                     return response;
                 }
             }
-
+            
             return base.SendAsync(request, cancellationToken);
         }
     }

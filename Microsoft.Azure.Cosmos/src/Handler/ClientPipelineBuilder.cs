@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
-
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
@@ -152,6 +151,7 @@ namespace Microsoft.Azure.Cosmos
                 pointOperationHandler: this.transportHandler);
 
             current.InnerHandler = routerHandler;
+            current = current.InnerHandler;
 
             return root;
         }
