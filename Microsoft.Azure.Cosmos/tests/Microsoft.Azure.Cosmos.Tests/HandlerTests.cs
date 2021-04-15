@@ -222,33 +222,30 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task ConsistencyLevelClient()
         {
-            List<Cosmos.ConsistencyLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.ConsistencyLevel)).Cast<Cosmos.ConsistencyLevel>().ToList();
-            foreach(Cosmos.ConsistencyLevel clientLevel in cosmosLevels)
+            Cosmos.ConsistencyLevel clientLevel = Cosmos.ConsistencyLevel.Eventual;
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+                accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
+                customizeClientBuilder: builder => builder.WithConsistencyLevel(clientLevel));
+
+            TestHandler testHandler = new TestHandler((request, cancellationToken) =>
             {
-                using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
-                   accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
-                   customizeClientBuilder: builder => builder.WithConsistencyLevel(clientLevel));
+                Assert.AreEqual(clientLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
+                return TestHandler.ReturnSuccess();
+            });
 
-                TestHandler testHandler = new TestHandler((request, cancellationToken) =>
-                {
-                    Assert.AreEqual(clientLevel.ToString(), request.Headers[HttpConstants.HttpHeaders.ConsistencyLevel]);
-                    return TestHandler.ReturnSuccess();
-                });
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: client.ClientOptions.ConsistencyLevel)
+            {
+                InnerHandler = testHandler
+            };
 
-                RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: client.ClientOptions.ConsistencyLevel)
-                {
-                    InnerHandler = testHandler
-                };
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.OperationType = OperationType.Read;
 
-                RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
-                {
-                    ResourceType = ResourceType.Document
-                };
-                requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
-                requestMessage.OperationType = OperationType.Read;
-
-                await invoker.SendAsync(requestMessage, new CancellationToken());
-            }
+            await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
         [TestMethod]
