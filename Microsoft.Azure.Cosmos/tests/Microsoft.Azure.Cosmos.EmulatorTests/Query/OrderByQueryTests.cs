@@ -1472,8 +1472,6 @@
             IReadOnlyList<CosmosObject> documents,
             OrderByRequestChargeArgs args)
         {
-            await QueryTestsBase.NoOp();
-
             base.DirectRequestChargeHandler.StartTracking();
 
             double totalRUs = 0;
