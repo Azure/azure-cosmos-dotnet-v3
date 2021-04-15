@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
-            ClientRetryPolicy clientRetryPolicy = new ClientRetryPolicy(endpointManager, new PartitionKeyRangeLocationCache(endpointManager), true, new RetryOptions());
+            ClientRetryPolicy clientRetryPolicy = new ClientRetryPolicy(endpointManager, new PartitionKeyRangeLocationCacheCore(endpointManager), true, new RetryOptions());
             DocumentClientException ex = new DocumentClientException("", (HttpStatusCode)StatusCodes.TooManyRequests, SubStatusCodes.OwnerResourceNotFound);
 
             ShouldRetryResult result = await clientRetryPolicy.ShouldRetryAsync(ex, notCancelledToken);

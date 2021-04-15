@@ -804,7 +804,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
 
             this.endpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            this.partitionKeyRangeLocationCache = new PartitionKeyRangeLocationCache(this.endpointManager);
+            this.partitionKeyRangeLocationCache = new PartitionKeyRangeLocationCacheCore(this.endpointManager);
         }
 
         private async Task ValidateLocationCacheAsync(

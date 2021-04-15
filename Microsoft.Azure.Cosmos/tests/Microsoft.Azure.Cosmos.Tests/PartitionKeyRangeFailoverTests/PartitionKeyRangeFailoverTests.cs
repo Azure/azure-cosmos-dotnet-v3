@@ -6,21 +6,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Handlers;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class PartitionKeyRangeFailoverTests
@@ -28,73 +21,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestWriteForbiddenScenarioAsync()
         {
-            string accountName = "testAccount";
-            string primaryRegionNameForUri = "eastus";
-            string secondaryRegionNameForUri = "westus";
-            string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
-            Uri globalEndpointUri = new Uri(globalEndpoint);
-            string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
-            string secondaryRegionEndpiont = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
-            string databaseName = "testDb";
-            string containerName = "testContainer";
-            
-            string containerRid = "ccZ1ANCszwk=";
-            ResourceId containerResourceId = ResourceId.Parse(containerRid);
-            string databaseRid = containerResourceId.DatabaseId.ToString();
-
-            List<AccountRegion> writeRegion = new List<AccountRegion>()
-            {
-                new AccountRegion()
-                {
-                    Name = "East US",
-                    Endpoint = $"{primaryRegionEndpoint}:443/"
-                }
-            };
-
-            List<AccountRegion> readRegions = new List<AccountRegion>()
-            {
-                new AccountRegion()
-                {
-                    Name = "East US",
-                    Endpoint = $"{primaryRegionEndpoint}:443/"
-                },
-                new AccountRegion()
-                {
-                    Name = "West US",
-                    Endpoint = $"{secondaryRegionEndpiont}:443/"
-                }
-            };
-
-            // Create a mock http handler to inject gateway responses.
-            // MockBehavior.Strict ensures that only the mocked APIs get called
-            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
-            MockSetupsHelper.SetupStrongAccountProperties(
-                mockHttpClientHandler: mockHttpHandler,
-                endpoint: globalEndpointUri.ToString(),
-                accountName: accountName,
-                writeRegions: writeRegion,
-                readRegions: readRegions);
-
-            MockSetupsHelper.SetupContainerProperties(
-                mockHttpHandler: mockHttpHandler,
-                regionEndpoint: primaryRegionEndpoint,
-                databaseName: databaseName,
-                containerName: containerName,
-                containerRid: containerRid);
-
-            MockSetupsHelper.SetupPartitionKeyRanges(
-                mockHttpHandler: mockHttpHandler,
-                regionEndpoint: primaryRegionEndpoint,
-                containerResourceId: containerResourceId,
-                partitionKeyRangeIds: out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds);
-
-            MockSetupsHelper.SetupAddresses(
-                mockHttpHandler: mockHttpHandler,
-                partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
-                regionEndpoint: primaryRegionEndpoint,
-                regionName: primaryRegionNameForUri,
-                containerResourceId: containerResourceId,
-                primaryReplicaUri: out Uri primaryRegionprimaryReplicaUri);
+            PartitionKeyRangeFailoverTests.SetupAccountAndCacheOperations(
+                out string secondaryRegionNameForUri,
+                out string globalEndpoint,
+                out string secondaryRegionEndpiont,
+                out string databaseName,
+                out string containerName,
+                out ResourceId containerResourceId,
+                out Mock<IHttpHandler> mockHttpHandler,
+                out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
+                out Uri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
 
@@ -169,73 +105,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestServiceUnavailableExceptionScenarioAsync()
         {
-            string accountName = "testAccount";
-            string primaryRegionNameForUri = "eastus";
-            string secondaryRegionNameForUri = "westus";
-            string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
-            Uri globalEndpointUri = new Uri(globalEndpoint);
-            string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
-            string secondaryRegionEndpiont = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
-            string databaseName = "testDb";
-            string containerName = "testContainer";
-
-            string containerRid = "ccZ1ANCszwk=";
-            ResourceId containerResourceId = ResourceId.Parse(containerRid);
-            string databaseRid = containerResourceId.DatabaseId.ToString();
-
-            List<AccountRegion> writeRegion = new List<AccountRegion>()
-            {
-                new AccountRegion()
-                {
-                    Name = "East US",
-                    Endpoint = $"{primaryRegionEndpoint}:443/"
-                }
-            };
-
-            List<AccountRegion> readRegions = new List<AccountRegion>()
-            {
-                new AccountRegion()
-                {
-                    Name = "East US",
-                    Endpoint = $"{primaryRegionEndpoint}:443/"
-                },
-                new AccountRegion()
-                {
-                    Name = "West US",
-                    Endpoint = $"{secondaryRegionEndpiont}:443/"
-                }
-            };
-
-            // Create a mock http handler to inject gateway responses.
-            // MockBehavior.Strict ensures that only the mocked APIs get called
-            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
-            MockSetupsHelper.SetupStrongAccountProperties(
-                mockHttpClientHandler: mockHttpHandler,
-                endpoint: globalEndpointUri.ToString(),
-                accountName: accountName,
-                writeRegions: writeRegion,
-                readRegions: readRegions);
-
-            MockSetupsHelper.SetupContainerProperties(
-                mockHttpHandler: mockHttpHandler,
-                regionEndpoint: primaryRegionEndpoint,
-                databaseName: databaseName,
-                containerName: containerName,
-                containerRid: containerRid);
-
-            MockSetupsHelper.SetupPartitionKeyRanges(
-                mockHttpHandler: mockHttpHandler,
-                regionEndpoint: primaryRegionEndpoint,
-                containerResourceId: containerResourceId,
-                partitionKeyRangeIds: out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds);
-
-            MockSetupsHelper.SetupAddresses(
-                mockHttpHandler: mockHttpHandler,
-                partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
-                regionEndpoint: primaryRegionEndpoint,
-                regionName: primaryRegionNameForUri,
-                containerResourceId: containerResourceId,
-                primaryReplicaUri: out Uri primaryRegionprimaryReplicaUri);
+            PartitionKeyRangeFailoverTests.SetupAccountAndCacheOperations(
+                out string secondaryRegionNameForUri,
+                out string globalEndpoint,
+                out string secondaryRegionEndpiont,
+                out string databaseName,
+                out string containerName,
+                out ResourceId containerResourceId,
+                out Mock<IHttpHandler> mockHttpHandler,
+                out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
+                out Uri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
 
@@ -284,12 +163,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 pk = "TestPk"
             };
 
+            // First create will fail because it is not certain if the payload was sent or not.
             try
             {
                 await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.pk));
                 Assert.Fail("Should throw an exception");
             }
-            catch(CosmosException ce) when (ce.StatusCode == HttpStatusCode.ServiceUnavailable)
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.ServiceUnavailable)
             {
                 Assert.IsNotNull(ce);
             }
@@ -315,6 +195,76 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        private static void SetupAccountAndCacheOperations(out string secondaryRegionNameForUri, out string globalEndpoint, out string secondaryRegionEndpiont, out string databaseName, out string containerName, out ResourceId containerResourceId, out Mock<IHttpHandler> mockHttpHandler, out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds, out Uri primaryRegionprimaryReplicaUri)
+        {
+            string accountName = "testAccount";
+            string primaryRegionNameForUri = "eastus";
+            secondaryRegionNameForUri = "westus";
+            globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
+            Uri globalEndpointUri = new Uri(globalEndpoint);
+            string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
+            secondaryRegionEndpiont = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
+            databaseName = "testDb";
+            containerName = "testContainer";
+            string containerRid = "ccZ1ANCszwk=";
+            containerResourceId = ResourceId.Parse(containerRid);
+            string databaseRid = containerResourceId.DatabaseId.ToString();
+
+            List<AccountRegion> writeRegion = new List<AccountRegion>()
+            {
+                new AccountRegion()
+                {
+                    Name = "East US",
+                    Endpoint = $"{primaryRegionEndpoint}:443/"
+                }
+            };
+
+            List<AccountRegion> readRegions = new List<AccountRegion>()
+            {
+                new AccountRegion()
+                {
+                    Name = "East US",
+                    Endpoint = $"{primaryRegionEndpoint}:443/"
+                },
+                new AccountRegion()
+                {
+                    Name = "West US",
+                    Endpoint = $"{secondaryRegionEndpiont}:443/"
+                }
+            };
+
+            // Create a mock http handler to inject gateway responses.
+            // MockBehavior.Strict ensures that only the mocked APIs get called
+            mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
+            MockSetupsHelper.SetupStrongAccountProperties(
+                mockHttpClientHandler: mockHttpHandler,
+                endpoint: globalEndpointUri.ToString(),
+                accountName: accountName,
+                writeRegions: writeRegion,
+                readRegions: readRegions);
+
+            MockSetupsHelper.SetupContainerProperties(
+                mockHttpHandler: mockHttpHandler,
+                regionEndpoint: primaryRegionEndpoint,
+                databaseName: databaseName,
+                containerName: containerName,
+                containerRid: containerRid);
+
+            MockSetupsHelper.SetupPartitionKeyRanges(
+                mockHttpHandler: mockHttpHandler,
+                regionEndpoint: primaryRegionEndpoint,
+                containerResourceId: containerResourceId,
+                partitionKeyRangeIds: out primaryRegionPartitionKeyRangeIds);
+
+            MockSetupsHelper.SetupAddresses(
+                mockHttpHandler: mockHttpHandler,
+                partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
+                regionEndpoint: primaryRegionEndpoint,
+                regionName: primaryRegionNameForUri,
+                containerResourceId: containerResourceId,
+                primaryReplicaUri: out primaryRegionprimaryReplicaUri);
         }
 
         private class ToDoActivity

@@ -79,13 +79,16 @@ namespace Microsoft.Azure.Cosmos
                     retryOnPreferredLocations: true);
             }
 
-            DocumentClientException clientException = exception as DocumentClientException;
-            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
-                clientException?.StatusCode,
-                clientException?.GetSubStatus());
-            if (shouldRetryResult != null)
+            if (exception is DocumentClientException clientException)
             {
-                return shouldRetryResult;
+                DefaultTrace.TraceWarning("ClientRetry: Date:{0}, DocumentClientException: {1}", DateTime.UtcNow, clientException);
+                ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    clientException?.StatusCode,
+                    clientException?.GetSubStatus());
+                if (shouldRetryResult != null)
+                {
+                    return shouldRetryResult;
+                }
             }
 
             return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
