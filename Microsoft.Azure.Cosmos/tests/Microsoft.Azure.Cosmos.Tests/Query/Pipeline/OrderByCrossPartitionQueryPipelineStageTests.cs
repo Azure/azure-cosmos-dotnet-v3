@@ -285,7 +285,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
 
                 QueryPage queryPage = tryGetQueryPage.Result;
-                Assert.AreEqual(42, queryPage.RequestCharge);
                 Assert.IsTrue(queryPage.AdditionalHeaders.Count > 0);
             }
         }
