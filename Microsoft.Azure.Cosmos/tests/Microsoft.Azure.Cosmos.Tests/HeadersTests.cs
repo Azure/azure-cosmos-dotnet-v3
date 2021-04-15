@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .ToDictionary(x => x.Name, x => (string)x.GetValue(null));
 
             PropertyInfo[] optimizedResponseHeaders = typeof(StoreRequestNameValueCollection).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(x => !string.Equals("Item", x.Name)).ToArray();
+                .Where(x => !string.Equals("Item", x.Name) && !string.Equals("BELatency", x.Name)).ToArray();
 
             StoreRequestNameValueCollection headers = new StoreRequestNameValueCollection();
             foreach (PropertyInfo propertyInfo in optimizedResponseHeaders)
