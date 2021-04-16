@@ -959,6 +959,58 @@
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public async Task ReadManyAsync()
+        {
+            List<Input> inputs = new List<Input>();
+
+            int startLineNumber;
+            int endLineNumber;
+
+            for (int i = 0; i < 5; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk" + i, "id" + i);
+                await container.CreateItemAsync(item);
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i, new PartitionKey(i.ToString())));
+            }
+
+            //----------------------------------------------------------------
+            //  Read Many Stream
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                ITrace trace;
+                using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+                {
+                    trace = responseMessage.Trace;
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Read Many Typed
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                ITrace trace = ((CosmosTraceDiagnostics)feedResponse.Diagnostics).Value;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         public override Output ExecuteTest(Input input)
         {
             ITrace traceForBaselineTesting = CreateTraceForBaslineTesting(input.Trace, parent: null);
@@ -1043,6 +1095,12 @@
 
         private static void AssertTraceProperites(ITrace trace)
         {
+            if (trace.Name == "ReadManyItemsStreamAsync" || 
+                trace.Name == "ReadManyItemsAsync")
+            {
+                return; // skip test for read many as the queries are done in parallel
+            }
+
             if (trace.Children.Count == 0)
             {
                 // Base case
