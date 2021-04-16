@@ -10,13 +10,14 @@ jobs:
     steps:
     - uses: morrisoncole/pr-lint-action@v1.5.0
       with:
-        title-regex: '(\[Internal\]|\[v4\] )?.{3}.+: (Adds|Fixes|Refactors) .{3}.+'
+        title-regex: '(\[Internal\]|\[v4\] )?.{3}.+: (Adds|Fixes|Refactors|Removes) .{3}.+'
         repo-token: "${{ secrets.GITHUB_TOKEN }}"
         on-failed-regex-fail-action: false
         on-failed-regex-request-changes: true
         on-failed-regex-create-review: true
         on-failed-regex-comment: >
-         Please follow the required format: \"[Internal] Category: (Adds|Fixes|Refactors) Description\"<br /><br />
+         Please follow the required format: \"[Internal] Category: (Adds|Fixes|Refactors|Removes) Description\"<br /><br />
+         Internal should be used for PRs that have no customer impact. This flag is used to help generate the changelog to know which PRs should be included.
          Examples:<br />
          Diagnostics: Adds GetElapsedClientLatency to CosmosDiagnostics<br/> 
          PartitionKey: Fixes null reference when using default(PartitionKey)<br/> 

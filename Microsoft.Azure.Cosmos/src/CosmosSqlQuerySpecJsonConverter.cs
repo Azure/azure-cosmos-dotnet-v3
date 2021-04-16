@@ -41,13 +41,25 @@ namespace Microsoft.Azure.Cosmos
             serializer.Serialize(writer, sqlParameter.Name);
             writer.WritePropertyName("value");
 
-            // Use the user serializer for the parameter values so custom conversions are correctly handled
-            using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
+            // if the SqlParameter has stream value we dont pass it through the custom serializer.
+            if (sqlParameter.Value is SerializedParameterValue serializedEncryptedData)
             {
-                using (StreamReader streamReader = new StreamReader(str))
+                using (StreamReader streamReader = new StreamReader(serializedEncryptedData.valueStream))
                 {
                     string parameterValue = streamReader.ReadToEnd();
                     writer.WriteRawValue(parameterValue);
+                }
+            }
+            else
+            {
+                // Use the user serializer for the parameter values so custom conversions are correctly handled
+                using (Stream str = this.UserSerializer.ToStream(sqlParameter.Value))
+                {
+                    using (StreamReader streamReader = new StreamReader(str))
+                    {
+                        string parameterValue = streamReader.ReadToEnd();
+                        writer.WriteRawValue(parameterValue);
+                    }
                 }
             }
 
@@ -62,15 +74,14 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer cosmosSerializer,
             CosmosSerializer propertiesSerializer)
         {
-            // If both serializers are the same no need for the custom converter
-            if (object.ReferenceEquals(cosmosSerializer, propertiesSerializer))
+            if (propertiesSerializer is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
             {
-                return propertiesSerializer;
+                propertiesSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer;
             }
 
             JsonSerializerSettings settings = new JsonSerializerSettings()
             {
-                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer) }
+                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) }
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));

@@ -6,14 +6,14 @@
 # @global-owner1 and @global-owner2 will be requested for
 # review when someone opens a pull request.
 *       @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg @sboshra
-Microsoft.Azure.Cosmos/src/Json @bchong95 @j82w @kirankumarkolli @sboshra
-Microsoft.Azure.Cosmos/src/Query @bchong95 @j82w @kirankumarkolli @sboshra
-Microsoft.Azure.Cosmos/src/CosmosElements @bchong95 @j82w @kirankumarkolli @sboshra
-Microsoft.Azure.Cosmos/src/SqlObjects @bchong95 @j82w @kirankumarkolli @sboshra
-Microsoft.Azure.Cosmos/src/Linq @khdang @j82w @sboshra @kirankumarkolli @bchong95
-Microsoft.Azure.Cosmos/src/Spatial @lalithamv @sboshra @kirankumarkolli @j82w
-Microsoft.Azure.Cosmos/tests @khdang @sboshra @bchong95 @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
-Microsoft.Azure.Cosmos.Samples @khdang @sboshra @bchong95 @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
+Microsoft.Azure.Cosmos/src/Json @neildsh @j82w @kirankumarkolli @sboshra
+Microsoft.Azure.Cosmos/src/Query @neildsh @leminh98 @j82w @kirankumarkolli @sboshra
+Microsoft.Azure.Cosmos/src/CosmosElements @neildsh @j82w @kirankumarkolli @sboshra
+Microsoft.Azure.Cosmos/src/SqlObjects @leminh98 @j82w @kirankumarkolli @sboshra
+Microsoft.Azure.Cosmos/src/Linq @khdang @j82w @sboshra @kirankumarkolli
+Microsoft.Azure.Cosmos/src/Spatial @neildsh @sboshra @kirankumarkolli @j82w
+Microsoft.Azure.Cosmos/tests @khdang @sboshra @neildsh @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
+Microsoft.Azure.Cosmos.Samples @khdang @sboshra @neildsh @kirankumarkolli @j82w @ealsur @FabianMeiswinkel @kirillg
 
 # Order is important; the last matching pattern takes the most precedence
 Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/Contracts @kirillg @kirankumarkolli @j82w @ealsur @FabianMeiswinkel

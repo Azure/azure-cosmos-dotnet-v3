@@ -96,7 +96,7 @@
             BulkOperations<MyItem> bulkOperations = new BulkOperations<MyItem>(documentsToWorkWith.Count);
             foreach (MyItem document in documentsToWorkWith)
             {
-                bulkOperations.Tasks.Add(container.CreateItemAsync(document, new PartitionKey(document.pk)).CaptureOperationResponse(document));
+                bulkOperations.Tasks.Add(CaptureOperationResponse(container.CreateItemAsync(document, new PartitionKey(document.pk)), document));
             }
             // </BulkImport>
 
@@ -122,7 +122,7 @@
             foreach (MyItem document in documentsToWorkWith)
             {
                 document.operationCounter++;
-                bulkOperations.Tasks.Add(container.ReplaceItemAsync(document, document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
+                bulkOperations.Tasks.Add(CaptureOperationResponse(container.ReplaceItemAsync(document, document.id, new PartitionKey(document.pk)), document));
             }
             // </BulkUpdate>
 
@@ -146,7 +146,7 @@
             foreach (MyItem document in documentsToWorkWith)
             {
                 document.operationCounter++;
-                bulkOperations.Tasks.Add(container.DeleteItemAsync<MyItem>(document.id, new PartitionKey(document.pk)).CaptureOperationResponse(document));
+                bulkOperations.Tasks.Add(CaptureOperationResponse(container.DeleteItemAsync<MyItem>(document.id, new PartitionKey(document.pk)), document));
             }
             // </BulkDelete>
 
@@ -236,6 +236,42 @@
 
             return container;
         }
+
+        // <CaptureOperationResult>
+        private static async Task<OperationResponse<T>> CaptureOperationResponse<T>(Task<ItemResponse<T>> task, T item)
+        {
+            try
+            {
+                ItemResponse<T> response = await task;
+                return new OperationResponse<T>()
+                {
+                    Item = item,
+                    IsSuccessful = true,
+                    RequestUnitsConsumed = task.Result.RequestCharge
+                };
+            }
+            catch (Exception ex)
+            {
+                if (ex is CosmosException cosmosException)
+                {
+                    return new OperationResponse<T>()
+                    {
+                        Item = item,
+                        RequestUnitsConsumed = cosmosException.RequestCharge,
+                        IsSuccessful = false,
+                        CosmosException = cosmosException
+                    };
+                }
+
+                return new OperationResponse<T>()
+                {
+                    Item = item,
+                    IsSuccessful = false,
+                    CosmosException = ex
+                };
+            }
+        }
+        // </CaptureOperationResult>
     }
 
     // <BulkOperationsHelper>
@@ -285,45 +321,5 @@
         public Exception CosmosException { get; set; }
     }
     // </OperationResult>
-
-    public static class TaskExtensions
-    {
-        // <CaptureOperationResult>
-        public static Task<OperationResponse<T>> CaptureOperationResponse<T>(this Task<ItemResponse<T>> task, T item)
-        {
-            return task.ContinueWith(itemResponse =>
-            {
-                if (itemResponse.IsCompletedSuccessfully)
-                {
-                    return new OperationResponse<T>()
-                    {
-                        Item = item,
-                        IsSuccessful = true,
-                        RequestUnitsConsumed = task.Result.RequestCharge
-                    };
-                }
-
-                AggregateException innerExceptions = itemResponse.Exception.Flatten();
-                if (innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
-                {
-                    return new OperationResponse<T>()
-                    {
-                        Item = item,
-                        RequestUnitsConsumed = cosmosException.RequestCharge,
-                        IsSuccessful = false,
-                        CosmosException = cosmosException
-                    };
-                }
-
-                return new OperationResponse<T>()
-                {
-                    Item = item,
-                    IsSuccessful = false,
-                    CosmosException = innerExceptions.InnerExceptions.FirstOrDefault()
-                };
-            });
-        }
-        // </CaptureOperationResult>
-    }
 }
 

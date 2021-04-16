@@ -778,11 +778,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string processorName,
             ChangesHandler<T> onChangesDelegate)
         {
-            // TODO: need client SDK to expose underlying feedIterator to make decryption work for this scenario
-            // Issue #1484
-            return this.container.GetChangeFeedProcessorBuilder(
-                processorName,
-                onChangesDelegate);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder"))
+            {
+                return this.container.GetChangeFeedProcessorBuilder(
+                    processorName,
+                    async (IReadOnlyCollection<JObject> documents, CancellationToken cancellationToken) =>
+                    {
+                        List<T> decryptItems = new List<T>(documents.Count);
+                        if (typeof(T) == typeof(DecryptableItem))
+                        {
+                            foreach (JToken value in documents)
+                            {
+                                DecryptableItemCore item = new DecryptableItemCore(
+                                    value,
+                                    this.Encryptor,
+                                    this.CosmosSerializer);
+
+                                decryptItems.Add((T)(object)item);
+                            }
+                        }
+                        else
+                        {
+                            foreach (JObject document in documents)
+                            {
+                                (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
+                                    document,
+                                    this.Encryptor,
+                                    diagnosticsContext,
+                                    cancellationToken);
+
+                                decryptItems.Add(decryptedDocument.ToObject<T>());
+                            }
+                        }
+
+                        // Call the original passed in delegate
+                        await onChangesDelegate(decryptItems, cancellationToken);
+                    });
+            }
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -872,6 +905,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     changeFeedMode,
                     changeFeedRequestOptions),
                 this.ResponseFactory);
+        }
+
+        public override Task<ItemResponse<T>> PatchItemAsync<T>(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<ResponseMessage> PatchItemStreamAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
         }
     }
 }
