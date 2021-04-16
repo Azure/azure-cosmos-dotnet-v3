@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets a delegate which injects/appends a custom header in the request.
         /// </summary>
-        public Action<Headers> CustomRequestHeaders { get; set; }
+        public Action<Headers> AddRequestHeaders { get; set; }
 
         /// <summary>
         /// Gets or sets the boolean to use effective partition key routing in the cosmos db request.
@@ -85,7 +85,16 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, this.IfNoneMatchEtag);
             }
 
-            this.CustomRequestHeaders?.Invoke(request.Headers);
+            this.AddRequestHeaders?.Invoke(request.Headers);
+        }
+
+        /// <summary>
+        /// Clone RequestOptions.
+        /// </summary>
+        /// <returns> cloned RequestOptions. </returns>
+        public RequestOptions ShallowCopy()
+        {
+            return this.MemberwiseClone() as RequestOptions;
         }
 
         /// <summary>
