@@ -79,38 +79,37 @@
     │                   │                               Redacted To Not Change The Baselines From Run To Run
     │                   │                           )
     │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │       └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │           └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │               └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   (
-    │                   │       [Query Metrics]
-    │                   │       Redacted To Not Change The Baselines From Run To Run
-    │                   │   )
-    │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │                           (
-    │                   │                               [Client Side Request Stats]
-    │                   │                               Redacted To Not Change The Baselines From Run To Run
-    │                   │                           )
-    │                   └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    └── Execute query for a partitionkeyrange(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        ├── Create Query Pipeline(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   ├── Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   ├── Service Interop Query Plan(00000000-0000-0000-0000-000000000000)  Query-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │   └── Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │       └── Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │           └── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │   (
+                        │       [Query Metrics]
+                        │       Redacted To Not Change The Baselines From Run To Run
+                        │   )
+                        ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │           └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │               └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │                   └── Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │                           (
+                        │                               [Client Side Request Stats]
+                        │                               Redacted To Not Change The Baselines From Run To Run
+                        │                           )
+                        └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "name": "ReadManyItemsStreamAsync",
@@ -1146,20 +1145,6 @@
           ]
         }
       ]
-    },
-    {
-      "name": "Get Collection Cache",
-      "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Routing",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
-      "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
     }
   ]
 }]]></Json>
