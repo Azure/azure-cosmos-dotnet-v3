@@ -11,6 +11,12 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
+    /// <summary>
+    /// This class is used to failover single partitions to different regions.
+    /// The client retry policy will mark a partition as down. The PartitionKeyRangeToLocation
+    /// will add an override to the next read region. When the request is retried it will 
+    /// override the default location with the new region from the PartitionKeyRangeToLocation.
+    /// </summary>
     internal sealed class GlobalPartitionFailoverEndpointManagerCore : GlobalPartitionFailoverEndpointManager
     {
         private readonly IGlobalEndpointManager globalEndpointManager;
@@ -30,8 +36,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            return request.ResourceType == ResourceType.Document && 
-                !this.globalEndpointManager.CanUseMultipleWriteLocations(request); // Disable for multimaster
+            if (request.ResourceType == ResourceType.Document || 
+                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == Documents.OperationType.ExecuteJavaScript))
+            {
+                // Disable for multimaster because it currently 
+                // depends on 403.3 to signal the primary region is backup
+                // and to fail back over
+                if (!this.globalEndpointManager.CanUseMultipleWriteLocations(request))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public override bool TryAddPartitionLevelLocationOverride(

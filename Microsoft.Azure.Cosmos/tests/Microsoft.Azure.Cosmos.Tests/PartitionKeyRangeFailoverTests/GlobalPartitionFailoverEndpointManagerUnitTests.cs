@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void TestSingleReadRegionScenario()
         {
-            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>();
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
             GlobalPartitionFailoverEndpointManagerCore failoverManager = new GlobalPartitionFailoverEndpointManagerCore(mockEndpointManager.Object);
 
             mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri>() {new Uri("https://localhost:443/") }));
@@ -57,6 +57,68 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new Uri("https://localhost:443/")));
             Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(
                 databaseRequest));
+        }
+
+        [TestMethod]
+        [DataRow(2)]
+        [DataRow(3)]
+        [DataRow(5)]
+        [DataRow(10)]
+        [DataRow(100)]
+        public void VerifyAllReadRegionsAreVisited(int numOfReadRegions)
+        {
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+            
+            GlobalPartitionFailoverEndpointManagerCore failoverManager = new GlobalPartitionFailoverEndpointManagerCore(mockEndpointManager.Object);
+            List<Uri> readRegions = new List<Uri>();
+            for(int i = 0; i < numOfReadRegions; i++)
+            {
+                readRegions.Add(new Uri($"https://localhost:{i}/"));
+            }
+
+            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+
+            // Create a random pk range
+            PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "",
+                MaxExclusive = "BB"
+            };
+
+            PartitionKeyRange partitionKeyRangeNotOverriden = new PartitionKeyRange()
+            {
+                Id = "1",
+                MinInclusive = "BB",
+                MaxExclusive = "FF"
+            };
+
+            using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            createRequest.RequestContext.RouteToLocation(readRegions.First());
+
+            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(createRequest)).Returns(false);
+
+            foreach (Uri region in readRegions)
+            {
+                Assert.AreEqual(region, createRequest.RequestContext.LocationEndpointToRoute);
+                bool tryFailover = failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    createRequest,
+                    region);
+
+                // If there are no more regions to failover it will return false.
+                if(region == readRegions.Last())
+                {
+                    Assert.IsFalse(tryFailover);
+                    Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
+                }
+                else
+                {
+                    Assert.IsTrue(tryFailover);
+                    Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
+                    Assert.AreNotEqual(region, createRequest.RequestContext.LocationEndpointToRoute);
+                }
+            }
         }
     }
 }
