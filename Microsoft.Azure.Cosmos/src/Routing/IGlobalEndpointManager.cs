@@ -6,14 +6,27 @@ namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     internal interface IGlobalEndpointManager : IDisposable
     {
-        public ReadOnlyCollection<Uri> ReadEndpoints { get; }
+        ReadOnlyCollection<Uri> ReadEndpoints { get; }
 
-        public ReadOnlyCollection<Uri> WriteEndpoints { get; }
+        ReadOnlyCollection<Uri> WriteEndpoints { get; }
 
-        public bool CanUseMultipleWriteLocations(DocumentServiceRequest request);
+        int PreferredLocationCount { get; }
+
+        Uri ResolveServiceEndpoint(DocumentServiceRequest request);
+
+        string GetLocation(Uri endpoint);
+
+        void MarkEndpointUnavailableForRead(Uri endpoint);
+
+        void MarkEndpointUnavailableForWrite(Uri endpoint);
+
+        bool CanUseMultipleWriteLocations(DocumentServiceRequest request);
+
+        Task RefreshLocationAsync(AccountProperties databaseAccount, bool forceRefresh = false);
     }
 }
