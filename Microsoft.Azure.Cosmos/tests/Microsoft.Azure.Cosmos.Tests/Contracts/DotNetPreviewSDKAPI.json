@@ -1340,6 +1340,11 @@
         }
       },
       "Members": {
+        "Boolean TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer, System.IO.Stream ByRef)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer, System.IO.Stream ByRef);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.PatchOperation Add[T](System.String, T)": {
           "Type": "Method",
           "Attributes": [],

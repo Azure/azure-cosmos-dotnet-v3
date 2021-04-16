@@ -33,18 +33,12 @@ namespace Microsoft.Azure.Cosmos
 
         public override string Path { get; }
 
-        internal override bool TrySerializeValueParameter(
+        public override bool TrySerializeValueParameter(
             CosmosSerializer cosmosSerializer,
-            out string valueParam)
+            out Stream valueParam)
         {
             // Use the user serializer so custom conversions are correctly handled
-            using (Stream stream = cosmosSerializer.ToStream(this.Value))
-            {
-                using (StreamReader streamReader = new StreamReader(stream))
-                {
-                    valueParam = streamReader.ReadToEnd();
-                }
-            }
+            valueParam = cosmosSerializer.ToStream(this.Value);
 
             return true;
         }
