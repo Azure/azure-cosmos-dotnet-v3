@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos
                     PhysicalUri =
                     "rntbd://dummytenant.documents.azure.com:14003/apps/APPGUID/services/SERVICEGUID/partitions/PARTITIONGUID/replicas/"
                     + i.ToString("G", CultureInfo.CurrentCulture) + (i == 0 ? "p" : "s") + "/",
-                    IsPrimary = i == 0 ? true : false,
+                    IsPrimary = i == 0,
                     Protocol = Protocol.Tcp,
                     IsPublic = true
                 };
@@ -512,7 +512,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryUriAsync(entity, false /*forceAddressRefresh*/).Result;
+            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -538,6 +538,7 @@ namespace Microsoft.Azure.Cosmos
             StoreReader storeReader =
                 new StoreReader(mockTransportClient,
                     addressSelector,
+                    new AddressEnumerator(),
                     sessionContainer);
 
             // reads always go to read quorum (2) replicas
@@ -595,7 +596,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryUriAsync(entity, false /*forceAddressRefresh*/).Result;
+            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -613,7 +614,7 @@ namespace Microsoft.Azure.Cosmos
             for (int i = 0; i < addressInformation.Length; i++)
             {
                 TransportClient mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, false, false);
-                StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer);
+                StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer);
                 ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false);
                 StoreResponse response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
                 Assert.AreEqual(100, response.LSN);
@@ -687,7 +688,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(addressInfo[0] == addressInformation[0]);
 
             AddressSelector addressSelector = new AddressSelector(mockAddressCache.Object, Protocol.Tcp);
-            Uri primaryAddress = addressSelector.ResolvePrimaryUriAsync(entity, false /*forceAddressRefresh*/).Result;
+            Uri primaryAddress = addressSelector.ResolvePrimaryTransportAddressUriAsync(entity, false /*forceAddressRefresh*/).Result.Uri;
 
             // check if the address return from Address Selector matches the original address info
             Assert.IsTrue(primaryAddress.Equals(addressInformation[0].PhysicalUri));
@@ -704,6 +705,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreReader storeReader =
                     new StoreReader(mockTransportClient,
                         addressSelector,
+                        new AddressEnumerator(),
                         sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
@@ -746,6 +748,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreReader storeReader =
                     new StoreReader(mockTransportClient,
                         addressSelector,
+                        new AddressEnumerator(),
                         sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
@@ -797,6 +800,7 @@ namespace Microsoft.Azure.Cosmos
                 StoreReader storeReader =
                 new StoreReader(mockTransportClient,
                     addressSelector,
+                    new AddressEnumerator(),
                     sessionContainer);
 
                 Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
