@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// requests will be routed to the next location if available
         /// </summary>
         public abstract bool TryMarkEndpointUnavailableForPartitionKeyRange(
-            PartitionKeyRange partitionKeyRange,
+            DocumentServiceRequest request,
             Uri failedLocation);
     }
 }

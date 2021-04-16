@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Net;
     using System.Net.Http;
@@ -160,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
                 if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest.RequestContext.ResolvedPartitionKeyRange,
+                     this.documentServiceRequest,
                      this.documentServiceRequest.RequestContext.LocationEndpointToRoute))
                 {
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.Unknown)
             {
                 this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest.RequestContext.ResolvedPartitionKeyRange,
+                     this.documentServiceRequest,
                      this.documentServiceRequest.RequestContext.LocationEndpointToRoute);
 
                 return this.ShouldRetryOnServiceUnavailable();

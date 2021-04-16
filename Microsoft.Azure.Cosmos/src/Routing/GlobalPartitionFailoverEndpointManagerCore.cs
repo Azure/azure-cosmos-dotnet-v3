@@ -13,18 +13,23 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal sealed class GlobalPartitionFailoverEndpointManagerCore : GlobalPartitionFailoverEndpointManager
     {
-        private readonly GlobalEndpointManager globalEndpointManager;
+        private readonly IGlobalEndpointManager globalEndpointManager;
         private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocation = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
         public GlobalPartitionFailoverEndpointManagerCore(
-            GlobalEndpointManager globalEndpointManager)
+            IGlobalEndpointManager globalEndpointManager)
         {
-            this.globalEndpointManager = globalEndpointManager;
+            this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
         }
 
         private bool CanUsePartitionLevelFailoverLocations(DocumentServiceRequest request)
         {
+            if (this.globalEndpointManager.ReadEndpoints.Count <= 1)
+            {
+                return false;
+            }
+
             return request.ResourceType == ResourceType.Document && 
                 !this.globalEndpointManager.CanUseMultipleWriteLocations(request); // Disable for multimaster
         }
@@ -32,6 +37,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)
         {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             if (!this.CanUsePartitionLevelFailoverLocations(request))
             {
                 return false;
@@ -57,13 +67,28 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Marks the current location unavailable for write
         /// </summary>
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
-            PartitionKeyRange partitionKeyRange,
+            DocumentServiceRequest request,
             Uri failedLocation)
         {
+            if (request == null || failedLocation == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            if (!this.CanUsePartitionLevelFailoverLocations(request))
+            {
+                return false;
+            }
+
+            if (request?.RequestContext?.ResolvedPartitionKeyRange == null)
+            {
+                return false;
+            }
+
+            PartitionKeyRange partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
             PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocation.Value.GetOrAdd(
                 partitionKeyRange,
-                new PartitionKeyRangeFailoverInfo(
-                    failedLocation));
+                new PartitionKeyRangeFailoverInfo(failedLocation));
 
             // All the locations have been tried. Remove the override information
             if (!partionFailover.TryMoveNextLocation(
@@ -98,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public Uri Current { get; private set; }
             private HashSet<Uri> FailedLocations { get; }
             public bool TryMoveNextLocation(
-                ReadOnlyCollection<Uri> locations,
+                IReadOnlyCollection<Uri> locations,
                 Uri failedLocation)
             {
                 lock (this.Current)

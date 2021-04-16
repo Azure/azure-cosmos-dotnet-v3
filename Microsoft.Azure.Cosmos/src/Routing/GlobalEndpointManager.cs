@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// availability and preference list.
     /// </summary>
     /// Marking it as non-sealed in order to unit test it using Moq framework
-    internal class GlobalEndpointManager : IDisposable
+    internal class GlobalEndpointManager : IGlobalEndpointManager, IDisposable
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 

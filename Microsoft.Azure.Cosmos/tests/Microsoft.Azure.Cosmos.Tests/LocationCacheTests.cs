@@ -398,6 +398,13 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false))
             {
+                request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange()
+                {
+                    Id = "0",
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                };
+
                 int retryCount = 0;
 
                 await BackoffRetryUtility<bool>.ExecuteAsync(
@@ -804,7 +811,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
 
             this.endpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            this.partitionKeyRangeLocationCache = new GlobalPartitionFailoverEndpointManagerCore(this.endpointManager);
+            this.partitionKeyRangeLocationCache = GlobalPartitionFailoverEndpointManagerNoOp.Instance;
         }
 
         private async Task ValidateLocationCacheAsync(

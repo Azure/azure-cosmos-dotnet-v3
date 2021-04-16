@@ -59,7 +59,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             };
 
-            //It.IsIsAny<HttpRequestMessage>(x => x.RequestUri == endpointUri), 
             Uri endpointUri = new Uri(endpoint);
             mockHttpClientHandler.Setup(x => x.SendAsync(
                 It.Is<HttpRequestMessage>(x => x.RequestUri == endpointUri),
