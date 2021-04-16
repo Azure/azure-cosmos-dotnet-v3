@@ -195,10 +195,10 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.QueryMetrics = value;
         }
 
-        internal virtual string BELatencyInMs
+        internal virtual string BackendRequestDurationMilliseconds
         {
-            get => this.CosmosMessageHeaders.QueryMetrics;
-            set => this.CosmosMessageHeaders.QueryMetrics = value;
+            get => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds;
+            set => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds = value;
         }
 
         /// <summary>

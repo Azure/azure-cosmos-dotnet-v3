@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             set => this.storeResponseNameValueCollection.QueryMetrics = value;
         }
 
-        public override string BELatencyInMs
+        public override string BackendRequestDurationMilliseconds
         {
             get => this.storeResponseNameValueCollection.BackendRequestDurationMilliseconds;
             set => this.storeResponseNameValueCollection.BackendRequestDurationMilliseconds = value;

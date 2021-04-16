@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.QueryMetrics, value);
         }
 
-        public virtual string BELatencyInMs
+        public virtual string BackendRequestDurationMilliseconds
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds);
             set => this.SetProperty(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, value);
