@@ -16,12 +16,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
 
     [TestClass]
-    public class PartitionKeyRangeFailoverTests
+    public class GlobalPartitionEndpointManagerTests
     {
         [TestMethod]
         public async Task TestWriteForbiddenScenarioAsync()
         {
-            PartitionKeyRangeFailoverTests.SetupAccountAndCacheOperations(
+            GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
                 out string secondaryRegionNameForUri,
                 out string globalEndpoint,
                 out string secondaryRegionEndpiont,
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestServiceUnavailableExceptionScenarioAsync()
         {
-            PartitionKeyRangeFailoverTests.SetupAccountAndCacheOperations(
+            GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
                 out string secondaryRegionNameForUri,
                 out string globalEndpoint,
                 out string secondaryRegionEndpiont,

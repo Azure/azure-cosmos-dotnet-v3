@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using Microsoft.Azure.Documents;
 
-    internal abstract class GlobalPartitionFailoverEndpointManager
+    internal abstract class GlobalPartitionEndpointManager
     {
         /// <summary>
         /// Updates the DocumentServiceRequest routing location to point
@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// requests will be routed to the next location if available
         /// </summary>
         public abstract bool TryMarkEndpointUnavailableForPartitionKeyRange(
-            DocumentServiceRequest request,
-            Uri failedLocation);
+            DocumentServiceRequest request);
     }
 }

@@ -4,14 +4,13 @@
 #nullable enable
 namespace Microsoft.Azure.Cosmos.Routing
 {
-    using System;
     using Microsoft.Azure.Documents;
 
-    internal sealed class GlobalPartitionFailoverEndpointManagerNoOp : GlobalPartitionFailoverEndpointManager
+    internal sealed class GlobalPartitionEndpointManagerNoOp : GlobalPartitionEndpointManager
     {
-        public static readonly GlobalPartitionFailoverEndpointManager Instance = new GlobalPartitionFailoverEndpointManagerNoOp();
+        public static readonly GlobalPartitionEndpointManager Instance = new GlobalPartitionEndpointManagerNoOp();
 
-        private GlobalPartitionFailoverEndpointManagerNoOp()
+        private GlobalPartitionEndpointManagerNoOp()
         {
         }
 
@@ -22,8 +21,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
-            DocumentServiceRequest request,
-            Uri failedLocation)
+            DocumentServiceRequest request)
         {
             return false;
         }

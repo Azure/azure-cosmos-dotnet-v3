@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private AccountProperties databaseAccount;
         private LocationCache cache;
         private GlobalEndpointManager endpointManager;
-        private GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache;
+        private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private Mock<IDocumentClientInternal> mockedClient;
 
         [TestMethod]
@@ -811,7 +811,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
 
             this.endpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            this.partitionKeyRangeLocationCache = GlobalPartitionFailoverEndpointManagerNoOp.Instance;
+            this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
         }
 
         private async Task ValidateLocationCacheAsync(

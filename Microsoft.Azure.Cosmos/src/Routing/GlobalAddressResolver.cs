@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const int MaxBackupReadRegions = 3;
 
         private readonly GlobalEndpointManager endpointManager;
-        private readonly GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache;
+        private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly Protocol protocol;
         private readonly IAuthorizationTokenProvider tokenProvider;
         private readonly CollectionCache collectionCache;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
-            GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             Protocol protocol,
             IAuthorizationTokenProvider tokenProvider,
             CollectionCache collectionCache,

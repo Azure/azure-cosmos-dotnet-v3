@@ -18,13 +18,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Moq;
 
     [TestClass]
-    public class GlobalPartitionFailoverEndpointManagerUnitTests
+    public class GlobalPartitionEndpointManagerUnitTests
     {
         [TestMethod]
         public void TestSingleReadRegionScenario()
         {
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
-            GlobalPartitionFailoverEndpointManagerCore failoverManager = new GlobalPartitionFailoverEndpointManagerCore(mockEndpointManager.Object);
+            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object);
 
             mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri>() {new Uri("https://localhost:443/") }));
 
@@ -35,26 +35,27 @@ namespace Microsoft.Azure.Cosmos.Tests
                 MaxExclusive = "FF"
             };
 
+            Uri routeToLocation = new Uri("https://localhost:443/");
             using DocumentServiceRequest readRequest = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             readRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            readRequest.RequestContext.RouteToLocation(routeToLocation);
             Assert.IsFalse(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
-                readRequest,
-                new Uri("https://localhost:443/")));
+                readRequest));
             Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(
                 readRequest));
 
             using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            readRequest.RequestContext.RouteToLocation(routeToLocation);
             Assert.IsFalse(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
-                createRequest,
-                new Uri("https://localhost:443/")));
+                createRequest));
             Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(
                 createRequest));
 
             using DocumentServiceRequest databaseRequest = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Database, AuthorizationTokenType.PrimaryMasterKey);
+            readRequest.RequestContext.RouteToLocation(routeToLocation);
             Assert.IsFalse(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
-                databaseRequest,
-                new Uri("https://localhost:443/")));
+                databaseRequest));
             Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(
                 databaseRequest));
         }
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
             
-            GlobalPartitionFailoverEndpointManagerCore failoverManager = new GlobalPartitionFailoverEndpointManagerCore(mockEndpointManager.Object);
+            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object);
             List<Uri> readRegions = new List<Uri>();
             for(int i = 0; i < numOfReadRegions; i++)
             {
@@ -103,8 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.AreEqual(region, createRequest.RequestContext.LocationEndpointToRoute);
                 bool tryFailover = failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
-                    createRequest,
-                    region);
+                    createRequest);
 
                 // If there are no more regions to failover it will return false.
                 if(region == readRegions.Last())

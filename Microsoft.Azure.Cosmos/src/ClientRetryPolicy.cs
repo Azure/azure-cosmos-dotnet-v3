@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
-        private readonly GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache;
+        private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private int failoverRetryCount;
 
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
-            GlobalPartitionFailoverEndpointManager partitionKeyRangeLocationCache,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             bool enableEndpointDiscovery,
             RetryOptions retryOptions)
         {
@@ -82,7 +82,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (exception is DocumentClientException clientException)
             {
-                DefaultTrace.TraceWarning("ClientRetry: Date:{0}, DocumentClientException: {1}", DateTime.UtcNow, clientException);
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     clientException?.StatusCode,
                     clientException?.GetSubStatus());
@@ -161,8 +160,7 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
                 if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest,
-                     this.documentServiceRequest.RequestContext.LocationEndpointToRoute))
+                     this.documentServiceRequest))
                 {
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
@@ -197,8 +195,7 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.Unknown)
             {
                 this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest,
-                     this.documentServiceRequest.RequestContext.LocationEndpointToRoute);
+                     this.documentServiceRequest);
 
                 return this.ShouldRetryOnServiceUnavailable();
             }
