@@ -5,13 +5,17 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -248,6 +252,111 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(feedResponse.Count, 2500);
         }
 
+        [TestMethod]
+        public async Task ReadMany404ExceptionTest()
+        {
+            Database database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            for (int i = 0; i < 5; i++)
+            {
+                await container.CreateItemAsync(
+                    ToDoActivity.CreateRandomToDoActivity("pk" + i, i.ToString()));
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add((i.ToString(), new PartitionKey("pk" + i)));
+            }
+
+            // 429 test
+            //List<Task> tasks = new List<Task>();
+            //ConcurrentQueue<ResponseMessage> failedRequests = new ConcurrentQueue<ResponseMessage>();
+            //for (int i = 0; i < 500; i++)
+            //{
+            //    tasks.Add(Task.Run(async () =>
+            //    {
+            //        ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList);
+            //        if (!responseMessage.IsSuccessStatusCode)
+            //        {
+            //            failedRequests.Enqueue(responseMessage);
+            //            Assert.AreEqual(responseMessage.StatusCode, HttpStatusCode.TooManyRequests);
+            //        }    
+            //    }));
+            //}
+
+            //await Task.WhenAll(tasks);
+            //Assert.IsTrue(failedRequests.Count > 0);
+
+            await container.ReadManyItemsAsync<ToDoActivity>(itemList); // Warm up caches
+            
+            using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient())
+            {
+                Container newContainer = cosmosClient.GetContainer(database.Id, container.Id);
+                await newContainer.DeleteContainerAsync();
+            }
+
+            using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+            {
+                Assert.AreEqual(responseMessage.StatusCode, HttpStatusCode.NotFound);
+            }
+
+            try
+            {
+                await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                Assert.Fail("Typed API should throw");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(ex.Error.Code, "NotFound");
+            }
+
+            await database.DeleteAsync();
+        }
+
+        [TestMethod]
+        [DataRow(HttpStatusCode.NotFound)]
+        public async Task ReadManyExceptionsTest(HttpStatusCode statusCode)
+        {
+            RequestHandler[] requestHandlers = new RequestHandler[1];
+            requestHandlers[0] = new CustomHandler(statusCode);
+
+            CosmosClientBuilder builder = TestCommon.GetDefaultConfiguration();
+            builder.AddCustomHandlers(requestHandlers);
+            CosmosClient client = builder.Build();
+            Database database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk");
+            for (int i = 0; i < 5; i++)
+            {
+                await container.CreateItemAsync(
+                    ToDoActivity.CreateRandomToDoActivity("pk" + i, i.ToString()));
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("IncorrectId" + i, new PartitionKey("pk" + i))); // wrong ids
+            }
+
+            using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+            {
+                Assert.AreEqual(responseMessage.StatusCode, statusCode);
+            }
+
+            try
+            {
+                await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                Assert.Fail("Typed API should throw");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(ex.StatusCode, statusCode);
+            }
+
+            await database.DeleteAsync();
+            client.Dispose();
+        }
+
 #if PREVIEW
         [TestMethod]
         public async Task ReadManyMultiplePK()
@@ -299,6 +408,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     id = id,
                     NestedObject = ToDoActivity.CreateRandomToDoActivity(pk: pk)
                 };
+            }
+        }
+
+        private class CustomHandler: RequestHandler
+        {
+            private readonly HttpStatusCode statusCode;
+
+            public CustomHandler(HttpStatusCode statusCode)
+            {
+                this.statusCode = statusCode;
+            }
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage requestMessage,
+                                                                CancellationToken cancellationToken)
+            {
+                if (requestMessage.OperationType == Documents.OperationType.Query)
+                {
+                    return new ResponseMessage(this.statusCode);
+                }
+
+                return await base.SendAsync(requestMessage, cancellationToken);
             }
         }
     }

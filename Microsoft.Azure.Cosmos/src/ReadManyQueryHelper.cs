@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -41,6 +42,7 @@ namespace Microsoft.Azure.Cosmos
                                                                                 ITrace trace,
                                                                                 CancellationToken cancellationToken)
         {
+            string resourceId = await this.container.GetCachedRIDAsync(cancellationToken);
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
                                 await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
 
@@ -49,11 +51,7 @@ namespace Microsoft.Azure.Cosmos
                                                                 trace,
                                                                 cancellationToken);
 
-            ContainerProperties containerProperties = await this.container.GetCachedContainerPropertiesAsync(forceRefresh: false,
-                                                                                           trace: trace,
-                                                                                           cancellationToken: cancellationToken);
-
-            return this.CombineStreamsFromQueryResponses(queryResponses, containerProperties.ResourceId, trace); // also disposes the response messages
+            return this.CombineStreamsFromQueryResponses(queryResponses, resourceId, trace); // also disposes the response messages
         }
 
         public override async Task<FeedResponse<T>> ExecuteReadManyRequestAsync<T>(IReadOnlyList<(string, PartitionKey)> items,
@@ -151,10 +149,23 @@ namespace Microsoft.Azure.Cosmos
             double requestCharge = 0;
             foreach (List<ResponseMessage> responseMessagesForSinglePartition in queryResponses)
             {
+                if (responseMessagesForSinglePartition == null)
+                {
+                    continue;
+                }
+
                 foreach (ResponseMessage responseMessage in responseMessagesForSinglePartition)
                 {
                     using (responseMessage)
                     {
+                        if (!responseMessage.IsSuccessStatusCode)
+                        {
+                            return new ResponseMessage(responseMessage.StatusCode)
+                            {
+                                Trace = trace
+                            };
+                        }
+
                         if (responseMessage is QueryResponse queryResponse)
                         {
                             cosmosElements.AddRange(queryResponse.CosmosElements);
@@ -185,10 +196,16 @@ namespace Microsoft.Azure.Cosmos
             List<FeedResponse<T>> typedResponses = new List<FeedResponse<T>>();
             foreach (List<ResponseMessage> responseMessages in queryResponses)
             {
+                if (responseMessages == null)
+                {
+                    continue;
+                }
+
                 foreach (ResponseMessage responseMessage in responseMessages)
                 {
                     using (responseMessage)
                     {
+                        responseMessage.EnsureSuccessStatusCode();
                         FeedResponse<T> feedResponse = this.clientContext.ResponseFactory.CreateQueryFeedUserTypeResponse<T>(responseMessage);
                         count += feedResponse.Count;
                         requestCharge += feedResponse.RequestCharge;
@@ -322,20 +339,28 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     ResponseMessage responseMessage = await feedIterator.ReadNextAsync(trace, cancellationToken);
-                    responseMessage.EnsureSuccessStatusCode();
+                    if (!responseMessage.IsSuccessStatusCode)
+                    {
+                        this.CancelCancellationToken(cancellationToken);
+                    }
                     pages.Add(responseMessage);
                 }
                 catch
                 {
-                    using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-                    {
-                        cancellationTokenSource.Cancel();
-                    }
+                    this.CancelCancellationToken(cancellationToken);
                     throw;
                 }
             }
 
             return pages;
+        }
+
+        private void CancelCancellationToken(CancellationToken cancellationToken)
+        {
+            using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+            {
+                cancellationTokenSource.Cancel();
+            }
         }
 
         private class ReadManyFeedResponseEnumerable<T> : IEnumerable<T>
