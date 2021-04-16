@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Provides flexible way to build lease manager constructor parameters.
@@ -20,8 +21,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             string leaseContainerPrefix,
             string instanceName)
         {
-            ContainerResponse cosmosContainerResponse = await leaseContainer.ReadContainerAsync().ConfigureAwait(false);
-            ContainerProperties containerProperties = cosmosContainerResponse.Resource;
+            ContainerProperties containerProperties = await leaseContainer.GetCachedContainerPropertiesAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
 
             bool isPartitioned =
                 containerProperties.PartitionKey != null &&
