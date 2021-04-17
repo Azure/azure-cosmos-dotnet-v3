@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    It.IsAny<Uri>(), It.IsAny<DocumentServiceRequest>()))
+                    It.IsAny<TransportAddressUri>(), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(sendDirectFunc);
 
             AddressInformation[] addressInformation = GetMockAddressInformation();

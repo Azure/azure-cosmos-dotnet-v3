@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
@@ -13,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
-    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
 
@@ -100,12 +98,12 @@ namespace Microsoft.Azure.Cosmos
             // setup mock transport client
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponse);
 
             TransportClient mockTransportClientObject = mockTransportClient.Object;
             // get response from mock object
-            StoreResponse response = mockTransportClientObject.InvokeResourceOperationAsync(new Uri(addressInformation[0].PhysicalUri), entity).Result;
+            StoreResponse response = mockTransportClientObject.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity).Result;
 
             // validate that the LSN matches
             Assert.IsTrue(response.LSN == 50);
@@ -142,13 +140,13 @@ namespace Microsoft.Azure.Cosmos
             // setup mock transport client for the first replica
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponseFast);
 
             // setup mock transport client with a sequence of outputs
             mockTransportClient.SetupSequence(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponseFast))   // initial read response
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponseFast))   // barrier retry, count 1
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponseFast))   // barrier retry, count 2
@@ -178,7 +176,7 @@ namespace Microsoft.Azure.Cosmos
             // 2nd time: returns InvalidPartitionException
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(queueOfResponses.Dequeue());
 
             TransportClient mockTransportClientObject = mockTransportClient.Object;
@@ -253,12 +251,12 @@ namespace Microsoft.Azure.Cosmos
                 // setup mock transport client for the first replica
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse5);
 
                 mockTransportClient.SetupSequence(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1))
@@ -268,7 +266,7 @@ namespace Microsoft.Azure.Cosmos
 
                 mockTransportClient.SetupSequence(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse2))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse2))
                     .Returns(Task.FromResult<StoreResponse>(mockStoreResponse2))
@@ -282,19 +280,19 @@ namespace Microsoft.Azure.Cosmos
                 // setup mock transport client for the first replica
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse2);
 
                 // setup mock transport client with a sequence of outputs
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse1);
 
                 // setup mock transport client with a sequence of outputs
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse2);
             }
             else if (result == ReadQuorumResultKind.QuorumNotSelected)
@@ -302,17 +300,17 @@ namespace Microsoft.Azure.Cosmos
                 // setup mock transport client for the first replica
                 mockTransportClient.Setup(
                     client => client.InvokeResourceOperationAsync(
-                        new Uri(addressInformation[0].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .ReturnsAsync(mockStoreResponse5);
 
                 mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[1].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[1].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponse5);
 
                 mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    new Uri(addressInformation[2].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                    new TransportAddressUri(new Uri(addressInformation[2].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                     .Throws(new GoneException("test"));
             }
 
@@ -414,13 +412,13 @@ namespace Microsoft.Azure.Cosmos
                 if (i == indexOfCaughtUpReplica)
                 {
                     mockTransportClient.SetupSequence(
-                        client => client.InvokeResourceOperationAsync(new Uri(addressInformation[i].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        client => client.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[i].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .Returns(Task.FromResult<StoreResponse>(finalResponse));
                 }
                 else
                 {
                     mockTransportClient.Setup(
-                        client => client.InvokeResourceOperationAsync(new Uri(addressInformation[i].PhysicalUri), It.IsAny<DocumentServiceRequest>()))
+                        client => client.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[i].PhysicalUri)), It.IsAny<DocumentServiceRequest>()))
                         .Returns(Task.FromResult<StoreResponse>(mockStoreResponse1));
                 }
             }
@@ -521,7 +519,7 @@ namespace Microsoft.Azure.Cosmos
             TransportClient mockTransportClient = this.GetMockTransportClientDuringUpgrade(addressInformation);
 
             // get response from mock object
-            StoreResponse response = mockTransportClient.InvokeResourceOperationAsync(new Uri(addressInformation[0].PhysicalUri), entity).Result;
+            StoreResponse response = mockTransportClient.InvokeResourceOperationAsync(new TransportAddressUri(new Uri(addressInformation[0].PhysicalUri)), entity).Result;
 
             // validate that the LSN matches
             Assert.IsTrue(response.LSN == 50);
