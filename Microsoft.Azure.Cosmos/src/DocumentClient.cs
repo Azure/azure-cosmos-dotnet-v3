@@ -6507,7 +6507,8 @@ namespace Microsoft.Azure.Cosmos
                     enableCpuMonitor: this.enableCpuMonitor,
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
-                    addressResolver: this.AddressResolver);
+                    addressResolver: this.AddressResolver,
+                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount);
 
                 if (this.transportClientHandlerFactory != null)
                 {
