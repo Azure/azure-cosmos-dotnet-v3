@@ -266,6 +266,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
+                    It.IsAny<Uri>(),
+                    It.Is<DocumentServiceRequest>(e => this.IsValidDsr(e))))
+                    .Returns((Uri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
+
+            mockTransportClient.Setup(
+                client => client.InvokeResourceOperationAsync(
                     It.IsAny<TransportAddressUri>(),
                     It.Is<DocumentServiceRequest>(e => this.IsValidDsr(e))))
                     .Returns((TransportAddressUri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
