@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
             }
 
-            StoreResponse sendDirectFunc(Uri uri, DocumentServiceRequest request)
+            StoreResponse sendDirectFunc(TransportAddressUri uri, DocumentServiceRequest request)
             {
                 return new StoreResponse()
                 {
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static ServerStoreModel MockServerStoreModel(
             object sessionContainer, 
-            Func<Uri, DocumentServiceRequest, StoreResponse> sendDirectFunc)
+            Func<TransportAddressUri, DocumentServiceRequest, StoreResponse> sendDirectFunc)
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
 
