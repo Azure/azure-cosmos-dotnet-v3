@@ -147,7 +147,6 @@
       <Json><![CDATA[{
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -155,12 +154,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -176,7 +173,6 @@
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Query",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -184,12 +180,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -197,42 +191,34 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Query",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "Get Partition Key Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -240,21 +226,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Try Get Overlapping Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -263,7 +245,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -271,26 +252,21 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -298,12 +274,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -311,12 +285,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -331,114 +303,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -448,8 +375,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -464,16 +390,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -488,7 +411,6 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -504,7 +426,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -512,12 +433,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -525,12 +444,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -538,12 +455,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -558,114 +473,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -675,8 +545,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -691,16 +560,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -715,7 +581,6 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -731,7 +596,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -739,12 +603,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -752,12 +614,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -765,12 +625,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -785,114 +643,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -902,8 +715,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -918,16 +730,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -942,7 +751,6 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -958,7 +766,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -966,12 +773,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -979,12 +784,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -992,12 +795,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -1012,114 +813,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -1129,8 +885,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -1145,16 +900,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -1322,7 +1074,6 @@
       <Json><![CDATA[{
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -1330,12 +1081,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1351,7 +1100,6 @@
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Query",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1359,12 +1107,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1372,42 +1118,34 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Query",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "Get Partition Key Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1415,21 +1153,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Try Get Overlapping Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1438,7 +1172,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1446,26 +1179,21 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1473,12 +1201,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -1486,12 +1212,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -1506,114 +1230,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -1623,8 +1302,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -1639,16 +1317,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -1661,23 +1336,19 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1693,7 +1364,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1701,12 +1371,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1714,12 +1382,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -1727,12 +1393,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -1747,114 +1411,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -1864,8 +1483,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -1880,16 +1498,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -1902,23 +1517,19 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1934,7 +1545,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1942,12 +1552,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1955,12 +1563,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -1968,12 +1574,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -1988,114 +1592,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -2105,8 +1664,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -2121,16 +1679,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -2143,23 +1698,19 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2175,7 +1726,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2183,12 +1733,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2196,12 +1744,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2209,12 +1755,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -2229,114 +1773,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -2346,8 +1845,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -2362,16 +1860,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -2384,16 +1879,13 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     }
@@ -2550,7 +2042,6 @@
       <Json><![CDATA[{
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -2558,12 +2049,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2579,7 +2068,6 @@
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Query",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2587,12 +2075,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2600,42 +2086,34 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Query",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "Get Partition Key Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2643,21 +2121,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Try Get Overlapping Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2666,7 +2140,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2674,26 +2147,21 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2701,12 +2169,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2714,12 +2180,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -2734,114 +2198,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -2851,8 +2270,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -2867,16 +2285,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -2891,7 +2306,6 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2907,7 +2321,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2915,12 +2328,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2928,12 +2339,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2941,12 +2350,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -2961,114 +2368,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -3078,8 +2440,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -3094,16 +2455,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -3118,7 +2476,6 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3134,7 +2491,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3142,12 +2498,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -3155,12 +2509,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -3168,12 +2520,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -3188,114 +2538,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -3305,8 +2610,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -3321,16 +2625,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -3345,7 +2646,6 @@
     {
       "name": "FeedIterator Read Next Async",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3361,7 +2661,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3369,12 +2668,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -3382,12 +2679,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -3395,12 +2690,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -3415,114 +2708,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -3532,8 +2780,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -3548,16 +2795,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -3726,7 +2970,6 @@
       <Json><![CDATA[{
   "name": "Trace Forest",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -3734,12 +2977,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3755,7 +2996,6 @@
         {
           "name": "Create Query Pipeline",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Query",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3763,12 +3003,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Get Container Properties",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -3776,42 +3014,34 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Get Collection Cache",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             },
             {
               "name": "Service Interop Query Plan",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Query",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "Get Partition Key Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -3819,21 +3049,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Try Get Overlapping Ranges",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Routing",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -3842,7 +3068,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3850,26 +3075,21 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Prefetching",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "[,05C1CFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -3877,12 +3097,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -3890,12 +3108,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[,05C1CFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -3910,114 +3126,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -4027,8 +3198,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -4043,16 +3213,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -4065,23 +3232,19 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -4097,7 +3260,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -4105,12 +3267,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -4118,12 +3278,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -4131,12 +3289,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -4151,114 +3307,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -4268,8 +3379,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -4284,16 +3394,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -4306,23 +3413,19 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -4338,7 +3441,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -4346,12 +3448,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -4359,12 +3459,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -4372,12 +3470,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -4392,114 +3488,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -4509,8 +3560,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -4525,16 +3575,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -4547,23 +3594,19 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     },
     {
       "name": "Typed FeedIterator ReadNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Transport",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -4579,7 +3622,6 @@
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -4587,12 +3629,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[05C1E7FFFFFFFA,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -4600,12 +3640,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -4613,12 +3651,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[05C1E7FFFFFFFA,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -4633,114 +3669,69 @@
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Try Get Overlapping Ranges",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
                               "children": [
                                 {
                                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                                   "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "RequestHandler",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
                                   "start time": "12:00:00:000",
                                   "duration in milliseconds": 0,
-                                  "data": {},
                                   "children": [
                                     {
                                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                                       "id": "00000000-0000-0000-0000-000000000000",
-                                      "component": "RequestHandler",
-                                      "caller info": {
-                                        "member": "MemberName",
-                                        "file": "FilePath",
-                                        "line": 42
-                                      },
                                       "start time": "12:00:00:000",
                                       "duration in milliseconds": 0,
-                                      "data": {},
                                       "children": [
                                         {
                                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                                           "id": "00000000-0000-0000-0000-000000000000",
-                                          "component": "RequestHandler",
-                                          "caller info": {
-                                            "member": "MemberName",
-                                            "file": "FilePath",
-                                            "line": 42
-                                          },
                                           "start time": "12:00:00:000",
                                           "duration in milliseconds": 0,
-                                          "data": {},
                                           "children": [
                                             {
                                               "name": "Microsoft.Azure.Documents.ServerStoreModel Transport Request",
                                               "id": "00000000-0000-0000-0000-000000000000",
-                                              "component": "Transport",
                                               "caller info": {
                                                 "member": "MemberName",
                                                 "file": "FilePath",
@@ -4750,8 +3741,7 @@
                                               "duration in milliseconds": 0,
                                               "data": {
                                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run"
-                                              },
-                                              "children": []
+                                              }
                                             }
                                           ]
                                         }
@@ -4766,16 +3756,13 @@
                         {
                           "name": "Get Cosmos Element Response",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Json",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -4788,16 +3775,13 @@
         {
           "name": "POCO Materialization",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Poco",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     }
