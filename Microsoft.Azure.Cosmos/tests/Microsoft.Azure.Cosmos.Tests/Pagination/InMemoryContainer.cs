@@ -632,6 +632,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     queryState = default;
                 }
 
+                ImmutableDictionary<string, string>.Builder additionalHeaders = ImmutableDictionary.CreateBuilder<string, string>();
+                additionalHeaders.Add("x-ms-documentdb-partitionkeyrangeid", "0");
+                additionalHeaders.Add("x-ms-test-header", "true");
+
                 return Task.FromResult(
                     TryCatch<QueryPage>.FromResult(
                         new QueryPage(
@@ -641,7 +645,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
-                            additionalHeaders: default,
+                            additionalHeaders: additionalHeaders.ToImmutable(),
                             state: queryState)));
             }
         }
