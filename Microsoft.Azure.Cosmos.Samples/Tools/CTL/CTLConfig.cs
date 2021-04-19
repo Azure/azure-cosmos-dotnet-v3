@@ -47,7 +47,10 @@ namespace CosmosCTL
         [Option("ctl_read_write_query_pct", Required = false, HelpText = "Distribution of read, writes, and queries")]
         public string ReadWriteQueryPercentage { get; set; } = "90,9,1";
 
-        [Option("ctl_number_of_operations", Required = false, HelpText = "Number of documents to insert")]
+        [Option("ctl_precreated_documents", Required = false, HelpText = "Number of documents to pre-create for read workloads")]
+        public long PreCreatedDocuments { get; set; } = 1000;
+
+        [Option("ctl_number_of_operations", Required = false, HelpText = "Number of operations to perform")]
         public long Operations { get; set; } = -1;
 
         [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time in PT format, for example, PT10H.")]

@@ -132,6 +132,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
             else
             {
+                QueryPage page = uninitializedEnumerator.Current.Result.Page;
+
                 if (!uninitializedEnumerator.Current.Result.Enumerator.MoveNext())
                 {
                     // Page was empty
@@ -146,12 +148,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         this.Current = TryCatch<QueryPage>.FromResult(
                             new QueryPage(
                                 documents: EmptyPage,
-                                requestCharge: 0,
-                                activityId: Guid.NewGuid().ToString(),
-                                responseLengthInBytes: 0,
-                                cosmosQueryExecutionInfo: default,
-                                disallowContinuationTokenMessage: default,
-                                additionalHeaders: default,
+                                requestCharge: page.RequestCharge,
+                                activityId: string.IsNullOrEmpty(page.ActivityId) ? Guid.NewGuid().ToString() : page.ActivityId,
+                                responseLengthInBytes: page.ResponseLengthInBytes,
+                                cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
+                                disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                                additionalHeaders: page.AdditionalHeaders,
                                 state: null));
                         this.returnedFinalPage = true;
                         return true;
@@ -162,7 +164,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.enumerators.Enqueue(uninitializedEnumerator);
                 }
 
-                QueryPage page = uninitializedEnumerator.Current.Result.Page;
                 // Just return an empty page with the stats
                 this.Current = TryCatch<QueryPage>.FromResult(
                     new QueryPage(
@@ -215,6 +216,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             }
 
             (bool doneFiltering, int itemsLeftToSkip, TryCatch<OrderByQueryPage> monadicQueryByPage) = filterMonad.Result;
+            QueryPage page = uninitializedEnumerator.Current.Result.Page;
             if (doneFiltering)
             {
                 if (uninitializedEnumerator.Current.Result.Enumerator.Current != null)
@@ -228,12 +230,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.Current = TryCatch<QueryPage>.FromResult(
                         new QueryPage(
                             documents: EmptyPage,
-                            requestCharge: 0,
-                            activityId: Guid.NewGuid().ToString(),
-                            responseLengthInBytes: 0,
-                            cosmosQueryExecutionInfo: default,
-                            disallowContinuationTokenMessage: default,
-                            additionalHeaders: default,
+                            requestCharge: page.RequestCharge,
+                            activityId: string.IsNullOrEmpty(page.ActivityId) ? Guid.NewGuid().ToString() : page.ActivityId,
+                            responseLengthInBytes: page.ResponseLengthInBytes,
+                            cosmosQueryExecutionInfo: page.CosmosQueryExecutionInfo,
+                            disallowContinuationTokenMessage: page.DisallowContinuationTokenMessage,
+                            additionalHeaders: page.AdditionalHeaders,
                             state: null));
                     this.returnedFinalPage = true;
                     return true;
@@ -267,7 +269,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 }
             }
 
-            QueryPage page = uninitializedEnumerator.Current.Result.Page;
             // Just return an empty page with the stats
             this.Current = TryCatch<QueryPage>.FromResult(
                 new QueryPage(
@@ -405,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 responseLengthInBytes: 0,
                                 cosmosQueryExecutionInfo: default,
                                 disallowContinuationTokenMessage: default,
-                                additionalHeaders: default,
+                                additionalHeaders: currentEnumerator.Current.Result.Page.AdditionalHeaders,
                                 state: this.state));
                         return new ValueTask<bool>(true);
                     }
@@ -460,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     responseLengthInBytes: 0,
                     cosmosQueryExecutionInfo: default,
                     disallowContinuationTokenMessage: default,
-                    additionalHeaders: default,
+                    additionalHeaders: currentEnumerator?.Current.Result.Page.AdditionalHeaders,
                     state: this.state));
 
             if (state == null)
