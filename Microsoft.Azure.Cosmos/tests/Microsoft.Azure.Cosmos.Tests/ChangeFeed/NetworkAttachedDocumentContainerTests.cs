@@ -56,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                Mock.Of<CosmosQueryClient>());
+                Mock.Of<CosmosQueryClient>(),
+                Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),
@@ -114,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                Mock.Of<CosmosQueryClient>());
+                Mock.Of<CosmosQueryClient>(),
+                Guid.NewGuid());
 
             await networkAttachedDocumentContainer.MonadicChangeFeedAsync(
                 feedRangeState: new FeedRangeState<ChangeFeedState>(new FeedRangePartitionKeyRange("0"), ChangeFeedState.Beginning()),

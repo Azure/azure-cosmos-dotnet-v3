@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Query
         private readonly CosmosSerializationFormatOptions cosmosSerializationFormatOptions;
         private readonly RequestOptions requestOptions;
         private readonly CosmosClientContext clientContext;
+        private readonly Guid correlatedActivityId;
 
         private bool hasMoreResults;
 
@@ -38,7 +39,8 @@ namespace Microsoft.Azure.Cosmos.Query
             IQueryPipelineStage cosmosQueryExecutionContext,
             CosmosSerializationFormatOptions cosmosSerializationFormatOptions,
             RequestOptions requestOptions,
-            CosmosClientContext clientContext)
+            CosmosClientContext clientContext,
+            Guid correlatedActivityId)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
@@ -46,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Query
             this.requestOptions = requestOptions;
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
             this.hasMoreResults = true;
+            this.correlatedActivityId = correlatedActivityId;
         }
 
         public static QueryIterator Create(
@@ -67,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions = new QueryRequestOptions();
             }
 
+            Guid correlatedActivityId = Guid.NewGuid();
             CosmosQueryContextCore cosmosQueryContext = new CosmosQueryContextCore(
                 client: client,
                 resourceTypeEnum: Documents.ResourceType.Document,
@@ -75,11 +79,12 @@ namespace Microsoft.Azure.Cosmos.Query
                 resourceLink: resourceLink,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
-                correlatedActivityId: Guid.NewGuid());
+                correlatedActivityId: correlatedActivityId);
 
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
                 client,
+                correlatedActivityId,
                 queryRequestOptions);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
@@ -100,7 +105,8 @@ namespace Microsoft.Azure.Cosmos.Query
                                         innerException: tryParse.Exception)),
                                 queryRequestOptions.CosmosSerializationFormatOptions,
                                 queryRequestOptions,
-                                clientContext);
+                                clientContext,
+                                correlatedActivityId);
                         }
 
                         requestContinuationToken = tryParse.Result;
@@ -139,7 +145,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 CosmosQueryExecutionContextFactory.Create(documentContainer, cosmosQueryContext, inputParameters, NoOpTrace.Singleton),
                 queryRequestOptions.CosmosSerializationFormatOptions,
                 queryRequestOptions,
-                clientContext);
+                clientContext,
+                correlatedActivityId);
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -156,6 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 throw new ArgumentNullException(nameof(trace));
             }
 
+            trace.AddDatum("Query Correlated ActivityId", this.correlatedActivityId.ToString());
             TryCatch<QueryPage> tryGetQueryPage;
             try
             {
@@ -176,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Query
                             this.cosmosQueryContext.ContainerResourceId)
                         {
                             RequestCharge = default,
-                            ActivityId = Guid.Empty.ToString(),
+                            ActivityId = this.correlatedActivityId.ToString(),
                             SubStatusCode = Documents.SubStatusCodes.Unknown
                         },
                         trace: trace);

@@ -6,12 +6,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents.Collections;
@@ -683,6 +685,74 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             );
 
             // There is no way to simulate MM conflicts on the emulator but the list operations should work
+        }
+
+        [TestMethod]
+        public async Task QueryActivityIdTests()
+        {
+            RequestHandler[] requestHandlers = new RequestHandler[1];
+            requestHandlers[0] = new CustomHandler();
+
+            CosmosClientBuilder builder = TestCommon.GetDefaultConfiguration();
+            builder.AddCustomHandlers(requestHandlers);
+
+            CosmosClient cosmosClient = builder.Build();
+            Database database = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(),
+                                                                      "/pk",
+                                                                      throughput: 12000);
+
+            // Create items
+            for (int i = 0; i < 500; i++)
+            {
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
+            }
+
+            FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                "select * from c");
+
+            while (feedIterator.HasMoreResults)
+            {
+                await feedIterator.ReadNextAsync();
+            }
+
+            await database.DeleteAsync();
+            cosmosClient.Dispose();
+        }
+
+        private class CustomHandler : RequestHandler
+        {
+            string correlatedActivityId;
+
+            public CustomHandler()
+            {
+                this.correlatedActivityId = null;
+            }
+
+            public override async Task<ResponseMessage> SendAsync(RequestMessage requestMessage,
+                                                                CancellationToken cancellationToken)
+            {
+                if (requestMessage.OperationType == Documents.OperationType.Query)
+                {
+                    bool headerPresent = requestMessage.Headers.TryGetValue(Microsoft.Azure.Documents.WFConstants.BackendHeaders.CorrelatedActivityId, out string requestActivityId);
+                    if (!headerPresent)
+                    {
+                        Assert.Fail("Correlated ActivityId header not present in request");
+                    }
+
+                    if (this.correlatedActivityId == null)
+                    {
+                        this.correlatedActivityId = requestActivityId;
+                    }
+
+                    if (this.correlatedActivityId != requestActivityId)
+                    {
+                        Assert.Fail("Correlated ActivityId is different between query requests");
+                    }
+                }
+
+                return await base.SendAsync(requestMessage, cancellationToken);
+            }
         }
 
         private delegate FeedIterator<T> Query<T>(string querytext, string continuationToken, QueryRequestOptions options);
