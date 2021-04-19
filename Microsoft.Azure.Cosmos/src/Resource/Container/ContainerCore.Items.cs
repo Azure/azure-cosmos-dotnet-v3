@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -27,9 +29,11 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
     /// Used to perform operations on items. There are two different types of operations.
@@ -276,6 +280,56 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken: continuationToken,
                 feedRange: null,
                 requestOptions: requestOptions);
+        }
+
+        public async Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ITrace trace,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
+                                                                    this);
+
+            return await readManyHelper.ExecuteReadManyRequestAsync(items,
+                                                                    readManyRequestOptions,
+                                                                    trace,
+                                                                    cancellationToken);
+        }
+
+        public async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ITrace trace,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (items == null)
+            {
+                throw new ArgumentNullException(nameof(items));
+            }
+
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
+                                                                    this);
+
+            return await readManyHelper.ExecuteReadManyRequestAsync<T>(items,
+                                                                    readManyRequestOptions,
+                                                                    trace,
+                                                                    cancellationToken);
         }
 
         /// <summary>
@@ -632,7 +686,8 @@ namespace Microsoft.Azure.Cosmos
             return new ChangeFeedEstimatorCore(
                 processorName: processorName,
                 monitoredContainer: this,
-                leaseContainer: (ContainerInternal)leaseContainer);
+                leaseContainer: (ContainerInternal)leaseContainer,
+                documentServiceLeaseContainer: default);
         }
 
         public override TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey)

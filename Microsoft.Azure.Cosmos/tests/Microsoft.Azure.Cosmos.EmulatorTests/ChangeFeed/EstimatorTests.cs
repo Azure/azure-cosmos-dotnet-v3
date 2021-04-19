@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -52,6 +53,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             Assert.IsTrue(manualResetEvent.WaitOne(BaseChangeFeedClientHelper.ChangeFeedCleanupTime), "Not received estimation in the expected time");
             await estimator.StopAsync();
             Assert.AreEqual(1, receivedEstimation);
+        }
+
+        [TestMethod]
+        public async Task StartAsync_ShouldThrowIfContainerDoesNotExist()
+        {
+            ChangeFeedProcessor estimator = this.cosmosClient.GetContainer(this.database.Id, "DoesNotExist")
+                .GetChangeFeedEstimatorBuilder("test", (long estimation, CancellationToken token) =>
+                {
+                    return Task.CompletedTask;
+                }, TimeSpan.FromSeconds(1))
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(() => estimator.StartAsync());
+            Assert.AreEqual(HttpStatusCode.NotFound, exception.StatusCode);
         }
 
         [TestMethod]
