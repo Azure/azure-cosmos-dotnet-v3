@@ -708,8 +708,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity());
             }
 
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions
+            {
+                MaxItemCount = 50
+            };
+
             FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
-                "select * from c");
+                "select * from c",
+                null,
+                queryRequestOptions);
 
             while (feedIterator.HasMoreResults)
             {
@@ -742,6 +749,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     if (this.correlatedActivityId == null)
                     {
+                        if (requestActivityId == Guid.Empty.ToString())
+                        {
+                            Assert.Fail("Request has empty guid as correlated activity id");
+                        }
+
                         this.correlatedActivityId = requestActivityId;
                     }
 

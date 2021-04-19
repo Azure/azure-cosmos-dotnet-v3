@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             Mock<CosmosQueryClient> client = new Mock<CosmosQueryClient>();
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 container.Object,
-                client.Object);
+                client.Object,
+                Guid.NewGuid());
 
             TryCatch result = await networkAttachedDocumentContainer.MonadicRefreshProviderAsync(
                 trace: NoOpTrace.Singleton,
