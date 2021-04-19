@@ -5,74 +5,47 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Diagnostics;
-    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Data.Encryption.Cryptography;
 
     internal sealed class EncryptionSettings
     {
-        internal AsyncCache<string, CachedEncryptionSettings> EncryptionSettingCacheByPropertyName { get; } = new AsyncCache<string, CachedEncryptionSettings>();
+        internal AsyncCache<string, EncryptionSettingForProperty> EncryptionSettingCacheByPropertyName { get; } = new AsyncCache<string, EncryptionSettingForProperty>();
 
-        public string ClientEncryptionKeyId { get; set; }
+        public EncryptionProcessor EncryptionProcessor { get; }
 
-        public DateTime EncryptionSettingTimeToLive { get; set; }
-
-        internal DataEncryptionKey DataEncryptionKey { get; set; }
-
-        internal AeadAes256CbcHmac256EncryptionAlgorithm AeadAes256CbcHmac256EncryptionAlgorithm { get; set; }
-
-        public EncryptionType EncryptionType { get; set; }
-
-        public EncryptionSettings()
+        public EncryptionSettings(EncryptionProcessor encryptionProcessor)
         {
+            this.EncryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
         }
 
-        internal async Task<EncryptionSettings> GetEncryptionSettingForPropertyAsync(
+        internal async Task<EncryptionSettingForProperty> GetEncryptionSettingForPropertyAsync(
             string propertyName,
-            EncryptionProcessor encryptionProcessor,
             CancellationToken cancellationToken)
         {
-            CachedEncryptionSettings cachedEncryptionSettings = await this.EncryptionSettingCacheByPropertyName.GetAsync(
+            EncryptionSettingForProperty encryptionSettingsForProperty = await this.EncryptionSettingCacheByPropertyName.GetAsync(
                 propertyName,
                 obsoleteValue: null,
-                async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, encryptionProcessor, cancellationToken),
+                async () => await this.FetchEncryptionSettingForPropertyAsync(propertyName, cancellationToken),
                 cancellationToken);
 
-            if (cachedEncryptionSettings == null)
+            if (encryptionSettingsForProperty == null)
             {
                 return null;
             }
 
-            // we just cache the algo for the property for a duration of  1 hour and when it expires we try to fetch the cached Encrypted key
-            // from the Cosmos Client and try to create a Protected Data Encryption Key which tries to unwrap the key.
-            // 1) Try to check if the KEK has been revoked may be post rotation. If the request fails this could mean the KEK was revoked,
-            // the user might have rewraped the Key and that is when we try to force fetch it from the Backend.
-            // So we only read back from the backend only when an operation like wrap/unwrap with the Master Key fails.
-            if (cachedEncryptionSettings.EncryptionSettingsExpiryUtc <= DateTime.UtcNow)
-            {
-                cachedEncryptionSettings = await this.EncryptionSettingCacheByPropertyName.GetAsync(
-                    propertyName,
-                    obsoleteValue: null,
-                    async () => await this.FetchCachedEncryptionSettingsAsync(propertyName, encryptionProcessor, cancellationToken),
-                    cancellationToken,
-                    forceRefresh: true);
-            }
-
-            return cachedEncryptionSettings.EncryptionSettings;
+            return encryptionSettingsForProperty;
         }
 
-        private async Task<CachedEncryptionSettings> FetchCachedEncryptionSettingsAsync(
+        private async Task<EncryptionSettingForProperty> FetchEncryptionSettingForPropertyAsync(
             string propertyName,
-            EncryptionProcessor encryptionProcessor,
             CancellationToken cancellationToken)
         {
-            ClientEncryptionPolicy clientEncryptionPolicy = await encryptionProcessor.EncryptionCosmosClient.GetClientEncryptionPolicyAsync(
-                encryptionProcessor.Container,
-                cancellationToken,
-                false);
+            ClientEncryptionPolicy clientEncryptionPolicy = await this.EncryptionProcessor.EncryptionCosmosClient.GetClientEncryptionPolicyAsync(
+                this.EncryptionProcessor.Container,
+                cancellationToken: cancellationToken,
+                shouldForceRefresh: false);
 
             if (clientEncryptionPolicy != null)
             {
@@ -80,69 +53,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (string.Equals(propertyToEncrypt.Path.Substring(1), propertyName))
                     {
-                        ClientEncryptionKeyProperties clientEncryptionKeyProperties = await encryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                               clientEncryptionKeyId: propertyToEncrypt.ClientEncryptionKeyId,
-                               container: encryptionProcessor.Container,
-                               cancellationToken: cancellationToken,
-                               shouldForceRefresh: false);
+                        EncryptionType encryptionType = this.GetEncryptionTypeForProperty(propertyToEncrypt);
 
-                        ProtectedDataEncryptionKey protectedDataEncryptionKey = null;
-
-                        try
-                        {
-                            protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
-                                clientEncryptionKeyProperties,
-                                encryptionProcessor.EncryptionKeyStoreProvider,
-                                propertyToEncrypt.ClientEncryptionKeyId);
-                        }
-                        catch (RequestFailedException ex)
-                        {
-                            // the key was revoked. Try to fetch the latest EncryptionKeyProperties from the backend.
-                            // This should succeed provided the user has rewraped the key with right set of meta data.
-                            if (ex.Status == (int)HttpStatusCode.Forbidden)
-                            {
-                                clientEncryptionKeyProperties = await encryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                                    clientEncryptionKeyId: propertyToEncrypt.ClientEncryptionKeyId,
-                                    container: encryptionProcessor.Container,
-                                    cancellationToken: cancellationToken,
-                                    shouldForceRefresh: true);
-
-                                protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
-                                    clientEncryptionKeyProperties,
-                                    encryptionProcessor.EncryptionKeyStoreProvider,
-                                    propertyToEncrypt.ClientEncryptionKeyId);
-                            }
-                            else
-                            {
-                                throw;
-                            }
-                        }
-
-                        EncryptionSettings encryptionSettings = new EncryptionSettings
-                        {
-                            EncryptionSettingTimeToLive = DateTime.UtcNow + TimeSpan.FromMinutes(Constants.CachedEncryptionSettingsDefaultTTLInMinutes),
-                            ClientEncryptionKeyId = propertyToEncrypt.ClientEncryptionKeyId,
-                            DataEncryptionKey = protectedDataEncryptionKey,
-                        };
-
-                        EncryptionType encryptionType = EncryptionType.Plaintext;
-                        switch (propertyToEncrypt.EncryptionType)
-                        {
-                            case CosmosEncryptionType.Deterministic:
-                                encryptionType = EncryptionType.Deterministic;
-                                break;
-                            case CosmosEncryptionType.Randomized:
-                                encryptionType = EncryptionType.Randomized;
-                                break;
-                            case CosmosEncryptionType.Plaintext:
-                                encryptionType = EncryptionType.Plaintext;
-                                break;
-                            default:
-                                throw new ArgumentException($"Invalid encryption type {propertyToEncrypt.EncryptionType}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-                        }
-
-                        encryptionSettings = EncryptionSettings.Create(encryptionSettings, encryptionType);
-                        return new CachedEncryptionSettings(encryptionSettings, encryptionSettings.EncryptionSettingTimeToLive);
+                        return new EncryptionSettingForProperty(
+                            propertyToEncrypt.ClientEncryptionKeyId,
+                            encryptionType,
+                            this.EncryptionProcessor);
                     }
                 }
             }
@@ -150,42 +66,26 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return null;
         }
 
-        internal ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties,
-            EncryptionKeyStoreProvider encryptionKeyStoreProvider,
-            string keyId)
+        internal EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
         {
-            KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
-               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name,
-               clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value,
-               encryptionKeyStoreProvider);
-
-            return new ProtectedDataEncryptionKey(
-                   keyId,
-                   keyEncryptionKey,
-                   clientEncryptionKeyProperties.WrappedDataEncryptionKey);
-        }
-
-        internal void SetEncryptionSettingForProperty(string propertyName, EncryptionSettings encryptionSettings, DateTime expiryUtc)
-        {
-            CachedEncryptionSettings cachedEncryptionSettings = new CachedEncryptionSettings(encryptionSettings, expiryUtc);
-            this.EncryptionSettingCacheByPropertyName.Set(propertyName, cachedEncryptionSettings);
-        }
-
-        internal static EncryptionSettings Create(
-            EncryptionSettings settingsForKey,
-            EncryptionType encryptionType)
-        {
-            return new EncryptionSettings()
+            switch (clientEncryptionIncludedPath.EncryptionType)
             {
-                ClientEncryptionKeyId = settingsForKey.ClientEncryptionKeyId,
-                DataEncryptionKey = settingsForKey.DataEncryptionKey,
-                EncryptionType = encryptionType,
-                EncryptionSettingTimeToLive = settingsForKey.EncryptionSettingTimeToLive,
-                AeadAes256CbcHmac256EncryptionAlgorithm = AeadAes256CbcHmac256EncryptionAlgorithm.GetOrCreate(
-                    settingsForKey.DataEncryptionKey,
-                    encryptionType),
-            };
+                case CosmosEncryptionType.Deterministic:
+                    return EncryptionType.Deterministic;
+                case CosmosEncryptionType.Randomized:
+                    return EncryptionType.Randomized;
+                case CosmosEncryptionType.Plaintext:
+                    return EncryptionType.Plaintext;
+                default:
+                    throw new ArgumentException($"Invalid encryption type {clientEncryptionIncludedPath.EncryptionType}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+        }
+
+        internal void SetEncryptionSettingForProperty(
+            string propertyName,
+            EncryptionSettingForProperty encryptionSettingsForProperty)
+        {
+            this.EncryptionSettingCacheByPropertyName.Set(propertyName, encryptionSettingsForProperty);
         }
     }
 }
