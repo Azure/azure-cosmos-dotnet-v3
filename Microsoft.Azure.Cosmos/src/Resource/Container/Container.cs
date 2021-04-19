@@ -620,6 +620,77 @@ namespace Microsoft.Azure.Cosmos
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Reads multiple items from a container using Id and PartitionKey values.
+        /// </summary>
+        /// <param name="items">List of item.Id and <see cref="PartitionKey"/></param>
+        /// <param name="readManyRequestOptions">Request Options for ReadMany Operation</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which wraps a <see cref="Stream"/> containing the response.
+        /// </returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// IReadOnlyList<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+        /// {
+        ///     ("Id1", new PartitionKey("pkValue1")),
+        ///     ("Id2", new PartitionKey("pkValue2")),
+        ///     ("Id3", new PartitionKey("pkValue3"))
+        /// };
+        /// 
+        /// using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList))
+        /// {
+        ///     using (Stream stream = response.ReadBodyAsync())
+        ///     {
+        ///         //Read or do other operations with the stream
+        ///         using (StreamReader streamReader = new StreamReader(stream))
+        ///         {
+        ///             string content = streamReader.ReadToEndAsync();
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads multiple items from a container using Id and PartitionKey values.
+        /// </summary>
+        /// <param name="items">List of item.Id and <see cref="PartitionKey"/></param>
+        /// <param name="readManyRequestOptions">Request Options for ReadMany Operation</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="FeedResponse{T}"/> which wraps the typed items.
+        /// </returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// public class ToDoActivity{
+        ///     public string id {get; set;}
+        ///     public string status {get; set;}
+        /// }
+        /// 
+        /// IReadOnlyList<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+        /// {
+        ///     ("Id1", new PartitionKey("pkValue1")),
+        ///     ("Id2", new PartitionKey("pkValue2")),
+        ///     ("Id3", new PartitionKey("pkValue3"))
+        /// };
+        ///
+        /// FeedResponse<ToDoActivity> feedResponse = this.Container.ReadManyItemsAsync<ToDoActivity>(itemList);
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default);
+
 #if PREVIEW
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
