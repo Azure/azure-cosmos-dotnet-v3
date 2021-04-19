@@ -1006,8 +1006,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     {
                         while (feedIterator.HasMoreResults)
                         {
-                            await feedIterator.ReadNextAsync(trace, default);
-                            numChildren++;
+                            using (ITrace childTrace = trace.StartChild("ChildTrace"))
+                            {
+                                await feedIterator.ReadNextAsync(childTrace, default);
+                                numChildren++;
+                            }
                         }
                     }
 
