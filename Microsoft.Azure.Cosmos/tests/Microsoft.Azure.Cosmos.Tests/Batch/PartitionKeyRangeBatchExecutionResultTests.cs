@@ -88,7 +88,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 method: HttpMethod.Get,
                 requestUri: "http://localhost",
                 requestSessionToken: null,
-                responseSessionToken: null);
+                responseSessionToken: null,
+                beLatencyInMs: "0.42");
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
             {
