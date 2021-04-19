@@ -5,11 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Globalization;
-    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
@@ -47,6 +44,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.storeResponseNameValueCollection.QueryMetrics;
             set => this.storeResponseNameValueCollection.QueryMetrics = value;
+        }
+
+        public override string BackendRequestDurationMilliseconds
+        {
+            get => this.storeResponseNameValueCollection.BackendRequestDurationMilliseconds;
+            set => this.storeResponseNameValueCollection.BackendRequestDurationMilliseconds = value;
         }
 
         public override string Continuation
