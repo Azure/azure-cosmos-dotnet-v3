@@ -159,6 +159,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             header.Add("x-ms-cosmos-intended-collection-rid", ridValue);
         }
 
+        /// <summary>
+        /// Returns a copy of the passed RequestOptions if passed else creates a new ItemRequestOptions.
+        /// </summary>
+        /// <param name="itemRequestOptions"> Original ItemRequestOptions</param>
+        /// <returns> ItemRequestOptions object.</returns>
         internal ItemRequestOptions GetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             ItemRequestOptions clonedRequestOptions;
