@@ -173,6 +173,9 @@ namespace Microsoft.Azure.Cosmos
                         {
                             TransactionalBatchOperationResult response = batchResponse[itemBatchOperation.OperationIndex];
 
+                            // TODO Till we have backend fixed.
+                            response.SubStatusCode = result.ServerResponse.SubStatusCode;
+
                             if (!response.IsSuccessStatusCode)
                             {
                                 Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
@@ -217,9 +220,14 @@ namespace Microsoft.Azure.Cosmos
             // All operations should be for the same PKRange
             string partitionKeyRangeId = this.batchOperations[0].Context.PartitionKeyRangeId;
 
+            bool isClientEncrypted = this.batchOperations[0].Context.isClientEncrypted;
+            string intendedCollectionRidValue = this.batchOperations[0].Context.intendedCollectionRidValue;
+
             ArraySegment<ItemBatchOperation> operationsArraySegment = new ArraySegment<ItemBatchOperation>(this.batchOperations.ToArray());
             return await PartitionKeyRangeServerBatchRequest.CreateAsync(
                   partitionKeyRangeId,
+                  isClientEncrypted,
+                  intendedCollectionRidValue,
                   operationsArraySegment,
                   this.maxBatchByteSize,
                   this.maxBatchOperationCount,
