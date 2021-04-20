@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 await CosmosEncryptorTests.cosmosEncryptor.EncryptAsync(
                     TestCommon.GenerateRandomByteArray(),
                     "unknownDek",
-                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+                    CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
 
                 Assert.Fail("Encryption shoudn't have succeeded with uninitialized DEK.");
             }
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] cipherText = await CosmosEncryptorTests.cosmosEncryptor.EncryptAsync(
                 plainText,
                 CosmosEncryptorTests.dekId,
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
 
             CosmosEncryptorTests.mockDataEncryptionKey.Verify(
                 m => m.EncryptData(plainText),
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             byte[] decryptedText = await CosmosEncryptorTests.cosmosEncryptor.DecryptAsync(
                 cipherText,
                 CosmosEncryptorTests.dekId,
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
 
             CosmosEncryptorTests.mockDataEncryptionKey.Verify(
                 m => m.DecryptData(cipherText),
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             CosmosEncryptorTests.mockDataEncryptionKeyProvider.Verify(
                 m => m.FetchDataEncryptionKeyAsync(
                     CosmosEncryptorTests.dekId,
-                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                    CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     It.IsAny<CancellationToken>()), Times.Exactly(2));
 
             Assert.IsTrue(plainText.SequenceEqual(decryptedText));

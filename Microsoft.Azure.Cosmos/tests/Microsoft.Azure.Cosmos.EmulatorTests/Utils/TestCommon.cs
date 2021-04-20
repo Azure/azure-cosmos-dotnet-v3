@@ -107,9 +107,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         internal static CosmosClient CreateCosmosClient(
-            bool useGateway)
+            bool useGateway,
+            Action<CosmosClientBuilder> customizeClientBuilder = null)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
+
+            if (customizeClientBuilder != null)
+            {
+                customizeClientBuilder(cosmosClientBuilder);
+            }
+
             if (useGateway)
             {
                 cosmosClientBuilder.WithConnectionModeGateway();

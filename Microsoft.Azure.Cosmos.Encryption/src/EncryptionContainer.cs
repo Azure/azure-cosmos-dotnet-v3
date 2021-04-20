@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
     {
@@ -648,11 +649,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string processorName,
             ChangesHandler<T> onChangesDelegate)
         {
-            // TODO: need client SDK to expose underlying feedIterator to make decryption work for this scenario
-            // Issue #1484
-            return this.Container.GetChangeFeedProcessorBuilder(
-                processorName,
-                onChangesDelegate);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder"))
+            {
+                return this.Container.GetChangeFeedProcessorBuilder(
+                    processorName,
+                    async (IReadOnlyCollection<JObject> documents, CancellationToken cancellationToken) =>
+                    {
+                        List<T> decryptedItems = new List<T>(documents.Count);
+
+                        foreach (JObject document in documents)
+                        {
+                            JObject decryptedDocument = await this.EncryptionProcessor.DecryptAsync(
+                                document,
+                                diagnosticsContext,
+                                cancellationToken);
+
+                            decryptedItems.Add(decryptedDocument.ToObject<T>());
+                        }
+
+                        // Call the original passed in delegate
+                        await onChangesDelegate(decryptedItems, cancellationToken);
+                    });
+            }
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(

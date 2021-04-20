@@ -292,7 +292,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             method: HttpMethod.Post,
                             requestUri: "http://localhost.com",
                             requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
-                            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
+                            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken),
+                            beLatencyInMs: "0.42");
                         rootTrace.AddDatum("Point Operation Statistics", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -315,7 +316,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             method: default,
                             requestUri: default,
                             requestSessionToken: default,
-                            responseSessionToken: default);
+                            responseSessionToken: default,
+                            beLatencyInMs: default);
                         rootTrace.AddDatum("Point Operation Statistics Default", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -397,7 +399,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 itemLSN: 15,
                                 sessionToken: new SimpleSessionToken(42),
                                 usingLocalLSN: true,
-                                activityId: Guid.Empty.ToString()),
+                                activityId: Guid.Empty.ToString(),
+                                backendRequestDurationInMs: "4.2"),
                             ResourceType.Document,
                             OperationType.Query,
                             uri1);
@@ -449,7 +452,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 itemLSN: default,
                                 sessionToken: default,
                                 usingLocalLSN: default,
-                                activityId: default),
+                                activityId: default,
+                                backendRequestDurationInMs: default),
                             resourceType: default,
                             operationType: default,
                             locationEndpoint: default); ;

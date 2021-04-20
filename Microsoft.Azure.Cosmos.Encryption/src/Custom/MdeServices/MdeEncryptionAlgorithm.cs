@@ -66,8 +66,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                        dekProperties.Id,
                        keyEncryptionKey,
                        dekProperties.WrappedDataEncryptionKey);
-
-                    protectedDataEncryptionKey.TimeToLive = cacheTimeToLive.Value;
                 }
             }
             else

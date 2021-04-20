@@ -19,7 +19,5 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         public bool StartFromBeginning { get; set; }
 
         public DateTime? StartTime { get; set; }
-
-        public string SessionToken { get; set; }
     }
 }

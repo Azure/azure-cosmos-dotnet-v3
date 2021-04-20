@@ -87,6 +87,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.QueryMetrics, value);
         }
 
+        public virtual string BackendRequestDurationMilliseconds
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds);
+            set => this.SetProperty(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, value);
+        }
+
         public virtual string Location
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.Location);
