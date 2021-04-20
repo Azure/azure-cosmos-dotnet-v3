@@ -366,7 +366,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
 
-        [Ignore] // will enable once the emulator is updated with latest code.
         [TestMethod]
         public async Task EncryptionFailsWithUnknownClientEncryptionKey()
         {

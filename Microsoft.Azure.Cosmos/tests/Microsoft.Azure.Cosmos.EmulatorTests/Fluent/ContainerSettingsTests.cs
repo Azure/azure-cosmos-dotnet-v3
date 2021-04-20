@@ -593,7 +593,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
         }
 
-        [Ignore] // will enable once the emulator is updated with latest code.
         [TestMethod]
         public async Task WithClientEncryptionPolicyTest()
         {
