@@ -241,10 +241,52 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
                 QueryPage queryPage = tryGetQueryPage.Result;
                 documents.AddRange(queryPage.Documents);
+
+                Assert.AreEqual(42, queryPage.RequestCharge);
             }
 
             Assert.AreEqual(numItems, documents.Count);
             Assert.IsTrue(documents.OrderBy(document => ((CosmosObject)document)["_ts"]).ToList().SequenceEqual(documents));
+        }
+
+        [TestMethod]
+        public async Task TestDrain_IncludesResponseHeadersInQueryPage()
+        {
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(10);
+
+            TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                documentContainer: documentContainer,
+                sqlQuerySpec: new SqlQuerySpec(@"
+                    SELECT c._rid AS _rid, [{""item"": c._ts}] AS orderByItems, c AS payload
+                    FROM c
+                    WHERE {documentdb-formattableorderbyquery-filter}
+                    ORDER BY c._ts"),
+                targetRanges: await documentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default),
+                partitionKey: null,
+                orderByColumns: new List<OrderByColumn>()
+                {
+                    new OrderByColumn("c._ts", SortOrder.Ascending)
+                },
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                maxConcurrency: 10,
+                cancellationToken: default,
+                continuationToken: null);
+            Assert.IsTrue(monadicCreate.Succeeded);
+            IQueryPipelineStage queryPipelineStage = monadicCreate.Result;
+
+            while (await queryPipelineStage.MoveNextAsync())
+            {
+                TryCatch<QueryPage> tryGetQueryPage = queryPipelineStage.Current;
+                if (tryGetQueryPage.Failed)
+                {
+                    Assert.Fail(tryGetQueryPage.Exception.ToString());
+                }
+
+                QueryPage queryPage = tryGetQueryPage.Result;
+                Assert.IsTrue(queryPage.AdditionalHeaders.Count > 0);
+            }
         }
 
         [TestMethod]
