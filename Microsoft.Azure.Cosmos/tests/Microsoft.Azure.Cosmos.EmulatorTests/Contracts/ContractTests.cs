@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         }
 
         [TestMethod]
-        [Timeout(30000)]
+        //[Timeout(30000)]
         public async Task ChangeFeed_FeedRange_FromV0Token()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
@@ -144,9 +144,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
 
             ContainerInternal container = (ContainerInlineCore)largerContainer;
 
-            int expected = 3;
+            int expected = 100;
             int count = 0;
-            await this.CreateRandomItems((ContainerCore)container, expected, randomPartitionKey: false);
+            await this.CreateRandomItems((ContainerCore)container, expected, randomPartitionKey: true);
 
             IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
             List<string> continuations = new List<string>();
