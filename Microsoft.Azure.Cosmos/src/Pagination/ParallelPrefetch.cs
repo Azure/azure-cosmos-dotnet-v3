@@ -48,7 +48,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     {
                         try
                         {
-                            await throttler.WaitAsync();
                             prefetchChildTrace.ResetDuration();
                             await prefetcher.PrefetchAsync(prefetchChildTrace, cancellationToken);
                         }
@@ -65,7 +64,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     });
                 }
 
-                IEnumerable<Task> tasks = actions.Select(x => Task.Run(x));
+                List<Task> tasks = new List<Task>();
+                foreach (Func<Task> action in actions)
+                {
+                    await throttler.WaitAsync();
+                    tasks.Add(Task.Run(action));
+                }
+
                 await Task.WhenAll(tasks);
             }
         }
