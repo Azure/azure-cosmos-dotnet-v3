@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ConsistencyLevelClient()
         {
             List<Cosmos.ConsistencyLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.ConsistencyLevel)).Cast<Cosmos.ConsistencyLevel>().ToList();
-            foreach(Cosmos.ConsistencyLevel clientLevel in cosmosLevels)
+            foreach (Cosmos.ConsistencyLevel clientLevel in cosmosLevels)
             {
                 using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                    accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,
