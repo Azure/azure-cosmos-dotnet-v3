@@ -498,6 +498,11 @@
                 @"/a"),
 
                 Hash(
+                @"Projection LIKE",
+                @"SELECT VALUE 'a' LIKE '!%a' ESCAPE '!'",
+                @"/a"),
+
+                Hash(
                 @"LIKE SELECT * NonPartitioned",
                 @"SELECT * FROM c WHERE c.a LIKE '%a%'"),
 
@@ -525,6 +530,11 @@
                 Hash(
                 @"LIKE and partition filter",
                 @"SELECT * FROM c WHERE c.a LIKE 'a%'",
+                @"/a"),
+
+                Hash(
+                @"LIKE and partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a!%' ESCAPE '!'",
                 @"/a")
             };
 

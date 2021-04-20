@@ -34,6 +34,39 @@
   </Result>
   <Result>
     <Input>
+      <Description>Projection LIKE</Description>
+      <Query>SELECT VALUE 'a' LIKE '!%a' ESCAPE '!'</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>True</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],[]]</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>LIKE SELECT * NonPartitioned</Description>
       <Query>SELECT * FROM c WHERE c.a LIKE '%a%'</Query>
       <PartitionKeys />
@@ -172,6 +205,39 @@
     <Input>
       <Description>LIKE and partition filter</Description>
       <Query>SELECT * FROM c WHERE c.a LIKE 'a%'</Query>
+      <PartitionKeys>
+        <Key>/a</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top />
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LIKE and partition filter</Description>
+      <Query>SELECT * FROM c WHERE c.a LIKE 'a!%' ESCAPE '!'</Query>
       <PartitionKeys>
         <Key>/a</Key>
       </PartitionKeys>
