@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             HttpMethod method,
             string requestUri,
             string requestSessionToken,
-            string responseSessionToken)
+            string responseSessionToken,
+            string beLatencyInMs)
         {
             this.ActivityId = activityId;
             this.StatusCode = statusCode;
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.RequestSessionToken = requestSessionToken;
             this.ResponseSessionToken = responseSessionToken;
             this.ResponseTimeUtc = responseTimeUtc;
+            this.BELatencyInMs = beLatencyInMs;
         }
 
         public string ActivityId { get; }
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public string RequestUri { get; }
         public string RequestSessionToken { get; }
         public string ResponseSessionToken { get; }
+        public string BELatencyInMs { get; }
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
