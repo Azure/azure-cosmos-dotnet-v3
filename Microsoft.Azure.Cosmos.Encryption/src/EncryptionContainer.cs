@@ -160,10 +160,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         /// <summary>
-        /// Returns a copy of the passed RequestOptions if passed else creates a new ItemRequestOptions.
+        /// Returns a cloned copy of the passed RequestOptions if passed else creates a new ItemRequestOptions.
         /// </summary>
         /// <param name="itemRequestOptions"> Original ItemRequestOptions</param>
-        /// <returns> ItemRequestOptions object.</returns>
+        /// <returns> ItemRequestOptions.</returns>
         internal ItemRequestOptions GetClonedItemRequestOptions(ItemRequestOptions itemRequestOptions)
         {
             ItemRequestOptions clonedRequestOptions;
