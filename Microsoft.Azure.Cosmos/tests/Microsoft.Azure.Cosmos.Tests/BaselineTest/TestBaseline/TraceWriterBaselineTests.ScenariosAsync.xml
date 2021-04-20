@@ -2315,9 +2315,10 @@
 └── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Prefetching(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │       └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │           └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │   └── Prefetching child(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │       └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │           └── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               └── Query Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Get Child Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2403,7 +2404,7 @@
           "duration in milliseconds": 0,
           "children": [
             {
-              "name": "Prefetch",
+              "name": "Prefetching child",
               "id": "00000000-0000-0000-0000-000000000000",
               "caller info": {
                 "member": "MemberName",
@@ -2414,7 +2415,7 @@
               "duration in milliseconds": 0,
               "children": [
                 {
-                  "name": "[,FF) move next",
+                  "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
                   "caller info": {
                     "member": "MemberName",
@@ -2425,7 +2426,7 @@
                   "duration in milliseconds": 0,
                   "children": [
                     {
-                      "name": "Query Transport",
+                      "name": "[,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
                       "caller info": {
                         "member": "MemberName",
