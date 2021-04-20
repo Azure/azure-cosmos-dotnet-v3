@@ -248,11 +248,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             }
             if (partitions == 2)
             {
-                rangeStates = new FeedRangeState<ChangeFeedState>[]{
-                    new FeedRangeState<ChangeFeedState>(new FeedRangeEpk(new Documents.Routing.Range<string>("", "AA", true, false)), ChangeFeedState.Now()),
-                    new FeedRangeState<ChangeFeedState>(new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "FF", true, false)), ChangeFeedState.Now()),
-                };
-
                 documentContainer.Verify(c => c.MonadicChangeFeedAsync(
                     It.Is<FeedRangeState<ChangeFeedState>>(s => s.FeedRange.Equals(new FeedRangeEpk(new Documents.Routing.Range<string>("", "AA", true, false)))),
                     It.IsAny<ChangeFeedPaginationOptions>(),
