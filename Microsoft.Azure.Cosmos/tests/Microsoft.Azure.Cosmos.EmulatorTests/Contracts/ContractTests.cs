@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
         }
 
         [TestMethod]
-        //[Timeout(30000)]
+        [Timeout(30000)]
         public async Task ChangeFeed_FeedRange_FromV0Token()
         {
             ContainerResponse largerContainer = await this.database.CreateContainerAsync(
