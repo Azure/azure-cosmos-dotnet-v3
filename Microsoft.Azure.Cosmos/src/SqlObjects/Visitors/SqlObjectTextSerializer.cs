@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override void Visit(SqlLikeScalarExpression sqlObject)
         {
-            this.writer.Write("("); // why?
+            this.writer.Write("("); 
 
             sqlObject.Expression.Accept(this);
 

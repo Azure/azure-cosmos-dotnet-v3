@@ -774,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
 
                     public override bool Visit(SqlLikeScalarExpression scalarExpression)
                     {
-                        throw new NotImplementedException();
+                        return false;
                     }
                 }
             }
