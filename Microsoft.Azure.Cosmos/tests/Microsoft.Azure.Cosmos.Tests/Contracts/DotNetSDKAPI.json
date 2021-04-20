@@ -5699,23 +5699,6 @@
         }
       },
       "Members": {
-        "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Action`1[Microsoft.Azure.Cosmos.Headers] AddRequestHeaders": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] AddRequestHeaders;CanRead:True;CanWrite:True;System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.Collections.Generic.IReadOnlyDictionary`2[System.String,System.Object] get_Properties()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5756,13 +5739,6 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
-        },
-        "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_IfMatchEtag(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
