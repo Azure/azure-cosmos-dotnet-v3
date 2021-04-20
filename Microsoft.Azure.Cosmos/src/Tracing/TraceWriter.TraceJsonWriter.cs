@@ -159,6 +159,24 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(queryMetricsTraceDatum.QueryMetrics.ToString());
             }
 
+            public void Visit(ExceptionTraceDatum exceptionTraceDatum)
+            {
+                Exception exception = exceptionTraceDatum.Exception;
+
+                this.jsonWriter.WriteObjectStart();
+
+                this.jsonWriter.WriteFieldName("Type");
+                this.jsonWriter.WriteStringValue(exception.GetType().ToString());
+
+                this.jsonWriter.WriteFieldName("Message");
+                this.jsonWriter.WriteStringValue(exception.Message);
+
+                this.jsonWriter.WriteFieldName("StackTrace");
+                this.jsonWriter.WriteStringValue(exception.StackTrace);
+
+                this.jsonWriter.WriteObjectEnd();
+            }
+
             public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
             {
                 this.jsonWriter.WriteObjectStart();

@@ -101,6 +101,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             [CallerLineNumber] int sourceLineNumber = 0);
 
         /// <summary>
+        /// Resets the duration of the trace.
+        /// </summary>
+        void ResetDuration();
+
+        /// <summary>
         /// Adds a datum to the this trace instance.
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>

@@ -318,6 +318,26 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.toStringValue = queryMetricsTraceDatum.QueryMetrics.ToString();
                 }
 
+                public void Visit(ExceptionTraceDatum exceptionTraceDatum)
+                {
+                    Exception exception = exceptionTraceDatum.Exception;
+                    StringBuilder stringBuilder = new StringBuilder();
+
+                    stringBuilder.Append("Type: ");
+                    stringBuilder.Append(exception.GetType().ToString());
+                    stringBuilder.AppendLine();
+
+                    stringBuilder.Append("Message: ");
+                    stringBuilder.Append(exception.Message);
+                    stringBuilder.AppendLine();
+
+                    stringBuilder.AppendLine("StackTrace: ");
+                    stringBuilder.Append(exception.StackTrace);
+                    stringBuilder.AppendLine();
+
+                    this.toStringValue = stringBuilder.ToString();
+                }
+
                 public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
                     StringBuilder stringBuilder = new StringBuilder();

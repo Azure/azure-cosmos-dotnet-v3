@@ -44,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             // NoOp
         }
 
+        public void ResetDuration()
+        {
+            // NoOp
+        }
+
         public ITrace StartChild(
             string name,
             string memberName = "",

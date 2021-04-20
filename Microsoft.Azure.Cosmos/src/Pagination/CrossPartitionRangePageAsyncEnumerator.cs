@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     bufferedEnumerators.Add(bufferedEnumerator);
                 }
 
-                if (maxConcurrency.HasValue)
+                if (maxConcurrency.HasValue && maxConcurrency.Value > 0)
                 {
                     await ParallelPrefetch.PrefetchInParallelAsync(bufferedEnumerators, maxConcurrency.Value, trace, token);
                 }

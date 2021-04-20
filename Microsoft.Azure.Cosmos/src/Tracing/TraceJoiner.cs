@@ -81,6 +81,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
             }
 
+            public void ResetDuration()
+            {
+            }
+
             public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
