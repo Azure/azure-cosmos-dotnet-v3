@@ -258,18 +258,8 @@ namespace Microsoft.Azure.Cosmos
                         {
                             // Log the error message
                             trace.AddDatum(
-                                "Error",
-                                new PointOperationStatisticsTraceDatum(
-                                      activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                      statusCode: HttpStatusCode.ServiceUnavailable,
-                                      subStatusCode: SubStatusCodes.Unknown,
-                                      responseTimeUtc: DateTime.UtcNow,
-                                      requestCharge: 0,
-                                      errorMessage: e.ToString(),
-                                      method: requestMessage.Method,
-                                      requestUri: requestMessage.RequestUri.OriginalString,
-                                      requestSessionToken: null,
-                                      responseSessionToken: null));
+                                $"Error at {DateTime.UtcNow}",
+                                e);
 
                             bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
                                 !timeoutEnumerator.MoveNext(); // No more retries are configured
@@ -292,6 +282,10 @@ namespace Microsoft.Azure.Cosmos
                                             $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
                                         throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                             message,
+                                            headers: new Headers()
+                                            {
+                                                ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString()
+                                            },
                                             innerException: operationCanceledException,
                                             trace: helperTrace);
                                     }

@@ -84,9 +84,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             QueryPage sourcePage = tryGetSourcePage.Result;
             if (sourcePage.Documents.Count == 0)
             {
-                this.cumulativeRequestCharge += sourcePage.RequestCharge;
-                this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
-                this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
                 if (sourcePage.State == null)
                 {
                     QueryPage queryPage = new QueryPage(
@@ -104,6 +101,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     this.Current = TryCatch<QueryPage>.FromResult(queryPage);
                     return true;
                 }
+
+                this.cumulativeRequestCharge += sourcePage.RequestCharge;
+                this.cumulativeResponseLengthInBytes += sourcePage.ResponseLengthInBytes;
+                this.cumulativeAdditionalHeaders = sourcePage.AdditionalHeaders;
 
                 return await this.MoveNextAsync();
             }

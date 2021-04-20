@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             string id,
             TransactionalBatchItemRequestOptions requestOptions = null);
 
-#if INTERNAL
+#if PREVIEW
         /// <summary>
         /// Adds an operation to patch an item into the batch.
         /// </summary>

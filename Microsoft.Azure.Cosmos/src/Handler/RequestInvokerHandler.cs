@@ -48,38 +48,33 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 throw new ArgumentNullException(nameof(request));
             }
 
-            using (ITrace childTrace = request.Trace.StartChild(this.FullHandlerName, TraceComponent.RequestHandler, Tracing.TraceLevel.Info))
+            RequestOptions promotedRequestOptions = request.RequestOptions;
+            if (promotedRequestOptions != null)
             {
-                request.Trace = childTrace;
-
-                RequestOptions promotedRequestOptions = request.RequestOptions;
-                if (promotedRequestOptions != null)
-                {
-                    // Fill request options
-                    promotedRequestOptions.PopulateRequestOptions(request);
-                }
-
-                // Adds the NoContent header if not already added based on Client Level flag
-                if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(
-                    request.RequestOptions,
-                    this.client.ClientOptions,
-                    request.OperationType,
-                    request.ResourceType))
-                {
-                    request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
-                }
-
-                await this.ValidateAndSetConsistencyLevelAsync(request);
-                (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request);
-                if (isError)
-                {
-                    return errorResponse;
-                }
-
-                await request.AssertPartitioningDetailsAsync(this.client, cancellationToken);
-                this.FillMultiMasterContext(request);
-                return await base.SendAsync(request, cancellationToken);
+                // Fill request options
+                promotedRequestOptions.PopulateRequestOptions(request);
             }
+
+            // Adds the NoContent header if not already added based on Client Level flag
+            if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(
+                request.RequestOptions,
+                this.client.ClientOptions,
+                request.OperationType,
+                request.ResourceType))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+            }
+
+            await this.ValidateAndSetConsistencyLevelAsync(request);
+            (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
+            if (isError)
+            {
+                return errorResponse;
+            }
+
+            await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
+            this.FillMultiMasterContext(request);
+            return await base.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<T> SendAsync<T>(
@@ -196,10 +191,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         {
                             DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                            PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
+                            PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
                             CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(childTrace);
                             ContainerProperties collectionFromCache =
-                                await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken);
+                                await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken, childTrace);
 
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionFromCache.ResourceId,
@@ -323,11 +318,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
-        private async Task<(bool, ResponseMessage)> EnsureValidClientAsync(RequestMessage request)
+        private async Task<(bool, ResponseMessage)> EnsureValidClientAsync(RequestMessage request, ITrace trace)
         {
             try
             {
-                await this.client.DocumentClient.EnsureValidClientAsync();
+                await this.client.DocumentClient.EnsureValidClientAsync(trace);
                 return RequestInvokerHandler.clientIsValid;
             }
             catch (DocumentClientException dce)

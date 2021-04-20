@@ -81,10 +81,10 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
 
-                    PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync();
-                    CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
+                    PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
+                    CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(childTrace);
                     ContainerProperties collectionFromCache =
-                        await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
+                        await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None, childTrace);
 
                     //direction is not expected to change  between continuations.
                     Range<string> rangeFromContinuationToken =
@@ -97,18 +97,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             collectionRid: collectionFromCache.ResourceId,
                             rangeFromContinuationToken: rangeFromContinuationToken,
                             suppliedTokens: suppliedTokens,
+                            trace: childTrace,
                             direction: rntdbEnumerationDirection);
 
                     if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                     {
                         serviceRequest.ForceNameCacheRefresh = true;
-                        collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None);
+                        collectionFromCache = await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None, childTrace);
                         resolvedRangeInfo = await this.partitionRoutingHelper.TryGetTargetRangeFromContinuationTokenRangeAsync(
                             providedPartitionKeyRanges: providedRanges,
                             routingMapProvider: routingMapProvider,
                             collectionRid: collectionFromCache.ResourceId,
                             rangeFromContinuationToken: rangeFromContinuationToken,
                             suppliedTokens: suppliedTokens,
+                            trace: childTrace,
                             direction: rntdbEnumerationDirection);
                     }
 
@@ -135,6 +137,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             routingMapProvider: routingMapProvider,
                             collectionRid: collectionFromCache.ResourceId,
                             resolvedRangeInfo: resolvedRangeInfo,
+                            trace: childTrace,
                             direction: rntdbEnumerationDirection))
                         {
                             return ((DocumentClientException)new NotFoundException(

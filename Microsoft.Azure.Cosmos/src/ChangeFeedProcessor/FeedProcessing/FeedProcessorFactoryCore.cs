@@ -10,26 +10,23 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
 
-    internal class FeedProcessorFactoryCore<T> : FeedProcessorFactory<T>
+    internal class FeedProcessorFactoryCore : FeedProcessorFactory
     {
         private readonly ContainerInternal container;
         private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions;
         private readonly DocumentServiceLeaseCheckpointer leaseCheckpointer;
-        private readonly CosmosSerializerCore serializerCore;
 
         public FeedProcessorFactoryCore(
             ContainerInternal container,
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
-            DocumentServiceLeaseCheckpointer leaseCheckpointer,
-            CosmosSerializerCore serializerCore)
+            DocumentServiceLeaseCheckpointer leaseCheckpointer)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.changeFeedProcessorOptions = changeFeedProcessorOptions ?? throw new ArgumentNullException(nameof(changeFeedProcessorOptions));
             this.leaseCheckpointer = leaseCheckpointer ?? throw new ArgumentNullException(nameof(leaseCheckpointer));
-            this.serializerCore = serializerCore ?? throw new ArgumentNullException(nameof(serializerCore));
         }
 
-        public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver<T> observer)
+        public override FeedProcessor Create(DocumentServiceLease lease, ChangeFeedObserver observer)
         {
             if (observer == null) throw new ArgumentNullException(nameof(observer));
             if (lease == null) throw new ArgumentNullException(nameof(lease));
@@ -43,8 +40,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 FeedPollDelay = this.changeFeedProcessorOptions.FeedPollDelay,
                 MaxItemCount = this.changeFeedProcessorOptions.MaxItemCount,
                 StartFromBeginning = this.changeFeedProcessorOptions.StartFromBeginning,
-                StartTime = this.changeFeedProcessorOptions.StartTime,
-                SessionToken = this.changeFeedProcessorOptions.SessionToken,
+                StartTime = this.changeFeedProcessorOptions.StartTime
             };
 
             PartitionCheckpointerCore checkpointer = new PartitionCheckpointerCore(this.leaseCheckpointer, lease);
@@ -56,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 startTime: options.StartTime,
                 startFromBeginning: options.StartFromBeginning);
 
-            return new FeedProcessorCore<T>(observer, iterator, options, checkpointer, this.serializerCore);
+            return new FeedProcessorCore(observer, iterator, options, checkpointer);
         }
     }
 }

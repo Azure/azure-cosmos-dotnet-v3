@@ -5,29 +5,19 @@
 namespace CosmosCTL
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using App.Metrics;
     using App.Metrics.Counter;
     using App.Metrics.Gauge;
-    using App.Metrics.Timer;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal class ChangeFeedProcessorScenario : ICTLScenario
     {
-        private static readonly int DefaultDocumentFieldCount = 5;
-        private static readonly int DefaultDataFieldSize = 20;
-        private static readonly string DataFieldValue = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Substring(0, DefaultDataFieldSize);
-
-        private readonly Random random = new Random();
-
         private InitializationResult initializationResult;
 
         public async Task InitializeAsync(
@@ -46,10 +36,10 @@ namespace CosmosCTL
                 logger.LogInformation("Created collection for execution");
             }
 
-            if (config.Operations > 0)
+            if (config.PreCreatedDocuments > 0)
             {
-                logger.LogInformation("Pre-populating {0} documents", config.Operations);
-                await PopulateDocumentsAsync(config, cosmosClient, logger);
+                logger.LogInformation("Pre-populating {0} documents", config.PreCreatedDocuments);
+                await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
             }
         }
 
@@ -65,17 +55,19 @@ namespace CosmosCTL
             CounterOptions documentCounter = new CounterOptions { Name = "#Documents received", Context = loggingContextIdentifier };
             GaugeOptions leaseGauge = new GaugeOptions { Name = "#Leases created", Context = loggingContextIdentifier };
 
-            Container leaseContainer = await cosmosClient.GetDatabase(config.Database).CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+            string leaseContainerId = Guid.NewGuid().ToString();
+            Container leaseContainer = await cosmosClient.GetDatabase(config.Database).CreateContainerAsync(leaseContainerId, "/id");
+            logger.LogInformation("Created lease container {0}", leaseContainerId);
 
             try
             {
                 ChangeFeedProcessor changeFeedProcessor = cosmosClient.GetContainer(config.Database, config.Collection)
-                    .GetChangeFeedProcessorBuilder<SimpleItem>("ctlProcessor", 
+                    .GetChangeFeedProcessorBuilder<SimpleItem>("ctlProcessor",
                     (IReadOnlyCollection<SimpleItem> docs, CancellationToken token) =>
-                        {
-                            metrics.Measure.Counter.Increment(documentCounter, docs.Count);
-                            return Task.CompletedTask;
-                        })
+                    {
+                        metrics.Measure.Counter.Increment(documentCounter, docs.Count);
+                        return Task.CompletedTask;
+                    })
                     .WithLeaseContainer(leaseContainer)
                     .WithInstanceName(Guid.NewGuid().ToString())
                     .WithStartTime(DateTime.MinValue.ToUniversalTime())
@@ -100,15 +92,18 @@ namespace CosmosCTL
                     {
                         if (lease.LeaseToken != null)
                         {
-                            logger.LogInformation($"Lease for range {lease.LeaseToken}");
+                            logger.LogInformation($"Lease for range {lease.LeaseToken} - {lease.FeedRange.EffectiveRange.Min} - {lease.FeedRange.EffectiveRange.Max}");
                             ranges.Add(lease.FeedRange.EffectiveRange);
                             leaseTotal++;
                         }
                     }
                 }
 
+                logger.LogInformation($"Total count of leases {leaseTotal}.");
+                metrics.Measure.Gauge.SetValue(leaseGauge, leaseTotal);
+
                 string previousMin = "";
-                foreach(FeedRange sortedRange in ranges.OrderBy(range => range.Min))
+                foreach (FeedRange sortedRange in ranges.OrderBy(range => range.Min))
                 {
                     if (previousMin != sortedRange.Min)
                     {
@@ -117,8 +112,6 @@ namespace CosmosCTL
 
                     previousMin = sortedRange.Max;
                 }
-
-                metrics.Measure.Gauge.SetValue(leaseGauge, leaseTotal);
             }
             catch (Exception ex)
             {
@@ -173,74 +166,6 @@ namespace CosmosCTL
             }
 
             return result;
-        }
-
-        private static async Task PopulateDocumentsAsync(
-            CTLConfig config,
-            CosmosClient cosmosClient,
-            ILogger logger)
-        {
-            long successes = 0;
-            long failures = 0;
-            Container container = cosmosClient.GetContainer(config.Database, config.Collection);
-            ConcurrentBag<Dictionary<string, string>> createdDocumentsInContainer = new ConcurrentBag<Dictionary<string, string>>();
-            IEnumerable<Dictionary<string, string>> documentsToCreate = GenerateDocuments(config.Operations, config.CollectionPartitionKey);
-            await Utils.ForEachAsync(documentsToCreate, (Dictionary<string, string> doc)
-                => container.CreateItemAsync(doc).ContinueWith(task =>
-                {
-                    if (task.IsCompletedSuccessfully)
-                    {
-                        createdDocumentsInContainer.Add(doc);
-                        Interlocked.Increment(ref successes);
-                    }
-                    else
-                    {
-                        AggregateException innerExceptions = task.Exception.Flatten();
-                        if (innerExceptions.InnerExceptions.FirstOrDefault(innerEx => innerEx is CosmosException) is CosmosException cosmosException)
-                        {
-                            logger.LogError(cosmosException, "Failure pre-populating container {0}", container.Id);
-                        }
-
-                        Interlocked.Increment(ref failures);
-                    }
-                }), 100);
-
-            if (successes > 0)
-            {
-                logger.LogInformation("Completed pre-populating {0} documents in container {1}.", successes, container.Id);
-            }
-
-            if (failures > 0)
-            {
-                logger.LogWarning("Failed pre-populating {0} documents in container {1}.", failures, container.Id);
-            }
-        }
-
-        private static IEnumerable<Dictionary<string, string>> GenerateDocuments(
-            long documentsToCreate,
-            string partitionKeyPropertyName)
-        {
-            List<Dictionary<string, string>> createdDocuments = new List<Dictionary<string, string>>((int)documentsToCreate);
-            for (long i = 0; i < documentsToCreate; i++)
-            {
-                createdDocuments.Add(GenerateDocument(partitionKeyPropertyName));
-            }
-
-            return createdDocuments;
-        }
-
-        private static Dictionary<string, string> GenerateDocument(string partitionKeyPropertyName)
-        {
-            Dictionary<string, string> document = new Dictionary<string, string>();
-            string newGuid = Guid.NewGuid().ToString();
-            document["id"] = newGuid;
-            document[partitionKeyPropertyName] = newGuid;
-            for (int j = 0; j < DefaultDocumentFieldCount; j++)
-            {
-                document["dataField" + j] = DataFieldValue;
-            }
-
-            return document;
         }
 
         private struct InitializationResult

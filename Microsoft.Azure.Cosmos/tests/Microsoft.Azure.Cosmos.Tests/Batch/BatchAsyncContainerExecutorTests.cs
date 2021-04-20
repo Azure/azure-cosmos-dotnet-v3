@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContainer.Setup(x => x.LinkUri).Returns(link);
             mockContainer.Setup(x => x.GetPartitionKeyDefinitionAsync(It.IsAny<CancellationToken>())).Returns(Task.FromResult(new PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } }));
             mockContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid().ToString());
-            Mock<CosmosClientContext> context = new Mock<CosmosClientContext>();
+            Mock<CosmosClientContext> context = this.MockClientContext();
             mockContainer.Setup(c => c.ClientContext).Returns(context.Object);
             context.Setup(c => c.DocumentClient).Returns(new ClientWithSplitDetection());
 
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .SetupSequence(c => c.ProcessResourceOperationStreamAsync(
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation itemBatchOperation = CreateItem("test");
 
-            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>();
+            Mock<CosmosClientContext> mockedContext = this.MockClientContext();
             mockedContext.Setup(c => c.ClientOptions).Returns(new CosmosClientOptions());
             mockedContext
                 .Setup(c => c.ProcessResourceOperationStreamAsync(
@@ -298,7 +298,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     method: HttpMethod.Get,
                     requestUri: "http://localhost",
                     requestSessionToken: null,
-                    responseSessionToken: null));
+                    responseSessionToken: null,
+                    beLatencyInMs: "0.42"));
             }
 
             responseMessage.Headers.SubStatusCode = subStatusCode;
@@ -336,6 +337,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceStream: MockCosmosUtil.Serializer.ToStream(myDocument));
         }
 
+        private Mock<CosmosClientContext> MockClientContext()
+        {
+            Mock<CosmosClientContext> mockContext = new Mock<CosmosClientContext>();
+            mockContext.Setup(x => x.OperationHelperAsync<object>(
+                It.IsAny<string>(),
+                It.IsAny<RequestOptions>(),
+                It.IsAny<Func<ITrace, Task<object>>>(),
+                It.IsAny<TraceComponent>(),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<object>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
+
+            return mockContext;
+        }
+
         private class MyDocument
         {
             public string id { get; set; }
@@ -362,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ).Returns((string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh) => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
             }
 
-            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync()
+            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
             {
                 return Task.FromResult(this.partitionKeyRangeCache.Object);
             }
