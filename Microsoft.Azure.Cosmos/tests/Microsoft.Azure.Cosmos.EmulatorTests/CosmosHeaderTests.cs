@@ -71,7 +71,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 requestOptions.AddRequestHeaders = null;
 
                 await container.ReadItemAsync<ToDoActivity>(toDoActivity.id, new PartitionKey(toDoActivity.pk), requestOptions: requestOptions);
-
             }
             finally
             {
