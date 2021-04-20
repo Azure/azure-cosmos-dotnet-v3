@@ -49,8 +49,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(container));
             }
 
+            EncryptionContainer encryptionContainer = (EncryptionContainer)container;
+
+            (string databaseRidvalue, string containerRidvalue) = await encryptionContainer.GetorUpdateDatabaseAndContainerRidFromCacheAsync(
+                cancellationToken: cancellationToken);
+
             // container Id is unique within a Database.
-            string cacheKey = container.Database.Id + "/" + container.Id;
+            string cacheKey = databaseRidvalue + "|" + containerRidvalue + container.Database.Id + "/" + container.Id;
 
             // cache it against Database and Container ID key.
             return await this.clientEncryptionPolicyCacheByContainerId.GetAsync(
@@ -77,8 +82,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(container));
             }
 
+            EncryptionContainer encryptionContainer = (EncryptionContainer)container;
+
+            (string databaseRidvalue, string containerRidvalue) = await encryptionContainer.GetorUpdateDatabaseAndContainerRidFromCacheAsync(
+                cancellationToken: cancellationToken);
+
             // Client Encryption key Id is unique within a Database.
-            string cacheKey = container.Database.Id + "/" + clientEncryptionKeyId;
+            string cacheKey = databaseRidvalue + "|" + containerRidvalue + container.Database.Id + "/" + clientEncryptionKeyId;
 
             return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
                      cacheKey,
@@ -207,9 +217,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override Container GetContainer(string databaseId, string containerId)
         {
-            return new EncryptionContainer(
+            EncryptionContainer encryptionContainer = new EncryptionContainer(
                 this.cosmosClient.GetContainer(databaseId, containerId),
                 this);
+
+            return encryptionContainer;
         }
 
         public override FeedIterator<T> GetDatabaseQueryIterator<T>(

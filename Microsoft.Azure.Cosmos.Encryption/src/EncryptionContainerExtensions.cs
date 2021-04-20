@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
-                encryptionContainer.EncryptionProcessor);
+                encryptionContainer);
         }
 
         /// <summary>

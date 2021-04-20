@@ -14,13 +14,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly FeedIterator feedIterator;
         private readonly EncryptionProcessor encryptionProcessor;
+        private readonly EncryptionContainer encryptionContainer;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
-            EncryptionProcessor encryptionProcessor)
+            EncryptionContainer encryptionContainer)
         {
             this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
-            this.encryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
+            this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
+            this.encryptionProcessor = encryptionContainer.EncryptionProcessor;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -31,6 +33,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
             {
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+
+                // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
+                if (responseMessage.StatusCode != System.Net.HttpStatusCode.OK
+                    && responseMessage.StatusCode != System.Net.HttpStatusCode.NotModified
+                    && string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
+                {
+                    await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+
+                    throw new CosmosException(
+                        "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
+                        responseMessage.StatusCode,
+                        1024,
+                        responseMessage.Headers.ActivityId,
+                        responseMessage.Headers.RequestCharge);
+                }
 
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {

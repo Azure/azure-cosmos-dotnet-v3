@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -61,11 +60,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="cancellationToken"> cancellation token </param>
         /// <returns> Task </returns>
-        internal async Task InitializeEncryptionSettingsAsync(CancellationToken cancellationToken = default)
+        internal async Task InitializeEncryptionSettingsAsync(CancellationToken cancellationToken = default, bool shouldForceRefresh = false)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (this.isEncryptionSettingsInitDone)
+            if (this.isEncryptionSettingsInitDone && !shouldForceRefresh)
             {
                 throw new InvalidOperationException("The Encrypton Processor has already been initialized. ");
             }
@@ -95,9 +94,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 string propertyName = propertyToEncrypt.Path.Substring(1);
 
-                this.EncryptionSettings.SetEncryptionSettingForProperty(
+                await this.EncryptionSettings.SetEncryptionSettingForPropertyAsync(
                     propertyName,
-                    encryptionSettingsForProperty);
+                    encryptionSettingsForProperty,
+                    cancellationToken);
             }
 
             this.isEncryptionSettingsInitDone = true;
@@ -108,20 +108,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="cancellationToken">(Optional) Token to cancel the operation.</param>
         /// <returns>Task to await.</returns>
-        internal async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default)
+        internal async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default, bool shouldForceRefresh = false)
         {
-            if (this.isEncryptionSettingsInitDone)
+            if (this.isEncryptionSettingsInitDone && !shouldForceRefresh)
             {
                 return;
             }
 
             if (await CacheInitSema.WaitAsync(-1))
             {
-                if (!this.isEncryptionSettingsInitDone)
+                if (!this.isEncryptionSettingsInitDone || shouldForceRefresh)
                 {
                     try
                     {
-                        await this.InitializeEncryptionSettingsAsync(cancellationToken);
+                        await this.InitializeEncryptionSettingsAsync(cancellationToken, shouldForceRefresh);
                     }
                     finally
                     {
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public async Task<Stream> EncryptAsync(
+        public async Task<(Stream encryptedStream, bool isEncryptionSuccessful, JObject plainItemJobject)> EncryptAsync(
             Stream input,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
@@ -276,10 +276,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (this.ClientEncryptionPolicy == null)
             {
-                return input;
+                return (input, false, null);
             }
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+
+            JObject plainItemObj = (JObject)itemJObj.DeepClone();
 
             foreach (ClientEncryptionIncludedPath pathToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
             {
@@ -291,7 +293,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                EncryptionSettingForProperty settingforProperty = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName,cancellationToken);
+                EncryptionSettingForProperty settingforProperty = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
 
                 if (settingforProperty == null)
                 {
@@ -307,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), true, plainItemObj);
         }
 
         private JToken DecryptAndDeserializeValue(

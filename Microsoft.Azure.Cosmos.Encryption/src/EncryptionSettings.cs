@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionSettings
     {
+        // The cacheKey used here is combination of Database Rid, Container Rid and property name.
+        // This allows to access the exact version of setting incase the containers are created with same name.
         internal AsyncCache<string, EncryptionSettingForProperty> EncryptionSettingCacheByPropertyName { get; } = new AsyncCache<string, EncryptionSettingForProperty>();
 
         public EncryptionProcessor EncryptionProcessor { get; }
@@ -24,8 +26,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string propertyName,
             CancellationToken cancellationToken)
         {
+            EncryptionContainer encryptionContainer = (EncryptionContainer)this.EncryptionProcessor.Container;
+
+            (string databaseRid, string containerRid) = await encryptionContainer.GetorUpdateDatabaseAndContainerRidFromCacheAsync(
+                cancellationToken: cancellationToken);
+
+            string cacheKey = databaseRid + "|" + containerRid + "/" + propertyName;
+
             EncryptionSettingForProperty encryptionSettingsForProperty = await this.EncryptionSettingCacheByPropertyName.GetAsync(
-                propertyName,
+                cacheKey,
                 obsoleteValue: null,
                 async () => await this.FetchEncryptionSettingForPropertyAsync(propertyName, cancellationToken),
                 cancellationToken);
@@ -63,6 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
+            Console.WriteLine("Could not find for property: {0} \n", propertyName);
             return null;
         }
 
@@ -81,11 +91,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        internal void SetEncryptionSettingForProperty(
+        internal async Task SetEncryptionSettingForPropertyAsync(
             string propertyName,
-            EncryptionSettingForProperty encryptionSettingsForProperty)
+            EncryptionSettingForProperty encryptionSettingsForProperty,
+            CancellationToken cancellationToken)
         {
-            this.EncryptionSettingCacheByPropertyName.Set(propertyName, encryptionSettingsForProperty);
+            EncryptionContainer encryptionContainer = (EncryptionContainer)this.EncryptionProcessor.Container;
+
+            (string databaseRid, string containerRid) = await encryptionContainer.GetorUpdateDatabaseAndContainerRidFromCacheAsync(
+                cancellationToken: cancellationToken);
+
+            string cacheKey = databaseRid + "|" + containerRid + "/" + propertyName;
+            this.EncryptionSettingCacheByPropertyName.Set(cacheKey, encryptionSettingsForProperty);
         }
     }
 }
