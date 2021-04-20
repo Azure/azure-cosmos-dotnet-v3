@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Security.Permissions;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
@@ -45,11 +44,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             string processorName,
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
+            DocumentServiceLeaseContainer documentServiceLeaseContainer,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions)
             : this(
                   processorName,
                   monitoredContainer,
                   leaseContainer,
+                  documentServiceLeaseContainer,
                   changeFeedEstimatorRequestOptions,
                   (DocumentServiceLease lease, string continuationToken, bool startFromBeginning) => ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                           lease: lease,
@@ -74,16 +75,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                   processorName: string.Empty,
                   monitoredContainer: monitoredContainer,
                   leaseContainer: leaseContainer,
+                  documentServiceLeaseContainer: documentServiceLeaseContainer,
                   changeFeedEstimatorRequestOptions: changeFeedEstimatorRequestOptions,
                   monitoredContainerFeedCreator: monitoredContainerFeedCreator)
         {
-            this.documentServiceLeaseContainer = documentServiceLeaseContainer;
         }
 
         private ChangeFeedEstimatorIterator(
             string processorName,
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
+            DocumentServiceLeaseContainer documentServiceLeaseContainer,
             ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions,
             Func<DocumentServiceLease, string, bool, FeedIterator> monitoredContainerFeedCreator)
         {
@@ -102,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.hasMoreResults = true;
 
             this.monitoredContainerFeedCreator = monitoredContainerFeedCreator;
+            this.documentServiceLeaseContainer = documentServiceLeaseContainer;
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
