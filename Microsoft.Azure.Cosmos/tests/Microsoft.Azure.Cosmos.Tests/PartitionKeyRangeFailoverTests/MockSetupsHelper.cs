@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string regionEndpoint,
             string regionName,
             ResourceId containerResourceId,
-            out Uri primaryReplicaUri)
+            out TransportAddressUri primaryReplicaUri)
         {
             string basePhysicalUri = $"rntbd://cdb-ms-prod-{regionName}-fd4.documents.azure.com:14382/apps/9dc0394e-d25f-4c98-baa5-72f1c700bf3e/services/060067c7-a4e9-4465-a412-25cb0104cb58/partitions/2cda760c-f81f-4094-85d0-7bcfb2acc4e6/replicas/";
 
@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             };
 
-            primaryReplicaUri = new Uri(addresses.First(x => x.IsPrimary).PhysicalUri);
+            primaryReplicaUri = new TransportAddressUri(new Uri(addresses.First(x => x.IsPrimary).PhysicalUri));
 
             string databaseRid = containerResourceId.DatabaseId.ToString();
             string containerRid = containerResourceId.DocumentCollectionId.ToString();
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         internal static void SetupWriteForbiddenException(
             Mock<TransportClient> mockTransportClient,
-            Uri physicalUri)
+            TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
                 .Returns(() =>
@@ -250,22 +250,22 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         internal static void SetupServiceUnavailableException(
             Mock<TransportClient> mockTransportClient,
-            Uri physicalUri)
+            TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
                 .Returns(() =>
                 {
                     Console.WriteLine($"WriteForbiddenThrown: {physicalUri}");
-                    throw new ServiceUnavailableException($"Mock write forbidden exception on URI:{physicalUri}", physicalUri);
+                    throw new ServiceUnavailableException($"Mock write forbidden exception on URI:{physicalUri}", physicalUri.Uri);
                 });
         }
 
         internal static void SetupCreateItemResponse(
             Mock<TransportClient> mockTransportClient,
-            Uri physicalUri)
+            TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
-                .Returns<Uri, DocumentServiceRequest>(
+                .Returns<TransportAddressUri, DocumentServiceRequest>(
                 (uri, documentServiceRequest) =>
                 {
                     Console.WriteLine($"Write Success: {physicalUri}");

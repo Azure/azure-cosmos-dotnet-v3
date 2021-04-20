@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 out ResourceId containerResourceId,
                 out Mock<IHttpHandler> mockHttpHandler,
                 out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
-                out Uri primaryRegionprimaryReplicaUri);
+                out TransportAddressUri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
 
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 regionEndpoint: secondaryRegionEndpiont,
                 regionName: secondaryRegionNameForUri,
                 containerResourceId: containerResourceId,
-                primaryReplicaUri: out Uri secondaryRegionPrimaryReplicaUri);
+                primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 out ResourceId containerResourceId,
                 out Mock<IHttpHandler> mockHttpHandler,
                 out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
-                out Uri primaryRegionprimaryReplicaUri);
+                out TransportAddressUri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
 
@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 regionEndpoint: secondaryRegionEndpiont,
                 regionName: secondaryRegionNameForUri,
                 containerResourceId: containerResourceId,
-                primaryReplicaUri: out Uri secondaryRegionPrimaryReplicaUri);
+                primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
@@ -197,7 +197,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
 
-        private static void SetupAccountAndCacheOperations(out string secondaryRegionNameForUri, out string globalEndpoint, out string secondaryRegionEndpiont, out string databaseName, out string containerName, out ResourceId containerResourceId, out Mock<IHttpHandler> mockHttpHandler, out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds, out Uri primaryRegionprimaryReplicaUri)
+        private static void SetupAccountAndCacheOperations(
+            out string secondaryRegionNameForUri,
+            out string globalEndpoint,
+            out string secondaryRegionEndpiont,
+            out string databaseName,
+            out string containerName,
+            out ResourceId containerResourceId,
+            out Mock<IHttpHandler> mockHttpHandler,
+            out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
+            out TransportAddressUri primaryRegionprimaryReplicaUri)
         {
             string accountName = "testAccount";
             string primaryRegionNameForUri = "eastus";
@@ -210,7 +219,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             containerName = "testContainer";
             string containerRid = "ccZ1ANCszwk=";
             containerResourceId = ResourceId.Parse(containerRid);
-            string databaseRid = containerResourceId.DatabaseId.ToString();
 
             List<AccountRegion> writeRegion = new List<AccountRegion>()
             {
