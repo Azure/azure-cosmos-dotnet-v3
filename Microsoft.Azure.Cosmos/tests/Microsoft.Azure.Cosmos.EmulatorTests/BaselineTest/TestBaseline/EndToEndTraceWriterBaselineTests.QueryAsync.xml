@@ -325,16 +325,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -508,16 +505,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -691,16 +685,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -874,16 +865,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -1288,16 +1276,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -1482,16 +1467,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -1676,16 +1658,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -1870,16 +1849,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2292,16 +2268,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2475,16 +2448,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2658,16 +2628,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -2841,16 +2808,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3256,16 +3220,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3450,16 +3411,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3644,16 +3602,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
@@ -3838,16 +3793,13 @@
                             {
                               "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Routing",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
                                 "line": 42
                               },
                               "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {},
-                              "children": []
+                              "duration in milliseconds": 0
                             },
                             {
                               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
