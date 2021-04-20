@@ -606,7 +606,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlLikeScalarExpression.Create(expression, pattern, not, escapeSequence); 
         }
 
-        public override SqlObject VisitEscape_expression([NotNull] sqlParser.Escape_expressionContext context) {
+        public override SqlObject VisitEscape_expression([NotNull] sqlParser.Escape_expressionContext context) 
+        {
             Contract.Requires(context != null);
 
             return (SqlStringLiteral)this.Visit(context.STRING_LITERAL());
