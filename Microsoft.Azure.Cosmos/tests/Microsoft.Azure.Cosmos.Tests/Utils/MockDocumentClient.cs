@@ -104,7 +104,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             return Task.FromResult(this.accountConsistencyLevel);
         }
 
-        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
+            this.globalEndpointManager.Object, 
+            new ConnectionPolicy(),
+            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object));
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
