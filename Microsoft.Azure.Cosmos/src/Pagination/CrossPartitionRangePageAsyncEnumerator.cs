@@ -97,6 +97,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public FeedRangeInternal CurrentRange { get; private set; }
 
+        public FeedRangeInternal NextRange { get; private set; }
+
         public ValueTask<bool> MoveNextAsync()
         {
             return this.MoveNextAsync(NoOpTrace.Singleton);
@@ -120,6 +122,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 {
                     this.Current = default;
                     this.CurrentRange = default;
+                    this.NextRange = default;
                     return false;
                 }
 
@@ -185,6 +188,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                     this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
                     this.CurrentRange = currentPaginator.FeedRangeState.FeedRange;
+                    this.NextRange = CrossPartitionRangePageAsyncEnumerator<TPage, TState>.GetNextRange(enumerators);
                     return true;
                 }
 
@@ -214,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromResult(
                     new CrossFeedRangePage<TPage, TState>(currentPaginator.Current.Result, crossPartitionState));
                 this.CurrentRange = currentPaginator.FeedRangeState.FeedRange;
+                this.NextRange = CrossPartitionRangePageAsyncEnumerator<TPage, TState>.GetNextRange(enumerators);
                 return true;
             }
         }
@@ -234,6 +239,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return exeception is CosmosException cosmosException
                 && (cosmosException.StatusCode == HttpStatusCode.Gone)
                 && (cosmosException.SubStatusCode == (int)Documents.SubStatusCodes.PartitionKeyRangeGone);
+        }
+
+        private static FeedRangeInternal GetNextRange(IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators)
+        {
+            if (enumerators == null 
+                || enumerators.Count == 0)
+            {
+                return default;
+            }
+
+            return enumerators.Peek()?.FeedRangeState.FeedRange;
         }
 
         private interface IQueue<T> : IEnumerable<T>
