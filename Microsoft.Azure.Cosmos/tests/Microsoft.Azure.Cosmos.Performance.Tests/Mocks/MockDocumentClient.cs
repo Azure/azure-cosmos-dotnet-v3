@@ -97,7 +97,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Convert.ToBase64String(randomEntries);
         }
 
-        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
+            this.globalEndpointManager.Object,
+            new ConnectionPolicy(), 
+            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object));
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
@@ -266,9 +269,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<TransportAddressUri>(),
                     It.Is<DocumentServiceRequest>(e => this.IsValidDsr(e))))
-                    .Returns((Uri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
+                    .Returns((TransportAddressUri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
 
             return mockTransportClient.Object;
         }

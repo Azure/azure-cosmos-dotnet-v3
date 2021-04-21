@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using TestDoc = TestCommon.TestDoc;
 
+#pragma warning disable CS0618 // Type or member is obsolete
+
     [TestClass]
     public class LegacyEncryptionProcessorTests
     {
@@ -221,4 +223,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             }
         }
     }
+
+#pragma warning restore CS0618 // Type or member is obsolete
 }

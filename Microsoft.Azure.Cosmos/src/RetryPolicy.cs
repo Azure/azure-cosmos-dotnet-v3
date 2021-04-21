@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class RetryPolicy : IRetryPolicyFactory
     {
+        private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly bool enableEndpointDiscovery;
         private readonly RetryOptions retryOptions;
@@ -17,11 +18,15 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initialize the instance of the RetryPolicy class
         /// </summary>
-        public RetryPolicy(GlobalEndpointManager globalEndpointManager, ConnectionPolicy connectionPolicy)
+        public RetryPolicy(
+            GlobalEndpointManager globalEndpointManager, 
+            ConnectionPolicy connectionPolicy,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache)
         {
             this.enableEndpointDiscovery = connectionPolicy.EnableEndpointDiscovery;
             this.globalEndpointManager = globalEndpointManager;
             this.retryOptions = connectionPolicy.RetryOptions;
+            this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
         }
 
         /// <summary>
@@ -29,7 +34,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public IDocumentClientRetryPolicy GetRequestPolicy()
         {
-            ClientRetryPolicy clientRetryPolicy = new ClientRetryPolicy(this.globalEndpointManager, this.enableEndpointDiscovery, this.retryOptions);
+            ClientRetryPolicy clientRetryPolicy = new ClientRetryPolicy(
+                this.globalEndpointManager,
+                this.partitionKeyRangeLocationCache,
+                this.enableEndpointDiscovery,
+                this.retryOptions);
 
             return clientRetryPolicy;
         }
