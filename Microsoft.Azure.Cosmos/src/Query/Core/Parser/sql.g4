@@ -259,7 +259,8 @@ fragment SAFECODEPOINT
    ;
 
 IDENTIFIER
-	: [a-zA-Z_]([a-zA-Z_]|DIGIT)*
+	: 
+	| [a-zA-Z_]([a-zA-Z_]|DIGIT)*
 	;
 
 PARAMETER
