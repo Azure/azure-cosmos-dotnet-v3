@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Net;
     using System.Net.Http;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IDocumentClientRetryPolicy throttlingRetry;
         private readonly GlobalEndpointManager globalEndpointManager;
+        private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private int failoverRetryCount;
 
@@ -34,9 +36,11 @@ namespace Microsoft.Azure.Cosmos
         private bool canUseMultipleWriteLocations;
         private Uri locationEndpoint;
         private RetryContext retryContext;
+        private DocumentServiceRequest documentServiceRequest;
 
         public ClientRetryPolicy(
             GlobalEndpointManager globalEndpointManager,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             bool enableEndpointDiscovery,
             RetryOptions retryOptions)
         {
@@ -45,6 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 retryOptions.MaxRetryWaitTimeInSeconds);
 
             this.globalEndpointManager = globalEndpointManager;
+            this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
             this.failoverRetryCount = 0;
             this.enableEndpointDiscovery = enableEndpointDiscovery;
             this.sessionTokenRetryCount = 0;
@@ -62,8 +67,6 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             this.retryContext = null;
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
             if (exception is HttpRequestException _)
@@ -75,13 +78,15 @@ namespace Microsoft.Azure.Cosmos
                     retryOnPreferredLocations: true);
             }
 
-            DocumentClientException clientException = exception as DocumentClientException;
-            ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
-                clientException?.StatusCode,
-                clientException?.GetSubStatus());
-            if (shouldRetryResult != null)
+            if (exception is DocumentClientException clientException)
             {
-                return shouldRetryResult;
+                ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
+                    clientException?.StatusCode,
+                    clientException?.GetSubStatus());
+                if (shouldRetryResult != null)
+                {
+                    return shouldRetryResult;
+                }
             }
 
             return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
@@ -97,7 +102,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             this.retryContext = null;
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
@@ -120,6 +124,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.isReadRequest = request.IsReadOnlyRequest;
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+            this.documentServiceRequest = request;
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();
@@ -151,6 +156,12 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
+                if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest))
+                {
+                    return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
+                }
+
                 DefaultTrace.TraceWarning("Endpoint not writable. Refresh cache and retry");
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: false,
@@ -180,6 +191,9 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.ServiceUnavailable
                 && subStatusCode == SubStatusCodes.Unknown)
             {
+                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest);
+
                 return this.ShouldRetryOnServiceUnavailable();
             }
 
