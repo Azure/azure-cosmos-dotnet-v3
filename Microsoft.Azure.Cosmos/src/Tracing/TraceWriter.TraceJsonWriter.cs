@@ -166,13 +166,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteObjectStart();
 
                 this.jsonWriter.WriteFieldName("Type");
-                this.jsonWriter.WriteStringValue(exception.GetType().ToString());
+                this.WriteStringValueOrNull(exception.GetType().ToString());
 
                 this.jsonWriter.WriteFieldName("Message");
-                this.jsonWriter.WriteStringValue(exception.Message);
+                this.WriteStringValueOrNull(exception.Message);
 
                 this.jsonWriter.WriteFieldName("StackTrace");
-                this.jsonWriter.WriteStringValue(exception.StackTrace);
+                this.WriteStringValueOrNull(exception.StackTrace);
 
                 this.jsonWriter.WriteObjectEnd();
             }
