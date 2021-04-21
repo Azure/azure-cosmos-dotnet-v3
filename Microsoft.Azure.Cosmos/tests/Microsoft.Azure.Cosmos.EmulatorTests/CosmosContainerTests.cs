@@ -1373,6 +1373,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
         }
 
+
+        [TestMethod]
+        public async Task ContainerCreationFailsWithUnknownClientEncryptionKey()
+        {
+            ClientEncryptionIncludedPath unknownKeyConfigured = new ClientEncryptionIncludedPath()
+            {
+                Path = "/",
+                ClientEncryptionKeyId = "unknownKey",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            Collection<ClientEncryptionIncludedPath> clientEncryptionPaths = new Collection<ClientEncryptionIncludedPath> { unknownKeyConfigured };
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK")
+            {
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(clientEncryptionPaths)
+            };
+
+            try
+            {
+                Container encryptionContainer = await this.cosmosDatabase.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("Expected container creation should fail since client encryption policy is configured with unknown key.");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            {
+            }
+        }
+
         [TestMethod]
         public void ClientEncryptionPolicyFailureTest()
         {
