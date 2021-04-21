@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = true)
+            bool validatePartitionKeyRangeCalls = false)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: authKey);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             bool useCustomSeralizer = true,
-            bool validatePartitionKeyRangeCalls = true)
+            bool validatePartitionKeyRangeCalls = false)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(
             CosmosClientOptions clientOptions,
             string resourceToken = null,
-            bool validatePartitionKeyRangeCalls = true)
+            bool validatePartitionKeyRangeCalls = false)
         {
             string authKey = resourceToken ?? ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];

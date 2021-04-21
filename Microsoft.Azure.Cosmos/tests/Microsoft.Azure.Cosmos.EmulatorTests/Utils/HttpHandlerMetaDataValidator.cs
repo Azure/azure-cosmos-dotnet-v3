@@ -9,12 +9,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class HttpHandlerMetaDataValidator : DelegatingHandler
     {
         private readonly ConcurrentDictionary<Uri, int> numOfPkRangeCachePerCollection = new ConcurrentDictionary<Uri, int>();
-
         public HttpHandlerMetaDataValidator() : base(new HttpClientHandler())
         {
         }
@@ -23,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            HttpResponseMessage httpResponseMessage = await base.SendAsync(request, cancellationToken);;
+            HttpResponseMessage httpResponseMessage = await base.SendAsync(request, cancellationToken); ;
             if (request.Method == HttpMethod.Get)
             {
                 if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotModified
