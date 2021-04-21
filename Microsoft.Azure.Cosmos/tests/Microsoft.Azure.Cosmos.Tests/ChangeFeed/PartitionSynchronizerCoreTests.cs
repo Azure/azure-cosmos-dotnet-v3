@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
-                It.Is<bool>(b => b == true)))
+                false))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -333,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
-                It.Is<bool>(b => b == true)))
+                false))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
@@ -385,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
-                It.Is<bool>(b => b == true)))
+                false))
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
