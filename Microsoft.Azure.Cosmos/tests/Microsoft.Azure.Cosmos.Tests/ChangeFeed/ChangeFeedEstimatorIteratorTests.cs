@@ -12,6 +12,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -320,6 +322,45 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.AreEqual(instanceName, remainingLeaseWork.InstanceName);
             Assert.AreEqual(leaseToken, remainingLeaseWork.LeaseToken);
+        }
+
+        [TestMethod]
+        public async Task ShouldInitializeDocumentLeaseContainer()
+        {
+            static FeedIterator feedCreator(DocumentServiceLease lease, string continuationToken, bool startFromBeginning)
+            {
+                return Mock.Of<FeedIterator>();
+            }
+
+            Mock<CosmosClientContext> mockedContext = new Mock<CosmosClientContext>(MockBehavior.Strict);
+            mockedContext.Setup(c => c.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
+
+            string databaseRid = Guid.NewGuid().ToString();
+            Mock<DatabaseInternal> mockedMonitoredDatabase = new Mock<DatabaseInternal>(MockBehavior.Strict);
+            mockedMonitoredDatabase.Setup(c => c.GetRIDAsync(It.IsAny<CancellationToken>())).ReturnsAsync(databaseRid);
+
+            string monitoredContainerRid = Guid.NewGuid().ToString();
+            Mock<ContainerInternal> mockedMonitoredContainer = new Mock<ContainerInternal>(MockBehavior.Strict);
+            mockedMonitoredContainer.Setup(c => c.GetCachedRIDAsync(It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(monitoredContainerRid);
+            mockedMonitoredContainer.Setup(c => c.Database).Returns(mockedMonitoredDatabase.Object);
+            mockedMonitoredContainer.Setup(c => c.ClientContext).Returns(mockedContext.Object);
+
+            Mock<FeedIterator> leaseFeedIterator = new Mock<FeedIterator>();
+            leaseFeedIterator.Setup(i => i.HasMoreResults).Returns(false);
+
+            Mock<ContainerInternal>mockedLeaseContainer = new Mock<ContainerInternal>(MockBehavior.Strict);
+            mockedLeaseContainer.Setup(c => c.GetCachedContainerPropertiesAsync(It.Is<bool>(b => b == false), It.IsAny<ITrace>(), It.IsAny<CancellationToken>())).ReturnsAsync(new ContainerProperties());
+            mockedLeaseContainer.Setup(c => c.GetItemQueryStreamIterator(It.Is<string>(queryText => queryText.Contains($"{databaseRid}_{monitoredContainerRid}")), It.Is<string>(continuation => continuation == null), It.IsAny<QueryRequestOptions>()))
+                .Returns(leaseFeedIterator.Object);
+
+            ChangeFeedEstimatorIterator remainingWorkEstimator = new ChangeFeedEstimatorIterator(
+                mockedMonitoredContainer.Object,
+                mockedLeaseContainer.Object,
+                documentServiceLeaseContainer: default,
+                monitoredContainerFeedCreator: feedCreator,
+                changeFeedEstimatorRequestOptions: default);
+
+            await remainingWorkEstimator.ReadNextAsync(default);
         }
 
         [TestMethod]

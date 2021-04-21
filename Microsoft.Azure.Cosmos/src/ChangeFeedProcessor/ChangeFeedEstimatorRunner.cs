@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using static Microsoft.Azure.Cosmos.Container;
 
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     /// </summary>
     internal sealed class ChangeFeedEstimatorRunner : ChangeFeedProcessor
     {
+        private const string EstimatorDefaultHostName = "Estimator";
         private readonly ChangesEstimationHandler initialEstimateDelegate;
         private readonly TimeSpan? estimatorPeriod;
         private CancellationTokenSource shutdownCts;
@@ -26,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private FeedEstimatorRunner feedEstimatorRunner;
         private ChangeFeedEstimator remainingWorkEstimator;
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
+        private DocumentServiceLeaseContainer documentServiceLeaseContainer;
         private bool initialized = false;
 
         private Task runAsync;
@@ -65,18 +68,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             ChangeFeedProcessorOptions changeFeedProcessorOptions,
             ContainerInternal monitoredContainer)
         {
-            if (monitoredContainer == null) throw new ArgumentNullException(nameof(monitoredContainer));
             if (leaseContainer == null && customDocumentServiceLeaseStoreManager == null) throw new ArgumentNullException(nameof(leaseContainer));
 
             this.leaseContainer = leaseContainer;
-            this.monitoredContainer = monitoredContainer;
+            this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
+            this.documentServiceLeaseContainer = customDocumentServiceLeaseStoreManager?.LeaseContainer;
         }
 
-        public override Task StartAsync()
+        public override async Task StartAsync()
         {
             if (!this.initialized)
             {
+                await this.InitializeLeaseStoreAsync();
                 this.feedEstimatorRunner = this.BuildFeedEstimatorRunner();
                 this.initialized = true;
             }
@@ -84,26 +88,28 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.shutdownCts = new CancellationTokenSource();
             DefaultTrace.TraceInformation("Starting estimator...");
             this.runAsync = this.feedEstimatorRunner.RunAsync(this.shutdownCts.Token);
-            return Task.CompletedTask;
         }
 
         public override async Task StopAsync()
         {
             DefaultTrace.TraceInformation("Stopping estimator...");
-            this.shutdownCts.Cancel();
-            try
+            if (this.initialized)
             {
-                await this.runAsync.ConfigureAwait(false);
-            }
-            catch (TaskCanceledException ex)
-            {
-                // Expected during shutdown
-                Cosmos.Extensions.TraceException(ex);
-            }
-            catch (OperationCanceledException ex)
-            {
-                // Expected during shutdown
-                Cosmos.Extensions.TraceException(ex);
+                this.shutdownCts.Cancel();
+                try
+                {
+                    await this.runAsync.ConfigureAwait(false);
+                }
+                catch (TaskCanceledException ex)
+                {
+                    // Expected during shutdown
+                    Cosmos.Extensions.TraceException(ex);
+                }
+                catch (OperationCanceledException ex)
+                {
+                    // Expected during shutdown
+                    Cosmos.Extensions.TraceException(ex);
+                }
             }
         }
 
@@ -114,10 +120,27 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.remainingWorkEstimator = new ChangeFeedEstimatorCore(
                    this.changeFeedLeaseOptions.LeasePrefix,
                    this.monitoredContainer,
-                   this.leaseContainer);
+                   this.leaseContainer,
+                   this.documentServiceLeaseContainer);
             }
 
             return new FeedEstimatorRunner(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
+        }
+
+        private async Task InitializeLeaseStoreAsync()
+        {
+            if (this.documentServiceLeaseContainer == null)
+            {
+                string monitoredContainerAndDatabaseRid = await this.monitoredContainer.GetMonitoredDatabaseAndContainerRidAsync(default);
+                string leasePrefix = this.monitoredContainer.GetLeasePrefix(this.changeFeedLeaseOptions.LeasePrefix, monitoredContainerAndDatabaseRid);
+                DocumentServiceLeaseStoreManager documentServiceLeaseStoreManager = await DocumentServiceLeaseStoreManagerBuilder.InitializeAsync(
+                    monitoredContainer: this.monitoredContainer,
+                    leaseContainer: this.leaseContainer,
+                    leaseContainerPrefix: leasePrefix,
+                    instanceName: ChangeFeedEstimatorRunner.EstimatorDefaultHostName);
+
+                this.documentServiceLeaseContainer = documentServiceLeaseStoreManager.LeaseContainer;
+            }
         }
     }
 }

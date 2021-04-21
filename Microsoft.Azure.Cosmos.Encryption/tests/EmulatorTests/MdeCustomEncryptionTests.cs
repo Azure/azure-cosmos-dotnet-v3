@@ -11,8 +11,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core;
-    using global::Azure.Identity;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
     using Microsoft.Data.Encryption.Cryptography;
@@ -54,26 +52,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public static async Task ClassInitialize(TestContext context)
         {
             _ = context;
-            MdeCustomEncryptionTests.testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            MdeCustomEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(),MdeCustomEncryptionTests.testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
-            MdeCustomEncryptionTests.encryptor = new TestEncryptor(MdeCustomEncryptionTests.dekProvider);
 
             MdeCustomEncryptionTests.client = TestCommon.CreateCosmosClient();
             MdeCustomEncryptionTests.database = await MdeCustomEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
-
             MdeCustomEncryptionTests.keyContainer = await MdeCustomEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
-            await MdeCustomEncryptionTests.dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-
             MdeCustomEncryptionTests.itemContainer = await MdeCustomEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+
+            MdeCustomEncryptionTests.testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            await LegacyClassInitializeAsync();
+
+            MdeCustomEncryptionTests.encryptor = new TestEncryptor(MdeCustomEncryptionTests.dekProvider);
             MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
+            await MdeCustomEncryptionTests.dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
             MdeCustomEncryptionTests.dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, MdeCustomEncryptionTests.dekId);
 
-            /*For Legacy Compatibility*/
-            MdeCustomEncryptionTests.legacytestKeyWrapProvider = new TestKeyWrapProvider();
-            MdeCustomEncryptionTests.dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, MdeCustomEncryptionTests.testKeyStoreProvider,cacheTimeToLive: TimeSpan.FromSeconds(0));
-            await MdeCustomEncryptionTests.dualDekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-            MdeCustomEncryptionTests.legacyDekProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, MdeCustomEncryptionTests.legacydekId);
-            MdeCustomEncryptionTests.encryptorWithDualWrapProvider = new TestEncryptor(MdeCustomEncryptionTests.dualDekProvider);
         }
 
         [ClassCleanup]
@@ -107,97 +99,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionCreateDekWithDualDekProvider()
-        {
-            string dekId = "dekWithDualDekProviderNewAlgo";
-            DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
-            Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(name: "metadata1", value: MdeCustomEncryptionTests.metadata1.Value),
-                dekProperties.EncryptionKeyWrapMetadata);
-
-            // Use different DEK provider to avoid (unintentional) cache impact
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(),new TestEncryptionKeyStoreProvider(),TimeSpan.FromMinutes(30));
-            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
-            Assert.AreEqual(dekProperties, readProperties);
-
-            dekId = "dekWithDualDekProviderLegacyAlgo";
-            dekProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
-            Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(MdeCustomEncryptionTests.metadata1.Value + MdeCustomEncryptionTests.metadataUpdateSuffix),
-                dekProperties.EncryptionKeyWrapMetadata);
-
-            readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
-            Assert.AreEqual(dekProperties, readProperties);
-        }
-
-        [TestMethod]
-        public async Task EncryptionCreateDekWithNonMdeAlgorithmFails()
-        {
-            string dekId = "oldDek";
-            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(3600));
-            try
-            {
-                await MdeCustomEncryptionTests.CreateDekAsync(dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
-                Assert.Fail("CreateDataEncryptionKeyAsync should not have succeeded. ");
-            }
-            catch (InvalidOperationException ex)
-            {
-                Assert.AreEqual("For use of 'AEAes256CbcHmacSha256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.", ex.Message);
-            }
-        }
-
-        [TestMethod]
-        public async Task EncryptionCreateItemWithIncompatibleWrapProvider()
-        {
-            Container legacyEncryptionContainer;
-            CosmosDataEncryptionKeyProvider legacydekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            await legacydekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-            TestEncryptor legacyEncryptor = new TestEncryptor(legacydekProvider);
-            legacyEncryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(legacyEncryptor);
-            TestDoc testDoc = TestDoc.Create(null);
-            
-            try
-            {
-                ItemResponse<TestDoc> createResponse = await legacyEncryptionContainer.CreateItemAsync(
-                testDoc,
-                new PartitionKey(testDoc.PK),
-                MdeCustomEncryptionTests.GetRequestOptions(MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
-                Assert.Fail("CreateItemAsync should not have succeeded. ");
-            }
-            catch(InvalidOperationException ex)
-            {
-                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm based DEK, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
-            }           
-        }
-
-        [TestMethod]
-        public async Task EncryptionCreateItemUsingLegacyAlgoWithMdeDek()
-        {
-            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.dekId);
-        }
-
-        [TestMethod]
-        public async Task EncryptionCreateItemUsingMDEAlgoWithLegacyDek()
-        {
-            CosmosDataEncryptionKeyProvider legacydekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            await legacydekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-
-            TestDoc testDoc = TestDoc.Create(null);
-
-            ItemResponse<TestDoc> createResponse = await MdeCustomEncryptionTests.encryptionContainer.CreateItemAsync(
-                testDoc,
-                new PartitionKey(testDoc.PK),
-                MdeCustomEncryptionTests.GetRequestOptions(MdeCustomEncryptionTests.legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
-
-            VerifyExpectedDocResponse(testDoc, createResponse);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.legacydekId);
-        }
-
-        [TestMethod]
         public async Task EncryptionRewrapDek()
         {
             string dekId = "randomDek";
@@ -224,108 +125,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
-        }
-
-        [TestMethod]
-        public async Task EncryptionRewrapLegacyDekToMdeWrap()
-        {
-            string dekId = "rewrapLegacyAlgoDektoMdeAlgoDek";
-            DataEncryptionKeyProperties dataEncryptionKeyProperties;
-
-            dataEncryptionKeyProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
-
-            Assert.AreEqual(
-                MdeCustomEncryptionTests.metadata1.Value + MdeCustomEncryptionTests.metadataUpdateSuffix,
-                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value);
-
-            Assert.AreEqual(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
-
-            // use it to create item with Legacy Algo
-            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
-
-            // validate key with new Algo
-            testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
-
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
-                dekId,
-                MdeCustomEncryptionTests.metadata2,
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
-
-            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
-
-            dataEncryptionKeyProperties = MdeCustomEncryptionTests.VerifyDekResponse(
-                dekResponse,
-                dekId);
-
-            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
-
-            Assert.AreEqual(
-                MdeCustomEncryptionTests.metadata2,
-                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
-
-            // Use different DEK provider to avoid (unintentional) cache impact
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
-            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
-            Assert.AreEqual(dataEncryptionKeyProperties, readProperties);
-
-            // validate key
-            testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
-
-            // rewrap from Mde Algo to  Legacy algo should fail
-            dekId = "rewrapMdeAlgoDekToLegacyAlgoDek";
-
-            DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
-            Assert.AreEqual(
-                MdeCustomEncryptionTests.metadata1,
-                dekProperties.EncryptionKeyWrapMetadata);
-
-            try
-            {
-                await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
-                    dekId,
-                    MdeCustomEncryptionTests.metadata2,
-                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
-
-                Assert.Fail("RewrapDataEncryptionKeyAsync should not have succeeded. ");
-            }
-            catch (InvalidOperationException ex)
-            {
-                Assert.AreEqual("Rewrap operation with EncryptionAlgorithm 'AEAes256CbcHmacSha256Randomized' is not supported on Data Encryption Keys which are configured with 'MdeAeadAes256CbcHmac256Randomized'. ", ex.Message);
-            }
-
-            // rewrap Mde to Mde with Option
-
-            // rewrap from Mde Algo to  Legacy algo should fail
-            dekId = "rewrapMdeAlgoDekToMdeAlgoDek";
-
-            dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
-            Assert.AreEqual(
-                MdeCustomEncryptionTests.metadata1,
-                dekProperties.EncryptionKeyWrapMetadata);
-
-            dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
-               dekId,
-               MdeCustomEncryptionTests.metadata2,
-               CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
-
-            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
-
-            dataEncryptionKeyProperties = MdeCustomEncryptionTests.VerifyDekResponse(
-                dekResponse,
-                dekId);
-
-            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
-
-            Assert.AreEqual(
-                MdeCustomEncryptionTests.metadata2,
-                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
         }
 
         [TestMethod]
@@ -488,102 +287,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ReadLegacyEncryptedDataWithMdeProcessor()
+        public async Task ValidateCachingOfProtectedDataEncryptionKey()
         {
-            /* Setup the Container with a Dual Wrap Provider Container.*/
-            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptorWithDualWrapProvider);
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30)
+            };
 
-            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsyncUsingLegacyAlgorithm(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.legacydekId, TestDoc.PathsToEncrypt);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.legacydekId);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc);
-
-            TestDoc expectedDoc = new TestDoc(testDoc);
-
-            // Read feed (null query)
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
-                query: null,
-                expectedDoc,
-                legacyAlgo: true);
-
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
-                "SELECT * FROM c",
-                expectedDoc,
-                legacyAlgo: true);
-
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
-                string.Format(
-                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}' and c.NonSensitive = '{2}'",
-                    expectedDoc.PK,
-                    expectedDoc.Id,
-                    expectedDoc.NonSensitive),
-                expectedDoc,
-                legacyAlgo: true);
-
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
-                string.Format("SELECT * FROM c where c.Sensitive_IntFormat = '{0}'", testDoc.Sensitive_StringFormat),
-                expectedDoc: null,
-                legacyAlgo: true);
-
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
-                queryDefinition: new QueryDefinition(
-                    "select * from c where c.id = @theId and c.PK = @thePK")
-                         .WithParameter("@theId", expectedDoc.Id)
-                         .WithParameter("@thePK", expectedDoc.PK),
-                expectedDoc: expectedDoc,
-                legacyAlgo: true);
-
-            expectedDoc.Sensitive_NestedObjectFormatL1 = null;
-            expectedDoc.Sensitive_ArrayFormat = null;
-            expectedDoc.Sensitive_DecimalFormat = 0;
-            expectedDoc.Sensitive_IntFormat = 0;
-            expectedDoc.Sensitive_FloatFormat = 0;
-            expectedDoc.Sensitive_BoolFormat = false;
-            expectedDoc.Sensitive_StringFormat = null;
-            expectedDoc.Sensitive_DateFormat = new DateTime();
-
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
-                "SELECT c.id, c.PK, c.NonSensitive FROM c",
-                expectedDoc);
-
-            /* create Items with New Algorithm*/
-            await this.EncryptionCreateItem();
-
-            /* read back Data Items encrypted with Old Algorithm*/
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.legacydekId);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc);
-
-            /* Create and read back Data Items encrypted with Old Algorithm*/
-            TestDoc testDoc2 = await MdeCustomEncryptionTests.CreateItemAsyncUsingLegacyAlgorithm(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.legacydekId, TestDoc.PathsToEncrypt);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2, dekId: MdeCustomEncryptionTests.legacydekId);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2);
-
-            /* create Items with New Algorithm*/
-            await this.EncryptionCreateItem();
-
-            /* read back Data Items encrypted with Old Algorithm*/
-            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2, dekId: MdeCustomEncryptionTests.legacydekId);
-
-            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2);
-
-            /*Reset the Container for Other Tests to be carried on regular Encryptor with Single Dek Provider.*/
-            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
-        }
-
-        [TestMethod]
-        public async Task ValidateCachingofProtectedDataEncryptionKey()
-        {
-            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
             string dekId = "pDekCache";
             DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
             Assert.AreEqual(
@@ -591,7 +301,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // Caching for 30 min.
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, TimeSpan.FromMinutes(30));
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
 
             TestEncryptor encryptor = new TestEncryptor(dekProvider);
@@ -602,9 +312,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int unwrapcount);
             Assert.AreEqual(1, unwrapcount);
 
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
             // No caching
-            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider, cacheTimeToLive: TimeSpan.FromSeconds(0));
+            dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
 
             encryptor = new TestEncryptor(dekProvider);
@@ -615,8 +329,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
             Assert.AreEqual(32, unwrapcount);
 
-            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();
-            // default 2 hours.
+            // 2 hours default
+            testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider();  
+
             dekProvider = new CosmosDataEncryptionKeyProvider(testEncryptionKeyStoreProvider);
             await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
 
@@ -737,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await this.ValidateChangeFeedIteratorResponse(MdeCustomEncryptionTests.encryptionContainer, testDoc1, testDoc2);
 
             // change feed processor
-            // await this.ValidateChangeFeedProcessorResponse(EncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedProcessorResponse(MdeCustomEncryptionTests.encryptionContainer, testDoc1, testDoc2);
         }
 
         [TestMethod]
@@ -759,7 +474,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             FeedIterator<DecryptableItem> queryResponseIterator = MdeCustomEncryptionTests.encryptionContainer.GetItemQueryIterator<DecryptableItem>(query);
             FeedResponse<DecryptableItem> readDocsLazily = await queryResponseIterator.ReadNextAsync();
-            await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+            await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = MdeCustomEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
@@ -773,7 +488,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     readDocsLazily = await changeIterator.ReadNextAsync();
                     if (readDocsLazily.Resource != null)
                     {
-                        await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+                        await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
                     }
                 }
                 catch (CosmosException ex)
@@ -782,7 +497,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     break;
                 }
             }
-            // await this.ValidateChangeFeedProcessorResponse(EncryptionTests.itemContainerCore, testDoc1, testDoc2, false);
+
+            // validate changeFeedProcessor handling
+            Container leaseContainer = await MdeCustomEncryptionTests.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leasesContainer", partitionKeyPath: "/id"));
+
+            List<DecryptableItem> changeFeedReturnedDocs = new List<DecryptableItem>();
+            ChangeFeedProcessor cfp = MdeCustomEncryptionTests.encryptionContainer.GetChangeFeedProcessorBuilder(
+                "testCFPFailure",
+                (IReadOnlyCollection<DecryptableItem> changes, CancellationToken cancellationToken) =>
+                {
+                    changeFeedReturnedDocs.AddRange(changes);
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("dummy")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
+                .Build();
+
+            await cfp.StartAsync();
+            await Task.Delay(2000);
+            await cfp.StopAsync();
+
+            Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
+            await this.ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
+
             MdeCustomEncryptionTests.encryptor.FailDecryption = false;
         }
 
@@ -1420,6 +1159,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc1,
             TestDoc testDoc2)
         {
+            Container leaseContainer = await MdeCustomEncryptionTests.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
                 "testCFP",
@@ -1429,8 +1171,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     changeFeedReturnedDocs.AddRange(changes);
                     return Task.CompletedTask;
                 })
-                //.WithInMemoryLeaseContainer()
-                //.WithStartFromBeginning()
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
                 .Build();
 
             await cfp.StartAsync();
@@ -1443,27 +1186,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 if (testDoc.Id.Equals(testDoc1.Id))
                 {
-                    Assert.AreEqual(testDoc1, testDoc);
+                    VerifyExpectedDocResponse(testDoc1, testDoc);
                 }
                 else if (testDoc.Id.Equals(testDoc2.Id))
                 {
-                    Assert.AreEqual(testDoc2, testDoc);
+                    VerifyExpectedDocResponse(testDoc2, testDoc);
                 }
             }
         }
 
         private async Task ValidateLazyDecryptionResponse(
-            FeedResponse<DecryptableItem> readDocsLazily,
+            IEnumerator<DecryptableItem> readDocsLazily,
             string failureDek)
         {
             int decryptedDoc = 0;
             int failedDoc = 0;
 
-            foreach (DecryptableItem doc in readDocsLazily)
+            while(readDocsLazily.MoveNext())
             {
                 try
                 {
-                    (_, _) = await doc.GetItemAsync<dynamic>();
+                    (_, _) = await readDocsLazily.Current.GetItemAsync<dynamic>();
                     decryptedDoc++;
                 }
                 catch (EncryptionException encryptionException)
@@ -1594,25 +1337,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             return createResponse;
         }
 
-        private static async Task<ItemResponse<TestDoc>> CreateItemAsyncUsingLegacyAlgorithm(
-           Container container,
-           string dekId,
-           List<string> pathsToEncrypt,
-           string partitionKey = null)
-        {
-            TestDoc testDoc = TestDoc.Create(partitionKey);
-            ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(
-                testDoc,
-                new PartitionKey(testDoc.PK),
-                MdeCustomEncryptionTests.GetRequestOptions(dekId, pathsToEncrypt,legacyAlgo: true));
-            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
-
-            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
-
-            return createResponse;
-        }
-
-
         private static async Task<ItemResponse<TestDoc>> ReplaceItemAsync(
             Container encryptedContainer,
             TestDoc testDoc,
@@ -1690,18 +1414,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = pathsToEncrypt
-            };
-        }
-
-        private static EncryptionOptions GetLegacyEncryptionOptions(
-            string dekId,
-            List<string> pathsToEncrypt)
-        {
-            return new EncryptionOptions()
-            {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
                 PathsToEncrypt = pathsToEncrypt
             };
         }
@@ -1797,18 +1509,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 dekId);
         }
 
-        private static async Task<DataEncryptionKeyProperties> CreateLegacyDekAsync(CosmosDataEncryptionKeyProvider dekProvider, string dekId, string algorithm = null)
-        {
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
-                dekId,
-                algorithm ?? CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                MdeCustomEncryptionTests.metadata1);
-
-            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-
-            return VerifyDekResponse(dekResponse,
-                dekId);
-        }
 
         private static DataEncryptionKeyProperties VerifyDekResponse(
             ItemResponse<DataEncryptionKeyProperties> dekResponse,
@@ -2096,38 +1796,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
 
-        private class TestKeyWrapProvider : EncryptionKeyWrapProvider
-        {
-            public Dictionary<string, int> WrapKeyCallsCount { get; private set; }
-
-            public TestKeyWrapProvider()
-            {
-                this.WrapKeyCallsCount = new Dictionary<string, int>();
-            }
-
-            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
-            {
-                int moveBy = metadata.Value == MdeCustomEncryptionTests.metadata1.Value + MdeCustomEncryptionTests.metadataUpdateSuffix ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), MdeCustomEncryptionTests.cacheTTL));
-            }
-
-            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
-            {
-                if (!this.WrapKeyCallsCount.ContainsKey(metadata.Value))
-                {
-                    this.WrapKeyCallsCount[metadata.Value] = 1;
-                }
-                else
-                {
-                    this.WrapKeyCallsCount[metadata.Value]++;
-                }
-
-                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + MdeCustomEncryptionTests.metadataUpdateSuffix);
-                int moveBy = metadata.Value == MdeCustomEncryptionTests.metadata1.Value ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
-            }
-        }
-
         // This class is same as CosmosEncryptor but copied so as to induce decryption failure easily for testing.
         private class TestEncryptor : Encryptor
         {
@@ -2177,14 +1845,400 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 return dek.EncryptData(plainText);
             }
-        }        
-
-        internal class EncryptionTestsTokenCredentialFactory : KeyVaultTokenCredentialFactory
-        {
-            public override async ValueTask<TokenCredential> GetTokenCredentialAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
-            {
-                return await Task.FromResult(new DefaultAzureCredential());
-            }        
         }
+
+
+
+        #region Legacy
+        #pragma warning disable CS0618 // Type or member is obsolete
+        [TestMethod]
+        public async Task EncryptionCreateDekWithDualDekProvider()
+        {
+            string dekId = "dekWithDualDekProviderNewAlgo";
+            DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(name: "metadata1", value: MdeCustomEncryptionTests.metadata1.Value),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(), new TestEncryptionKeyStoreProvider(), TimeSpan.FromMinutes(30));
+            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+
+            dekId = "dekWithDualDekProviderLegacyAlgo";
+            dekProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
+            Assert.AreEqual(
+                new EncryptionKeyWrapMetadata(MdeCustomEncryptionTests.metadata1.Value + MdeCustomEncryptionTests.metadataUpdateSuffix),
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readProperties);
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateDekWithNonMdeAlgorithmFails()
+        {
+            string dekId = "oldDek";
+            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(3600)
+            };
+
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(testKeyStoreProvider);
+            try
+            {
+                await MdeCustomEncryptionTests.CreateDekAsync(dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+                Assert.Fail("CreateDataEncryptionKeyAsync should not have succeeded. ");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.AreEqual("For use of 'AEAes256CbcHmacSha256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyWrapProvider.", ex.Message);
+            }
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateItemWithIncompatibleWrapProvider()
+        {
+            Container legacyEncryptionContainer;
+            CosmosDataEncryptionKeyProvider legacydekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            await legacydekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            TestEncryptor legacyEncryptor = new TestEncryptor(legacydekProvider);
+            legacyEncryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(legacyEncryptor);
+            TestDoc testDoc = TestDoc.Create(null);
+
+            try
+            {
+                ItemResponse<TestDoc> createResponse = await legacyEncryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                MdeCustomEncryptionTests.GetRequestOptions(MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
+                Assert.Fail("CreateItemAsync should not have succeeded. ");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm based DEK, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
+            }
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateItemUsingLegacyAlgoWithMdeDek()
+        {
+            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.dekId);
+        }
+
+        [TestMethod]
+        public async Task EncryptionCreateItemUsingMDEAlgoWithLegacyDek()
+        {
+            CosmosDataEncryptionKeyProvider legacydekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            await legacydekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+
+            TestDoc testDoc = TestDoc.Create(null);
+
+            ItemResponse<TestDoc> createResponse = await MdeCustomEncryptionTests.encryptionContainer.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                MdeCustomEncryptionTests.GetRequestOptions(MdeCustomEncryptionTests.legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
+
+            VerifyExpectedDocResponse(testDoc, createResponse);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.legacydekId);
+        }
+
+
+        [TestMethod]
+        public async Task EncryptionRewrapLegacyDekToMdeWrap()
+        {
+            string dekId = "rewrapLegacyAlgoDektoMdeAlgoDek";
+            DataEncryptionKeyProperties dataEncryptionKeyProperties;
+
+            dataEncryptionKeyProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, dekId);
+
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata1.Value + MdeCustomEncryptionTests.metadataUpdateSuffix,
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
+
+            // use it to create item with Legacy Algo
+            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            // validate key with new Algo
+            testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+                dekId,
+                MdeCustomEncryptionTests.metadata2,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+
+            dataEncryptionKeyProperties = MdeCustomEncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
+
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata2,
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
+
+            // Use different DEK provider to avoid (unintentional) cache impact
+            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestEncryptionKeyStoreProvider());
+            await dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dataEncryptionKeyProperties, readProperties);
+
+            // validate key
+            testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: dekId);
+
+            // rewrap from Mde Algo to  Legacy algo should fail
+            dekId = "rewrapMdeAlgoDekToLegacyAlgoDek";
+
+            DataEncryptionKeyProperties dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata1,
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            try
+            {
+                await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+                    dekId,
+                    MdeCustomEncryptionTests.metadata2,
+                    CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+
+                Assert.Fail("RewrapDataEncryptionKeyAsync should not have succeeded. ");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Assert.AreEqual("Rewrap operation with EncryptionAlgorithm 'AEAes256CbcHmacSha256Randomized' is not supported on Data Encryption Keys which are configured with 'MdeAeadAes256CbcHmac256Randomized'. ", ex.Message);
+            }
+
+            // rewrap Mde to Mde with Option
+
+            // rewrap from Mde Algo to  Legacy algo should fail
+            dekId = "rewrapMdeAlgoDekToMdeAlgoDek";
+
+            dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata1,
+                dekProperties.EncryptionKeyWrapMetadata);
+
+            dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+               dekId,
+               MdeCustomEncryptionTests.metadata2,
+               CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+
+            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
+
+            dataEncryptionKeyProperties = MdeCustomEncryptionTests.VerifyDekResponse(
+                dekResponse,
+                dekId);
+
+            Assert.AreEqual(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
+
+            Assert.AreEqual(
+                MdeCustomEncryptionTests.metadata2,
+                dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
+        }
+
+
+        [TestMethod]
+        public async Task ReadLegacyEncryptedDataWithMdeProcessor()
+        {
+            // Setup the Container with a Dual Wrap Provider Container.
+            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptorWithDualWrapProvider);
+
+            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsyncUsingLegacyAlgorithm(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.legacydekId, TestDoc.PathsToEncrypt);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.legacydekId);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc);
+
+            TestDoc expectedDoc = new TestDoc(testDoc);
+
+            // Read feed (null query)
+            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTests.encryptionContainer,
+                query: null,
+                expectedDoc,
+                legacyAlgo: true);
+
+            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTests.encryptionContainer,
+                "SELECT * FROM c",
+                expectedDoc,
+                legacyAlgo: true);
+
+            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTests.encryptionContainer,
+                string.Format(
+                    "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}' and c.NonSensitive = '{2}'",
+                    expectedDoc.PK,
+                    expectedDoc.Id,
+                    expectedDoc.NonSensitive),
+                expectedDoc,
+                legacyAlgo: true);
+
+            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTests.encryptionContainer,
+                string.Format("SELECT * FROM c where c.Sensitive_IntFormat = '{0}'", testDoc.Sensitive_StringFormat),
+                expectedDoc: null,
+                legacyAlgo: true);
+
+            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTests.encryptionContainer,
+                queryDefinition: new QueryDefinition(
+                    "select * from c where c.id = @theId and c.PK = @thePK")
+                         .WithParameter("@theId", expectedDoc.Id)
+                         .WithParameter("@thePK", expectedDoc.PK),
+                expectedDoc: expectedDoc,
+                legacyAlgo: true);
+
+            expectedDoc.Sensitive_NestedObjectFormatL1 = null;
+            expectedDoc.Sensitive_ArrayFormat = null;
+            expectedDoc.Sensitive_DecimalFormat = 0;
+            expectedDoc.Sensitive_IntFormat = 0;
+            expectedDoc.Sensitive_FloatFormat = 0;
+            expectedDoc.Sensitive_BoolFormat = false;
+            expectedDoc.Sensitive_StringFormat = null;
+            expectedDoc.Sensitive_DateFormat = new DateTime();
+
+            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTests.encryptionContainer,
+                "SELECT c.id, c.PK, c.NonSensitive FROM c",
+                expectedDoc);
+
+            // create Items with New Algorithm
+            await this.EncryptionCreateItem();
+
+            // read back Data Items encrypted with Old Algorithm
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc, dekId: MdeCustomEncryptionTests.legacydekId);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc);
+
+            // Create and read back Data Items encrypted with Old Algorithm
+            TestDoc testDoc2 = await MdeCustomEncryptionTests.CreateItemAsyncUsingLegacyAlgorithm(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.legacydekId, TestDoc.PathsToEncrypt);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2, dekId: MdeCustomEncryptionTests.legacydekId);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2);
+
+            // create Items with New Algorithm
+            await this.EncryptionCreateItem();
+
+            // read back Data Items encrypted with Old Algorithm
+            await MdeCustomEncryptionTests.VerifyItemByReadAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2, dekId: MdeCustomEncryptionTests.legacydekId);
+
+            await MdeCustomEncryptionTests.VerifyItemByReadStreamAsync(MdeCustomEncryptionTests.encryptionContainer, testDoc2);
+
+            // Reset the Container for Other Tests to be carried on regular Encryptor with Single Dek Provider.
+            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
+        }
+
+
+        private static async Task<ItemResponse<TestDoc>> CreateItemAsyncUsingLegacyAlgorithm(
+           Container container,
+           string dekId,
+           List<string> pathsToEncrypt,
+           string partitionKey = null)
+        {
+            TestDoc testDoc = TestDoc.Create(partitionKey);
+            ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(
+                testDoc,
+                new PartitionKey(testDoc.PK),
+                MdeCustomEncryptionTests.GetRequestOptions(dekId, pathsToEncrypt, legacyAlgo: true));
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            return createResponse;
+        }
+
+        private static async Task LegacyClassInitializeAsync()
+        {
+            MdeCustomEncryptionTests.testKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(3600);
+
+            MdeCustomEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(), MdeCustomEncryptionTests.testKeyStoreProvider);
+            MdeCustomEncryptionTests.legacytestKeyWrapProvider = new TestKeyWrapProvider();
+
+            TestEncryptionKeyStoreProvider testKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+            MdeCustomEncryptionTests.dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, testKeyStoreProvider);
+            await MdeCustomEncryptionTests.dualDekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
+
+            MdeCustomEncryptionTests.legacyDekProperties = await MdeCustomEncryptionTests.CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, MdeCustomEncryptionTests.legacydekId);
+            MdeCustomEncryptionTests.encryptorWithDualWrapProvider = new TestEncryptor(MdeCustomEncryptionTests.dualDekProvider);
+        }
+
+        private static EncryptionOptions GetLegacyEncryptionOptions(
+            string dekId,
+            List<string> pathsToEncrypt)
+        {
+            return new EncryptionOptions()
+            {
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                PathsToEncrypt = pathsToEncrypt
+            };
+        }
+
+        private static async Task<DataEncryptionKeyProperties> CreateLegacyDekAsync(CosmosDataEncryptionKeyProvider dekProvider, string dekId, string algorithm = null)
+        {
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
+                dekId,
+                algorithm ?? CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
+                MdeCustomEncryptionTests.metadata1);
+
+            Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
+
+            return VerifyDekResponse(dekResponse,
+                dekId);
+        }
+
+
+        private class TestKeyWrapProvider : EncryptionKeyWrapProvider
+        {
+            public Dictionary<string, int> WrapKeyCallsCount { get; private set; }
+
+            public TestKeyWrapProvider()
+            {
+                this.WrapKeyCallsCount = new Dictionary<string, int>();
+            }
+
+            public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
+            {
+                int moveBy = metadata.Value == MdeCustomEncryptionTests.metadata1.Value + MdeCustomEncryptionTests.metadataUpdateSuffix ? 1 : 2;
+                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), MdeCustomEncryptionTests.cacheTTL));
+            }
+
+            public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
+            {
+                if (!this.WrapKeyCallsCount.ContainsKey(metadata.Value))
+                {
+                    this.WrapKeyCallsCount[metadata.Value] = 1;
+                }
+                else
+                {
+                    this.WrapKeyCallsCount[metadata.Value]++;
+                }
+
+                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + MdeCustomEncryptionTests.metadataUpdateSuffix);
+                int moveBy = metadata.Value == MdeCustomEncryptionTests.metadata1.Value ? 1 : 2;
+                return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
+            }
+        }
+        
+        #pragma warning restore CS0618 // Type or member is obsolete
+        #endregion
     }
 }
