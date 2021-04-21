@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
             if (validatePartitionKeyRangeCalls &&
+                clientOptions != null &&
                 clientOptions.HttpClientFactory == null &&
                 clientOptions.SendingRequestEventArgs == null)
             {
