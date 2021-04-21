@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -17,10 +18,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
     [TestCategory("ChangeFeed")]
     public class SmokeTests : BaseChangeFeedClientHelper
     {
+        private Container Container;
+
         [TestInitialize]
         public async Task TestInitialize()
         {
             await base.ChangeFeedTestInit();
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                new ContainerProperties(id: "monitored", partitionKeyPath: "/pk"),
+                cancellationToken: this.cancellationToken);
+            this.Container = response;
         }
 
         [TestCleanup]
@@ -59,6 +66,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             // Waiting on all notifications to finish
             await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedCleanupTime);
             await processor.StopAsync();
+            // Verify that we maintain order
+            CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
+        }
+
+        [TestMethod]
+        public async Task ExceptionsRetryBatch()
+        {
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+
+            bool thrown = false;
+            IEnumerable<int> expectedIds = Enumerable.Range(0, 3);
+            List<int> receivedIds = new List<int>();
+            ChangeFeedProcessor processor = this.Container
+                .GetChangeFeedProcessorBuilder("test", (IReadOnlyCollection<TestClass> docs, CancellationToken token) =>
+                {
+                    if (receivedIds.Count == 1
+                        && !thrown)
+                    {
+                        thrown = true;
+                        throw new Exception("Retry batch");
+                    }
+
+                    foreach (TestClass doc in docs)
+                    {
+                        receivedIds.Add(int.Parse(doc.id));
+                    }
+
+                    if (receivedIds.Count == 3)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithMaxItems(1)
+                .WithLeaseContainer(this.LeaseContainer).Build();
+
+            await processor.StartAsync();
+            // Letting processor initialize
+            await Task.Delay(BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            // Inserting documents
+            foreach (int id in expectedIds)
+            {
+                await this.Container.CreateItemAsync<dynamic>(new { id = id.ToString() });
+            }
+
+            // Waiting on all notifications to finish
+            bool isStartOk = allDocsProcessed.WaitOne(30 * BaseChangeFeedClientHelper.ChangeFeedSetupTime);
+            await processor.StopAsync();
+            Assert.IsTrue(isStartOk, "Timed out waiting for docs to process");
             // Verify that we maintain order
             CollectionAssert.AreEqual(expectedIds.ToList(), receivedIds);
         }

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -18,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// Azure key vaults used with client side encryption for Cosmos DB need to have soft delete and purge protection enabled -
     /// Please see <see href="https://docs.microsoft.com/en-us/azure/key-vault/key-vault-ovw-soft-delete">this link</see> for details regarding the same.
     /// </summary>
+    [Obsolete("Please use EncryptionKeyStoreProvider.")]
     public abstract class EncryptionKeyWrapProvider
     {
         /// <summary>

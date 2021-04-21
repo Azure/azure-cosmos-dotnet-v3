@@ -77,17 +77,18 @@
                 FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
                     queryText: null);
 
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                List<ITrace> traces = new List<ITrace>();
+                while (feedIterator.HasMoreResults)
                 {
-                    while (feedIterator.HasMoreResults)
-                    {
-                        await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-                    }
+                    ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ReadFeed", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ReadFeed", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -99,17 +100,18 @@
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container
                     .GetItemQueryIterator<JToken>(queryText: null);
 
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                List<ITrace> traces = new List<ITrace>();
+                while (feedIterator.HasMoreResults)
                 {
-                    while (feedIterator.HasMoreResults)
-                    {
-                        await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-                    }
+                    FeedResponse<JToken> response = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+                    traces.Add(trace);
                 }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ReadFeed Typed", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ReadFeed Typed", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -182,21 +184,22 @@
                     ChangeFeedStartFrom.Beginning(),
                     ChangeFeedMode.Incremental);
 
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                List<ITrace> traces = new List<ITrace>();
+                while (feedIterator.HasMoreResults)
                 {
-                    while (feedIterator.HasMoreResults)
+                    ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
-                        ResponseMessage responseMessage = await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-                        if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
-                        {
-                            break;
-                        }
+                        break;
                     }
                 }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ChangeFeed", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -210,24 +213,25 @@
                     ChangeFeedStartFrom.Beginning(),
                     ChangeFeedMode.Incremental);
 
-                TraceForBaselineTesting rootTrace;
-                using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                List<ITrace> traces = new List<ITrace>();
+                while (feedIterator.HasMoreResults)
                 {
-                    while (feedIterator.HasMoreResults)
+                    try
                     {
-                        try
-                        {
-                            FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-                        }
-                        catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
-                        {
-                            break;
-                        }
+                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                        traces.Add(trace);
+                    }
+                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    {
+                        break;
                     }
                 }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("ChangeFeed Typed", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("ChangeFeed Typed", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -314,17 +318,18 @@
                 FeedIteratorInternal feedIterator = (FeedIteratorInternal)container.GetItemQueryStreamIterator(
                     queryText: "SELECT * FROM c");
 
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                List<ITrace> traces = new List<ITrace>();
+                while (feedIterator.HasMoreResults)
                 {
-                    while (feedIterator.HasMoreResults)
-                    {
-                        await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-                    }
+                    ResponseMessage responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Query", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -336,17 +341,18 @@
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
                     queryText: "SELECT * FROM c");
 
-                Trace rootTrace;
-                using (rootTrace = Trace.GetRootTrace("Root Trace"))
+                List<ITrace> traces = new List<ITrace>();
+                while (feedIterator.HasMoreResults)
                 {
-                    while (feedIterator.HasMoreResults)
-                    {
-                        await feedIterator.ReadNextAsync(rootTrace, cancellationToken: default);
-                    }
+                    FeedResponse<JToken> response = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+                    traces.Add(trace);
                 }
+
+                ITrace traceForest = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Query Typed", rootTrace, startLineNumber, endLineNumber));
+                inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber));
             }
             //----------------------------------------------------------------
 
@@ -915,10 +921,16 @@
             {
                 startLineNumber = GetLineNumber();
                 TimeSpan delayTime = TimeSpan.FromSeconds(2);
+                RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
                 CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.AddCustomHandlers(new RequestHandlerSleepHelper(delayTime)));
+                    builder.AddCustomHandlers(requestHandler));
 
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
+                    databaseResponse.Diagnostics.ToString(),
+                    requestHandler.FullHandlerName,
+                    delayTime);
+
                 ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
                 await databaseResponse.Database.DeleteAsync();
                 endLineNumber = GetLineNumber();
@@ -947,6 +959,58 @@
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public async Task ReadManyAsync()
+        {
+            List<Input> inputs = new List<Input>();
+
+            int startLineNumber;
+            int endLineNumber;
+
+            for (int i = 0; i < 5; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk" + i, "id" + i);
+                await container.CreateItemAsync(item);
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i, new PartitionKey(i.ToString())));
+            }
+
+            //----------------------------------------------------------------
+            //  Read Many Stream
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                ITrace trace;
+                using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+                {
+                    trace = responseMessage.Trace;
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Read Many Typed
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                ITrace trace = ((CosmosTraceDiagnostics)feedResponse.Diagnostics).Value;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         public override Output ExecuteTest(Input input)
         {
             ITrace traceForBaselineTesting = CreateTraceForBaslineTesting(input.Trace, parent: null);
@@ -954,8 +1018,12 @@
             string text = TraceWriter.TraceToText(traceForBaselineTesting);
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
-            // AssertTraceProperites(input.Trace);
-
+            AssertTraceProperites(input.Trace);
+            Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
+            Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
+            Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
+            Assert.IsTrue(json.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {json}");
+            
             return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
         }
 
@@ -977,8 +1045,62 @@
             return convertedTrace;
         }
 
+        private static void AssertCustomHandlerTime(
+            string diagnostics, 
+            string handlerName,
+            TimeSpan delay)
+        {
+            JObject jObject = JObject.Parse(diagnostics);
+            JObject handlerChild = EndToEndTraceWriterBaselineTests.FindChild(
+                handlerName, 
+                jObject);
+            Assert.IsNotNull(handlerChild);
+            JToken delayToken = handlerChild["duration in milliseconds"];
+            Assert.IsNotNull(delayToken);
+            double itraceDelay = delayToken.ToObject<double>();
+            Assert.IsTrue(TimeSpan.FromMilliseconds(itraceDelay) > delay);
+        }
+
+        private static JObject FindChild(
+            string name,
+            JObject jObject)
+        {
+            if(jObject == null)
+            {
+                return null;
+            }
+
+            JToken nameToken = jObject["name"];
+            if(nameToken != null && nameToken.ToString() == name)
+            {
+                return jObject;
+            }
+
+            JArray jArray = jObject["children"]?.ToObject<JArray>();
+            if(jArray != null)
+            {
+                foreach(JObject child in jArray)
+                {
+                    JObject response = EndToEndTraceWriterBaselineTests.FindChild(name, child);
+                    if(response != null)
+                    {
+                        return response;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+
         private static void AssertTraceProperites(ITrace trace)
         {
+            if (trace.Name == "ReadManyItemsStreamAsync" || 
+                trace.Name == "ReadManyItemsAsync")
+            {
+                return; // skip test for read many as the queries are done in parallel
+            }
+
             if (trace.Children.Count == 0)
             {
                 // Base case

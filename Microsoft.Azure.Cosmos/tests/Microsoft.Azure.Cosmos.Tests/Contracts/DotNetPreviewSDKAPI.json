@@ -64,6 +64,42 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.ChangeFeedProcessorContext;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Headers get_Headers()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Headers get_Headers();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Headers Headers": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Headers Headers;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.Headers get_Headers();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_LeaseToken()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_LeaseToken();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String LeaseToken": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String LeaseToken;CanRead:True;CanWrite:False;System.String get_LeaseToken();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -576,6 +612,46 @@
     "Microsoft.Azure.Cosmos.Container;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(System.String, ChangeFeedStreamHandler)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(System.String, ChangeFeedStreamHandler);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder[T](System.String, ChangeFeedHandler`1)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder[T](System.String, ChangeFeedHandler`1);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(System.String, ChangeFeedStreamHandlerWithManualCheckpoint)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(System.String, ChangeFeedStreamHandlerWithManualCheckpoint);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint[T](System.String, ChangeFeedHandlerWithManualCheckpoint`1)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint[T](System.String, ChangeFeedHandlerWithManualCheckpoint`1);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedHandler`1[T]": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedHandlerWithManualCheckpoint`1[T]": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandler": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandlerWithManualCheckpoint": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedMode, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions)": {
           "Type": "Method",
           "Attributes": [],
@@ -615,6 +691,215 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedHandler`1;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:True;IsSerializable:True": {
+          "Subclasses": {},
+          "Members": {
+            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor(System.Object, IntPtr)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedHandlerWithManualCheckpoint`1;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:True;IsSerializable:True": {
+          "Subclasses": {},
+          "Members": {
+            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor(System.Object, IntPtr)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandler;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:True": {
+          "Subclasses": {},
+          "Members": {
+            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor(System.Object, IntPtr)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandlerWithManualCheckpoint;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:True": {
+          "Subclasses": {},
+          "Members": {
+            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor(System.Object, IntPtr)": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
+            }
+          },
+          "NestedTypes": {}
+        }
+      }
+    },
+    "Microsoft.Azure.Cosmos.Container+ChangeFeedHandler`1;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:True;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.Object, IntPtr)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Container+ChangeFeedHandlerWithManualCheckpoint`1;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:True;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.Object, IntPtr)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandler;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.Object, IntPtr)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandlerWithManualCheckpoint;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(System.Object, IntPtr)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Object, IntPtr), Void .ctor(System.Object, IntPtr)]"
         }
       },
       "NestedTypes": {}
@@ -772,6 +1057,36 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse] CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[System.TimeSpan] get_MaxIntegratedCacheStaleness()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_MaxIntegratedCacheStaleness();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.TimeSpan] MaxIntegratedCacheStaleness": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.TimeSpan] MaxIntegratedCacheStaleness;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_MaxIntegratedCacheStaleness();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_MaxIntegratedCacheStaleness(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_MaxIntegratedCacheStaleness(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_MaxIntegratedCacheStaleness(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -946,7 +1261,27 @@
           "NestedTypes": {}
         }
       },
-      "Members": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
@@ -1176,6 +1511,31 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.QueryRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.RequestOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {
         "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
@@ -1292,7 +1652,27 @@
               "NestedTypes": {}
             }
           },
-          "Members": {},
+          "Members": {
+            "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
           "NestedTypes": {}
         },
         "Microsoft.Azure.Cosmos.PatchItemRequestOptions;Microsoft.Azure.Cosmos.ItemRequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
@@ -1321,6 +1701,31 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_FilterPredicate(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.QueryRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_DedicatedGatewayRequestOptions(Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             }
           },
           "NestedTypes": {}

@@ -176,18 +176,8 @@ namespace Microsoft.Azure.Cosmos
                         {
                             lastException = requestFailedException;
                             getTokenTrace.AddDatum(
-                                "Request Failed Exception",
-                                new PointOperationStatisticsTraceDatum(
-                                    activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                    statusCode: (HttpStatusCode)requestFailedException.Status,
-                                    subStatusCode: SubStatusCodes.Unknown,
-                                    responseTimeUtc: DateTime.UtcNow,
-                                    requestCharge: default,
-                                    errorMessage: requestFailedException.ToString(),
-                                    method: default,
-                                    requestUri: null,
-                                    requestSessionToken: default,
-                                    responseSessionToken: default));
+                                $"RequestFailedException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
+                                requestFailedException);
 
                             DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
 
@@ -203,18 +193,8 @@ namespace Microsoft.Azure.Cosmos
                         {
                             lastException = operationCancelled;
                             getTokenTrace.AddDatum(
-                                "Request Timeout Exception",
-                                new PointOperationStatisticsTraceDatum(
-                                    activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                    statusCode: HttpStatusCode.RequestTimeout,
-                                    subStatusCode: SubStatusCodes.Unknown,
-                                    responseTimeUtc: DateTime.UtcNow,
-                                    requestCharge: default,
-                                    errorMessage: operationCancelled.ToString(),
-                                    method: default,
-                                    requestUri: null,
-                                    requestSessionToken: default,
-                                    responseSessionToken: default));
+                                $"OperationCanceledException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
+                                operationCancelled);
 
                             DefaultTrace.TraceError(
                                 $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
@@ -232,18 +212,8 @@ namespace Microsoft.Azure.Cosmos
                         {
                             lastException = exception;
                             getTokenTrace.AddDatum(
-                                "Internal Server Error Exception",
-                                new PointOperationStatisticsTraceDatum(
-                                    activityId: System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                    statusCode: HttpStatusCode.InternalServerError,
-                                    subStatusCode: SubStatusCodes.Unknown,
-                                    responseTimeUtc: DateTime.UtcNow,
-                                    requestCharge: default,
-                                    errorMessage: exception.ToString(),
-                                    method: default,
-                                    requestUri: null,
-                                    requestSessionToken: default,
-                                    responseSessionToken: default));
+                                $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
+                                exception);
 
                             DefaultTrace.TraceError(
                                 $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");

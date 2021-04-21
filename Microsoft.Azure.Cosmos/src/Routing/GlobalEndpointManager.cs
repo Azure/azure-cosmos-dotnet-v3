@@ -1,14 +1,14 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
+#nullable enable
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
-    using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Net;
     using System.Runtime.ExceptionServices;
     using System.Threading;
@@ -22,11 +22,11 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// availability and preference list.
     /// </summary>
     /// Marking it as non-sealed in order to unit test it using Moq framework
-    internal class GlobalEndpointManager : IDisposable
+    internal class GlobalEndpointManager : IGlobalEndpointManager
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 
-        private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";  
+        private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly LocationCache locationCache;
         private readonly Uri defaultEndpoint;
@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IDocumentClientInternal owner;
         private readonly object refreshLock;
         private readonly AsyncCache<string, AccountProperties> databaseAccountCache;
-        private int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+        private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private bool isRefreshing;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
@@ -75,86 +75,228 @@ namespace Microsoft.Azure.Cosmos.Routing
 #endif
         }
 
-        public ReadOnlyCollection<Uri> ReadEndpoints
+        public ReadOnlyCollection<Uri> ReadEndpoints => this.locationCache.ReadEndpoints;
+
+        public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
+
+        public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
+
+        /// <summary>
+        /// This will get the account information.
+        /// It will try the global endpoint first. 
+        /// If no response in 5 seconds it will create 2 additional tasks
+        /// The 2 additional tasks will go through all the preferred regions in parallel
+        /// It will return the first success and stop the parallel tasks.
+        /// </summary>
+        public static Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
+            Uri defaultEndpoint,
+            IList<string>? locations,
+            Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
         {
-            get
-            {
-                return this.locationCache.ReadEndpoints;
-            }
+            GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
+               defaultEndpoint,
+               locations?.GetEnumerator(),
+               getDatabaseAccountFn);
+
+            return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
         }
 
-        public ReadOnlyCollection<Uri> WriteEndpoints
+        /// <summary>
+        /// This is a helper class to 
+        /// </summary>
+        private class GetAccountPropertiesHelper
         {
-            get
+            private readonly CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
+            private readonly Uri DefaultEndpoint;
+            private readonly IEnumerator<string>? Locations;
+            private readonly Func<Uri, Task<AccountProperties>> GetDatabaseAccountFn;
+            private AccountProperties? AccountProperties = null;
+            private Exception? NonRetriableException = null;
+            private Exception? LastTransientException = null;
+
+            public GetAccountPropertiesHelper(
+                Uri defaultEndpoint,
+                IEnumerator<string>? locations,
+                Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
             {
-                return this.locationCache.WriteEndpoints;
+                this.DefaultEndpoint = defaultEndpoint;
+                this.Locations = locations;
+                this.GetDatabaseAccountFn = getDatabaseAccountFn;
             }
-        }
 
-        public int PreferredLocationCount
-        {
-            get
+            public async Task<AccountProperties> GetAccountPropertiesAsync()
             {
-                return this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
-            }
-        }
-
-        public static async Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
-            Uri defaultEndpoint, IList<string> locations, Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
-        {
-            ExceptionDispatchInfo capturedException = null;
-
-            try
-            {
-                AccountProperties databaseAccount = await getDatabaseAccountFn(defaultEndpoint);
-                return databaseAccount;
-            }
-            catch (Exception e)
-            {
-                DefaultTrace.TraceInformation("Fail to reach global gateway {0}, {1}", defaultEndpoint, e.ToString());
-
-                if (IsNonRetriableException(e))
+                // If there are no preferred regions then just wait for the global endpoint results
+                if (this.Locations == null)
                 {
-                    DefaultTrace.TraceInformation("Exception is not retriable");
-                    throw;
+                    return await this.GetOnlyGlobalEndpointAsync();
                 }
 
-                if (locations.Count == 0)
-                    throw;
+                Task globalEndpointTask = this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint);
 
-                // Save the exception and rethrow it at the end after trying all regions
-                capturedException = ExceptionDispatchInfo.Capture(e);
+                // Start a timer to start secondary requests in parallel.
+                Task timerTask = Task.Delay(TimeSpan.FromSeconds(5));
+                await Task.WhenAny(globalEndpointTask, timerTask);
+                if (this.AccountProperties != null)
+                {
+                    return this.AccountProperties;
+                }
+
+                if (this.NonRetriableException != null)
+                {
+                    throw this.NonRetriableException;
+                }
+
+                // Start 2 additional tasks to try to get the account information
+                // from the preferred region list since global account has not succeed yet.
+                HashSet<Task> tasksToWaitOn = new HashSet<Task>
+                {
+                    globalEndpointTask,
+                    this.TryGetAccountPropertiesFromAllLocationsAsync(),
+                    this.TryGetAccountPropertiesFromAllLocationsAsync()
+                };
+
+                while (tasksToWaitOn.Any())
+                {
+                    Task completedTask = await Task.WhenAny(tasksToWaitOn);
+                    if (this.AccountProperties != null)
+                    {
+                        return this.AccountProperties;
+                    }
+
+                    if (this.NonRetriableException != null)
+                    {
+                        throw this.NonRetriableException;
+                    }
+
+                    tasksToWaitOn.Remove(completedTask);
+                }
+
+                if (this.LastTransientException == null)
+                {
+                    throw new ArgumentException("Account properties and NonRetriableException are null and there is no LastTransientException.");
+                }
+
+                throw this.LastTransientException;
             }
 
-            for (int index = 0; index < locations.Count; index++)
+            private async Task<AccountProperties> GetOnlyGlobalEndpointAsync()
+            {
+                if (this.Locations != null)
+                {
+                    throw new ArgumentException("GetOnlyGlobalEndpointAsync should only be called if there are no other regions");
+                }
+
+                await this.GetAndUpdateAccountPropertiesAsync(this.DefaultEndpoint);
+
+                if (this.AccountProperties != null)
+                {
+                    return this.AccountProperties;
+                }
+
+                if (this.NonRetriableException != null)
+                {
+                    throw this.NonRetriableException;
+                }
+
+                if (this.LastTransientException != null)
+                {
+                    throw this.LastTransientException;
+                }
+
+                throw new ArgumentException("The account properties and exceptions are null");
+            }
+
+            /// <summary>
+            /// This is done in a thread safe way to allow multiple tasks to iterate over the 
+            /// list of locations.
+            /// </summary>
+            private async Task TryGetAccountPropertiesFromAllLocationsAsync()
+            {
+                while (this.TryMoveNextLocationThreadSafe(
+                        out string? location))
+                {
+                    if (location == null)
+                    {
+                        DefaultTrace.TraceCritical("location is null for TryMoveNextLocationThreadSafe");
+                        return;
+                    }
+
+                    await this.TryGetAccountPropertiesFromRegionalEndpointsAsync(location);
+                }
+            }
+
+            private bool TryMoveNextLocationThreadSafe(
+                out string? location)
+            {
+                if (this.CancellationTokenSource.IsCancellationRequested
+                    || this.Locations == null)
+                {
+                    location = null;
+                    return false;
+                }
+
+                lock (this.Locations)
+                {
+                    if (!this.Locations.MoveNext())
+                    {
+                        location = null;
+                        return false;
+                    }
+
+                    location = this.Locations.Current;
+                    return true;
+                }
+            }
+
+            private Task TryGetAccountPropertiesFromRegionalEndpointsAsync(string location)
+            {
+                return this.GetAndUpdateAccountPropertiesAsync(
+                    LocationHelper.GetLocationEndpoint(this.DefaultEndpoint, location));
+            }
+
+            private async Task GetAndUpdateAccountPropertiesAsync(Uri endpoint)
             {
                 try
                 {
-                    AccountProperties databaseAccount = await getDatabaseAccountFn(LocationHelper.GetLocationEndpoint(defaultEndpoint, locations[index]));
-                    return databaseAccount;
+                    if (this.CancellationTokenSource.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    AccountProperties databaseAccount = await this.GetDatabaseAccountFn(endpoint);
+
+                    if (databaseAccount != null)
+                    {
+                        this.AccountProperties = databaseAccount;
+                        this.CancellationTokenSource.Cancel();
+                    }
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("Fail to reach location {0}, {1}", locations[index], e.ToString());
-
-                    // if is the last region, throw exception
-                    if (index == locations.Count - 1)
+                    DefaultTrace.TraceInformation("Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
+                    if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
-                        // The reason for rethrowing the first exception is that the locations list might contain invalid regions,
-                        // so the last exception would be some generic exception ("The remote name could not be resolved") instead of the real exception.
-                        // Location list containing invalid regions is quite common when SetCurrentLocation is used since it will add all Azure regions to the list
-                        if (capturedException != null)
-                        {
-                            capturedException.Throw();
-                        }
-
-                        throw;
+                        DefaultTrace.TraceInformation("Exception is not retriable");
+                        this.CancellationTokenSource.Cancel();
+                        this.NonRetriableException = e;
+                    }
+                    else
+                    {
+                        this.LastTransientException = e;
                     }
                 }
             }
 
-            // we should never reach here. Make compiler happy
-            throw new Exception();
+            private static bool IsNonRetriableException(Exception exception)
+            {
+                if (exception is DocumentClientException dce && dce.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    return true;
+                }
+
+                return false;
+            }
         }
 
         public virtual Uri ResolveServiceEndpoint(DocumentServiceRequest request)
@@ -171,14 +313,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetLocation(endpoint);
         }
 
-        public void MarkEndpointUnavailableForRead(Uri endpoint)
+        public virtual void MarkEndpointUnavailableForRead(Uri endpoint)
         {
             DefaultTrace.TraceInformation("Marking endpoint {0} unavailable for read", endpoint);
 
             this.locationCache.MarkEndpointUnavailableForRead(endpoint);
         }
 
-        public void MarkEndpointUnavailableForWrite(Uri endpoint)
+        public virtual void MarkEndpointUnavailableForWrite(Uri endpoint)
         {
             DefaultTrace.TraceInformation("Marking endpoint {0} unavailable for Write", endpoint);
 
@@ -203,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task RefreshLocationAsync(AccountProperties databaseAccount, bool forceRefresh = false)
+        public virtual async Task RefreshLocationAsync(AccountProperties databaseAccount, bool forceRefresh = false)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -220,7 +362,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             lock (this.refreshLock)
             {
-                if (this.isRefreshing) return;
+                if (this.isRefreshing)
+                {
+                    return;
+                }
 
                 this.isRefreshing = true;
             }
@@ -250,8 +395,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.locationCache.OnDatabaseAccountRead(databaseAccount);
             }
 
-            bool canRefreshInBackground = false;
-            if (this.locationCache.ShouldRefreshEndpoints(out canRefreshInBackground))
+            if (this.locationCache.ShouldRefreshEndpoints(out bool canRefreshInBackground))
             {
                 if (databaseAccount == null && !canRefreshInBackground)
                 {
@@ -313,23 +457,17 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private Task<AccountProperties> RefreshDatabaseAccountInternalAsync()
         {
+#nullable disable // Needed because AsyncCache does not have nullable enabled
             return this.databaseAccountCache.GetAsync(
-                string.Empty,
-                null,
-                () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(this.defaultEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync),
-                this.cancellationTokenSource.Token,
+                key: string.Empty,
+                obsoleteValue: null,
+                singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    this.defaultEndpoint,
+                    this.connectionPolicy.PreferredLocations,
+                    this.GetDatabaseAccountAsync),
+                cancellationToken: this.cancellationTokenSource.Token,
                 forceRefresh: true);
-        }
-
-        private static bool IsNonRetriableException(Exception exception)
-        {
-            DocumentClientException dce = exception as DocumentClientException;
-            if (dce != null && dce.StatusCode == HttpStatusCode.Unauthorized)
-            {
-                return true;
-            }
-
-            return false;
+#nullable enable
         }
     }
 }

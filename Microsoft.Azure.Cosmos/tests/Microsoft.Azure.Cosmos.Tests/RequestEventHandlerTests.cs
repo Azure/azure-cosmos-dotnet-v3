@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
             TransportClient mockTransportClient = this.GetMockTransportClient();
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
 
-            StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, sessionContainer);
+            StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer);
 
             Mock<IAuthorizationTokenProvider> mockAuthorizationTokenProvider = new Mock<IAuthorizationTokenProvider>();
             mockAuthorizationTokenProvider.Setup(provider => provider.AddSystemAuthorizationHeaderAsync(
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                 };
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<TransportAddressUri>(),
                     It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponse);
 
