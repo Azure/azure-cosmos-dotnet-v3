@@ -133,6 +133,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return false;
                 }
 
+                public override bool Visit(SqlLogicalScalarExpression sqlLogicalScalarExpression)
+                {
+                    return sqlLogicalScalarExpression.LeftExpression.Accept(this) ||
+                        sqlLogicalScalarExpression.RightExpression.Accept(this);
+                }
+
                 public override bool Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
                 {
                     return sqlMemberIndexerScalarExpression.Member.Accept(this) ||

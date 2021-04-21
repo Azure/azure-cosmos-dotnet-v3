@@ -806,6 +806,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return true;
                 }
 
+                public override bool Visit(SqlLogicalScalarExpression scalarExpression)
+                {
+                    if (this.MatchesGroupByExpression(scalarExpression))
+                    {
+                        return true;
+                    }
+
+                    if (!scalarExpression.LeftExpression.Accept(this))
+                    {
+                        return false;
+                    }
+
+                    if (!scalarExpression.RightExpression.Accept(this))
+                    {
+                        return false;
+                    }
+
+                    return true;
+                }
+
                 public override bool Visit(SqlMemberIndexerScalarExpression scalarExpression)
                 {
                     if (this.MatchesGroupByExpression(scalarExpression))

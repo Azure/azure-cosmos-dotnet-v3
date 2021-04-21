@@ -18,11 +18,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         Add,
 
         /// <summary>
-        /// Logical AND.
-        /// </summary>
-        And,
-
-        /// <summary>
         /// Bitwise AND.
         /// </summary>
         BitwiseAnd,
@@ -86,11 +81,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         /// Not Equals.
         /// </summary>
         NotEqual,
-
-        /// <summary>
-        /// Logical Or.
-        /// </summary>
-        Or,
 
         /// <summary>
         /// String Concat.

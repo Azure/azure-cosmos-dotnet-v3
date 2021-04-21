@@ -133,10 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             SqlLiteralScalarExpression three = SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3));
             SqlLiteralScalarExpression hello = SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello"));
             SqlLiteralScalarExpression world = SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("World"));
-            SqlLiteralScalarExpression trueBoolean = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.True);
-            SqlLiteralScalarExpression falseBoolean = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.False);
             SqlLiteralScalarExpression nullLiteral = SqlLiteralScalarExpression.Create(SqlNullLiteral.Singleton);
-            SqlLiteralScalarExpression undefinedLiteral = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
 
             SqlArrayCreateScalarExpression arrayCreateScalarExpresion1 = SqlArrayCreateScalarExpression.Create();
             SqlArrayCreateScalarExpression arrayCreateScalarExpresion2 = SqlArrayCreateScalarExpression.Create(five);
@@ -144,15 +141,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 
             SqlBinaryScalarExpression fivePlusThree = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Add, five, three);
             AssertEvaluation(CosmosNumber64.Create(3 + 5), fivePlusThree);
-
-            SqlBinaryScalarExpression trueAndFalse = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.And, trueBoolean, falseBoolean);
-            AssertEvaluation(CosmosBoolean.Create(true && false), trueAndFalse);
-
-            SqlBinaryScalarExpression falseAndUndefined = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.And, falseBoolean, undefinedLiteral);
-            AssertEvaluation(CosmosBoolean.Create(false), falseAndUndefined);
-
-            SqlBinaryScalarExpression trueAndUndefined = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.And, trueBoolean, undefinedLiteral);
-            AssertEvaluation(Undefined, trueAndUndefined);
 
             try
             {
@@ -249,15 +237,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 
             SqlBinaryScalarExpression fiveNotEqualFive = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.NotEqual, five, five);
             AssertEvaluation(CosmosBoolean.Create(5 != 5), fiveNotEqualFive);
-
-            SqlBinaryScalarExpression trueOrFalse = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Or, trueBoolean, falseBoolean);
-            AssertEvaluation(CosmosBoolean.Create(true || false), trueOrFalse);
-
-            SqlBinaryScalarExpression trueOrUndefined = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Or, trueBoolean, undefinedLiteral);
-            AssertEvaluation(CosmosBoolean.Create(true), trueOrUndefined);
-
-            SqlBinaryScalarExpression falseOrUndefined = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.Or, falseBoolean, undefinedLiteral);
-            AssertEvaluation(Undefined, falseOrUndefined);
 
             SqlBinaryScalarExpression helloConcatWorld = SqlBinaryScalarExpression.Create(SqlBinaryScalarOperatorKind.StringConcat, hello, world);
             AssertEvaluation(CosmosString.Create("Hello" + "World"), helloConcatWorld);
@@ -418,6 +397,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 
             SqlLiteralScalarExpression undefinedLiteral = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
             AssertEvaluation(Undefined, undefinedLiteral);
+        }
+
+        [TestMethod]
+        [Owner("leminh")]
+        public void SqlLogicalExpressionTest()
+        {
+            SqlLiteralScalarExpression trueBoolean = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.True);
+            SqlLiteralScalarExpression falseBoolean = SqlLiteralScalarExpression.Create(SqlBooleanLiteral.False);
+            SqlLiteralScalarExpression undefinedLiteral = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+
+            SqlLogicalScalarExpression trueOrFalse = SqlLogicalScalarExpression.Create(SqlLogicalScalarOperatorKind.Or, trueBoolean, falseBoolean);
+            AssertEvaluation(CosmosBoolean.Create(true || false), trueOrFalse);
+
+            SqlLogicalScalarExpression trueOrUndefined = SqlLogicalScalarExpression.Create(SqlLogicalScalarOperatorKind.Or, trueBoolean, undefinedLiteral);
+            AssertEvaluation(CosmosBoolean.Create(true), trueOrUndefined);
+
+            SqlLogicalScalarExpression falseOrUndefined = SqlLogicalScalarExpression.Create(SqlLogicalScalarOperatorKind.Or, falseBoolean, undefinedLiteral);
+            AssertEvaluation(Undefined, falseOrUndefined);
+
+            SqlLogicalScalarExpression trueAndFalse = SqlLogicalScalarExpression.Create(SqlLogicalScalarOperatorKind.And, trueBoolean, falseBoolean);
+            AssertEvaluation(CosmosBoolean.Create(true && false), trueAndFalse);
+
+            SqlLogicalScalarExpression falseAndUndefined = SqlLogicalScalarExpression.Create(SqlLogicalScalarOperatorKind.And, falseBoolean, undefinedLiteral);
+            AssertEvaluation(CosmosBoolean.Create(false), falseAndUndefined);
+
+            SqlLogicalScalarExpression trueAndUndefined = SqlLogicalScalarExpression.Create(SqlLogicalScalarOperatorKind.And, trueBoolean, undefinedLiteral);
+            AssertEvaluation(Undefined, trueAndUndefined);
         }
 
         [TestMethod]

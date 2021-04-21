@@ -421,6 +421,31 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return Equals(first.Literal, second.Literal);
         }
 
+        public override bool Visit(SqlLogicalScalarExpression first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlLogicalScalarExpression second))
+            {
+                return false;
+            }
+
+            if (first.OperatorKind != second.OperatorKind)
+            {
+                return false;
+            }
+
+            if (!Equals(first.LeftExpression, second.LeftExpression))
+            {
+                return false;
+            }
+
+            if (!Equals(first.RightExpression, second.RightExpression))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlMemberIndexerScalarExpression first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlMemberIndexerScalarExpression second))

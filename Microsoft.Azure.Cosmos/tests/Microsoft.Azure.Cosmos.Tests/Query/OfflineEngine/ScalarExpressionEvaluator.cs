@@ -75,8 +75,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 scalarExpression.Expression,
                 scalarExpression.EndInclusive);
 
-            SqlScalarExpression logicalBetween = SqlBinaryScalarExpression.Create(
-                SqlBinaryScalarOperatorKind.And,
+            SqlScalarExpression logicalBetween = SqlLogicalScalarExpression.Create(
+                SqlLogicalScalarOperatorKind.And,
                 expressionGTELeft,
                 expressionLTERight);
 
@@ -100,10 +100,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             {
                 case SqlBinaryScalarOperatorKind.Add:
                     result = PerformBinaryNumberOperation((number1, number2) => number1 + number2, left, right);
-                    break;
-
-                case SqlBinaryScalarOperatorKind.And:
-                    result = PerformLogicalAnd(left, right);
                     break;
 
                 case SqlBinaryScalarOperatorKind.BitwiseAnd:
@@ -164,10 +160,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                 case SqlBinaryScalarOperatorKind.NotEqual:
                     result = PerformBinaryEquality(equals => !equals, left, right);
-                    break;
-
-                case SqlBinaryScalarOperatorKind.Or:
-                    result = PerformLogicalOr(left, right);
                     break;
 
                 case SqlBinaryScalarOperatorKind.StringConcat:
@@ -270,6 +262,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return sqlLiteral.Accept(SqlLiteralToCosmosElement.Singleton);
         }
 
+        public override CosmosElement Visit(
+            SqlLogicalScalarExpression scalarExpression,
+            CosmosElement document)
+        {
+            CosmosElement left = scalarExpression.LeftExpression.Accept(this, document);
+            CosmosElement right = scalarExpression.RightExpression.Accept(this, document);
+
+            CosmosElement result;
+            switch (scalarExpression.OperatorKind)
+            {
+                case SqlLogicalScalarOperatorKind.And:
+                    result = PerformLogicalAnd(left, right);
+                    break;
+
+                case SqlLogicalScalarOperatorKind.Or:
+                    result = PerformLogicalOr(left, right);
+                    break;
+
+                default:
+                    throw new ArgumentException($"Unknown {nameof(SqlBinaryScalarOperatorKind)}: {scalarExpression.OperatorKind}");
+            }
+
+            return result;
+        }
         public override CosmosElement Visit(SqlMemberIndexerScalarExpression scalarExpression, CosmosElement document)
         {
             CosmosElement member = scalarExpression.Member.Accept(this, document);

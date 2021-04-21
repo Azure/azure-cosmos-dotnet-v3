@@ -525,8 +525,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     SqlWhereClause modifiedWhereClause = sqlQuery.WhereClause.FilterExpression == null
                         ? SqlWhereClause.Create(resumeFilter)
                         : SqlWhereClause.Create(
-                            SqlBinaryScalarExpression.Create(
-                                SqlBinaryScalarOperatorKind.And,
+                            SqlLogicalScalarExpression.Create(
+                                SqlLogicalScalarOperatorKind.And,
                                 sqlQuery.WhereClause.FilterExpression,
                                 resumeFilter));
 

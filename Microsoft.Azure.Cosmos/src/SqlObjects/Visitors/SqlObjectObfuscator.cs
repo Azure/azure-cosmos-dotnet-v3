@@ -203,6 +203,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return SqlLiteralScalarExpression.Create(sqlLiteralScalarExpression.Literal.Accept(this) as SqlLiteral);
         }
 
+        public override SqlObject Visit(SqlLogicalScalarExpression sqlLogicalScalarExpression)
+        {
+            return SqlLogicalScalarExpression.Create(
+                sqlLogicalScalarExpression.OperatorKind,
+                sqlLogicalScalarExpression.LeftExpression.Accept(this) as SqlScalarExpression,
+                sqlLogicalScalarExpression.RightExpression.Accept(this) as SqlScalarExpression);
+        }
+
         public override SqlObject Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
         {
             return SqlMemberIndexerScalarExpression.Create(

@@ -312,6 +312,17 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             sqlLiteralScalarExpression.Literal.Accept(this);
         }
 
+        public override void Visit(SqlLogicalScalarExpression sqlLogicalScalarExpression)
+        {
+            this.writer.Write("(");
+            sqlLogicalScalarExpression.LeftExpression.Accept(this);
+            this.writer.Write(" ");
+            this.writer.Write(SqlObjectTextSerializer.SqlLogicalScalarOperatorKindToString(sqlLogicalScalarExpression.OperatorKind));
+            this.writer.Write(" ");
+            sqlLogicalScalarExpression.RightExpression.Accept(this);
+            this.writer.Write(")");
+        }
+
         public override void Visit(SqlMemberIndexerScalarExpression sqlMemberIndexerScalarExpression)
         {
             sqlMemberIndexerScalarExpression.Member.Accept(this);
@@ -816,7 +827,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return kind switch
             {
                 SqlBinaryScalarOperatorKind.Add => "+",
-                SqlBinaryScalarOperatorKind.And => "AND",
                 SqlBinaryScalarOperatorKind.BitwiseAnd => "&",
                 SqlBinaryScalarOperatorKind.BitwiseOr => "|",
                 SqlBinaryScalarOperatorKind.BitwiseXor => "^",
@@ -830,9 +840,18 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 SqlBinaryScalarOperatorKind.Modulo => "%",
                 SqlBinaryScalarOperatorKind.Multiply => "*",
                 SqlBinaryScalarOperatorKind.NotEqual => "!=",
-                SqlBinaryScalarOperatorKind.Or => "OR",
                 SqlBinaryScalarOperatorKind.StringConcat => "||",
                 SqlBinaryScalarOperatorKind.Subtract => "-",
+                _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
+            };
+        }
+
+        private static string SqlLogicalScalarOperatorKindToString(SqlLogicalScalarOperatorKind kind)
+        {
+            return kind switch
+            {
+                SqlLogicalScalarOperatorKind.And => "AND",
+                SqlLogicalScalarOperatorKind.Or => "OR",
                 _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
             };
         }

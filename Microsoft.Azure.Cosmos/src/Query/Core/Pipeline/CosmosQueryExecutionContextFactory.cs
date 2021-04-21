@@ -734,6 +734,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             sqlMemberIndexerScalarExpression.Indexer.Accept(this);
                     }
 
+                    public override bool Visit(SqlLogicalScalarExpression sqlLogicalScalarExpression)
+                    {
+                        return sqlLogicalScalarExpression.LeftExpression.Accept(this) ||
+                            sqlLogicalScalarExpression.RightExpression.Accept(this);
+                    }
+
                     public override bool Visit(SqlObjectCreateScalarExpression sqlObjectCreateScalarExpression)
                     {
                         bool hasAggregates = false;

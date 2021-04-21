@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         private static readonly IReadOnlyDictionary<string, SqlBinaryScalarOperatorKind> binaryOperatorKindLookup = new Dictionary<string, SqlBinaryScalarOperatorKind>(StringComparer.OrdinalIgnoreCase)
         {
             { "+", SqlBinaryScalarOperatorKind.Add },
-            { "AND", SqlBinaryScalarOperatorKind.And },
             { "&", SqlBinaryScalarOperatorKind.BitwiseAnd },
             { "|", SqlBinaryScalarOperatorKind.BitwiseOr },
             { "^", SqlBinaryScalarOperatorKind.BitwiseXor },
@@ -39,9 +38,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             { "%", SqlBinaryScalarOperatorKind.Modulo },
             { "*", SqlBinaryScalarOperatorKind.Multiply },
             { "!=", SqlBinaryScalarOperatorKind.NotEqual },
-            { "OR", SqlBinaryScalarOperatorKind.Or },
             { "||", SqlBinaryScalarOperatorKind.StringConcat },
             { "-", SqlBinaryScalarOperatorKind.Subtract },
+        };
+
+        private static readonly IReadOnlyDictionary<string, SqlLogicalScalarOperatorKind> logicalOperatorKindLookup = new Dictionary<string, SqlLogicalScalarOperatorKind>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "AND", SqlLogicalScalarOperatorKind.And },
+            { "OR", SqlLogicalScalarOperatorKind.Or },
         };
 
         private static readonly IReadOnlyDictionary<string, SqlUnaryScalarOperatorKind> unaryOperatorKindLookup = new Dictionary<string, SqlUnaryScalarOperatorKind>(StringComparer.OrdinalIgnoreCase)
@@ -796,7 +800,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
             else
             {
-                throw new NotImplementedException();
+                // logical_expression binary_operator logical_expression
+                Contract.Requires(context.ChildCount == 3);
+
+                SqlScalarExpression left = (SqlScalarExpression)this.Visit(context.logical_scalar_expression(0));
+                if (!CstToAstVisitor.logicalOperatorKindLookup.TryGetValue(
+                    context.children[1].GetText(),
+                    out SqlLogicalScalarOperatorKind operatorKind))
+                {
+                    throw new ArgumentOutOfRangeException($"Unknown logical operator: {context.children[1].GetText()}.");
+                }
+
+                SqlScalarExpression right = (SqlScalarExpression)this.Visit(context.logical_scalar_expression(1));
+
+                sqlObject = SqlLogicalScalarExpression.Create(operatorKind, left, right);
             }
 
             return sqlObject;

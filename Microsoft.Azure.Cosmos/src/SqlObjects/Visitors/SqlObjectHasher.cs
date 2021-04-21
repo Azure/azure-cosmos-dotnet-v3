@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlLikeScalarExpressionHashCode = 317861;
         private const int SqlLimitSpecHashCode = 92601316;
         private const int SqlLiteralScalarExpressionHashCode = -158339101;
+        private const int SqlLogicalScalarExpressionHashCode = 653055015;
         private const int SqlMemberIndexerScalarExpressionHashCode = 1589675618;
         private const int SqlNullLiteralHashCode = -709456592;
         private const int SqlNumberLiteralHashCode = 159836309;
@@ -73,7 +74,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private static class SqlBinaryScalarOperatorKindHashCodes
         {
             public const int Add = 977447154;
-            public const int And = -539169937;
             public const int BitwiseAnd = 192594476;
             public const int BitwiseOr = -1494193777;
             public const int BitwiseXor = 140893802;
@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             public const int Modulo = -371220256;
             public const int Multiply = -178990484;
             public const int NotEqual = 65181046;
-            public const int Or = -2095255335;
             public const int StringConcat = -525384764;
             public const int Subtract = 2070749634;
         }
@@ -100,6 +99,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             public const int Plus = 251767493;
         }
 
+        private static class SqlLogicalScalarOperatorKindHashCodes
+        {
+            public const int And = -539169937;
+            public const int Or = -2095255335;
+        }
         private readonly bool isStrict;
 
         public SqlObjectHasher(bool isStrict)
@@ -315,6 +319,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             int hashCode = SqlLiteralScalarExpressionHashCode;
             hashCode = CombineHashes(hashCode, sqlLiteralScalarExpression.Literal.Accept(this));
+            return hashCode;
+        }
+
+        public override int Visit(SqlLogicalScalarExpression sqlLogicalScalarExpression)
+        {
+            int hashCode = SqlLogicalScalarExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlLogicalScalarExpression.LeftExpression.Accept(this));
+            hashCode = CombineHashes(hashCode, SqlObjectHasher.SqlLogicalScalarOperatorKindGetHashCode(sqlLogicalScalarExpression.OperatorKind));
+            hashCode = CombineHashes(hashCode, sqlLogicalScalarExpression.RightExpression.Accept(this));
             return hashCode;
         }
 
@@ -631,7 +644,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return kind switch
             {
                 SqlBinaryScalarOperatorKind.Add => SqlBinaryScalarOperatorKindHashCodes.Add,
-                SqlBinaryScalarOperatorKind.And => SqlBinaryScalarOperatorKindHashCodes.And,
                 SqlBinaryScalarOperatorKind.BitwiseAnd => SqlBinaryScalarOperatorKindHashCodes.BitwiseAnd,
                 SqlBinaryScalarOperatorKind.BitwiseOr => SqlBinaryScalarOperatorKindHashCodes.BitwiseOr,
                 SqlBinaryScalarOperatorKind.BitwiseXor => SqlBinaryScalarOperatorKindHashCodes.BitwiseXor,
@@ -645,9 +657,18 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 SqlBinaryScalarOperatorKind.Modulo => SqlBinaryScalarOperatorKindHashCodes.Modulo,
                 SqlBinaryScalarOperatorKind.Multiply => SqlBinaryScalarOperatorKindHashCodes.Multiply,
                 SqlBinaryScalarOperatorKind.NotEqual => SqlBinaryScalarOperatorKindHashCodes.NotEqual,
-                SqlBinaryScalarOperatorKind.Or => SqlBinaryScalarOperatorKindHashCodes.Or,
                 SqlBinaryScalarOperatorKind.StringConcat => SqlBinaryScalarOperatorKindHashCodes.StringConcat,
                 SqlBinaryScalarOperatorKind.Subtract => SqlBinaryScalarOperatorKindHashCodes.Subtract,
+                _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
+            };
+        }
+
+        private static int SqlLogicalScalarOperatorKindGetHashCode(SqlLogicalScalarOperatorKind kind)
+        {
+            return kind switch
+            {
+                SqlLogicalScalarOperatorKind.And => SqlLogicalScalarOperatorKindHashCodes.And,
+                SqlLogicalScalarOperatorKind.Or => SqlLogicalScalarOperatorKindHashCodes.Or,
                 _ => throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, "Unsupported operator {0}", kind)),
             };
         }

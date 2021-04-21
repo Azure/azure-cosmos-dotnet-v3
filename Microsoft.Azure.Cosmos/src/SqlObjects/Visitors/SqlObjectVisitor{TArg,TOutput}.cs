@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TOutput Visit(SqlLikeScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlLimitSpec sqlObject, TArg input);
         public abstract TOutput Visit(SqlLiteralScalarExpression sqlObject, TArg input);
+        public abstract TOutput Visit(SqlLogicalScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlMemberIndexerScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlNullLiteral sqlObject, TArg input);
         public abstract TOutput Visit(SqlNumberLiteral sqlObject, TArg input);

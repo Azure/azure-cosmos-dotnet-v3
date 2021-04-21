@@ -230,9 +230,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.Divide:
                 case ExpressionType.Modulo:
                 case ExpressionType.And:
-                case ExpressionType.AndAlso:
                 case ExpressionType.Or:
-                case ExpressionType.OrElse:
                 case ExpressionType.LessThan:
                 case ExpressionType.LessThanOrEqual:
                 case ExpressionType.GreaterThan:
@@ -245,6 +243,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case ExpressionType.LeftShift:
                 case ExpressionType.ExclusiveOr:
                     return ExpressionToSql.VisitBinary((BinaryExpression)inputExpression, context);
+                case ExpressionType.AndAlso:
+                case ExpressionType.OrElse:
+                    return ExpressionToSql.VisitLogical((BinaryExpression)inputExpression, context);
                 case ExpressionType.TypeIs:
                     return ExpressionToSql.VisitTypeIs((TypeBinaryExpression)inputExpression, context);
                 case ExpressionType.Conditional:
@@ -391,8 +392,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                         }
                         return SqlBinaryScalarOperatorKind.Add;
                     }
-                case ExpressionType.AndAlso:
-                    return SqlBinaryScalarOperatorKind.And;
                 case ExpressionType.And:
                     return SqlBinaryScalarOperatorKind.BitwiseAnd;
                 case ExpressionType.Or:
@@ -417,8 +416,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return SqlBinaryScalarOperatorKind.Multiply;
                 case ExpressionType.NotEqual:
                     return SqlBinaryScalarOperatorKind.NotEqual;
-                case ExpressionType.OrElse:
-                    return SqlBinaryScalarOperatorKind.Or;
                 case ExpressionType.Subtract:
                     return SqlBinaryScalarOperatorKind.Subtract;
                 case ExpressionType.Coalesce:
@@ -478,6 +475,29 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             return SqlBinaryScalarExpression.Create(op, left, right);
+        }
+
+        private static SqlLogicalScalarOperatorKind GetLogicalOperatorKind(ExpressionType expressionType, Type resultType)
+        {
+            switch (expressionType)
+            {
+                case ExpressionType.AndAlso:
+                    return SqlLogicalScalarOperatorKind.And;
+                case ExpressionType.OrElse:
+                    return SqlLogicalScalarOperatorKind.Or;
+                default:
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.BinaryOperatorNotSupported, expressionType));
+            }
+        }
+
+        private static SqlScalarExpression VisitLogical(BinaryExpression inputExpression, TranslationContext context)
+        {
+            SqlScalarExpression left = ExpressionToSql.VisitScalarExpression(inputExpression.Left, context);
+            SqlScalarExpression right = ExpressionToSql.VisitScalarExpression(inputExpression.Right, context);
+
+            SqlLogicalScalarOperatorKind op = GetLogicalOperatorKind(inputExpression.NodeType, inputExpression.Type);
+
+            return SqlLogicalScalarExpression.Create(op, left, right);
         }
 
         private static SqlScalarExpression ApplyCustomConverters(Expression left, SqlLiteralScalarExpression right)
