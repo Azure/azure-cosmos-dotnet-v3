@@ -29,25 +29,24 @@
 
     public class Program
     {
-        private static readonly JsonSerializer Serializer = new JsonSerializer();
         private static CosmosClient client;
-        private static Database database = null;
         private static int itemsToCreate;
         private static int preSerializedItemCount;
         private static int itemSize;
         private static int itemPropertyCount;
         private static int maxRuntimeInSeconds;
-        private static bool shouldCleanupOnFinish;
+        private static bool shouldDeleteContainerOnFinish;
         private static int numWorkers;
         private static int partitionKeyCount;
-        private const string PartitionKeyValuePrefix = "0";
+        private static int rps;
+        private static readonly string partitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
 
         public static async Task Main(string[] args)
         {
+            Container container = null;
             try
             {
-                Container container = await Program.Initialize();
-
+                container = await Program.InitializeAsync();
                 await Program.CreateItemsConcurrentlyAsync(container);
             }
             catch (CosmosException cre)
@@ -61,9 +60,9 @@
             }
             finally
             {
-                if (Program.shouldCleanupOnFinish)
+                if (Program.shouldDeleteContainerOnFinish)
                 {
-                    await Program.CleanupAsync();
+                    await Program.CleanupContainerAsync(container);
                 }
 
                 client.Dispose();
@@ -74,30 +73,30 @@
 
         private static async Task CreateItemsConcurrentlyAsync(Container container)
         {
-            Console.WriteLine($"Starting creation of {Program.itemsToCreate} items each with {Program.itemPropertyCount} properties of about {Program.itemSize} bytes"
-            + $" in a limit of {maxRuntimeInSeconds} seconds using {numWorkers} workers.");
+            Console.WriteLine($"Starting creation of {Program.itemsToCreate} items of about {Program.itemSize} bytes each"
+            + $" within {maxRuntimeInSeconds} seconds using {numWorkers} workers.");
+            DataSource dataSource = new DataSource(itemsToCreate, preSerializedItemCount, itemPropertyCount, itemSize, partitionKeyCount);
+            Console.WriteLine("Datasource initialized; starting ingestion");
 
             ConcurrentDictionary<HttpStatusCode, int> countsByStatus = new ConcurrentDictionary<HttpStatusCode, int>();
             ConcurrentBag<TimeSpan> latencies = new ConcurrentBag<TimeSpan>();
             long totalRequestCharge = 0;
 
-            int taskCompleteCounter = 0;
             int taskTriggeredCounter = 0;
-
-            DataSource dataSource = new DataSource(itemsToCreate, preSerializedItemCount, itemPropertyCount, itemSize, partitionKeyCount);
-
-            Console.WriteLine("Datasource initialized; starting ingestion");
+            int taskCompleteCounter = 0;
 
             int itemsToCreatePerWorker = (int)Math.Ceiling((double)(itemsToCreate / numWorkers));
             List<Task> workerTasks = new List<Task>();
 
-            SemaphoreSlim semaphore = new SemaphoreSlim(80, 80);
+            const int ticksPerMillisecond = 10000;
+            const int ticksPerSecond = 1000 * ticksPerMillisecond;
+            int eachTicks = (int)(ticksPerSecond / Program.rps);
+            long usageTicks = 0;
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.CancelAfter(maxRuntimeInSeconds * 1000);
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             Stopwatch stopwatch = Stopwatch.StartNew();
-            int[] itemsCreatedByWorker = new int[numWorkers];
 
             for (int workerIndex = 0; workerIndex < numWorkers; workerIndex++)
             {
@@ -110,14 +109,24 @@
                     while (!cancellationToken.IsCancellationRequested && docCounter < itemsToCreatePerWorker)
                     {
                         docCounter++;
+
                         MemoryStream stream = dataSource.GetNextDocItem(workerIndexLocal, out PartitionKey partitionKeyValue);
 
-                        await semaphore.WaitAsync();
+                        long elapsedTicks = stopwatch.ElapsedTicks;
+                        if (usageTicks < elapsedTicks)
+                        {
+                            usageTicks = elapsedTicks;
+                        }
+
+                        usageTicks += eachTicks;
+                        if (usageTicks - elapsedTicks > ticksPerSecond)
+                        {
+                            await Task.Delay((int)((usageTicks - elapsedTicks - ticksPerSecond) / ticksPerMillisecond));
+                        }
 
                         _ = container.UpsertItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
                             .ContinueWith((Task<ResponseMessage> task) =>
                             {
-                                semaphore.Release();
                                 if (task.IsCompletedSuccessfully)
                                 {
                                     if (stream != null) { stream.Dispose(); }
@@ -125,26 +134,27 @@
                                     using (ResponseMessage responseMessage = task.Result)
                                     {
                                         countsByStatus.AddOrUpdate(responseMessage.StatusCode, 1, (_, old) => old + 1);
-                                        if ((int)responseMessage.StatusCode == 408 || (int)responseMessage.StatusCode >= 500)
+                                        if (responseMessage.StatusCode < HttpStatusCode.BadRequest)
                                         {
-                                            if (!isErrorPrinted)
+                                            Interlocked.Add(ref totalRequestCharge, (int)(responseMessage.Headers.RequestCharge * 100));
+                                            latencies.Add(responseMessage.Diagnostics.GetClientElapsedTime());
+                                        }
+                                        else
+                                        {
+                                            if ((int)responseMessage.StatusCode != 429 && !isErrorPrinted)
                                             {
                                                 Console.WriteLine(responseMessage.ErrorMessage);
                                                 Console.WriteLine(responseMessage.Diagnostics.ToString());
                                                 isErrorPrinted = true;
                                             }
                                         }
-
-                                        if ((int)responseMessage.StatusCode < 400)
-                                        {
-                                            Interlocked.Add(ref totalRequestCharge, (int)(responseMessage.Headers.RequestCharge * 100));
-                                            latencies.Add(responseMessage.Diagnostics.GetClientElapsedTime());
-                                            ++itemsCreatedByWorker[workerIndexLocal];
-                                        }
                                     }
                                 }
+                                else
+                                {
+                                    Exception ex = task.Exception;
+                                }
 
-                                Exception ex = task.Exception;
                                 task.Dispose();
                                 if (Interlocked.Increment(ref taskCompleteCounter) >= itemsToCreate)
                                 {
@@ -159,38 +169,36 @@
 
             while (taskCompleteCounter < itemsToCreate)
             {
+                Console.Write($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {itemsToCreate - taskCompleteCounter}");
+                int nonFailedCount = 0;
+                foreach (KeyValuePair<HttpStatusCode, int> countForStatus in countsByStatus)
+                {
+                    Console.Write(", " + countForStatus.Key + ": " + countForStatus.Value);
+                    if(countForStatus.Key < HttpStatusCode.BadRequest)
+                    {
+                        nonFailedCount += countForStatus.Value;
+                    }
+                }
+
+                long elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000;
+                Console.Write($", RPS: {(elapsedSeconds == 0 ? -1 : nonFailedCount / elapsedSeconds)}");
+                Console.WriteLine();
+
                 if (cancellationToken.IsCancellationRequested)
                 {
                     Console.WriteLine($"Could not insert {itemsToCreate} items in {maxRuntimeInSeconds} seconds.");
                     break;
                 }
 
-                Console.Write($"In progress. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}, Pending: {itemsToCreate - taskCompleteCounter}");
-                foreach (KeyValuePair<HttpStatusCode, int> countForStatus in countsByStatus)
-                {
-                    Console.Write(", " + countForStatus.Key + ": " + countForStatus.Value);
-                }
-
-                foreach(int cx in itemsCreatedByWorker)
-                {
-                    Console.Write(" " + cx);
-                }
-
-                Console.WriteLine();
                 await Task.Delay(1000);
             }
 
-
-            int nonFailedCount = countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
-            long elapsed = stopwatch.ElapsedMilliseconds / 1000;
-            Console.WriteLine($"Successfully handled {nonFailedCount} items in {elapsed} seconds at {(elapsed == 0 ? -1 : nonFailedCount / elapsed)} items/sec.");
+            long elapsedFinal = stopwatch.ElapsedMilliseconds / 1000;
+            int nonFailedCountFinal = countsByStatus.Where(x => x.Key < HttpStatusCode.BadRequest).Sum(p => p.Value);
+            Console.WriteLine($"Successfully handled {nonFailedCountFinal} items in {elapsedFinal} seconds at {(elapsedFinal == 0 ? -1 : nonFailedCountFinal / elapsedFinal)} items/sec.");
 
             Console.WriteLine("Counts by StatusCode:");
-            foreach (var countForStatus in countsByStatus)
-            {
-                Console.Write(", " + countForStatus.Key + ": " + countForStatus.Value);
-            }
-            Console.WriteLine();
+            Console.WriteLine(string.Join(',', countsByStatus.Select(countForStatus => countForStatus.Key + ": " + countForStatus.Value)));
 
             List<TimeSpan> latenciesList = latencies.ToList();
             latenciesList.Sort();
@@ -201,43 +209,25 @@
             + $"   P99.9: {latenciesList[(int)(requestCount * 0.999)].TotalMilliseconds}"
             + $"   Max: {latenciesList[requestCount - 1].TotalMilliseconds}");
 
-            Console.WriteLine("Average RUs (non-failed): " + totalRequestCharge / (100.0 * nonFailedCount));
+            Console.WriteLine("Average RUs (non-failed): " + totalRequestCharge / (100.0 * nonFailedCountFinal));
         }
 
         private class MyDocument
         {
             public string id { get; set; }
-
             public string pk { get; set; }
-
             public List<string> arr {get; set;}
-            
             public string other { get; set; }
 
-            // private static Inner inner = new Inner();
-            // public Inner i0 { get { return inner; } }
-            // public Inner i1 { get { return inner; } }
+            [JsonProperty(PropertyName = "_ts")]
+            public int lastModified { get; set; }
+
+            [JsonProperty(PropertyName = "_rid")]
+            public string resourceId { get; set; }
         }
 
-        private class Inner
+        private static async Task<Container> InitializeAsync()
         {
-            public string p0 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            public string p1 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            public string p2 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            public string p3 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            public string p4 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            //public string p5 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            //public string p6 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            // public string p7 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            // public string p8 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-            // public string p9 { get { return "abcdefghijklmnopqrstuvwxy"; } }
-        }
-
-        private static async Task<Container> Initialize()
-        {
-            // Read the Cosmos endpointUrl and authorization keys from configuration
-            // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
-            // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
             IConfigurationRoot configuration = new ConfigurationBuilder()
                     .AddJsonFile("appSettings.json")
                     .Build();
@@ -254,38 +244,28 @@
                 throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
             }
 
-            string databaseName = configuration["DatabaseName"];
-            if (string.IsNullOrEmpty(databaseName))
-            {
-                throw new ArgumentException("Please specify a valid DatabaseName in the appSettings.json");
-            }
+            Program.itemsToCreate = GetConfig(configuration, "ItemsToCreate", 100000);
+            Program.itemSize = GetConfig(configuration, "ItemSize", 1024);
+            Program.itemPropertyCount = GetConfig(configuration, "ItemPropertyCount", 10);
+            Program.partitionKeyCount = GetConfig(configuration, "PartitionKeyCount", int.MaxValue);
+            Program.rps = GetConfig(configuration, "RequestsPerSec", 1000);
+            Program.numWorkers = GetConfig(configuration, "NumWorkers", 1);
+            Program.preSerializedItemCount = GetConfig(configuration, "PreSerializedItemCount", 0);
+            Program.maxRuntimeInSeconds = GetConfig(configuration, "MaxRuntimeInSeconds", 300);
+            Program.shouldDeleteContainerOnFinish = GetConfig(configuration, "ShouldDeleteContainerOnFinish", false);
 
-            string containerName = configuration["ContainerName"];
-            if (string.IsNullOrEmpty(containerName))
-            {
-                throw new ArgumentException("Please specify a valid ContainerName in the appSettings.json");
-            }
-
-            Program.itemsToCreate = int.Parse(string.IsNullOrEmpty(configuration["ItemsToCreate"]) ? "1000" : configuration["ItemsToCreate"]);
-            Program.itemSize = int.Parse(string.IsNullOrEmpty(configuration["ItemSize"]) ? "1024" : configuration["ItemSize"]);
-            Program.itemPropertyCount = int.Parse(string.IsNullOrEmpty(configuration["ItemPropertyCount"]) ? "2" : configuration["ItemPropertyCount"]);
-            Program.maxRuntimeInSeconds = int.Parse(string.IsNullOrEmpty(configuration["MaxRuntimeInSeconds"]) ? "30" : configuration["MaxRuntimeInSeconds"]);
-            Program.numWorkers = int.Parse(string.IsNullOrEmpty(configuration["NumWorkers"]) ? "1" : configuration["numWorkers"]);
-            Program.preSerializedItemCount = int.Parse(string.IsNullOrEmpty(configuration["PreSerializedItemCount"]) ? "0" : configuration["PreSerializedItemCount"]);
-            Program.partitionKeyCount = int.Parse(string.IsNullOrEmpty(configuration["PartitionKeyCount"]) ? int.MaxValue.ToString() : configuration["PartitionKeyCount"]);
-
-            Program.shouldCleanupOnFinish = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnFinish"]) ? "false" : configuration["ShouldCleanupOnFinish"]);
-
-            bool shouldCleanupOnStart = bool.Parse(string.IsNullOrEmpty(configuration["ShouldCleanupOnStart"]) ? "false" : configuration["ShouldCleanupOnStart"]);
-            bool shouldIndexAllProperties = bool.Parse(string.IsNullOrEmpty(configuration["ShouldIndexAllProperties"]) ? "false" : configuration["ShouldIndexAllProperties"]);
-            int collectionThroughput = int.Parse(string.IsNullOrEmpty(configuration["CollectionThroughput"]) ? "30000" : configuration["CollectionThroughput"]);
+            string databaseName = GetConfig(configuration, "DatabaseName", "demodatabase");
+            string containerName = GetConfig(configuration, "ContainerName", "democontainer");
+            bool shouldRecreateContainerOnStart = GetConfig(configuration, "ShouldRecreateContainerOnStart", false);
+            int containerThroughput = GetConfig(configuration, "ContainerThroughput", 10000);
+            bool isContainerAutoScale = GetConfig(configuration, "IsContainerAutoscale", true);
+            bool shouldIndexAllProperties = GetConfig(configuration, "ShouldContainerIndexAllProperties", false);
 
             Program.client = GetClientInstance(endpointUrl, authKey);
-            Program.database = client.GetDatabase(databaseName);
-            Container container = Program.database.GetContainer(containerName);
-            if (shouldCleanupOnStart)
+            Container container = client.GetDatabase(databaseName).GetContainer(containerName);
+            if (shouldRecreateContainerOnStart)
             {
-                container = await Program.CreateFreshContainerAsync(client, databaseName, containerName, shouldIndexAllProperties, collectionThroughput);
+                container = await Program.RecreateContainerAsync(client, databaseName, containerName, shouldIndexAllProperties, containerThroughput, isContainerAutoScale);
             }
 
             try
@@ -298,8 +278,6 @@
                 throw;
             }
 
-            Console.WriteLine("Running demo for container {0} with a CosmosClient.", containerName);
-
             return container;
         }
 
@@ -308,48 +286,49 @@
             string authKey) =>
             new CosmosClient(endpoint, authKey, new CosmosClientOptions()
             {
+                ConnectionMode = ConnectionMode.Direct,
                 AllowBulkExecution = false,
-                MaxRetryAttemptsOnRateLimitedRequests = 0
+                MaxRetryAttemptsOnRateLimitedRequests = 0,
+                PortReuseMode = PortReuseMode.ReuseUnicastPort
             });
 
-        private static async Task CleanupAsync()
+        private static async Task CleanupContainerAsync(Container container)
         {
-            if (Program.database != null)
+            if (container != null)
             {
-                await Program.database.DeleteAsync();
+                try
+                {
+                    await container.DeleteContainerStreamAsync();
+                }
+                catch(Exception)
+                {
+                }
             }
         }
 
-        private static async Task<Container> CreateFreshContainerAsync(
+        private static async Task<Container> RecreateContainerAsync(
             CosmosClient client,
-             string databaseName, 
-             string containerName,
-             bool shouldIndexAllProperties,
-            int throughput)
+            string databaseName, 
+            string containerName,
+            bool shouldIndexAllProperties,
+            int throughputToProvision,
+            bool isContainerAutoScale)
         {
-            Program.database = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+            Database database = await client.CreateDatabaseIfNotExistsAsync(databaseName);
 
-            try
-            {
-                Console.WriteLine("Deleting old container if it exists.");
-                await database.GetContainer(containerName).DeleteContainerStreamAsync();
-            }
-            catch (Exception)
-            {
-                // Do nothing
-            }
+            Console.WriteLine("Deleting old container if it exists.");
+            await Program.CleanupContainerAsync(database.GetContainer(containerName));
 
-            // We create a partitioned collection here which needs a partition key. Partitioned collections
-            // can be created with very high values of provisioned throughput and used to store 100's of GBs of data. 
-            Console.WriteLine($"The demo will create a {throughput} RU/s container...");
+            Console.WriteLine($"Creating a {throughputToProvision} RU/s {(isContainerAutoScale ? "auto-scale" : "manual throughput")} container...");
 
             ContainerBuilder containerBuilder = database.DefineContainer(containerName, "/pk");
 
-            if(shouldIndexAllProperties)
+            if(!shouldIndexAllProperties)
             {
                 containerBuilder.WithIndexingPolicy()
                     .WithIndexingMode(IndexingMode.Consistent)
                     .WithIncludedPaths()
+                        .Path("/pk/*")
                         .Attach()
                     .WithExcludedPaths()
                         .Path("/*")
@@ -357,7 +336,41 @@
                 .Attach();
             }
 
-            return await containerBuilder.CreateAsync(throughput);
+            ThroughputProperties throughputProperties = isContainerAutoScale 
+                ? ThroughputProperties.CreateAutoscaleThroughput(throughputToProvision) 
+                : ThroughputProperties.CreateManualThroughput(throughputToProvision);
+
+            return await containerBuilder.CreateAsync(throughputProperties);
+        }
+
+        private static int GetConfig(IConfigurationRoot iConfigurationRoot, string configName, int defaultValue)
+        {
+            if(!string.IsNullOrEmpty(iConfigurationRoot[configName]))
+            {
+                return int.Parse(iConfigurationRoot[configName]);
+            }
+
+            return defaultValue;
+        }
+
+        private static bool GetConfig(IConfigurationRoot iConfigurationRoot, string configName, bool defaultValue)
+        {
+            if(!string.IsNullOrEmpty(iConfigurationRoot[configName]))
+            {
+                return bool.Parse(iConfigurationRoot[configName]);
+            }
+
+            return defaultValue;
+        }
+
+        private static string GetConfig(IConfigurationRoot iConfigurationRoot, string configName, string defaultValue)
+        {
+            if(!string.IsNullOrEmpty(iConfigurationRoot[configName]))
+            {
+                return iConfigurationRoot[configName];
+            }
+
+            return defaultValue;
         }
 
         private class DataSource
@@ -367,7 +380,6 @@
             private readonly int partitionKeyCount;
             private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore };
             private string padding = string.Empty;
-
             private PartitionKey[] partitionKeys;
             private ConcurrentDictionary<PartitionKey, ConcurrentBag<MemoryStream>> itemsByPK;
             private int itemIndex = 0;
@@ -389,7 +401,7 @@
                 }
 
                 // Find length and keep some bytes for the system generated properties
-                int currentLen = (int)CreateNextDocItem(PartitionKeyValuePrefix + "0").Length + 250;
+                int currentLen = (int)CreateNextDocItem(partitionKeyValuePrefix + "0").Length + 250;
                 this.padding = this.itemSize > currentLen ? new string('x', this.itemSize - currentLen) : string.Empty;
 
                 int pkIndex = this.partitionKeyCount;
@@ -401,7 +413,7 @@
                         pkIndex = 0;
                     }
 
-                    string partitionKeyValue = PartitionKeyValuePrefix + pkIndex;
+                    string partitionKeyValue = partitionKeyValuePrefix + pkIndex;
                     if(i == pkIndex)
                     {
                         this.partitionKeys[pkIndex] = new PartitionKey(partitionKeyValue);
@@ -420,9 +432,9 @@
                 }
             }
 
-            private MemoryStream CreateNextDocItem(string partitionKey)
+            private MemoryStream CreateNextDocItem(string partitionKey, string id = null)
             {
-                string id = Guid.NewGuid().ToString();
+                if(id == null) { id = Guid.NewGuid().ToString(); }
 
                 MyDocument myDocument = new MyDocument()
                 {
@@ -437,7 +449,6 @@
 
             public MemoryStream GetNextDocItem(int workerIndex, out PartitionKey partitionKey)
             {
-                // int currentPKIndex = workerIndex;
                 int incremented = Interlocked.Increment(ref itemIndex);
                 int currentPKIndex = incremented % partitionKeyCount;
                 partitionKey = this.partitionKeys[currentPKIndex];
@@ -449,10 +460,9 @@
                 }
                 else
                 {
-                    return this.CreateNextDocItem(PartitionKeyValuePrefix + currentPKIndex);
+                    return this.CreateNextDocItem(partitionKeyValuePrefix + currentPKIndex, incremented.ToString());
                 }
             }
         }
     }
 }
-
