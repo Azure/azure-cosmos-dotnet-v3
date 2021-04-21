@@ -436,7 +436,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Debugger.Break();
                     }
                 });
-            });
+            },
+            validatePartitionKeyRangeCalls: false);
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
