@@ -67,8 +67,6 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             this.retryContext = null;
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
             if (exception is HttpRequestException _)
@@ -104,7 +102,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             this.retryContext = null;
 
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
