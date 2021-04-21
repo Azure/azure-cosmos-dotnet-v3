@@ -601,7 +601,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             SqlScalarExpression expression = (SqlScalarExpression)this.Visit(context.binary_scalar_expression()[0]);
             SqlScalarExpression pattern = (SqlScalarExpression)this.Visit(context.binary_scalar_expression()[1]);
             bool not = context.K_NOT() != null;
-            SqlStringLiteral escapeSequence = (context.escape_expression() != null) ? (SqlStringLiteral)this.Visit(context.escape_expression()) : null;
+            SqlStringLiteral escapeSequence = (context.escape_expression() != null) 
+                                                ? (SqlStringLiteral)this.Visit(context.escape_expression()) 
+                                                : null;
             
             return SqlLikeScalarExpression.Create(expression, pattern, not, escapeSequence); 
         }
