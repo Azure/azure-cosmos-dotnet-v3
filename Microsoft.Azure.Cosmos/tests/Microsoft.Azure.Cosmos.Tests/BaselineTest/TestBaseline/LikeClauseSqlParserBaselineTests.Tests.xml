@@ -47,10 +47,19 @@
   <Result>
     <Input>
       <Description><![CDATA[Missing ESCAPE Keyword]]></Description>
-      <Query><![CDATA[SELECT c.age LIKE 'a!%' '!']]></Query>
+      <Query><![CDATA[SELECT c.age LIKE "a!%" "!"]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT (c.age LIKE "a!%' '!")]]></ParsedQuery>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double LIKE]]></Description>
+      <Query><![CDATA[SELECT c.age (LIKE 'a') LIKE 'b']]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
     </Output>
   </Result>
 </Results>

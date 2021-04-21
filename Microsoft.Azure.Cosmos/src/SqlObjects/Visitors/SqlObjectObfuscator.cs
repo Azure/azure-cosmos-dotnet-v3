@@ -459,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 if (!this.obfuscatedStrings.TryGetValue(value, out obfuscatedString))
                 {
-                    int sequenceNumber = ++sequence; // is this necessary?
+                    int sequenceNumber = ++sequence; 
                     obfuscatedString = value.Length < 10 ? $"{prefix}{sequence}" : $"{prefix}{sequence}__{value.Length}";
                     this.obfuscatedStrings.Add(value, obfuscatedString);
                 }

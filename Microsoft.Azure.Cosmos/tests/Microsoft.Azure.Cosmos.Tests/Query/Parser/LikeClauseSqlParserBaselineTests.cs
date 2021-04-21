@@ -23,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
                 // Negative
                 CreateInput(description: "Missing LIKE Keyword 1", likeClause: "ESCAPE '1'"),
                 CreateInput(description: "Missing LIKE Keyword 2", likeClause: "NOT 'a'"),
-                CreateInput(description: "Missing ESCAPE Keyword", likeClause: "LIKE 'a!%' '!'"),
+                CreateInput(description: "Missing ESCAPE Keyword", likeClause: "LIKE \"a!%\" \"!\""),
+                CreateInput(description: "Double LIKE", likeClause: "(LIKE 'a') LIKE 'b'"),
             };
 
             this.ExecuteTestSuite(inputs);

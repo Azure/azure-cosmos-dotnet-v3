@@ -260,41 +260,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
         public override CosmosElement Visit(SqlLikeScalarExpression scalarExpression, CosmosElement document)
         {
-            return CosmosBoolean.Create(false);
-            //CosmosElement expressionToMatch = scalarExpression.Expression.Accept(this, document);
-            //CosmosElement patternToMatch = scalarExpression.Pattern.Accept(this, document);
-            //string escapeSequenceString = scalarExpression.EscapeSequence?.Value;
-
-            //if (!((expressionToMatch is CosmosString expressionAsString) && (patternToMatch is CosmosString patternAsString)))
-            //{
-            //    return Undefined;
-            //}
-
-            //if ((escapeSequenceString != null) && (escapeSequenceString.Length != 1))
-            //{
-            //    return Undefined;
-            //}
-
-            //char? escapeSequence = escapeSequenceString == null ? null : (char?)escapeSequenceString[0];
-            //if (!RegexParser.TryParse(patternAsString.Value, escapeSequence, out LikePattern likeRegexPattern))
-            //{
-            //    return CosmosBoolean.Create(scalarExpression.Not);
-            //}
-
-            //if (likeRegexPattern.HasOutOfOrderRange)
-            //{
-            //    return Undefined;
-            //}
-            //else
-            //{
-            //    bool match = RegexEngine.IsMatch(expressionAsString.Value, likeRegexPattern);
-            //    if (scalarExpression.Not)
-            //    {
-            //        match = !match;
-            //    }
-
-            //    return CosmosBoolean.Create(match);
-            //}
+            // Consider the necessity of having v3 offline engine. Should we remove this altogether?
+            throw new NotImplementedException();
         }
 
         public override CosmosElement Visit(SqlLiteralScalarExpression scalarExpression, CosmosElement document)
