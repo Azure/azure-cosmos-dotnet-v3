@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// availability and preference list.
     /// </summary>
     /// Marking it as non-sealed in order to unit test it using Moq framework
-    internal class GlobalEndpointManager : IDisposable
+    internal class GlobalEndpointManager : IGlobalEndpointManager
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 
@@ -313,14 +313,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetLocation(endpoint);
         }
 
-        public void MarkEndpointUnavailableForRead(Uri endpoint)
+        public virtual void MarkEndpointUnavailableForRead(Uri endpoint)
         {
             DefaultTrace.TraceInformation("Marking endpoint {0} unavailable for read", endpoint);
 
             this.locationCache.MarkEndpointUnavailableForRead(endpoint);
         }
 
-        public void MarkEndpointUnavailableForWrite(Uri endpoint)
+        public virtual void MarkEndpointUnavailableForWrite(Uri endpoint)
         {
             DefaultTrace.TraceInformation("Marking endpoint {0} unavailable for Write", endpoint);
 
@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task RefreshLocationAsync(AccountProperties databaseAccount, bool forceRefresh = false)
+        public virtual async Task RefreshLocationAsync(AccountProperties databaseAccount, bool forceRefresh = false)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {

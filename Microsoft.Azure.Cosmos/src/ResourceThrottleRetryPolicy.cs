@@ -48,7 +48,6 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             if (exception is DocumentClientException)
             {
                 DocumentClientException dce = (DocumentClientException)exception;
@@ -81,7 +80,6 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             if (!this.IsValidThrottleStatusCode(cosmosResponseMessage?.StatusCode))
             {
                 DefaultTrace.TraceError(

@@ -41,7 +41,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string databaseId,
             string containerId,
             Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
-            bool useGatewayMode = false)
+            bool useGatewayMode = false,
+            Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
         {
             CosmosClient clientWithIntercepter = TestCommon.CreateCosmosClient(
                builder =>
@@ -53,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                    builder.WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
                        transportClient,
-                       interceptor));
+                       interceptor,
+                       interceptorWithStoreResult));
                });
 
             return clientWithIntercepter.GetContainer(databaseId, containerId);
@@ -140,13 +142,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             internal TransportClientWrapper(
                 TransportClient client,
-                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor)
+                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
+                Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
             {
                 Debug.Assert(client != null);
                 Debug.Assert(interceptor != null);
 
                 this.baseClient = client;
                 this.interceptor = interceptor;
+                this.interceptorWithStoreResult = interceptorWithStoreResult;
             }
 
             internal TransportClientWrapper(
