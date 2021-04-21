@@ -15,21 +15,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class GatewaySessionTokenTests : BaseCosmosClientHelper
+    public class GatewaySessionTokenTests
     {
+        private CosmosClient cosmosClient;
+        private Cosmos.Database database;
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.cosmosClient = TestCommon.CreateCosmosClient(useGateway: true);
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Gateway,
+                ConnectionProtocol = Documents.Client.Protocol.Https,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                HttpClientFactory = () => new HttpClient(new HttpHandlerMetaDataValidator()),
+            };
+
+            this.cosmosClient = TestCommon.CreateCosmosClient(cosmosClientOptions);
             this.database = await this.cosmosClient.CreateDatabaseAsync(
                    id: Guid.NewGuid().ToString());
             ContainerResponse response = await this.database.CreateContainerAsync(
                         new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey),
                         throughput: 20000,
-                        cancellationToken: this.cancellationToken);
+                        cancellationToken: default);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
             Assert.IsNotNull(response.Resource);
@@ -49,13 +59,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
-            await base.TestCleanup();
+            if (this.cosmosClient != null)
+            {
+                if(this.database != null)
+                {
+                    await this.database.DeleteStreamAsync();
+                }
+                
+                this.cosmosClient.Dispose();
+            }
         }
 
         [TestMethod]
         public async Task TestGatewayModelSession()
         {
-            ContainerProperties containerProperties = await this.Container.GetCachedContainerPropertiesAsync(false, NoOpTrace.Singleton, CancellationToken.None);
+            ContainerProperties containerProperties = await this.Container.GetCachedContainerPropertiesAsync(
+                false, 
+                Trace.GetRootTrace("Test"), 
+                CancellationToken.None);
 
             ISessionContainer sessionContainer = this.cosmosClient.DocumentClient.sessionContainer;
             string docLink = "dbs/" + this.database.Id + "/colls/" + containerProperties.Id + "/docs/3";
@@ -80,14 +101,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task GatewaySameSessionTokenTest()
         {
             string createSessionToken = null;
-            GatewaySessionTokenTests.HttpClientHandlerHelper httpClientHandler = new HttpClientHandlerHelper
+            HttpHandlerMetaDataValidator httpClientHandler = new HttpHandlerMetaDataValidator
             {
-                ResponseCallBack = (result) =>
+                RequestCallBack = (request, response) =>
                 {
-                    HttpResponseMessage response = result.Result;
                     if (response.StatusCode != HttpStatusCode.Created)
                     {
-                        return response;
+                        return;
                     }
 
                     response.Headers.TryGetValues("x-ms-session-token", out IEnumerable<string> sessionTokens);
@@ -96,7 +116,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         createSessionToken = singleToken;
                         break;
                     }
-                    return response;
                 }
             };
 
@@ -124,20 +143,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 string readSessionToken = request.Headers[HttpConstants.HttpHeaders.SessionToken];
                 Assert.AreEqual(readSessionToken, createSessionToken);
-            }
-        }
-
-        private class HttpClientHandlerHelper : DelegatingHandler
-        {
-            public HttpClientHandlerHelper() : base(new HttpClientHandler())
-            {
-            }
-
-            public Func<Task<HttpResponseMessage>, HttpResponseMessage> ResponseCallBack { get; set; }
-
-            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                return base.SendAsync(request, cancellationToken).ContinueWith(this.ResponseCallBack);
             }
         }
     }

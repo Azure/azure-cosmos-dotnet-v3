@@ -74,12 +74,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static CosmosClientBuilder GetDefaultConfiguration(bool useCustomSeralizer = true)
         {
-            (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: authKey);
             if (useCustomSeralizer)
             {
                 clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
             }
+
+            clientBuilder.WithHttpClientFactory(() => new HttpClient(new HttpHandlerMetaDataValidator()));
 
             return clientBuilder;
         }
@@ -87,10 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null, bool useCustomSeralizer = true)
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer);
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             CosmosClient client = cosmosClientBuilder.Build();
             Assert.IsNotNull(client.ClientOptions.Serializer);
@@ -102,6 +101,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string authKey = resourceToken ?? ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
 
+            if(clientOptions.HttpClientFactory == null &&
+                clientOptions.SendingRequestEventArgs == null)
+            {
+                clientOptions.HttpClientFactory = () => new HttpClient(new HttpHandlerMetaDataValidator());
+            }
+
             return new CosmosClient(endpoint, authKey, clientOptions);
         }
 
@@ -111,10 +116,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             if (useGateway)
             {
