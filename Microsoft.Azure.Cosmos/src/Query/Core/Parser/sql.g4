@@ -88,10 +88,19 @@ scalar_expression
 logical_scalar_expression
 	: binary_scalar_expression
 	| in_scalar_expression
+	| like_scalar_expression
 	;
 
 in_scalar_expression
 	: binary_scalar_expression K_NOT? K_IN '(' scalar_expression_list ')'
+	;
+
+like_scalar_expression
+	: binary_scalar_expression K_NOT? K_LIKE binary_scalar_expression escape_expression?
+	;
+
+escape_expression
+	: K_ESCAPE STRING_LITERAL
 	;
 
 binary_scalar_expression
@@ -184,12 +193,14 @@ K_BETWEEN : B E T W E E N;
 K_BY : B Y;
 K_DESC : D E S C;
 K_DISTINCT : D I S T I N C T;
+K_ESCAPE: E S C A P E;
 K_EXISTS : E X I S T S;
 K_FALSE : 'false';
 K_FROM : F R O M;
 K_GROUP : G R O U P;
 K_IN : I N ;
 K_JOIN : J O I N;
+K_LIKE : L I K E;
 K_LIMIT : L I M I T;
 K_NOT : N O T;
 K_NULL : 'null';
@@ -248,8 +259,8 @@ fragment SAFECODEPOINT
    ;
 
 IDENTIFIER
-	:
-	| [a-zA-Z_][a-zA-Z_]*DIGIT*
+	: 
+	| [a-zA-Z_]([a-zA-Z_]|DIGIT)*
 	;
 
 PARAMETER
