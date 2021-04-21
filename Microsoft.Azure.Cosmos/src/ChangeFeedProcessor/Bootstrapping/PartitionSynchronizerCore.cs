@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Bootstrapping
                 this.containerRid, 
                 FeedRangeEpk.FullRange.Range, 
                 NoOpTrace.Singleton, 
-                forceRefresh: false);
+                forceRefresh: true);
             DefaultTrace.TraceInformation("Source collection: '{0}', {1} partition(s)", this.container.LinkUri, ranges.Count);
             await this.CreateLeasesAsync(ranges).ConfigureAwait(false);
         }
