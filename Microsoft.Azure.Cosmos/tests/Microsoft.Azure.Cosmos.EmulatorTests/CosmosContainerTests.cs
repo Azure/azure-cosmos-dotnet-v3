@@ -1321,6 +1321,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ClientEncryptionPolicyTest()
         {
             string containerName = Guid.NewGuid().ToString();
