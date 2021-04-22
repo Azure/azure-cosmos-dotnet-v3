@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 if (!ExceptionToCosmosException.TryCreateFromException(ex, out CosmosException cosmosException))
                 {
-                    throw ex;
+                    throw;
                 }
 
                 this.Current = TryCatch<QueryPage>.FromException(cosmosException);
