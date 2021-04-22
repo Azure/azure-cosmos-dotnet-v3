@@ -92,6 +92,12 @@
     <None Update="BaselineTest\TestBaseline\FromClauseSqlParserBaselineTests.AliasedCollection.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BaselineTest\TestBaseline\IdentifierSqlParserBaselineTests.Unicode.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="BaselineTest\TestBaseline\LikeClauseSqlParserBaselineTests.Tests.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\WhereClauseSqlParserBaselineTests.Tests.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -185,6 +191,9 @@
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.GroupBy.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+	<None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.Like.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>	
     <None Update="BaselineTest\TestBaseline\QueryPlanBaselineTests.ManyRanges.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
