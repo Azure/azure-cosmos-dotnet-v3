@@ -641,7 +641,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/path1",
-                ClientEncryptionKeyId = "key1",
+                ClientEncryptionKeyId = "cekKey1",
                 EncryptionType = "Randomized",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256"
             };
@@ -649,7 +649,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
             {
                 Path = "/path2",
-                ClientEncryptionKeyId = "key2",
+                ClientEncryptionKeyId = "cekKey2",
                 EncryptionType = "Randomized",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
