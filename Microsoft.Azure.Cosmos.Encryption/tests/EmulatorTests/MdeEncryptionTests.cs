@@ -146,8 +146,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
 
-            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
-           
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);           
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
@@ -367,7 +366,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task EncryptionFailsWithUnknownClientEncryptionKey()
         {
             ClientEncryptionIncludedPath unknownKeyConfigured = new ClientEncryptionIncludedPath()
@@ -378,27 +376,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
-            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>  { unknownKeyConfigured };
-            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);            
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { unknownKeyConfigured };
+            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
 
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);           
-
             try
             {
-                await encryptionContainer.InitializeEncryptionAsync();
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                Assert.Fail("Expected item creation should fail since client encryption policy is configured with unknown key.");
+                Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("Creating container with Client Encryption Policy referencing Key which is not present should have failed. ");
             }
-            catch (Exception ex)
+            catch (CosmosException ex)
             {
-                Assert.IsTrue(ex is InvalidOperationException);
+                if (ex.StatusCode != HttpStatusCode.BadRequest)
+                {
+                    Assert.Fail("CreateContainerAsync expected to fail with BadRequest statusCode. ");
+                }
             }
         }
 
         [TestMethod]
-        [Ignore]
         public async Task ClientEncryptionPolicyTests()
         {
             string containerId = "containerWithUnsuportedPolicy1";
