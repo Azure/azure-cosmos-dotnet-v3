@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract void Visit(SqlExistsScalarExpression scalarExpression);
         public abstract void Visit(SqlFunctionCallScalarExpression scalarExpression);
         public abstract void Visit(SqlInScalarExpression scalarExpression);
+        public abstract void Visit(SqlLikeScalarExpression scalarExpression);
         public abstract void Visit(SqlLiteralScalarExpression scalarExpression);
         public abstract void Visit(SqlMemberIndexerScalarExpression scalarExpression);
         public abstract void Visit(SqlObjectCreateScalarExpression scalarExpression);
