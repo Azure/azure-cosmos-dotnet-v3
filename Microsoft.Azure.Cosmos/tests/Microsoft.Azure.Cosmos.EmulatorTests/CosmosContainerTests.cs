@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Cryptography;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -1321,9 +1322,32 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task ClientEncryptionPolicyTest()
         {
+            byte[] rawCek1 = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek1);
+            }
+
+            DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.cosmosDatabase;
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties("cekKey1",
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                rawCek1,
+                new EncryptionKeyWrapMetadata("AZURE_KEY_VAULT", "metadataName1", "metadataValue1"));
+            
+            ClientEncryptionKeyResponse cekResponse = await databaseInlineCore.CreateClientEncryptionKeyAsync(cekProperties);
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+
+            cekProperties = new ClientEncryptionKeyProperties("cekKey2",
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                rawCek1, new EncryptionKeyWrapMetadata("TESTKEYSTOREPROVIDER", "metadataName2", "metadataValue2"));
+
+            cekResponse = await databaseInlineCore.CreateClientEncryptionKeyAsync(cekProperties);
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
@@ -1331,14 +1355,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/path1",
-                    ClientEncryptionKeyId = "dekId1",
+                    ClientEncryptionKeyId = "cekKey1",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                     EncryptionType = "Randomized"
                 },
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/path2",
-                    ClientEncryptionKeyId = "dekId2",
+                    ClientEncryptionKeyId = "cekKey2",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                     EncryptionType = "Deterministic"
                 }
@@ -1359,13 +1383,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(2, responseSettings.ClientEncryptionPolicy.IncludedPaths.Count());
             ClientEncryptionIncludedPath includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(0);
             Assert.AreEqual("/path1", includedPath.Path);
-            Assert.AreEqual("dekId1", includedPath.ClientEncryptionKeyId);
+            Assert.AreEqual("cekKey1", includedPath.ClientEncryptionKeyId);
             Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
             Assert.AreEqual("Randomized", includedPath.EncryptionType);
 
             includedPath = responseSettings.ClientEncryptionPolicy.IncludedPaths.ElementAt(1);
             Assert.AreEqual("/path2", includedPath.Path);
-            Assert.AreEqual("dekId2", includedPath.ClientEncryptionKeyId);
+            Assert.AreEqual("cekKey2", includedPath.ClientEncryptionKeyId);
             Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", includedPath.EncryptionAlgorithm);
             Assert.AreEqual("Deterministic", includedPath.EncryptionType);
 
@@ -1440,6 +1464,39 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("Duplicate Path found."));
+            }
+        }
+
+        [TestMethod]
+        public async Task ContainerCreationFailsWithUnknownClientEncryptionKey()
+        {
+            string containerName = Guid.NewGuid().ToString();
+            string partitionKeyPath = "/users";
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/path1",
+                    ClientEncryptionKeyId = "unknownkey",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                    EncryptionType = "Randomized"
+                },               
+            };
+
+            ContainerProperties setting = new ContainerProperties()
+            {
+                Id = containerName,
+                PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                ClientEncryptionPolicy = new ClientEncryptionPolicy(paths)
+            };
+
+            try
+            {
+                ContainerResponse containerResponse = await this.cosmosDatabase.CreateContainerIfNotExistsAsync(setting);
+                Assert.Fail("Creating container with Client Encryption Policy referencing Key which is not present should have failed. ");
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            {
             }
         }
 

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Cryptography;
     using System.Threading.Tasks;
 
     // Similar tests to CosmosContainerTests but with Fluent syntax
@@ -32,13 +33,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task ContainerContractTest()
         {
+            byte[] rawCek1 = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek1);
+            }
+
+            DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.database;
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties("cekKey1",
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                rawCek1,
+                new EncryptionKeyWrapMetadata("AZURE_KEY_VAULT", "metadataName1", "metadataValue1"));
+
+            ClientEncryptionKeyResponse cekResponse = await databaseInlineCore.CreateClientEncryptionKeyAsync(cekProperties);
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+
             ClientEncryptionIncludedPath clientEncryptionIncludedPath1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/path",
-                ClientEncryptionKeyId = "dekId",
+                ClientEncryptionKeyId = "cekKey1",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 EncryptionType = "Randomized"
             };
@@ -592,9 +609,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore]
         public async Task WithClientEncryptionPolicyTest()
         {
+            byte[] rawCek1 = new byte[32];
+
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(rawCek1);
+            }
+
+            DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.database;
+
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties("cekKey1",
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                rawCek1,
+                new EncryptionKeyWrapMetadata("custom", "metadataName1", "metadataValue1"));
+
+            ClientEncryptionKeyResponse cekResponse = await databaseInlineCore.CreateClientEncryptionKeyAsync(cekProperties);
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+
+            cekProperties = new ClientEncryptionKeyProperties("cekKey2",
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                rawCek1, new EncryptionKeyWrapMetadata("custom", "metadataName2", "metadataValue2"));
+
+            cekResponse = await databaseInlineCore.CreateClientEncryptionKeyAsync(cekProperties);
+            Assert.AreEqual(HttpStatusCode.Created, cekResponse.StatusCode);
+
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
