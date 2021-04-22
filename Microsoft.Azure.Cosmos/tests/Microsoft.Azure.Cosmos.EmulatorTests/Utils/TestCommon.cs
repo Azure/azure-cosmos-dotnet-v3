@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Security.Cryptography;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -361,6 +362,41 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Range<string>.GetPointRange(PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey),
                 NoOpTrace.Singleton).Result;
             request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, ranges.Single().Id));
+        }
+
+        internal static async Task CreateClientEncryptionKey(
+            string dekId,
+            DatabaseInlineCore databaseInlineCore)
+        {
+            EncryptionKeyWrapMetadata metadata = new EncryptionKeyWrapMetadata("custom", dekId, "tempMetadata");
+
+            byte[] wrappedDataEncryptionKey = new byte[32];
+            // Generate random bytes cryptographically.
+            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
+            {
+                rngCsp.GetBytes(wrappedDataEncryptionKey);
+            }
+
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties = new ClientEncryptionKeyProperties(
+                dekId,
+                "AEAD_AES_256_CBC_HMAC_SHA256",
+                wrappedDataEncryptionKey,
+                metadata);
+
+            try
+            {
+                await databaseInlineCore.CreateClientEncryptionKeyAsync(clientEncryptionKeyProperties);
+            }
+            catch(CosmosException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.Conflict &&
+                    ex.Message.Contains("Resource with specified id, name, or unique index already exists."))
+                {
+                    return;
+                }
+
+                throw;
+            }
         }
 
         internal static Database CreateOrGetDatabase(DocumentClient client)
