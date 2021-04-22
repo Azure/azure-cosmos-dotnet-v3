@@ -16,7 +16,8 @@
                 method: HttpMethod.Post,
                 requestUri: "http://localhost.com",
                 requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
-                responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
+                responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken),
+                beLatencyInMs: "0.42");
             rootTrace.AddDatum("Point Operation Statistics", datum);
         }
 ]]></Setup>
@@ -37,7 +38,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -56,10 +56,10 @@
       "RequestUri": "http://localhost.com",
       "ErrorMessage": null,
       "RequestSessionToken": "RequestSessionToken",
-      "ResponseSessionToken": "ResponseSessionToken"
+      "ResponseSessionToken": "ResponseSessionToken",
+      "BELatencyInMs": "0.42"
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -80,7 +80,8 @@
                 method: default,
                 requestUri: default,
                 requestSessionToken: default,
-                responseSessionToken: default);
+                responseSessionToken: default,
+                beLatencyInMs: default);
             rootTrace.AddDatum("Point Operation Statistics Default", datum);
         }
 ]]></Setup>
@@ -101,7 +102,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -120,10 +120,10 @@
       "RequestUri": null,
       "ErrorMessage": null,
       "RequestSessionToken": null,
-      "ResponseSessionToken": null
+      "ResponseSessionToken": null,
+      "BELatencyInMs": null
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -182,7 +182,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -192,8 +191,7 @@
   "duration in milliseconds": 0,
   "data": {
     "Query Metrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -247,7 +245,7 @@
                     sessionToken: new SimpleSessionToken(42),
                     usingLocalLSN: true,
                     activityId: Guid.Empty.ToString(),
-                    backendRequestDurationInMs:"0"),
+                    backendRequestDurationInMs: "4.2"),
                 ResourceType.Document,
                 OperationType.Query,
                 uri1);
@@ -306,7 +304,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -349,13 +346,31 @@
           "ResourceType": "Document",
           "OperationType": "Query",
           "LocationEndpoint": "http://someuri1.com/",
-          "ActivityId": "00000000-0000-0000-0000-000000000000",
-          "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null, BELatencyMs: 0"
+          "StoreResult": {
+            "ActivityId": "00000000-0000-0000-0000-000000000000",
+            "StatusCode": "0",
+            "SubStatusCode": "Unknown",
+            "LSN": 1337,
+            "PartitionKeyRangeId": "42",
+            "GlobalCommittedLSN": 1234,
+            "ItemLSN": 15,
+            "UsingLocalLSN": true,
+            "QuorumAckedLSN": 23,
+            "SessionToken": "42",
+            "CurrentWriteQuorum": 3,
+            "CurrentReplicaSetSize": 4,
+            "NumberOfReadRegions": 13,
+            "IsClientCpuOverloaded": false,
+            "IsValid": true,
+            "StorePhysicalAddress": "http://storephysicaladdress.com/",
+            "RequestCharge": 3.14,
+            "BELatencyInMs": "4.2",
+            "TransportException": null
+          }
         }
       ]
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -456,7 +471,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -492,13 +506,31 @@
           "ResourceType": "Database",
           "OperationType": "Create",
           "LocationEndpoint": null,
-          "ActivityId": null,
-          "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null, BELatencyMs:"
+          "StoreResult": {
+            "ActivityId": null,
+            "StatusCode": "0",
+            "SubStatusCode": "Unknown",
+            "LSN": 0,
+            "PartitionKeyRangeId": null,
+            "GlobalCommittedLSN": 0,
+            "ItemLSN": 0,
+            "UsingLocalLSN": false,
+            "QuorumAckedLSN": 0,
+            "SessionToken": null,
+            "CurrentWriteQuorum": 0,
+            "CurrentReplicaSetSize": 0,
+            "NumberOfReadRegions": 0,
+            "IsClientCpuOverloaded": false,
+            "IsValid": false,
+            "StorePhysicalAddress": null,
+            "RequestCharge": 0,
+            "BELatencyInMs": null,
+            "TransportException": null
+          }
         }
       ]
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -533,7 +565,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -545,8 +576,7 @@
     "CPU History": {
       "CPU History": "(0001-01-01T00:00:00.0000000 42.000), (0001-01-01T00:00:00.0000000 23.000)"
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>

@@ -617,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         headers: response.Headers,
                         error: default,
                         innerException: default,
-                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
+                        trace: request.Trace).ToCosmosResponseMessage(request);
                 }
 
                 return response;
@@ -1321,6 +1321,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ClientEncryptionPolicyTest()
         {
             string containerName = Guid.NewGuid().ToString();

@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlInScalarExpressionHashCode = 1439386783;
         private const int SqlInScalarExpressionNotHashCode = -1131398119;
         private const int SqlJoinCollectionExpressionHashCode = 1000382226;
+        private const int SqlLikeScalarExpressionHashCode = 317861;
         private const int SqlLimitSpecHashCode = 92601316;
         private const int SqlLiteralScalarExpressionHashCode = -158339101;
         private const int SqlMemberIndexerScalarExpressionHashCode = 1589675618;
@@ -281,6 +282,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return hashCode;
         }
 
+        public override int Visit(SqlJoinCollectionExpression sqlJoinCollectionExpression)
+        {
+            int hashCode = SqlJoinCollectionExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.Left.Accept(this));
+            hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.Right.Accept(this));
+            return hashCode;
+        }
+
         public override int Visit(SqlLimitSpec sqlObject)
         {
             int hashCode = SqlLimitSpecHashCode;
@@ -288,11 +297,17 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return hashCode;
         }
 
-        public override int Visit(SqlJoinCollectionExpression sqlJoinCollectionExpression)
+        public override int Visit(SqlLikeScalarExpression sqlLikeScalarExpression)
         {
-            int hashCode = SqlJoinCollectionExpressionHashCode;
-            hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.Left.Accept(this));
-            hashCode = CombineHashes(hashCode, sqlJoinCollectionExpression.Right.Accept(this));
+            int hashCode = SqlLikeScalarExpressionHashCode;
+            hashCode = CombineHashes(hashCode, sqlLikeScalarExpression.Expression.Accept(this));
+            hashCode = CombineHashes(hashCode, sqlLikeScalarExpression.Not ? 1 : 0);
+            hashCode = CombineHashes(hashCode, sqlLikeScalarExpression.Pattern.Accept(this));
+            if (sqlLikeScalarExpression.EscapeSequence != null)
+            {
+                hashCode = CombineHashes(hashCode, sqlLikeScalarExpression.EscapeSequence.Accept(this));
+            }
+
             return hashCode;
         }
 

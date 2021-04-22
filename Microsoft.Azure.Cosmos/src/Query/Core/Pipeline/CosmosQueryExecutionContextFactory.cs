@@ -771,6 +771,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     {
                         return false;
                     }
+
+                    public override bool Visit(SqlLikeScalarExpression scalarExpression)
+                    {
+                        return false;
+                    }
                 }
             }
         }

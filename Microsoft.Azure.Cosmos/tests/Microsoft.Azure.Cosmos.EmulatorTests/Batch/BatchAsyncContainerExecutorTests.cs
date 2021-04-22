@@ -78,6 +78,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             MyDocument myDocument = new MyDocument() { id = id, Status = id };
 
             await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), new ItemRequestOptions() { SessionToken = "something" }));
+            await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => executor.ValidateOperationAsync(
+                new ItemBatchOperation(OperationType.Replace, 0, new Cosmos.PartitionKey(id), id, cosmosDefaultJsonSerializer.ToStream(myDocument)), 
+                new ItemRequestOptions() { DedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions { MaxIntegratedCacheStaleness = TimeSpan.FromMinutes(3) }  }));
         }
 
         private static ItemBatchOperation CreateItem(string id)
