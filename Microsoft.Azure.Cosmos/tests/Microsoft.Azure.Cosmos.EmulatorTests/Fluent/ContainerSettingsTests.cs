@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ContainerContractTest()
         {
             ClientEncryptionIncludedPath clientEncryptionIncludedPath1 = new ClientEncryptionIncludedPath()
@@ -591,6 +592,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task WithClientEncryptionPolicyTest()
         {
             string containerName = Guid.NewGuid().ToString();
