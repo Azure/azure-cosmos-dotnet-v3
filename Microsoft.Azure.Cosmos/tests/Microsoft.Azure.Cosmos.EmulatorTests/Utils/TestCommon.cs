@@ -73,35 +73,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return (endpoint, authKey);
         }
 
-        internal static CosmosClientBuilder GetDefaultConfiguration(bool useCustomSeralizer = true)
+        internal static CosmosClientBuilder GetDefaultConfiguration(
+            bool useCustomSeralizer = true,
+            bool validatePartitionKeyRangeCalls = false)
         {
-            (string endpoint, string authKey) accountInfo = TestCommon.GetAccountInfo();
-            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: accountInfo.endpoint, authKeyOrResourceToken: accountInfo.authKey);
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+            CosmosClientBuilder clientBuilder = new CosmosClientBuilder(accountEndpoint: endpoint, authKeyOrResourceToken: authKey);
             if (useCustomSeralizer)
             {
                 clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
             }
 
+            if (validatePartitionKeyRangeCalls)
+            {
+                clientBuilder.WithHttpClientFactory(() => new HttpClient(new HttpHandlerMetaDataValidator()));
+            }
+
             return clientBuilder;
         }
 
-        internal static CosmosClient CreateCosmosClient(Action<CosmosClientBuilder> customizeClientBuilder = null, bool useCustomSeralizer = true)
+        internal static CosmosClient CreateCosmosClient(
+            Action<CosmosClientBuilder> customizeClientBuilder = null,
+            bool useCustomSeralizer = true,
+            bool validatePartitionKeyRangeCalls = false)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer);
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls);
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             CosmosClient client = cosmosClientBuilder.Build();
             Assert.IsNotNull(client.ClientOptions.Serializer);
             return client;
         }
 
-        internal static CosmosClient CreateCosmosClient(CosmosClientOptions clientOptions, string resourceToken = null)
+        internal static CosmosClient CreateCosmosClient(
+            CosmosClientOptions clientOptions,
+            string resourceToken = null,
+            bool validatePartitionKeyRangeCalls = false)
         {
             string authKey = resourceToken ?? ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            if (validatePartitionKeyRangeCalls &&
+                clientOptions != null &&
+                clientOptions.HttpClientFactory == null &&
+                clientOptions.SendingRequestEventArgs == null)
+            {
+                clientOptions.HttpClientFactory = () => new HttpClient(new HttpHandlerMetaDataValidator());
+            }
 
             return new CosmosClient(endpoint, authKey, clientOptions);
         }
@@ -112,10 +130,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration();
 
-            if (customizeClientBuilder != null)
-            {
-                customizeClientBuilder(cosmosClientBuilder);
-            }
+            customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             if (useGateway)
             {
@@ -485,7 +500,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             if (documentCollections.Count == 0)
             {
-                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk","/key" }), Kind = PartitionKind.MultiHash };
+                PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk", "/key" }), Kind = PartitionKind.MultiHash };
                 DocumentCollection documentCollection1 = new DocumentCollection
                 {
                     Id = Guid.NewGuid().ToString("N"),
@@ -1300,7 +1315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             FeedIterator<DatabaseProperties> resultSetIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(
                 queryDefinition: null,
-                continuationToken: null, 
+                continuationToken: null,
                 requestOptions: new QueryRequestOptions() { MaxItemCount = 10 });
 
             List<Task> deleteTasks = new List<Task>(10); //Delete in chunks of 10

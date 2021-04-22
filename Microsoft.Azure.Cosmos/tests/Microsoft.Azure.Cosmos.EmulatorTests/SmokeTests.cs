@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using Linq;
     using Microsoft.Azure.Cosmos.Utils;
@@ -19,9 +21,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestCategory("Emulator")]
     public class SmokeTests
     {
-        private static readonly string Host;
-        private static readonly string MasterKey;
-
         private const string DatabaseName = "netcore_test_db";
         private const string CollectionName = "netcore_test_coll";
         private const string PartitionedCollectionName = "netcore_test_pcoll";
@@ -32,8 +31,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         static SmokeTests()
         {
-            SmokeTests.MasterKey = ConfigurationManager.AppSettings["MasterKey"];
-            SmokeTests.Host = ConfigurationManager.AppSettings["GatewayEndpoint"];
         }
 
         /// <summary>
@@ -88,8 +85,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Database database = await this.client.CreateDatabaseIfNotExistsAsync(DatabaseName);
             Container container = await this.CreatePartitionedCollectionIfNotExists(database, PartitionedCollectionName);
-
-            Uri documentCollectionUri = UriFactory.CreateDocumentCollectionUri(DatabaseName, PartitionedCollectionName);
 
             for (int i = 0; i < 2; i++)
             {
@@ -317,9 +312,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private CosmosClient GetDocumentClient(ConnectionMode connectionMode, Documents.Client.Protocol protocol)
         {
-            CosmosClientOptions connectionPolicy = new CosmosClientOptions() { ConnectionMode = connectionMode, ConnectionProtocol = protocol };
+            CosmosClientOptions connectionPolicy = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode,
+                ConnectionProtocol = protocol,
+                ConsistencyLevel = ConsistencyLevel.Session,
+            };
 
-            return new CosmosClient(Host, MasterKey, connectionPolicy);
+            return TestCommon.CreateCosmosClient(connectionPolicy);
         }
 
         private async Task<Container> CreatePartitionedCollectionIfNotExists(Database database, string collectionName)
