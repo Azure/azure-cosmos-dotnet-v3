@@ -123,6 +123,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return hasAggregates;
                 }
 
+                public override bool Visit(SqlLikeScalarExpression sqlLikeScalarExpression)
+                {
+                    return false;
+                }
+
                 public override bool Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
                 {
                     return false;

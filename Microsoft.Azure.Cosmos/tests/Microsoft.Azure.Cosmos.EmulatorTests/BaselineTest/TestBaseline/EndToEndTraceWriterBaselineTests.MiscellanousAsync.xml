@@ -43,7 +43,6 @@
       <Json><![CDATA[{
   "name": "CreateDatabaseAsync",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Transport",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -58,99 +57,53 @@
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "RequestHandler",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "Waiting for Initialization of client to complete",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Unknown",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         },
         {
           "name": "Microsoft.Azure.Cosmos.EmulatorTests.Tracing.EndToEndTraceWriterBaselineTests+RequestHandlerSleepHelper",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "RequestHandler",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "RequestHandler",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "RequestHandler",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
-                      "data": {},
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
                               "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Transport",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
@@ -161,8 +114,7 @@
                               "data": {
                                 "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
                                 "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                              },
-                              "children": []
+                              }
                             }
                           ]
                         }
@@ -215,7 +167,6 @@
       <Json><![CDATA[{
   "name": "CreateDatabaseAsync",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Transport",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -230,72 +181,36 @@
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "RequestHandler",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "RequestHandler",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "RequestHandler",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "RequestHandler",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
-                      "data": {},
                       "children": [
                         {
                           "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Transport",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
@@ -306,8 +221,7 @@
                           "data": {
                             "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
                             "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                          },
-                          "children": []
+                          }
                         }
                       ]
                     }
