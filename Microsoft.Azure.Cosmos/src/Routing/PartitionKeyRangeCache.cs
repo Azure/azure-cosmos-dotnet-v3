@@ -31,7 +31,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
 
-        public PartitionKeyRangeCache(IAuthorizationTokenProvider authorizationTokenProvider, IStoreModel storeModel, CollectionCache collectionCache)
+        public PartitionKeyRangeCache(
+            IAuthorizationTokenProvider authorizationTokenProvider,
+            IStoreModel storeModel,
+            CollectionCache collectionCache)
         {
             this.routingMapCache = new AsyncCache<string, CollectionRoutingMap>(
                     EqualityComparer<CollectionRoutingMap>.Default,

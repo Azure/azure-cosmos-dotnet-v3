@@ -1,0 +1,110 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT c.a FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c.a FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic Capitalized]]></Description>
+      <Query><![CDATA[SELECT c.A FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c.A FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Underscore In Front]]></Description>
+      <Query><![CDATA[SELECT c._a FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c._a FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Number then Letter]]></Description>
+      <Query><![CDATA[SELECT c._12a FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c._12a FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Letter then Number]]></Description>
+      <Query><![CDATA[SELECT c.ab12 FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c.ab12 FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Number then Letter then Number]]></Description>
+      <Query><![CDATA[SELECT c._12ab34 FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c._12ab34 FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Letter then Number then Letter]]></Description>
+      <Query><![CDATA[SELECT c.ab12cd FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT c.ab12cd FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Number In Front]]></Description>
+      <Query><![CDATA[SELECT c.12a FROM c]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Special Character]]></Description>
+      <Query><![CDATA[SELECT c.ab-cd FROM c]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT (c.ab - cd) FROM c]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Special Character 2]]></Description>
+      <Query><![CDATA[SELECT c.ab:cd FROM c]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Special Character 3]]></Description>
+      <Query><![CDATA[SELECT c.ab{cd} FROM c]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Special Character 4]]></Description>
+      <Query><![CDATA[SELECT c.ab(cd) FROM c]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>
