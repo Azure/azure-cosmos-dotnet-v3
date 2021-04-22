@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TResult Visit(SqlExistsScalarExpression scalarExpression);
         public abstract TResult Visit(SqlFunctionCallScalarExpression scalarExpression);
         public abstract TResult Visit(SqlInScalarExpression scalarExpression);
+        public abstract TResult Visit(SqlLikeScalarExpression scalarExpression);
         public abstract TResult Visit(SqlLiteralScalarExpression scalarExpression);
         public abstract TResult Visit(SqlMemberIndexerScalarExpression scalarExpression);
         public abstract TResult Visit(SqlObjectCreateScalarExpression scalarExpression);

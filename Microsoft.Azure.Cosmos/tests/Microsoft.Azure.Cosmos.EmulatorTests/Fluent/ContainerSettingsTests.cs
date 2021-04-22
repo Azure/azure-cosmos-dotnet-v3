@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ContainerContractTest()
         {
             DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.database;
@@ -594,6 +595,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task WithClientEncryptionPolicyTest()
         {
             // create ClientEncryptionKeys
