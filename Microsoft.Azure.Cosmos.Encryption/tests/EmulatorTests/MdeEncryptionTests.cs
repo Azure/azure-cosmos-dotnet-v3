@@ -367,6 +367,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task EncryptionFailsWithUnknownClientEncryptionKey()
         {
             ClientEncryptionIncludedPath unknownKeyConfigured = new ClientEncryptionIncludedPath()
@@ -395,6 +396,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        [Ignore]
         public async Task ClientEncryptionPolicyTests()
         {
             string containerId = "containerWithUnsuportedPolicy1";

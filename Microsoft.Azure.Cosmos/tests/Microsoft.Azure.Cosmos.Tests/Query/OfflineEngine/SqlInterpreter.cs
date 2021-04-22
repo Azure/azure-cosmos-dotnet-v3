@@ -795,6 +795,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return true;
                 }
 
+                public override bool Visit(SqlLikeScalarExpression scalarExpression)
+                {
+                    return false;
+                }
+
                 public override bool Visit(SqlLiteralScalarExpression scalarExpression)
                 {
                     // Literals don't need to be checked, since they won't reference a non group by column.
