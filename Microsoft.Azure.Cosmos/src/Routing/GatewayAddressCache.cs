@@ -449,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 additionalHeaders: headers,
                 resourceType: resourceType,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                 cancellationToken: default))
             {
                 DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
@@ -524,7 +524,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 additionalHeaders: headers,
                 resourceType: ResourceType.Document,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                 cancellationToken: default))
             {
                 DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);

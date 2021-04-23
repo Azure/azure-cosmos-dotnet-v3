@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true);
             string PartitionKey = "/pk";
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
@@ -436,7 +436,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Debugger.Break();
                     }
                 });
-            });
+            },
+            validatePartitionKeyRangeCalls: false);
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
