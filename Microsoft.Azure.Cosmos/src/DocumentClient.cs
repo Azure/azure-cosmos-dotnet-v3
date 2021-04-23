@@ -6347,7 +6347,8 @@ namespace Microsoft.Azure.Cosmos
                     return request;
                 }
 
-                AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage);
+                AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
+                                                                                               clientSideRequestStatistics: null);
 
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
                 return databaseAccount;

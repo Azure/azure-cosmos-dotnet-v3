@@ -22,14 +22,14 @@ namespace Microsoft.Azure.Cosmos
             INameValueCollection additionalHeaders,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            ITrace trace,
+            IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken);
 
         public abstract Task<HttpResponseMessage> SendHttpAsync(
             Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
-            ITrace trace,
+            IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken);
 
         protected abstract void Dispose(bool disposing);

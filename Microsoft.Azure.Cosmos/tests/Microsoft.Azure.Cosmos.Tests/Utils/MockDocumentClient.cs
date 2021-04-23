@@ -190,8 +190,10 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>()
+                        It.IsAny<ITrace>(),
+                        It.IsAny<IClientSideRequestStatistics>(),
+                        It.IsAny<CancellationToken>()
+                        
                     )
                 ).Returns(() => {
                     ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
@@ -205,8 +207,9 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>()
+                        It.IsAny<ITrace>(),
+                        It.IsAny<IClientSideRequestStatistics>(),
+                        It.IsAny<CancellationToken>()
                     )
                 ).Returns(() =>
                 {
