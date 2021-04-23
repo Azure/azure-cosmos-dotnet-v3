@@ -287,6 +287,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                         items);
                 }
 
+                public override SqlScalarExpression Visit(SqlLikeScalarExpression sqlLikeScalarExpression)
+                {
+                    return sqlLikeScalarExpression;
+                }
+
                 public override SqlScalarExpression Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
                 {
                     return sqlLiteralScalarExpression;

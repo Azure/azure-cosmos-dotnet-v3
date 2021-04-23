@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
         private readonly ChangeFeedEstimator remainingWorkEstimator;
         private readonly TimeSpan monitoringDelay;
         private readonly ChangesEstimationHandler dispatchEstimation;
-        private readonly Func<CancellationToken, Task> estimateAndDispatchAsync;
 
         public FeedEstimatorRunner(
             ChangesEstimationHandler dispatchEstimation,
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             TimeSpan? estimationPeriod = null)
         {
             this.dispatchEstimation = dispatchEstimation;
-            this.estimateAndDispatchAsync = this.EstimateAsync;
             this.remainingWorkEstimator = remainingWorkEstimator;
             this.monitoringDelay = estimationPeriod ?? FeedEstimatorRunner.defaultMonitoringDelay;
         }
@@ -39,12 +37,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             {
                 try
                 {
-                    await this.estimateAndDispatchAsync(cancellationToken);
+                    await this.EstimateAsync(cancellationToken);
                 }
                 catch (TaskCanceledException canceledException)
                 {
                     if (cancellationToken.IsCancellationRequested)
+                    {
                         throw;
+                    }
 
                     Extensions.TraceException(new Exception("exception within estimator", canceledException));
 
@@ -57,9 +57,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
 
         private async Task EstimateAsync(CancellationToken cancellationToken)
         {
-            long estimation = await this.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
             try
             {
+                long estimation = await this.GetEstimatedRemainingWorkAsync(cancellationToken).ConfigureAwait(false);
                 await this.dispatchEstimation(estimation, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception userException)
