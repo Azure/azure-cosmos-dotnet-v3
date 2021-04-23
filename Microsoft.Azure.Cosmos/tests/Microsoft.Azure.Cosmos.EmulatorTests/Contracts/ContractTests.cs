@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using System.IO;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.ChangeFeed;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     [EmulatorTests.TestClass]
     public class ContractTests : BaseCosmosClientHelper
@@ -161,23 +163,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     changeFeedMode: ChangeFeedMode.Incremental,
                     changeFeedRequestOptions: requestOptions) as ChangeFeedIteratorCore;
                 ResponseMessage firstResponse = await feedIterator.ReadNextAsync();
-                FeedRangeEpk FeedRangeEpk = feedRange as FeedRangeEpk;
 
                 // Construct the continuation's range, using PKRangeId + ETag
                 List<dynamic> ct = new List<dynamic>()
                 {
                     new
                     {
-                        min = FeedRangeEpk.Range.Min,
-                        max = FeedRangeEpk.Range.Max,
-                        token = (string)null
+                        FeedRange = new
+                        {
+                            type = "Physical Partition Key Range Id",
+                            value = pkRangeIds.First()
+                        },
+                        State = new
+                        {
+                            type = "continuation",
+                            value = JObject.Parse(firstResponse.ContinuationToken)["Continuation"][0]["State"]["value"].ToString()
+                        }
                     }
                 };
+
+                if (firstResponse.Content != null)
+                {
+                    Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
+                    count += response.Count;
+                }
 
                 // Extract Etag and manually construct the continuation
                 dynamic oldContinuation = new
                 {
-                    V = 0,
+                    V = 2,
                     Rid = await container.GetCachedRIDAsync(cancellationToken: this.cancellationToken),
                     Continuation = ct
                 };
@@ -190,7 +204,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                 ChangeFeedRequestOptions requestOptions = new ChangeFeedRequestOptions()
                 {
                     PageSizeHint = 100,
-                    EmitOldContinuationToken = true,
                 };
                 ChangeFeedIteratorCore feedIterator = container.GetChangeFeedStreamIterator(
                     changeFeedStartFrom: ChangeFeedStartFrom.ContinuationToken(continuation),
@@ -202,8 +215,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     Collection<ToDoActivity> response = TestCommon.SerializerCore.FromStream<CosmosFeedResponseUtil<ToDoActivity>>(firstResponse.Content).Data;
                     count += response.Count;
                     string migratedContinuation = firstResponse.ContinuationToken;
-                    Assert.IsTrue(FeedRangeContinuation.TryParse(migratedContinuation, out FeedRangeContinuation feedRangeContinuation));
-                    Assert.IsTrue(feedRangeContinuation.FeedRange is FeedRangeEpk);
+                    TryCatch<CosmosElement> monadicParsedToken = CosmosElement.Monadic.Parse(migratedContinuation);
+                    Assert.IsFalse(monadicParsedToken.Failed);
+                    TryCatch<VersionedAndRidCheckedCompositeToken> monadicVersionedToken = VersionedAndRidCheckedCompositeToken
+                        .MonadicCreateFromCosmosElement(monadicParsedToken.Result);
+                    Assert.IsFalse(monadicVersionedToken.Failed);
+                    VersionedAndRidCheckedCompositeToken versionedAndRidCheckedCompositeToken = monadicVersionedToken.Result;
+                    Assert.AreEqual(VersionedAndRidCheckedCompositeToken.Version.V2, versionedAndRidCheckedCompositeToken.VersionNumber);                    
                 }
             }
 

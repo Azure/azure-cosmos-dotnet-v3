@@ -193,17 +193,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             ContainerProperties collectionFromCache;
                             try
                             {
-                                ClientCollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(childTrace);
-                                collectionFromCache = await collectionCache.ResolveByNameAsync(
-                                    HttpConstants.Versions.CurrentVersion,
-                                    cosmosContainerCore.LinkUri,
-                                    forceRefesh: false,
-                                    cancellationToken,
-                                    childTrace);
+                                if (cosmosContainerCore == null)
+                                {
+                                    throw new ArgumentException($"The container core can not be null for FeedRangeEpk");
+                                }
+
+                                collectionFromCache = await cosmosContainerCore.GetCachedContainerPropertiesAsync(
+                                    forceRefresh: false,
+                                    childTrace,
+                                    cancellationToken);
                             }
-                            catch (DocumentClientException ex)
+                            catch (CosmosException ex)
                             {
-                                return CosmosExceptionFactory.Create(ex, childTrace).ToCosmosResponseMessage(request);
+                                return ex.ToCosmosResponseMessage(request);
                             }
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
