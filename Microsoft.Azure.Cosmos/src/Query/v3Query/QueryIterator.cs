@@ -223,6 +223,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             if (!ExceptionToCosmosException.TryCreateFromException(
                 tryGetQueryPage.Exception, 
+                trace,
                 out CosmosException cosmosException))
             {
                 throw tryGetQueryPage.Exception;

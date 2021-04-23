@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             {
                 this.hasMoreResults = false;
 
-                if (!ExceptionToCosmosException.TryCreateFromException(this.monadicEnumerator.Exception, out CosmosException cosmosException))
+                if (!ExceptionToCosmosException.TryCreateFromException(this.monadicEnumerator.Exception, trace, out CosmosException cosmosException))
                 {
                     throw this.monadicEnumerator.Exception;
                 }
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
             if (monadicPage.Failed)
             {
-                if (!ExceptionToCosmosException.TryCreateFromException(monadicPage.Exception, out CosmosException cosmosException))
+                if (!ExceptionToCosmosException.TryCreateFromException(monadicPage.Exception, trace, out CosmosException cosmosException))
                 {
                     throw monadicPage.Exception;
                 }

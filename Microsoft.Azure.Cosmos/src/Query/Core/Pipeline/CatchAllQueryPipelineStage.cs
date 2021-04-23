@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
             catch (Exception ex)
             {
-                if (!ExceptionToCosmosException.TryCreateFromException(ex, out CosmosException cosmosException))
+                if (!ExceptionToCosmosException.TryCreateFromException(ex, trace, out CosmosException cosmosException))
                 {
                     throw;
                 }

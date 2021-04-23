@@ -201,8 +201,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
             return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
-                                requestOptions: null,
-                                task: (trace) => this.ReadNextAsync(trace, cancellationToken),
+                                requestOptions: this.changeFeedRequestOptions,
+                                task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
                                 traceComponent: TraceComponent.ChangeFeed,
                                 traceLevel: TraceLevel.Info);
         }
@@ -230,7 +230,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             if (monadicEnumerator.Failed)
             {
                 Exception createException = monadicEnumerator.Exception;
-                if (!ExceptionToCosmosException.TryCreateFromException(createException, out CosmosException cosmosException))
+                if (!ExceptionToCosmosException.TryCreateFromException(
+                    createException, 
+                    trace,
+                    out CosmosException cosmosException))
                 {
                     throw createException;
                 }
@@ -251,7 +254,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             if (enumerator.Current.Failed)
             {
-                if (!ExceptionToCosmosException.TryCreateFromException(enumerator.Current.Exception, out CosmosException cosmosException))
+                if (!ExceptionToCosmosException.TryCreateFromException(
+                    enumerator.Current.Exception,
+                    trace,
+                    out CosmosException cosmosException))
                 {
                     throw enumerator.Current.Exception;
                 }
