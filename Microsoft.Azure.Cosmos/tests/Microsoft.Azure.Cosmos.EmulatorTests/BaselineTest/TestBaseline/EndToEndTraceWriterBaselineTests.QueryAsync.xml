@@ -41,8 +41,8 @@
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
     │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -68,8 +68,8 @@
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
     │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -95,8 +95,8 @@
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
     │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -122,8 +122,8 @@
                         │       Redacted To Not Change The Baselines From Run To Run
                         │   )
                         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -298,7 +298,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -309,7 +309,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -467,7 +467,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -478,7 +478,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -636,7 +636,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -647,7 +647,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -805,7 +805,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -816,7 +816,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -952,8 +952,8 @@
     │   │               │       Redacted To Not Change The Baselines From Run To Run
     │   │               │   )
     │   │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -980,8 +980,8 @@
     │   │               │       Redacted To Not Change The Baselines From Run To Run
     │   │               │   )
     │   │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1008,8 +1008,8 @@
     │   │               │       Redacted To Not Change The Baselines From Run To Run
     │   │               │   )
     │   │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1036,8 +1036,8 @@
         │               │       Redacted To Not Change The Baselines From Run To Run
         │               │   )
         │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1213,7 +1213,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1224,7 +1224,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1393,7 +1393,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1404,7 +1404,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1573,7 +1573,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1584,7 +1584,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1753,7 +1753,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1764,7 +1764,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -1912,8 +1912,8 @@
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
     │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1939,8 +1939,8 @@
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
     │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1966,8 +1966,8 @@
     │                   │       Redacted To Not Change The Baselines From Run To Run
     │                   │   )
     │                   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │                   │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │                   │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1993,8 +1993,8 @@
                         │       Redacted To Not Change The Baselines From Run To Run
                         │   )
                         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
                         │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2169,7 +2169,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2180,7 +2180,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2338,7 +2338,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2349,7 +2349,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2507,7 +2507,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2518,7 +2518,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2676,7 +2676,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2687,7 +2687,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -2824,8 +2824,8 @@
     │   │               │       Redacted To Not Change The Baselines From Run To Run
     │   │               │   )
     │   │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2852,8 +2852,8 @@
     │   │               │       Redacted To Not Change The Baselines From Run To Run
     │   │               │   )
     │   │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2880,8 +2880,8 @@
     │   │               │       Redacted To Not Change The Baselines From Run To Run
     │   │               │   )
     │   │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2908,8 +2908,8 @@
         │               │       Redacted To Not Change The Baselines From Run To Run
         │               │   )
         │               ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │   ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        │               │   ├── Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │   ├── Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │               │       └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -3085,7 +3085,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -3096,7 +3096,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -3265,7 +3265,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -3276,7 +3276,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -3445,7 +3445,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -3456,7 +3456,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -3625,7 +3625,7 @@
                           "duration in milliseconds": 0,
                           "children": [
                             {
-                              "name": "Get Partition Key Range Cache",
+                              "name": "Get Collection Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",
@@ -3636,7 +3636,7 @@
                               "duration in milliseconds": 0
                             },
                             {
-                              "name": "Get Collection Cache",
+                              "name": "Get Partition Key Range Cache",
                               "id": "00000000-0000-0000-0000-000000000000",
                               "caller info": {
                                 "member": "MemberName",

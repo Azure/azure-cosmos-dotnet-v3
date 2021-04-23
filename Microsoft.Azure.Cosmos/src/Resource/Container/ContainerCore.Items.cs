@@ -1051,7 +1051,7 @@ namespace Microsoft.Azure.Cosmos
                     IJsonNavigatorNode jsonNavigatorNode = jsonNavigator.GetRootNode();
                     CosmosObject pathTraversal = CosmosObject.Create(jsonNavigator, jsonNavigatorNode);
 
-                    IReadOnlyList<IReadOnlyList<string>> tokenslist = await this.GetPartitionKeyPathTokensAsync(cancellation);
+                    IReadOnlyList<IReadOnlyList<string>> tokenslist = await this.GetPartitionKeyPathTokensAsync(childTrace, cancellation);
                     List<CosmosElement> cosmosElementList = new List<CosmosElement>(tokenslist.Count);
 
                     foreach (IReadOnlyList<string> tokenList in tokenslist)
