@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator,
             FeedRangeInternal originalRange)
         {
-            return crossPartitionEnumerator.TryPeek(out FeedRangeState<ChangeFeedState> nextState)
+            return crossPartitionEnumerator.TryPeekNext(out FeedRangeState<ChangeFeedState> nextState)
                                         && originalRange.Equals(nextState.FeedRange);
         }
 

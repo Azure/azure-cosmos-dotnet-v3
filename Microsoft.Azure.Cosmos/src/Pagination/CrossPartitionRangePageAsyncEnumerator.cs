@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return default;
         }
 
-        public bool TryPeek(out FeedRangeState<TState> nextState)
+        public bool TryPeekNext(out FeedRangeState<TState> nextState)
         {
             if (this.nextState.HasValue)
             {
