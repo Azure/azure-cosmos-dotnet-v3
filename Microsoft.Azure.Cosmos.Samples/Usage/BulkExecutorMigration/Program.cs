@@ -17,7 +17,7 @@
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
     // ----------------------------------------------------------------------------------------------------------
-    // Sample - demostrates how to migrate from Bulk Executor Library to V3 SDK with Bulk support
+    // Sample - demonstrates how to migrate from Bulk Executor Library to V3 SDK with Bulk support
     // ----------------------------------------------------------------------------------------------------------
 
     public class Program
@@ -165,7 +165,7 @@
         {
             // Read the Cosmos endpointUrl and authorization keys from configuration
             // These values are available from the Azure Management Portal on the Cosmos Account Blade under "Keys"
-            // Keep these values in a safe & secure location. Together they provide Administrative access to your Cosmos account
+            // Keep these values in a safe & secure location. Together, they provide Administrative access to your Cosmos account
             IConfigurationRoot configuration = new ConfigurationBuilder()
                     .AddJsonFile("appSettings.json")
                     .Build();
