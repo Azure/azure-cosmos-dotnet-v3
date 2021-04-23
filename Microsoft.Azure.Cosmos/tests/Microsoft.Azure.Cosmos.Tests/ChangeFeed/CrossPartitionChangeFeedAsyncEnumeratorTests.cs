@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using System.IO;
     using Microsoft.Azure.Cosmos.Tracing;
-    using System.Collections.Immutable;
     using Moq;
     using System.Threading;
     using System.Text;

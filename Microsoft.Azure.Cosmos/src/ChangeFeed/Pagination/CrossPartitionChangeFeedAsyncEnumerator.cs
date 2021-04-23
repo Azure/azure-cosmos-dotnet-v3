@@ -72,9 +72,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                     // Keep draining the cross partition enumerator until
                     // We get a non 304 page or we loop back to the same range or run into an exception
                     FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
-                    FeedRangeInternal nextRange = this.crossPartitionEnumerator.NextRange;
                     // No point on draining when the state has 1 range
-                    if (!originalRange.Equals(nextRange))
+                    if (!IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange))
                     {
                         using (ITrace drainNotModifedPages = changeFeedMoveNextTrace.StartChild("Drain NotModified Pages", TraceComponent.ChangeFeed, TraceLevel.Info))
                         {
@@ -100,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                                 }
                             }
                             while (!(backendPage is ChangeFeedSuccessPage
-                                || this.crossPartitionEnumerator.NextRange.Equals(originalRange)
+                                || IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange)
                                 || this.bufferedException.HasValue));
 
                             // Create a page with the aggregated request charge
@@ -163,6 +162,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 cancellationToken);
 
             return enumerator;
+        }
+
+        private static bool IsNextRangeEqualToOriginal(
+            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator,
+            FeedRangeInternal originalRange)
+        {
+            return crossPartitionEnumerator.TryPeek(out FeedRangeState<ChangeFeedState> nextState)
+                                        && originalRange.Equals(nextState.FeedRange);
         }
 
         private static CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> MakeCreateFunction(
