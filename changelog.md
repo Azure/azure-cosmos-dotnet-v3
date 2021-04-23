@@ -25,17 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2165](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2165) & [#2408](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2408)  Performance: Adds optimization to reduce header size for gateway mode with session consistency. It now only send specific partition session token like direct mode.
 
 #### Fixed
-- [#2409](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2409) Query: Fixes race condition in diagnostics causes missing information and Index out of bound exceptions. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
+- [#2282](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2282) Query: Fixes COUNT(DISTINCT) to always compute correct value. Any query with more than 1 page of results could produce incorrect values.
 - [#2405](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2405) Change Feed: Fixes pull model to avoid additional NotModified call
+- [#2368](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2368) Query: Fixes BadRequest with "Failed to parse ... as ResourceId" for gateway mode on splits. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
+- [#2357](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2357) Query: Fixes incorrect RequestCharge and missing headers in FeedResponse for ordered cross-partition queries. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) (Thanks to ccurrens)
+- [#2409](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2409) Query: Fixes race condition in diagnostics causes missing information and Index out of bound exceptions. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
 - [#2400](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2400) Availability: Fixes race condition in direct + tcp mode causing SDK generated internal server errors and invalid operation exceptions
 - [#2400](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2400) Availability: Fixes race condition in direct + tcp mode causing unnecessary connections to be created by concurrent requests
 - [#2392](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2392) Change Feed Estimator: Fixes exception propagation to throw on StartAsync for container/lease not found scenarios. Introduced in 3.17.0 PR [#1830](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1830)
 - [#2383](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2383) Availability: Fixes CancellationToken evaluation during failover which could prevent necessary SDK refreshes to occur
 - [#2376](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2376) Diagnostics: Fixes invalid nesting and handler names in ITrace. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
-- [#2368](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2368) Query: Fixes BadRequest with "Failed to parse ... as ResourceId" for gateway mode on splits. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812)
-- [#2357](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2357) Query: Fixes incorrect RequestCharge and missing headers in FeedResponse for ordered cross-partition queries. Introduced in 3.14.0 PR [#1812](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1812) (Thanks to ccurrens)
 - [#2286](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2286) Diagnostics: Fixes regression in ITrace where direct operation diagnostics were not included in exception scenarios. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
-- [#2282](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2282) Query: Fixes COUNT(DISTINCT) to always compute correct value
+
 
 ### <a name="3.18.0-preview"/> [3.18.0-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.0-preview) - 2021-03-18
 
