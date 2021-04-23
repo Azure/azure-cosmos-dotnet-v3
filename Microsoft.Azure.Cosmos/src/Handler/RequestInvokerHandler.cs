@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -189,13 +190,25 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         }
                         else if (feedRange is FeedRangeEpk feedRangeEpk)
                         {
-                            DocumentServiceRequest serviceRequest = request.ToDocumentServiceRequest();
+                            ContainerProperties collectionFromCache;
+                            try
+                            {
+                                if (cosmosContainerCore == null)
+                                {
+                                    throw new ArgumentException($"The container core can not be null for FeedRangeEpk");
+                                }
+
+                                collectionFromCache = await cosmosContainerCore.GetCachedContainerPropertiesAsync(
+                                    forceRefresh: false,
+                                    childTrace,
+                                    cancellationToken);
+                            }
+                            catch (CosmosException ex)
+                            {
+                                return ex.ToCosmosResponseMessage(request);
+                            }
 
                             PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
-                            CollectionCache collectionCache = await this.client.DocumentClient.GetCollectionCacheAsync(childTrace);
-                            ContainerProperties collectionFromCache =
-                                await collectionCache.ResolveCollectionAsync(serviceRequest, cancellationToken, childTrace);
-
                             IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
                                 collectionFromCache.ResourceId,
                                 feedRangeEpk.Range,

@@ -110,8 +110,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            this.cancellationToken.ThrowIfCancellationRequested();
-
             using (ITrace childTrace = trace.StartChild(name: nameof(MoveNextAsync), component: TraceComponent.Pagination, level: TraceLevel.Info))
             {
                 IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators = await this.lazyEnumerators.GetValueAsync(
@@ -126,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 }
 
                 PartitionRangePageAsyncEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
+                currentPaginator.SetCancellationToken(this.cancellationToken);
                 if (!await currentPaginator.MoveNextAsync(childTrace))
                 {
                     // Current enumerator is empty,
