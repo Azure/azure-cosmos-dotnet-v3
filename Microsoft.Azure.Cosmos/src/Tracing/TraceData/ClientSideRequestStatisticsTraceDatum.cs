@@ -7,8 +7,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Net;
+    using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
 
     internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
@@ -31,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContactedWithName = new HashSet<(string, Uri)>();
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
+            this.HttpResponseStatisticsList = new List<HttpResponseStatistics>();
         }
 
         public DateTime RequestStartTimeUtc { get; }
@@ -44,6 +48,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public List<Uri> ContactedReplicas { get; set; }
 
         public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
+
+        public List<HttpResponseStatistics> HttpResponseStatisticsList { get; }
 
         public HashSet<Uri> FailedReplicas { get; }
 
@@ -202,6 +208,53 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
+        public void RecordHttpResponse(HttpRequestMessage request, 
+                                       HttpResponseMessage response, 
+                                       ResourceType resourceType,
+                                       DateTime requestStartTimeUtc)
+        {
+            lock (this.lockObject)
+            {
+                DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
+                this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                                                                           requestEndTimeUtc,
+                                                                           request.RequestUri,
+                                                                           request.Method,
+                                                                           resourceType,
+                                                                           response,
+                                                                           exception: null));
+            }
+        }
+
+        public void RecordHttpException(HttpRequestMessage request,
+                                       Exception exception,
+                                       ResourceType resourceType,
+                                       DateTime requestStartTimeUtc)
+        {
+            lock (this.lockObject)
+            {
+                DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
+                this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                                                                           requestEndTimeUtc,
+                                                                           request.RequestUri,
+                                                                           request.Method,
+                                                                           resourceType,
+                                                                           responseMessage: null,
+                                                                           exception: exception));
+            }
+        }
+
+        private DateTime RecordHttpResponseEndTime()
+        {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
+            {
+                this.RequestEndTimeUtc = requestEndTimeUtc;
+            }
+
+            return requestEndTimeUtc;
+        }
+
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
@@ -255,6 +308,46 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public OperationType RequestOperationType { get; }
             public Uri LocationEndpoint { get; }
             public bool IsSupplementalResponse { get; }
+        }
+
+        public readonly struct HttpResponseStatistics
+        {
+            public HttpResponseStatistics(
+                DateTime requestStartTime,
+                DateTime requestEndTime,
+                Uri requestUri,
+                HttpMethod httpMethod,
+                ResourceType resourceType,
+                HttpResponseMessage responseMessage,
+                Exception exception)
+            {
+                this.RequestStartTime = requestStartTime;
+                this.RequestEndTime = requestEndTime;
+                this.HttpResponseMessage = responseMessage;
+                this.Exception = exception;
+                this.ResourceType = resourceType;
+                this.HttpMethod = httpMethod;
+                this.RequestUri = requestUri;
+
+                if (responseMessage != null)
+                {
+                    Headers headers = new Headers(GatewayStoreClient.ExtractResponseHeaders(responseMessage));
+                    this.ActivityId = headers.ActivityId ?? Trace.CorrelationManager.ActivityId.ToString();
+                }
+                else
+                {
+                    this.ActivityId = Trace.CorrelationManager.ActivityId.ToString();
+                }
+            }
+
+            public DateTime RequestStartTime { get; }
+            public DateTime RequestEndTime { get; }
+            public HttpResponseMessage HttpResponseMessage { get; }
+            public Exception Exception { get; }
+            public ResourceType ResourceType { get; }
+            public HttpMethod HttpMethod { get; }
+            public Uri RequestUri { get; }
+            public string ActivityId { get; }
         }
     }
 }
