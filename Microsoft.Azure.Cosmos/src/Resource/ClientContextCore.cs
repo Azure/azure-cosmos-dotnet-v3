@@ -372,8 +372,9 @@ namespace Microsoft.Azure.Cosmos
                         HttpConstants.Versions.CurrentVersion,
                         containerUri,
                         forceRefesh: false,
-                        cancellationToken,
-                        childTrace);
+                        trace: childTrace,
+                        clientSideRequestStatistics: null,
+                        cancellationToken: cancellationToken);
                 }
                 catch (DocumentClientException ex)
                 {
