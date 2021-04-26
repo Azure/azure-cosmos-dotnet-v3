@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary> 
         /// <remarks> 
         /// For requests where the <see cref="ConsistencyLevel"/> is <see cref="ConsistencyLevel.Eventual"/>, responses from the integrated cache are guaranteed to be no staler than value indicated by this MaxIntegratedCacheStaleness. 
-        /// Value defaults to null. Cache Stalenss is supported in milliseconds granularity. Anything smaller than milliseconds will be ignored.
+        /// Value defaults to null. Cache Staleness is supported in milliseconds granularity. Anything smaller than milliseconds will be ignored.
         /// </remarks> 
         public TimeSpan? MaxIntegratedCacheStaleness { get; set; }
 
@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
             if (dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
             {
                 double cacheStalenessInMilliseconds = (double)dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness.Value.TotalMilliseconds;
+                cacheStalenessInMilliseconds = cacheStalenessInMilliseconds > 0 ? cacheStalenessInMilliseconds : 0;
                 request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, cacheStalenessInMilliseconds.ToString(CultureInfo.InvariantCulture));
             }
         }
