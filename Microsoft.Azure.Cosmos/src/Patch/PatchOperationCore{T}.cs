@@ -37,8 +37,16 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer cosmosSerializer,
             out Stream valueParam)
         {
-            // Use the user serializer so custom conversions are correctly handled
-            valueParam = cosmosSerializer.ToStream(this.Value);
+            // If value is of type Stream, do not serialize
+            if (typeof(Stream).IsAssignableFrom(typeof(T)))
+            {
+                valueParam = (Stream)(object)this.Value;
+            }
+            else
+            {
+                // Use the user serializer so custom conversions are correctly handled
+                valueParam = cosmosSerializer.ToStream(this.Value);
+            }
 
             return true;
         }
