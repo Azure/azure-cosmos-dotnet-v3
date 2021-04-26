@@ -216,7 +216,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 TestHandler testHandler = new TestHandler((request, cancellationToken) =>
                 {
-                    Assert.AreEqual(maxStaleness.TotalMilliseconds.ToString(), request.Headers[HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness]);
+                    Assert.AreEqual(maxStaleness.TotalMilliseconds.ToString(CultureInfo.InvariantCulture), request.Headers[HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness]);
+
                     return TestHandler.ReturnSuccess();
                 });
 
