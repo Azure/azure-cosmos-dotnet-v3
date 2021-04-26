@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
             {
-                double cacheStalenessInMilliseconds = (double)dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness.Value.TotalMilliseconds; 
+                double cacheStalenessInMilliseconds = (double)dedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness.Value.TotalMilliseconds; 
 
                 if (cacheStalenessInMilliseconds < 0)
                 {
