@@ -17,14 +17,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     internal sealed class CrossPartitionReadFeedAsyncEnumerator : IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>>
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> crossPartitionEnumerator;
-        private CancellationToken cancellationToken;
 
         private CrossPartitionReadFeedAsyncEnumerator(
-            CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> crossPartitionEnumerator,
-            CancellationToken cancellationToken)
+            CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> crossPartitionEnumerator)
         {
             this.crossPartitionEnumerator = crossPartitionEnumerator ?? throw new ArgumentNullException(nameof(crossPartitionEnumerator));
-            this.cancellationToken = cancellationToken;
         }
 
         public TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> Current { get; set; }
@@ -40,8 +37,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
             {
                 throw new ArgumentNullException(nameof(trace));
             }
-
-            this.cancellationToken.ThrowIfCancellationRequested();
 
             using (ITrace moveNextAsyncTrace = trace.StartChild(name: nameof(MoveNextAsync), component: TraceComponent.ReadFeed, level: TraceLevel.Info))
             {
@@ -65,6 +60,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
         }
 
         public ValueTask DisposeAsync() => this.crossPartitionEnumerator.DisposeAsync();
+
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            this.crossPartitionEnumerator.SetCancellationToken(cancellationToken);
+        }
 
         public static CrossPartitionReadFeedAsyncEnumerator Create(
             IDocumentContainer documentContainer,
@@ -108,8 +108,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
                 crossFeedRangeState);
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = new CrossPartitionReadFeedAsyncEnumerator(
-                crossPartitionEnumerator,
-                cancellationToken);
+                crossPartitionEnumerator);
 
             return enumerator;
         }
