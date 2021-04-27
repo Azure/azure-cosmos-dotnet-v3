@@ -21,9 +21,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary> 
         /// Gets or sets the staleness value associated with the request in the Azure CosmosDB service. 
         /// </summary> 
+        /// <value>Default value is null.</value> 
         /// <remarks> 
         /// For requests where the <see cref="ConsistencyLevel"/> is <see cref="ConsistencyLevel.Eventual"/>, responses from the integrated cache are guaranteed to be no staler than value indicated by this MaxIntegratedCacheStaleness. 
-        /// Value defaults to null. 
+        /// Cache Staleness is supported in milliseconds granularity. Anything smaller than milliseconds will be ignored.
         /// </remarks> 
         public TimeSpan? MaxIntegratedCacheStaleness { get; set; }
 
@@ -31,7 +32,14 @@ namespace Microsoft.Azure.Cosmos
         {
             if (dedicatedGatewayRequestOptions?.MaxIntegratedCacheStaleness != null)
             {
-                request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, dedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness.Value.ToString("c", CultureInfo.InvariantCulture));
+                double cacheStalenessInMilliseconds = (double)dedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness.Value.TotalMilliseconds; 
+
+                if (cacheStalenessInMilliseconds < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(DedicatedGatewayRequestOptions.MaxIntegratedCacheStaleness), "MaxIntegratedCacheStaleness cannot be negative.");
+                }
+
+                request.Headers.Set(HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness, cacheStalenessInMilliseconds.ToString(CultureInfo.InvariantCulture));
             }
         }
     }
