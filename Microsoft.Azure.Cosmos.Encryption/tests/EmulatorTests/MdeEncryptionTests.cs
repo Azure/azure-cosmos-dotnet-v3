@@ -836,7 +836,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_IntArray",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -864,8 +864,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
             await encryptionContainerToDelete.InitializeEncryptionAsync();
 
+            // FIXME Set WithBulkExecution to true post SDK/Backend fix.
             CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
-                .WithBulkExecution(true)
+                .WithBulkExecution(false)
                 .Build());
 
             CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyStoreProvider());
@@ -885,7 +886,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -920,22 +921,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             docToUpsert.Sensitive_StringFormat = "docTobeUpserted";
 
             List<Task> tasks = new List<Task>()
-            {
+            {               
                 MdeEncryptionTests.MdeUpsertItemAsync(otherEncryptionContainer, docToUpsert, HttpStatusCode.OK),
-                MdeEncryptionTests.MdeReplaceItemAsync(otherEncryptionContainer, docToReplace),                
-            };
-
-            await Task.WhenAll(tasks);
-
-            tasks = new List<Task>()
-            {
-                MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, docToReplace),
-                MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, docToUpsert),
-                MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),                
+                MdeEncryptionTests.MdeReplaceItemAsync(otherEncryptionContainer, docToReplace),
                 MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),
             };
 
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks);           
 
             tasks = new List<Task>()
             {
@@ -945,6 +937,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             await Task.WhenAll(tasks);
+
+            // validate if the right policy was used, by reading them all back.
+            FeedIterator<TestDoc> queryResponseIterator = otherEncryptionContainer.GetItemQueryIterator<TestDoc>("select * from c");
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
+            }
         }
 
         [TestMethod]
@@ -956,7 +956,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -996,7 +996,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_IntArray",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -1029,6 +1029,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 batchResponse = await otherEncryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
                    .CreateItem(doc1ToCreate)
                    .CreateItemStream(doc2ToCreate.ToStream())
+                   .ReadItem(doc1ToCreate.Id)
+                   .DeleteItem(doc2ToCreate.Id)
                    .ExecuteAsync();
 
                 Assert.Fail("CreateTransactionalBatch should have failed. ");
@@ -1042,6 +1044,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             batchResponse = await otherEncryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
                .CreateItem(doc1ToCreate)
                .CreateItemStream(doc2ToCreate.ToStream())
+               .ReadItem(doc1ToCreate.Id)
+               .DeleteItem(doc2ToCreate.Id)
                .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -1062,7 +1066,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -1102,7 +1106,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_IntArray",
                     ClientEncryptionKeyId = "key1",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -1177,7 +1181,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -1222,7 +1226,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
 
-            //-----------------------
             // Client 1 Deletes the Database and  Container referenced in Client 2 and Recreate with different policy
             // delete database and recreate with same key name
             await mainClient.GetDatabase("databaseToBeDeleted").DeleteStreamAsync();
@@ -1244,7 +1247,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_IntArray",
                     ClientEncryptionKeyId = "key",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
 
@@ -1269,9 +1272,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
-            ContainerResponse containerResponse = await mainDatabase.CreateContainerAsync(containerProperties, 400);            
+            ContainerResponse containerResponse = await mainDatabase.CreateContainerAsync(containerProperties, 400);
             //encryptionContainerToDelete = containerResponse;
-            //-----------------------           
 
             TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
 
@@ -1286,7 +1288,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     Path = "/Sensitive_StringFormat",
                     ClientEncryptionKeyId = "key",
-                    EncryptionType = CosmosEncryptionType.Deterministic,
+                    EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
             };
@@ -1336,6 +1338,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // to be sure if it was indeed encrypted with the new key.
             await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerToDelete, testDoc);
+
+
+            // validate if the right policy was used, by reading them all back.
+            FeedIterator<TestDoc> queryResponseIterator = encryptionContainerToDelete.GetItemQueryIterator<TestDoc>("select * from c");
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                await queryResponseIterator.ReadNextAsync();
+            }
+
+            queryResponseIterator = otherEncryptionContainer.GetItemQueryIterator<TestDoc>("select * from c");
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                await queryResponseIterator.ReadNextAsync();
+            }
 
             await mainClient.GetDatabase("databaseToBeDeleted").DeleteStreamAsync();
         }
@@ -1456,12 +1474,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await encryptionContainer.InitializeEncryptionAsync();
 
             TestDoc testDoc = TestDoc.Create();
-
             ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+
 
             await database.DeleteStreamAsync();
         }

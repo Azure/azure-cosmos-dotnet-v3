@@ -5,78 +5,32 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
 
     internal sealed class EncryptionSettings
     {
-        // The cacheKey used here is combination of Database Rid, Container Rid and property name.
-        // This allows to access the exact version of setting incase the containers are created with same name.
-        internal AsyncCache<string, EncryptionSettingForProperty> EncryptionSettingCacheByPropertyName { get; } = new AsyncCache<string, EncryptionSettingForProperty>();
+        private readonly ConcurrentDictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName = new ConcurrentDictionary<string, EncryptionSettingForProperty>();
 
-        public EncryptionProcessor EncryptionProcessor { get; }
+        private EncryptionContainer encryptionContainer;
 
-        public EncryptionSettings(EncryptionProcessor encryptionProcessor)
+        private ClientEncryptionPolicy clientEncryptionPolicy;
+
+        public string ContainerRidValue { get; private set; }
+
+        internal System.Collections.Generic.ICollection<string> GetClientEncryptionPolicyPaths => this.encryptionSettingsDictByPropertyName.Keys;
+
+        internal EncryptionSettingForProperty GetEncryptionSettingForProperty(string propertyName)
         {
-            this.EncryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
-        }
-
-        internal async Task<EncryptionSettingForProperty> GetEncryptionSettingForPropertyAsync(
-            string propertyName,
-            CancellationToken cancellationToken)
-        {
-            EncryptionContainer encryptionContainer = (EncryptionContainer)this.EncryptionProcessor.Container;
-
-            (string databaseRid, string containerRid) = await encryptionContainer.GetorUpdateDatabaseAndContainerRidFromCacheAsync(
-                cancellationToken: cancellationToken);
-
-            string cacheKey = databaseRid + "|" + containerRid + "/" + propertyName;
-
-            EncryptionSettingForProperty encryptionSettingsForProperty = await this.EncryptionSettingCacheByPropertyName.GetAsync(
-                cacheKey,
-                obsoleteValue: null,
-                async () => await this.FetchEncryptionSettingForPropertyAsync(propertyName, cancellationToken),
-                cancellationToken);
-
-            if (encryptionSettingsForProperty == null)
-            {
-                return null;
-            }
+            this.encryptionSettingsDictByPropertyName.TryGetValue(propertyName, out EncryptionSettingForProperty encryptionSettingsForProperty);
 
             return encryptionSettingsForProperty;
         }
 
-        private async Task<EncryptionSettingForProperty> FetchEncryptionSettingForPropertyAsync(
-            string propertyName,
-            CancellationToken cancellationToken)
-        {
-            ClientEncryptionPolicy clientEncryptionPolicy = await this.EncryptionProcessor.EncryptionCosmosClient.GetClientEncryptionPolicyAsync(
-                this.EncryptionProcessor.Container,
-                cancellationToken: cancellationToken,
-                shouldForceRefresh: false);
-
-            if (clientEncryptionPolicy != null)
-            {
-                foreach (ClientEncryptionIncludedPath propertyToEncrypt in clientEncryptionPolicy.IncludedPaths)
-                {
-                    if (string.Equals(propertyToEncrypt.Path.Substring(1), propertyName))
-                    {
-                        EncryptionType encryptionType = this.GetEncryptionTypeForProperty(propertyToEncrypt);
-
-                        return new EncryptionSettingForProperty(
-                            propertyToEncrypt.ClientEncryptionKeyId,
-                            encryptionType,
-                            this.EncryptionProcessor);
-                    }
-                }
-            }
-
-            Console.WriteLine("Could not find for property: {0} \n", propertyName);
-            return null;
-        }
-
-        internal EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
+        private EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
         {
             switch (clientEncryptionIncludedPath.EncryptionType)
             {
@@ -91,18 +45,57 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        internal async Task SetEncryptionSettingForPropertyAsync(
-            string propertyName,
-            EncryptionSettingForProperty encryptionSettingsForProperty,
-            CancellationToken cancellationToken)
+        private async Task<EncryptionSettings> InitializeEncryptionSettingsAsync(CancellationToken cancellationToken = default)
         {
-            EncryptionContainer encryptionContainer = (EncryptionContainer)this.EncryptionProcessor.Container;
+            cancellationToken.ThrowIfCancellationRequested();
 
-            (string databaseRid, string containerRid) = await encryptionContainer.GetorUpdateDatabaseAndContainerRidFromCacheAsync(
-                cancellationToken: cancellationToken);
+            ContainerResponse containerResponse = await this.encryptionContainer.ReadContainerAsync();
 
-            string cacheKey = databaseRid + "|" + containerRid + "/" + propertyName;
-            this.EncryptionSettingCacheByPropertyName.Set(cacheKey, encryptionSettingsForProperty);
+            // also set the Container Rid.
+            this.ContainerRidValue = containerResponse.Resource.SelfLink.Split('/').ElementAt(3);
+
+            // set the ClientEncryptionPolicy for the Settings.
+            this.clientEncryptionPolicy = containerResponse.Resource.ClientEncryptionPolicy;
+            if (this.clientEncryptionPolicy == null)
+            {
+                return this;
+            }
+
+            // update the property level setting.
+            foreach (ClientEncryptionIncludedPath propertyToEncrypt in this.clientEncryptionPolicy.IncludedPaths)
+            {
+                EncryptionType encryptionType = this.GetEncryptionTypeForProperty(propertyToEncrypt);
+
+                EncryptionSettingForProperty encryptionSettingsForProperty = new EncryptionSettingForProperty(
+                    propertyToEncrypt.ClientEncryptionKeyId,
+                    encryptionType,
+                    this.encryptionContainer);
+
+                string propertyName = propertyToEncrypt.Path.Substring(1);
+
+                this.SetEncryptionSettingForProperty(
+                    propertyName,
+                    encryptionSettingsForProperty);
+            }
+
+            return this;
+        }
+
+        private void SetEncryptionSettingForProperty(
+            string propertyName,
+            EncryptionSettingForProperty encryptionSettingsForProperty)
+        {
+            this.encryptionSettingsDictByPropertyName[propertyName] = encryptionSettingsForProperty;
+        }
+
+        public static async Task<EncryptionSettings> GetEncryptionSettingsAsync(EncryptionContainer encryptionContainer)
+        {
+            EncryptionSettings encryptionSettings = new EncryptionSettings
+            {
+                encryptionContainer = encryptionContainer,
+            };
+
+            return await encryptionSettings.InitializeEncryptionSettingsAsync();
         }
     }
 }

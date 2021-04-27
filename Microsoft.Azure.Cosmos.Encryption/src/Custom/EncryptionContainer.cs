@@ -954,5 +954,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             throw new NotImplementedException();
         }
+
+        public override Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -16,126 +16,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
-    internal sealed class EncryptionProcessor
+    internal static class EncryptionProcessor
     {
-        private bool isEncryptionSettingsInitDone;
-
-        private static readonly SemaphoreSlim CacheInitSema = new SemaphoreSlim(1, 1);
-
-        /// <summary>
-        /// Gets the container that has items which are to be encrypted.
-        /// </summary>
-        public Container Container { get; }
-
-        /// <summary>
-        /// Gets the provider that allows interaction with the master keys.
-        /// </summary>
-        public EncryptionKeyStoreProvider EncryptionKeyStoreProvider => this.EncryptionCosmosClient.EncryptionKeyStoreProvider;
-
-        public ClientEncryptionPolicy ClientEncryptionPolicy { get; private set; }
-
-        public EncryptionCosmosClient EncryptionCosmosClient { get; }
-
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new CosmosJsonDotNetSerializer(
             new JsonSerializerSettings()
             {
                 DateParseHandling = DateParseHandling.None,
             });
 
-        internal EncryptionSettings EncryptionSettings { get; }
-
-        public EncryptionProcessor(
-            Container container,
-            EncryptionCosmosClient encryptionCosmosClient)
-        {
-            this.Container = container ?? throw new ArgumentNullException(nameof(container));
-            this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
-            this.isEncryptionSettingsInitDone = false;
-            this.EncryptionSettings = new EncryptionSettings(this);
-        }
-
-        /// <summary>
-        /// Builds up and caches the Encryption Setting by getting the cached entries of Client Encryption Policy and the corresponding keys.
-        /// Sets up the MDE Algorithm for encryption and decryption by initializing the KeyEncryptionKey and ProtectedDataEncryptionKey.
-        /// </summary>
-        /// <param name="cancellationToken"> cancellation token </param>
-        /// <returns> Task </returns>
-        internal async Task InitializeEncryptionSettingsAsync(CancellationToken cancellationToken = default, bool shouldForceRefresh = false)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (this.isEncryptionSettingsInitDone && !shouldForceRefresh)
-            {
-                throw new InvalidOperationException("The Encrypton Processor has already been initialized. ");
-            }
-
-            // fetch the cached policy.
-            this.ClientEncryptionPolicy = await this.EncryptionCosmosClient.GetClientEncryptionPolicyAsync(
-                container: this.Container,
-                cancellationToken: cancellationToken,
-                shouldForceRefresh: false);
-
-            // no policy was configured.
-            if (this.ClientEncryptionPolicy == null)
-            {
-                this.isEncryptionSettingsInitDone = true;
-                return;
-            }
-
-            // update the property level setting.
-            foreach (ClientEncryptionIncludedPath propertyToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
-            {
-                EncryptionType encryptionType = this.EncryptionSettings.GetEncryptionTypeForProperty(propertyToEncrypt);
-
-                EncryptionSettingForProperty encryptionSettingsForProperty = new EncryptionSettingForProperty(
-                    propertyToEncrypt.ClientEncryptionKeyId,
-                    encryptionType,
-                    this);
-
-                string propertyName = propertyToEncrypt.Path.Substring(1);
-
-                await this.EncryptionSettings.SetEncryptionSettingForPropertyAsync(
-                    propertyName,
-                    encryptionSettingsForProperty,
-                    cancellationToken);
-            }
-
-            this.isEncryptionSettingsInitDone = true;
-        }
-
-        /// <summary>
-        /// Initializes the Encryption Setting for the processor if not initialized or if shouldForceRefresh is true.
-        /// </summary>
-        /// <param name="cancellationToken">(Optional) Token to cancel the operation.</param>
-        /// <returns>Task to await.</returns>
-        internal async Task InitEncryptionSettingsIfNotInitializedAsync(CancellationToken cancellationToken = default, bool shouldForceRefresh = false)
-        {
-            if (this.isEncryptionSettingsInitDone && !shouldForceRefresh)
-            {
-                return;
-            }
-
-            if (await CacheInitSema.WaitAsync(-1))
-            {
-                if (!this.isEncryptionSettingsInitDone || shouldForceRefresh)
-                {
-                    try
-                    {
-                        await this.InitializeEncryptionSettingsAsync(cancellationToken, shouldForceRefresh);
-                    }
-                    finally
-                    {
-                        CacheInitSema.Release(1);
-                    }
-                }
-                else
-                {
-                    CacheInitSema.Release(1);
-                }
-            }
-        }
-
-        private void EncryptProperty(
+        private static void EncryptProperty(
             JObject itemJObj,
             JToken propertyValue,
             AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm)
@@ -147,14 +36,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                     {
-                        this.EncryptProperty(
+                        EncryptProperty(
                             itemJObj,
                             jProperty.Value,
                             aeadAes256CbcHmac256EncryptionAlgorithm);
                     }
                     else
                     {
-                        jProperty.Value = this.SerializeAndEncryptValue(jProperty.Value, aeadAes256CbcHmac256EncryptionAlgorithm);
+                        jProperty.Value = SerializeAndEncryptValue(jProperty.Value, aeadAes256CbcHmac256EncryptionAlgorithm);
                     }
                 }
             }
@@ -171,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             {
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
-                                    this.EncryptProperty(
+                                    EncryptProperty(
                                         itemJObj,
                                         jProperty.Value,
                                         aeadAes256CbcHmac256EncryptionAlgorithm);
@@ -180,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 // primitive type
                                 else
                                 {
-                                    jProperty.Value = this.SerializeAndEncryptValue(jProperty.Value, aeadAes256CbcHmac256EncryptionAlgorithm);
+                                    jProperty.Value = SerializeAndEncryptValue(jProperty.Value, aeadAes256CbcHmac256EncryptionAlgorithm);
                                 }
                             }
                         }
@@ -196,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 // iterates over individual elements
                                 if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
                                 {
-                                    this.EncryptProperty(
+                                    EncryptProperty(
                                         itemJObj,
                                         jArray[i],
                                         aeadAes256CbcHmac256EncryptionAlgorithm);
@@ -205,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 // primitive type
                                 else
                                 {
-                                    jArray[i] = this.SerializeAndEncryptValue(jArray[i], aeadAes256CbcHmac256EncryptionAlgorithm);
+                                    jArray[i] = SerializeAndEncryptValue(jArray[i], aeadAes256CbcHmac256EncryptionAlgorithm);
                                 }
                             }
                         }
@@ -216,20 +105,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         for (int i = 0; i < propertyValue.Count(); i++)
                         {
-                            propertyValue[i] = this.SerializeAndEncryptValue(propertyValue[i], aeadAes256CbcHmac256EncryptionAlgorithm);
+                            propertyValue[i] = SerializeAndEncryptValue(propertyValue[i], aeadAes256CbcHmac256EncryptionAlgorithm);
                         }
                     }
                 }
             }
             else
             {
-                itemJObj.Property(propertyValue.Path).Value = this.SerializeAndEncryptValue(
+                itemJObj.Property(propertyValue.Path).Value = SerializeAndEncryptValue(
                     itemJObj.Property(propertyValue.Path).Value,
                     aeadAes256CbcHmac256EncryptionAlgorithm);
             }
         }
 
-        private JToken SerializeAndEncryptValue(
+        private static JToken SerializeAndEncryptValue(
            JToken jToken,
            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm)
         {
@@ -246,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (cipherText == null)
             {
-                throw new InvalidOperationException($"{nameof(this.SerializeAndEncryptValue)} returned null cipherText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. ");
+                throw new InvalidOperationException($"{nameof(SerializeAndEncryptValue)} returned null cipherText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. ");
             }
 
             byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
@@ -260,8 +149,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public async Task<(Stream encryptedStream, bool isEncryptionSuccessful, JObject plainItemJobject)> EncryptAsync(
+        public static async Task<Stream> EncryptAsync(
             Stream input,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -272,28 +162,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             Debug.Assert(diagnosticsContext != null);
 
-            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
-
-            if (this.ClientEncryptionPolicy == null)
-            {
-                return (input, false, null);
-            }
-
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
-            JObject plainItemObj = (JObject)itemJObj.DeepClone();
-
-            foreach (ClientEncryptionIncludedPath pathToEncrypt in this.ClientEncryptionPolicy.IncludedPaths)
+            foreach (string propertyName in encryptionSettings.GetClientEncryptionPolicyPaths)
             {
-                string propertyName = pathToEncrypt.Path.Substring(1);
-
                 // possibly a wrong path configured in the Client Encryption Policy, ignore.
                 if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     continue;
                 }
 
-                EncryptionSettingForProperty settingforProperty = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
+                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
 
                 if (settingforProperty == null)
                 {
@@ -302,17 +181,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
 
-                this.EncryptProperty(
+                EncryptProperty(
                     itemJObj,
                     propertyValue,
                     aeadAes256CbcHmac256EncryptionAlgorithm);
             }
 
             input.Dispose();
-            return (EncryptionProcessor.BaseSerializer.ToStream(itemJObj), true, plainItemObj);
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
-        private JToken DecryptAndDeserializeValue(
+        private static JToken DecryptAndDeserializeValue(
            JToken jToken,
            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm)
         {
@@ -330,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (plainText == null)
             {
-                throw new InvalidOperationException($"{nameof(this.DecryptAndDeserializeValue)} returned null plainText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
+                throw new InvalidOperationException($"{nameof(DecryptAndDeserializeValue)} returned null plainText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
             }
 
             return DeserializeAndAddProperty(
@@ -338,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
 
-        private void DecryptProperty(
+        private static void DecryptProperty(
             JObject itemJObj,
             AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm,
             string propertyName,
@@ -350,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                     {
-                        this.DecryptProperty(
+                        DecryptProperty(
                             itemJObj,
                             aeadAes256CbcHmac256EncryptionAlgorithm,
                             jProperty.Name,
@@ -358,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     }
                     else
                     {
-                        jProperty.Value = this.DecryptAndDeserializeValue(
+                        jProperty.Value = DecryptAndDeserializeValue(
                             jProperty.Value,
                             aeadAes256CbcHmac256EncryptionAlgorithm);
                     }
@@ -376,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             {
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
-                                    this.DecryptProperty(
+                                    DecryptProperty(
                                         itemJObj,
                                         aeadAes256CbcHmac256EncryptionAlgorithm,
                                         jProperty.Name,
@@ -384,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 }
                                 else
                                 {
-                                    jProperty.Value = this.DecryptAndDeserializeValue(
+                                    jProperty.Value = DecryptAndDeserializeValue(
                                         jProperty.Value,
                                         aeadAes256CbcHmac256EncryptionAlgorithm);
                                 }
@@ -400,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 // iterates over individual elements
                                 if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
                                 {
-                                    this.DecryptProperty(
+                                    DecryptProperty(
                                         itemJObj,
                                         aeadAes256CbcHmac256EncryptionAlgorithm,
                                         jArray[i].Path,
@@ -408,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 }
                                 else
                                 {
-                                    jArray[i] = this.DecryptAndDeserializeValue(
+                                    jArray[i] = DecryptAndDeserializeValue(
                                         jArray[i],
                                         aeadAes256CbcHmac256EncryptionAlgorithm);
                                 }
@@ -421,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         for (int i = 0; i < propertyValue.Count(); i++)
                         {
-                            propertyValue[i] = this.DecryptAndDeserializeValue(
+                            propertyValue[i] = DecryptAndDeserializeValue(
                                 propertyValue[i],
                                 aeadAes256CbcHmac256EncryptionAlgorithm);
                         }
@@ -430,25 +309,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             else
             {
-                itemJObj.Property(propertyName).Value = this.DecryptAndDeserializeValue(
+                itemJObj.Property(propertyName).Value = DecryptAndDeserializeValue(
                     itemJObj.Property(propertyName).Value,
                     aeadAes256CbcHmac256EncryptionAlgorithm);
             }
         }
 
-        private async Task DecryptObjectAsync(
+        private static async Task DecryptObjectAsync(
             JObject document,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(diagnosticsContext != null);
 
-            foreach (ClientEncryptionIncludedPath path in this.ClientEncryptionPolicy.IncludedPaths)
+            foreach (string propertyName in encryptionSettings.GetClientEncryptionPolicyPaths)
             {
-                if (document.TryGetValue(path.Path.Substring(1), out JToken propertyValue))
+                if (document.TryGetValue(propertyName, out JToken propertyValue))
                 {
-                    string propertyName = path.Path.Substring(1);
-                    EncryptionSettingForProperty settingsForProperty = await this.EncryptionSettings.GetEncryptionSettingForPropertyAsync(propertyName, cancellationToken);
+                    EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
 
                     if (settingsForProperty == null)
                     {
@@ -457,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                     AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
 
-                    this.DecryptProperty(
+                    DecryptProperty(
                         document,
                         aeadAes256CbcHmac256EncryptionAlgorithm,
                         propertyName,
@@ -473,8 +352,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public async Task<Stream> DecryptAsync(
+        public static async Task<Stream> DecryptAsync(
             Stream input,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
@@ -486,18 +366,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Debug.Assert(input.CanSeek);
             Debug.Assert(diagnosticsContext != null);
 
-            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
+            JObject itemJObj = RetrieveItem(input);
 
-            if (this.ClientEncryptionPolicy == null)
-            {
-                input.Position = 0;
-                return input;
-            }
-
-            JObject itemJObj = this.RetrieveItem(input);
-
-            await this.DecryptObjectAsync(
+            await DecryptObjectAsync(
                 itemJObj,
+                encryptionSettings,
                 diagnosticsContext,
                 cancellationToken);
 
@@ -505,29 +378,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
-        public async Task<JObject> DecryptAsync(
+        public static async Task<JObject> DecryptAsync(
             JObject document,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
 
-            await this.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
-
-            if (this.ClientEncryptionPolicy == null)
-            {
-                return document;
-            }
-
-            await this.DecryptObjectAsync(
+            await DecryptObjectAsync(
                 document,
+                encryptionSettings,
                 diagnosticsContext,
                 cancellationToken);
 
             return document;
         }
 
-        private JObject RetrieveItem(
+        private static JObject RetrieveItem(
             Stream input)
         {
             Debug.Assert(input != null);

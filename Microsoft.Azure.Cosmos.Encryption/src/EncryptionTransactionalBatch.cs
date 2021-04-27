@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -15,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class EncryptionTransactionalBatch : TransactionalBatch
     {
         private readonly CosmosSerializer cosmosSerializer;
-        private readonly EncryptionProcessor encryptionProcessor;
         private readonly EncryptionContainer encryptionContainer;
         private TransactionalBatch transactionalBatch;
 
@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
-            this.encryptionProcessor = encryptionContainer.EncryptionProcessor;
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
@@ -47,10 +46,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                (streamPayload, _, _ ) = this.encryptionProcessor.EncryptAsync(
-                    streamPayload,
-                    diagnosticsContext,
-                    cancellationToken: default).Result;
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (encryptionSettings.GetClientEncryptionPolicyPaths.Any())
+                {
+                    streamPayload = EncryptionProcessor.EncryptAsync(
+                        streamPayload,
+                        encryptionSettings,
+                        diagnosticsContext,
+                        cancellationToken: default).Result;
+                }
             }
 
             this.transactionalBatch = this.transactionalBatch.CreateItemStream(
@@ -102,10 +110,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                (streamPayload, _, _) = this.encryptionProcessor.EncryptAsync(
-                    streamPayload,
-                    diagnosticsContext,
-                    default).Result;
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (encryptionSettings.GetClientEncryptionPolicyPaths.Any())
+                {
+                    streamPayload = EncryptionProcessor.EncryptAsync(
+                        streamPayload,
+                        encryptionSettings,
+                        diagnosticsContext,
+                        default).Result;
+                }
             }
 
             this.transactionalBatch = this.transactionalBatch.ReplaceItemStream(
@@ -133,10 +150,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                (streamPayload, _, _) = this.encryptionProcessor.EncryptAsync(
-                    streamPayload,
-                    diagnosticsContext,
-                    cancellationToken: default).Result;
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                if (encryptionSettings.GetClientEncryptionPolicyPaths.Any())
+                {
+                    streamPayload = EncryptionProcessor.EncryptAsync(
+                        streamPayload,
+                        encryptionSettings,
+                        diagnosticsContext,
+                        cancellationToken: default).Result;
+                }
             }
 
             this.transactionalBatch = this.transactionalBatch.UpsertItemStream(
@@ -152,17 +178,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync"))
             {
-                TransactionalBatchRequestOptions requestOptions = new TransactionalBatchRequestOptions
-                {
-                    AddRequestHeaders = this.encryptionContainer.AddHeaders,
-                };
+                TransactionalBatchResponse response = null;
 
-                TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
+                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                if (!encryptionSettings.GetClientEncryptionPolicyPaths.Any())
+                {
+                    return await this.transactionalBatch.ExecuteAsync(cancellationToken);
+                }
+                else
+                {
+                    TransactionalBatchRequestOptions requestOptions = new TransactionalBatchRequestOptions();
+                    this.encryptionContainer.SetRequestHeaders(requestOptions, encryptionSettings);
+                    response = await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
+                }
 
                 foreach (TransactionalBatchOperationResult transactionalBatchOperationResult in response)
                 {
-                    if (transactionalBatchOperationResult.StatusCode != System.Net.HttpStatusCode.Created
-                        && transactionalBatchOperationResult.StatusCode != System.Net.HttpStatusCode.OK
+                    // FIXME this should return BadRequest and not (-1), requires a backend fix.
+                    if (transactionalBatchOperationResult.StatusCode == (System.Net.HttpStatusCode)(-1)
                         && string.Equals(response.Headers.Get("x-ms-substatus"), "1024"))
                     {
                         await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
@@ -178,6 +211,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 return await this.DecryptTransactionalBatchResponseAsync(
                         response,
+                        encryptionSettings,
                         diagnosticsContext,
                         cancellationToken);
             }
@@ -190,24 +224,33 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync.WithRequestOptions"))
             {
-                TransactionalBatchRequestOptions clonedRequestOptions;
-                if (requestOptions != null)
+                TransactionalBatchResponse response = null;
+
+                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                if (!encryptionSettings.GetClientEncryptionPolicyPaths.Any())
                 {
-                    clonedRequestOptions = (TransactionalBatchRequestOptions)requestOptions.ShallowCopy();
+                    return await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
                 }
                 else
                 {
-                    clonedRequestOptions = new TransactionalBatchRequestOptions();
+                    TransactionalBatchRequestOptions clonedRequestOptions;
+                    if (requestOptions != null)
+                    {
+                        clonedRequestOptions = (TransactionalBatchRequestOptions)requestOptions.ShallowCopy();
+                    }
+                    else
+                    {
+                        clonedRequestOptions = new TransactionalBatchRequestOptions();
+                    }
+
+                    this.encryptionContainer.SetRequestHeaders(clonedRequestOptions, encryptionSettings);
+                    response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
                 }
-
-                clonedRequestOptions.AddRequestHeaders = this.encryptionContainer.AddHeaders;
-
-                TransactionalBatchResponse response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
 
                 foreach (TransactionalBatchOperationResult transactionalBatchOperationResult in response)
                 {
-                    if (transactionalBatchOperationResult.StatusCode != System.Net.HttpStatusCode.Created
-                        && transactionalBatchOperationResult.StatusCode != System.Net.HttpStatusCode.OK
+                    // FIXME this should return BadRequest and not (-1), requires a backend fix.
+                    if (transactionalBatchOperationResult.StatusCode == (System.Net.HttpStatusCode)(-1)
                         && string.Equals(response.Headers.Get("x-ms-substatus"), "1024"))
                     {
                         await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
@@ -223,6 +266,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 return await this.DecryptTransactionalBatchResponseAsync(
                     response,
+                    encryptionSettings,
                     diagnosticsContext,
                     cancellationToken);
             }
@@ -230,9 +274,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<TransactionalBatchResponse> DecryptTransactionalBatchResponseAsync(
             TransactionalBatchResponse response,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            if (!encryptionSettings.GetClientEncryptionPolicyPaths.Any())
+            {
+                return response;
+            }
+
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
             for (int index = 0; index < response.Count; index++)
@@ -241,8 +291,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
-                    Stream decryptedStream = await this.encryptionProcessor.DecryptAsync(
+                    Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
                         result.ResourceStream,
+                        encryptionSettings,
                         diagnosticsContext,
                         cancellationToken);
 

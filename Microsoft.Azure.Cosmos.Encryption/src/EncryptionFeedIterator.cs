@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
@@ -13,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
         private readonly FeedIterator feedIterator;
-        private readonly EncryptionProcessor encryptionProcessor;
         private readonly EncryptionContainer encryptionContainer;
 
         public EncryptionFeedIterator(
@@ -22,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
-            this.encryptionProcessor = encryptionContainer.EncryptionProcessor;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -35,8 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
 
                 // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
-                if (responseMessage.StatusCode != System.Net.HttpStatusCode.OK
-                    && responseMessage.StatusCode != System.Net.HttpStatusCode.NotModified
+                if (responseMessage.StatusCode == HttpStatusCode.BadRequest
                     && string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
                 {
                     await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
@@ -68,6 +67,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
+            EncryptionSettings encryptionSettings = await this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+            if (!encryptionSettings.GetClientEncryptionPolicyPaths.Any())
+            {
+                return content;
+            }
+
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
             JArray results = new JArray();
 
@@ -84,8 +89,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                JObject decryptedDocument = await this.encryptionProcessor.DecryptAsync(
+                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
                     document,
+                    encryptionSettings,
                     diagnosticsContext,
                     cancellationToken);
 

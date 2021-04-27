@@ -77,14 +77,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionContainer encryptionContainer = (EncryptionContainer)encryptionQueryDefinition.Container;
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
 
-                // not really required, but will have things setup for subsequent queries or operations on this Container if the Container was never init
-                // or if this was the first operation carried out on this container.
-                await encryptionContainer.EncryptionProcessor.InitEncryptionSettingsIfNotInitializedAsync(cancellationToken);
-
                 // get the path's encryption setting.
-                EncryptionSettingForProperty settingsForProperty = await encryptionContainer.EncryptionProcessor.EncryptionSettings.GetEncryptionSettingForPropertyAsync(
-                    path.Substring(1),
-                    cancellationToken);
+                EncryptionSettings encryptionSettings = await encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
 
                 if (settingsForProperty == null)
                 {
