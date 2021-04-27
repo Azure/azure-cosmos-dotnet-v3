@@ -282,6 +282,31 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             sqlObject.LimitExpression.Accept(this);
         }
 
+        public override void Visit(SqlLikeScalarExpression sqlObject)
+        {
+            this.writer.Write("("); 
+
+            sqlObject.Expression.Accept(this);
+
+            if (sqlObject.Not)
+            {
+                this.writer.Write(" NOT ");
+            }
+
+            this.writer.Write(" LIKE ");
+
+            sqlObject.Pattern.Accept(this);
+
+            if (sqlObject.EscapeSequence != null)
+            {
+                this.writer.Write(" ESCAPE ");
+
+                sqlObject.EscapeSequence.Accept(this);
+            }
+
+            this.writer.Write(")");
+        }
+
         public override void Visit(SqlLiteralScalarExpression sqlLiteralScalarExpression)
         {
             sqlLiteralScalarExpression.Literal.Accept(this);

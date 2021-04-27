@@ -258,6 +258,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return CosmosBoolean.Create(contains);
         }
 
+        public override CosmosElement Visit(SqlLikeScalarExpression scalarExpression, CosmosElement document)
+        {
+            // Consider the necessity of having v3 offline engine. Should we remove this altogether?
+            throw new NotImplementedException();
+        }
+
         public override CosmosElement Visit(SqlLiteralScalarExpression scalarExpression, CosmosElement document)
         {
             SqlLiteral sqlLiteral = scalarExpression.Literal;

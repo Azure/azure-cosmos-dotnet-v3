@@ -171,8 +171,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
 
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
@@ -239,8 +237,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (sqlQuerySpec == null)
             {
                 throw new ArgumentNullException(nameof(sqlQuerySpec));

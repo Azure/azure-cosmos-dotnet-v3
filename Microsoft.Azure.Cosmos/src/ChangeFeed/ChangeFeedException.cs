@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
     using System.Data;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal abstract class ChangeFeedException : Exception
     {
@@ -24,6 +25,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
         }
 
-        public abstract TResult Accept<TResult>(ChangeFeedExceptionVisitor<TResult> visitor);
+        public abstract TResult Accept<TResult>(ChangeFeedExceptionVisitor<TResult> visitor, ITrace trace);
     }
 }

@@ -69,53 +69,57 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 ChangeFeedPage backendPage = crossFeedRangePage.Page;
                 if (backendPage is ChangeFeedNotModifiedPage)
                 {
-                    using (ITrace drainNotModifedPages = changeFeedMoveNextTrace.StartChild("Drain NotModified Pages", TraceComponent.ChangeFeed, TraceLevel.Info))
+                    // Keep draining the cross partition enumerator until
+                    // We get a non 304 page or we loop back to the same range or run into an exception
+                    FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
+                    // No point on draining when the state has 1 range
+                    if (!IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange))
                     {
-                        // Keep draining the cross partition enumerator until
-                        // We get a non 304 page or we loop back to the same range or run into an exception
-                        FeedRangeInternal originalRange = this.crossPartitionEnumerator.CurrentRange;
-                        double totalRequestCharge = backendPage.RequestCharge;
-                        do
+                        using (ITrace drainNotModifedPages = changeFeedMoveNextTrace.StartChild("Drain NotModified Pages", TraceComponent.ChangeFeed, TraceLevel.Info))
                         {
-                            if (!await this.crossPartitionEnumerator.MoveNextAsync(drainNotModifedPages))
+                            double totalRequestCharge = backendPage.RequestCharge;
+                            do
                             {
-                                throw new InvalidOperationException("ChangeFeed should always have a next page.");
-                            }
+                                if (!await this.crossPartitionEnumerator.MoveNextAsync(drainNotModifedPages))
+                                {
+                                    throw new InvalidOperationException("ChangeFeed should always have a next page.");
+                                }
 
-                            monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
-                            if (monadicCrossPartitionPage.Failed)
+                                monadicCrossPartitionPage = this.crossPartitionEnumerator.Current;
+                                if (monadicCrossPartitionPage.Failed)
+                                {
+                                    // Buffer the exception, since we need to return the request charge so far.
+                                    this.bufferedException = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
+                                }
+                                else
+                                {
+                                    crossFeedRangePage = monadicCrossPartitionPage.Result;
+                                    backendPage = crossFeedRangePage.Page;
+                                    totalRequestCharge += backendPage.RequestCharge;
+                                }
+                            }
+                            while (!(backendPage is ChangeFeedSuccessPage
+                                || IsNextRangeEqualToOriginal(this.crossPartitionEnumerator, originalRange)
+                                || this.bufferedException.HasValue));
+
+                            // Create a page with the aggregated request charge
+                            if (backendPage is ChangeFeedSuccessPage changeFeedSuccessPage)
                             {
-                                // Buffer the exception, since we need to return the request charge so far.
-                                this.bufferedException = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromException(monadicCrossPartitionPage.Exception);
+                                backendPage = new ChangeFeedSuccessPage(
+                                    changeFeedSuccessPage.Content,
+                                    totalRequestCharge,
+                                    changeFeedSuccessPage.ActivityId,
+                                    changeFeedSuccessPage.AdditionalHeaders,
+                                    changeFeedSuccessPage.State);
                             }
                             else
                             {
-                                crossFeedRangePage = monadicCrossPartitionPage.Result;
-                                backendPage = crossFeedRangePage.Page;
-                                totalRequestCharge += backendPage.RequestCharge;
+                                backendPage = new ChangeFeedNotModifiedPage(
+                                    totalRequestCharge,
+                                    backendPage.ActivityId,
+                                    backendPage.AdditionalHeaders,
+                                    backendPage.State);
                             }
-                        }
-                        while (!(backendPage is ChangeFeedSuccessPage
-                            || this.crossPartitionEnumerator.CurrentRange.Equals(originalRange)
-                            || this.bufferedException.HasValue));
-
-                        // Create a page with the aggregated request charge
-                        if (backendPage is ChangeFeedSuccessPage changeFeedSuccessPage)
-                        {
-                            backendPage = new ChangeFeedSuccessPage(
-                                changeFeedSuccessPage.Content,
-                                totalRequestCharge,
-                                changeFeedSuccessPage.ActivityId,
-                                changeFeedSuccessPage.AdditionalHeaders,
-                                changeFeedSuccessPage.State);
-                        }
-                        else
-                        {
-                            backendPage = new ChangeFeedNotModifiedPage(
-                                totalRequestCharge,
-                                backendPage.ActivityId,
-                                backendPage.AdditionalHeaders,
-                                backendPage.State);
                         }
                     }
                 }
@@ -158,6 +162,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 cancellationToken);
 
             return enumerator;
+        }
+
+        private static bool IsNextRangeEqualToOriginal(
+            CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator,
+            FeedRangeInternal originalRange)
+        {
+            return crossPartitionEnumerator.TryPeekNext(out FeedRangeState<ChangeFeedState> nextState)
+                                        && originalRange.Equals(nextState.FeedRange);
         }
 
         private static CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> MakeCreateFunction(

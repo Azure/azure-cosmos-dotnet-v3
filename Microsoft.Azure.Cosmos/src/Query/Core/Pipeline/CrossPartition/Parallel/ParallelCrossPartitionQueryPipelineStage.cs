@@ -52,8 +52,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            this.cancellationToken.ThrowIfCancellationRequested();
-
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
