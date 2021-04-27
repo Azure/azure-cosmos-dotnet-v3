@@ -27,8 +27,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         protected override async Task<TryCatch<TPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
@@ -44,8 +42,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
@@ -61,6 +57,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 await this.enumerator.MoveNextAsync(prefetchTrace);
                 this.bufferedPage = this.enumerator.Current;
             }
+        }
+
+        public override void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            base.SetCancellationToken(cancellationToken);
+            this.enumerator.SetCancellationToken(cancellationToken);
         }
     }
 }
