@@ -72,14 +72,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 string expected;
                 CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
-                Stream stream = cosmosSerializer.ToStream(value);
-                using (StreamReader streamReader = new StreamReader(stream))
+                using (Stream stream = cosmosSerializer.ToStream(value))
                 {
-                     expected = streamReader.ReadToEnd();
+                    using (StreamReader streamReader = new StreamReader(stream))
+                    {
+                        expected = streamReader.ReadToEnd();
+                    }
                 }
 
-                Assert.IsTrue(patchOperation.TrySerializeValueParameter(new CustomSerializer(), out string valueParam));
-                Assert.AreEqual(expected, valueParam);
+                Assert.IsTrue(patchOperation.TrySerializeValueParameter(new CustomSerializer(), out Stream valueParam));
+
+                string actual;
+                using (valueParam)
+                {
+                    using (StreamReader streamReader = new StreamReader(valueParam))
+                    {
+                        actual = streamReader.ReadToEnd();
+                    }
+                }
+
+                Assert.AreEqual(expected, actual);
             }
         }
 
