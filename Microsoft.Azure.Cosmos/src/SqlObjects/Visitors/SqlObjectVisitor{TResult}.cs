@@ -29,9 +29,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TResult Visit(SqlIdentifier sqlObject);
         public abstract TResult Visit(SqlIdentifierPathExpression sqlObject);
         public abstract TResult Visit(SqlInputPathCollection sqlObject);
+        public abstract TResult Visit(SqlJoinCollectionExpression sqlObject);
+        public abstract TResult Visit(SqlLikeScalarExpression sqlObject);
         public abstract TResult Visit(SqlInScalarExpression sqlObject);
         public abstract TResult Visit(SqlLimitSpec sqlObject);
-        public abstract TResult Visit(SqlJoinCollectionExpression sqlObject);
         public abstract TResult Visit(SqlLiteralScalarExpression sqlObject);
         public abstract TResult Visit(SqlMemberIndexerScalarExpression sqlObject);
         public abstract TResult Visit(SqlNullLiteral sqlObject);

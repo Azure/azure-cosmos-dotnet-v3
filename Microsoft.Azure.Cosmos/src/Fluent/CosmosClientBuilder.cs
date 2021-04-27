@@ -521,6 +521,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
             return this;
         }
 
+        /// <summary>
+        /// Enabled partition level failover in the SDK
+        /// </summary>
+        internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
+        {
+            this.clientOptions.EnablePartitionLevelFailover = true;
+            return this;
+        }
+
         internal CosmosClientBuilder WithRetryWithOptions(
             int? initialRetryForRetryWithMilliseconds,
             int? maximumRetryForRetryWithMilliseconds,

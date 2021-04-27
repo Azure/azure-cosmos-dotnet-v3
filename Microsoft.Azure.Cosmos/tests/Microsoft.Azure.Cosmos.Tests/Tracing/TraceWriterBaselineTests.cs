@@ -292,7 +292,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             method: HttpMethod.Post,
                             requestUri: "http://localhost.com",
                             requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
-                            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
+                            responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken),
+                            beLatencyInMs: "0.42");
                         rootTrace.AddDatum("Point Operation Statistics", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -315,7 +316,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             method: default,
                             requestUri: default,
                             requestSessionToken: default,
-                            responseSessionToken: default);
+                            responseSessionToken: default,
+                            beLatencyInMs: default);
                         rootTrace.AddDatum("Point Operation Statistics Default", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -398,7 +400,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 sessionToken: new SimpleSessionToken(42),
                                 usingLocalLSN: true,
                                 activityId: Guid.Empty.ToString(),
-                                backendRequestDurationInMs: "0"),
+                                backendRequestDurationInMs: "4.2"),
                             ResourceType.Document,
                             OperationType.Query,
                             uri1);
@@ -461,6 +463,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     endLineNumber = GetLineNumber();
 
                     inputs.Add(new Input("Client Side Request Stats Default", rootTrace, startLineNumber, endLineNumber));
+                }
+
+                {
+                    startLineNumber = GetLineNumber();
+                    TraceForBaselineTesting rootTrace;
+                    using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+                    {
+                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue)
+                        {
+                            RequestEndTimeUtc = DateTime.MaxValue
+                        };
+
+                        HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            new Uri("http://someUri1.com"),
+                            HttpMethod.Get,
+                            ResourceType.Document,
+                            new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
+                            exception: null
+                            );
+                        datum.HttpResponseStatisticsList.Add(httpResponseStatistics);
+
+                        HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
+                            DateTime.MinValue,
+                            DateTime.MaxValue,
+                            new Uri("http://someUri1.com"),
+                            HttpMethod.Get,
+                            ResourceType.Document,
+                            responseMessage: null,
+                            exception: new OperationCanceledException()
+                            );
+                        datum.HttpResponseStatisticsList.Add(httpResponseStatisticsException);
+
+                        rootTrace.AddDatum("Client Side Request Stats", datum);
+                    }
+                    endLineNumber = GetLineNumber();
+
+                    inputs.Add(new Input("Client Side Request Stats For Gateway Request", rootTrace, startLineNumber, endLineNumber));
                 }
             }
             //----------------------------------------------------------------

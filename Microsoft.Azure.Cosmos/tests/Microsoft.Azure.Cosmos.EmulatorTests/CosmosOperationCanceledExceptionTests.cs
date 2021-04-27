@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -59,9 +61,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                      if (documentServiceRequest.ResourceType == Documents.ResourceType.Document)
                      {
                          cancellationTokenSource.Cancel();
-                         cancellationTokenSource.Token.ThrowIfCancellationRequested();
                      }
-                 });
+                 },
+                 useGatewayMode: false,
+                 (uri, resourceOperation, documentServiceRequest) 
+                    => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(uri, resourceOperation, documentServiceRequest, Guid.NewGuid(), string.Empty));
 
             await this.CheckCancellationTokenTestAsync(withCancellationToken, cancellationTokenSource.Token);
         }
@@ -114,6 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(ce);
                 string message = ce.Message;
                 string diagnostics = ce.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("The operation was canceled."));
                 string toString = ce.ToString();
                 Assert.IsTrue(toString.Contains(diagnostics));
                 Assert.IsTrue(toString.Contains(message));

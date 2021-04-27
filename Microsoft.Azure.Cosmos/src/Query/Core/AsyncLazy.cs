@@ -25,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             // Note that this class is not thread safe.
             // if the valueFactory has side effects than this will have issues.
-            cancellationToken.ThrowIfCancellationRequested();
             if (!this.ValueInitialized)
             {
                 this.value = await this.valueFactory(trace, cancellationToken);
