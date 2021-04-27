@@ -198,7 +198,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     if (transactionalBatchOperationResult.StatusCode == (System.Net.HttpStatusCode)(-1)
                         && string.Equals(response.Headers.Get("x-ms-substatus"), "1024"))
                     {
-                        await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+                        await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(
+                            cancellationToken: cancellationToken,
+                            obsoleteEncryptionSettings: encryptionSettings,
+                            shouldForceRefresh: true);
 
                         throw new CosmosException(
                            "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
@@ -253,7 +256,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     if (transactionalBatchOperationResult.StatusCode == (System.Net.HttpStatusCode)(-1)
                         && string.Equals(response.Headers.Get("x-ms-substatus"), "1024"))
                     {
-                        await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+                        await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(
+                            cancellationToken: cancellationToken,
+                            obsoleteEncryptionSettings: encryptionSettings,
+                            shouldForceRefresh: true);
 
                         throw new CosmosException(
                             "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,

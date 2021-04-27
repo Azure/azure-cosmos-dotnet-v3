@@ -61,6 +61,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return this;
             }
 
+            // for each of the unique keys in the policy Add it in /Update the cache.
+            foreach (string clientEncryptionKeyId in this.clientEncryptionPolicy.IncludedPaths.Select(x => x.ClientEncryptionKeyId).Distinct())
+            {
+                await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                     clientEncryptionKeyId: clientEncryptionKeyId,
+                     container: this.encryptionContainer,
+                     cancellationToken: cancellationToken,
+                     shouldForceRefresh: true);
+            }
+
             // update the property level setting.
             foreach (ClientEncryptionIncludedPath propertyToEncrypt in this.clientEncryptionPolicy.IncludedPaths)
             {

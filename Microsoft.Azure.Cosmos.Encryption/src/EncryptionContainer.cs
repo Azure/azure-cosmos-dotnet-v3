@@ -61,38 +61,39 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         internal async Task<EncryptionSettings> GetorUpdateEncryptionSettingsFromCacheAsync(
             CancellationToken cancellationToken,
+            EncryptionSettings obsoleteEncryptionSettings = null,
             bool shouldForceRefresh = false)
         {
             return await this.EncryptionSettingsByContainerName.GetAsync(
                 this.Id,
-                obsoleteValue: null,
+                obsoleteValue: obsoleteEncryptionSettings,
                 singleValueInitFunc: async () => await EncryptionSettings.GetEncryptionSettingsAsync(this),
                 cancellationToken: cancellationToken,
                 forceRefresh: shouldForceRefresh);
         }
 
-        internal async Task InitEncryptionContainerCacheIfNotInitAsync(CancellationToken cancellationToken, bool shouldForceRefresh = false)
+        internal async Task InitEncryptionContainerCacheIfNotInitAsync(
+            CancellationToken cancellationToken,
+            EncryptionSettings obsoleteEncryptionSettings = null,
+            bool shouldForceRefresh = false)
         {
             if (this.isEncryptionContainerCacheInitDone && !shouldForceRefresh)
             {
                 return;
             }
 
-            // if we are likely here due to a force refresh, we might as well set it to false, and wait out if there is another thread refreshing the
-            // settings. When we do get the lock just check if it still needs initialization.This optimizes
-            // cases where there are several threads trying to force refresh the settings and the key cache.
-            // (however there could be cases where we might end up with multiple inits)
-            this.isEncryptionContainerCacheInitDone = false;
             if (await CacheInitSema.WaitAsync(-1))
             {
-                if (!this.isEncryptionContainerCacheInitDone)
+                if (!this.isEncryptionContainerCacheInitDone || shouldForceRefresh)
                 {
                     try
                     {
+                        this.isEncryptionContainerCacheInitDone = false;
+
                         // if force refreshed, results in the Client Keys and Policies to be refreshed in client cache.
-                        await this.InitContainerCacheAsync(
+                        await this.GetorUpdateEncryptionSettingsFromCacheAsync(
                             cancellationToken: cancellationToken,
-                            shouldForceRefresh: shouldForceRefresh);
+                            obsoleteEncryptionSettings: obsoleteEncryptionSettings);
 
                         this.isEncryptionContainerCacheInitDone = true;
                     }
@@ -104,30 +105,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 else
                 {
                     CacheInitSema.Release(1);
-                }
-            }
-        }
-
-        private async Task InitContainerCacheAsync(
-            CancellationToken cancellationToken = default,
-            bool shouldForceRefresh = false)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            EncryptionSettings encryptionSettings = await this.GetorUpdateEncryptionSettingsFromCacheAsync(
-                cancellationToken: cancellationToken,
-                shouldForceRefresh: shouldForceRefresh);
-
-            if (encryptionSettings.GetClientEncryptionPolicyPaths.Any())
-            {
-                foreach (string propertyName in encryptionSettings.GetClientEncryptionPolicyPaths)
-                {
-                    EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
-                    await this.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                        clientEncryptionKeyId: settingforProperty.ClientEncryptionKeyId,
-                        container: this,
-                        cancellationToken: cancellationToken,
-                        shouldForceRefresh: shouldForceRefresh);
                 }
             }
         }
@@ -261,7 +238,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
 
                 // get the latest policy and re-encrypt.
-                await this.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+                await this.InitEncryptionContainerCacheIfNotInitAsync(
+                    cancellationToken: cancellationToken,
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    shouldForceRefresh: true);
+
                 encryptionSettings = await this.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
                 this.SetRequestHeaders(clonedRequestOptions, encryptionSettings);
 
@@ -381,7 +362,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest && string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
             {
-                await this.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+                await this.InitEncryptionContainerCacheIfNotInitAsync(
+                    cancellationToken: cancellationToken,
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    shouldForceRefresh: true);
+
                 encryptionSettings = await this.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken: cancellationToken);
                 this.SetRequestHeaders(clonedRequestOptions, encryptionSettings);
                 responseMessage = await this.Container.ReadItemStreamAsync(
@@ -520,7 +505,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     diagnosticsContext,
                     cancellationToken);
 
-                await this.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+                await this.InitEncryptionContainerCacheIfNotInitAsync(
+                    cancellationToken: cancellationToken,
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    shouldForceRefresh: true);
 
                 encryptionSettings = await this.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
                 this.SetRequestHeaders(clonedRequestOptions, encryptionSettings);
@@ -650,7 +638,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     diagnosticsContext,
                     cancellationToken);
 
-                await this.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+                await this.InitEncryptionContainerCacheIfNotInitAsync(
+                    cancellationToken: cancellationToken,
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    shouldForceRefresh: true);
 
                 encryptionSettings = await this.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
                 this.SetRequestHeaders(clonedRequestOptions, encryptionSettings);

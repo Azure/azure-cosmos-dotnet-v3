@@ -34,11 +34,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
 
+                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+
                 // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
                 if (responseMessage.StatusCode == HttpStatusCode.BadRequest
                     && string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
                 {
-                    await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken, shouldForceRefresh: true);
+                    await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(
+                        cancellationToken: cancellationToken,
+                        obsoleteEncryptionSettings: encryptionSettings,
+                        shouldForceRefresh: true);
 
                     throw new CosmosException(
                         "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
@@ -52,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
+                        encryptionSettings,
                         diagnosticsContext,
                         cancellationToken);
 
@@ -64,10 +70,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
+            EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            EncryptionSettings encryptionSettings = await this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
             if (!encryptionSettings.GetClientEncryptionPolicyPaths.Any())
             {
                 return content;

@@ -891,13 +891,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             docToUpsert.Sensitive_StringFormat = "docTobeUpserted";
 
             List<Task> tasks = new List<Task>()
-            {               
+            {
                 MdeEncryptionTests.MdeUpsertItemAsync(otherEncryptionContainer, docToUpsert, HttpStatusCode.OK),
                 MdeEncryptionTests.MdeReplaceItemAsync(otherEncryptionContainer, docToReplace),
                 MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),
             };
 
-            await Task.WhenAll(tasks);           
+            await Task.WhenAll(tasks);
 
             tasks = new List<Task>()
             {
@@ -1130,7 +1130,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient mainClient = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            EncryptionKeyWrapMetadata keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "key", "mymetadata1");
+            EncryptionKeyWrapMetadata keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "myCek", "mymetadata1");
 
             TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
             {
@@ -1150,7 +1150,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_StringFormat",
-                    ClientEncryptionKeyId = "key",
+                    ClientEncryptionKeyId = "myCek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1158,7 +1158,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_ArrayFormat",
-                    ClientEncryptionKeyId = "key",
+                    ClientEncryptionKeyId = "myCek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1166,7 +1166,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_NestedObjectFormatL1",
-                    ClientEncryptionKeyId = "key",
+                    ClientEncryptionKeyId = "myCek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1202,7 +1202,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             mainDatabase = await encryptionCosmosClient.CreateDatabaseAsync("databaseToBeDeleted");
 
-            keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "key", "mymetadata2");
+            keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "myCek", "mymetadata2");
             clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
                    keyWrapMetadata.Name,
                    DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
@@ -1216,7 +1216,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_IntArray",
-                    ClientEncryptionKeyId = "key",
+                    ClientEncryptionKeyId = "myCek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1224,7 +1224,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_DateFormat",
-                    ClientEncryptionKeyId = "key",
+                    ClientEncryptionKeyId = "myCek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1232,7 +1232,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_BoolFormat",
-                    ClientEncryptionKeyId = "key",
+                    ClientEncryptionKeyId = "myCek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1257,7 +1257,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_StringFormat",
-                    ClientEncryptionKeyId = "key",
+                    ClientEncryptionKeyId = "myCek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -1289,8 +1289,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // validate from other client that we indeed are using the key with metadata 2
             Container otherEncryptionContainerFromClient2 = otherDatabase2.GetContainer(encryptionContainerToDelete.Id);
             await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainerFromClient2, testDoc);
-
-            // create new container in other client. TEST END -----------------------------
 
             // previous refrenced container.
             await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
