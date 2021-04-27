@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -87,8 +88,17 @@ namespace Microsoft.Azure.Cosmos
                 writer.WritePropertyName(PatchConstants.PropertyNames.Path);
                 writer.WriteValue(operation.Path);
 
-                if (operation.TrySerializeValueParameter(this.userSerializer, out string valueParam))
+                if (operation.TrySerializeValueParameter(this.userSerializer, out Stream valueStream))
                 {
+                    string valueParam;
+                    using (valueStream)
+                    {
+                        using (StreamReader streamReader = new StreamReader(valueStream))
+                        {
+                            valueParam = streamReader.ReadToEnd();
+                        }
+                    }
+
                     writer.WritePropertyName(PatchConstants.PropertyNames.Value);
                     writer.WriteRawValue(valueParam);
                 }
