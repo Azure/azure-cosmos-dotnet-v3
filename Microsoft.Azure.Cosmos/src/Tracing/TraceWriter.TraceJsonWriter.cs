@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
@@ -229,7 +230,66 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteArrayEnd();
 
+                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                {
+                    this.jsonWriter.WriteFieldName("HttpResponseStats");
+                    this.jsonWriter.WriteArrayStart();
+
+                    foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
+                    {
+                        this.VisitHttpResponseStatistics(stat, this.jsonWriter);
+                    }
+
+                    this.jsonWriter.WriteArrayEnd();
+                }
+
                 this.jsonWriter.WriteObjectEnd();
+            }
+
+            private void VisitHttpResponseStatistics(ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat, IJsonWriter jsonWriter)
+            {
+                jsonWriter.WriteObjectStart();
+
+                jsonWriter.WriteFieldName("StartTimeUTC");
+                jsonWriter.WriteStringValue(stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture));
+
+                jsonWriter.WriteFieldName("EndTimeUTC");
+                jsonWriter.WriteStringValue(stat.RequestEndTime.ToString("o", CultureInfo.InvariantCulture));
+
+                jsonWriter.WriteFieldName("RequestUri");
+                jsonWriter.WriteStringValue(stat.RequestUri.ToString());
+
+                jsonWriter.WriteFieldName("ResourceType");
+                jsonWriter.WriteStringValue(stat.ResourceType.ToString());
+
+                jsonWriter.WriteFieldName("HttpMethod");
+                jsonWriter.WriteStringValue(stat.HttpMethod.ToString());
+
+                jsonWriter.WriteFieldName("ActivityId");
+                this.WriteStringValueOrNull(stat.ActivityId);
+
+                if (stat.Exception != null)
+                {
+                    jsonWriter.WriteFieldName("ExceptionType");
+                    jsonWriter.WriteStringValue(stat.Exception.GetType().ToString());
+
+                    jsonWriter.WriteFieldName("ExceptionMessage");
+                    jsonWriter.WriteStringValue(stat.Exception.Message);
+                }
+
+                if (stat.HttpResponseMessage != null)
+                {
+                    jsonWriter.WriteFieldName("StatusCode");
+                    jsonWriter.WriteStringValue(stat.HttpResponseMessage.StatusCode.ToString());
+
+                    if (!stat.HttpResponseMessage.IsSuccessStatusCode)
+                    {
+                        jsonWriter.WriteFieldName("ReasonPhrase");
+                        jsonWriter.WriteStringValue(stat.HttpResponseMessage.ReasonPhrase);
+                    }
+                }
+
+                jsonWriter.WriteObjectEnd();
             }
 
             private static void VisitAddressResolutionStatistics(
