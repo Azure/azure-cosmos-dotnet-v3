@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -184,8 +185,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (!this.hasMoreResults)
             {
                 throw new InvalidOperationException("Should not be calling FeedIterator that does not have any more results");
@@ -195,7 +194,11 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             {
                 this.hasMoreResults = false;
 
-                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(this.monadicEnumerator.Exception);
+                if (!ExceptionToCosmosException.TryCreateFromException(this.monadicEnumerator.Exception, trace, out CosmosException cosmosException))
+                {
+                    throw this.monadicEnumerator.Exception;
+                }
+
                 return new ResponseMessage(
                     statusCode: System.Net.HttpStatusCode.BadRequest,
                     requestMessage: null,
@@ -205,6 +208,8 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             }
 
             CrossPartitionReadFeedAsyncEnumerator enumerator = this.monadicEnumerator.Result;
+            enumerator.SetCancellationToken(cancellationToken);
+
             TryCatch<CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState>> monadicPage;
             try
             {
@@ -215,14 +220,18 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
                 monadicPage = enumerator.Current;
             }
-            catch (Exception ex)
+            catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
             {
-                monadicPage = TryCatch<CrossFeedRangePage<Pagination.ReadFeedPage, ReadFeedState>>.FromException(ex);
+                throw new CosmosOperationCanceledException(ex, trace);
             }
 
             if (monadicPage.Failed)
             {
-                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(monadicPage.Exception);
+                if (!ExceptionToCosmosException.TryCreateFromException(monadicPage.Exception, trace, out CosmosException cosmosException))
+                {
+                    throw monadicPage.Exception;
+                }
+
                 if (!IsRetriableException(cosmosException))
                 {
                     this.hasMoreResults = false;

@@ -1765,7 +1765,32 @@
           "NestedTypes": {}
         }
       },
-      "Members": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Action`1[Microsoft.Azure.Cosmos.Headers] AddRequestHeaders": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] AddRequestHeaders;CanRead:True;CanWrite:True;System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.TransactionalBatch;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
