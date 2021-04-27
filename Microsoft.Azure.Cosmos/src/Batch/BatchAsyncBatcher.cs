@@ -226,14 +226,14 @@ namespace Microsoft.Azure.Cosmos
             ArraySegment<ItemBatchOperation> operationsArraySegment = new ArraySegment<ItemBatchOperation>(this.batchOperations.ToArray());
             return await PartitionKeyRangeServerBatchRequest.CreateAsync(
                   partitionKeyRangeId,
-                  isClientEncrypted,
-                  intendedCollectionRidValue,
                   operationsArraySegment,
                   this.maxBatchByteSize,
                   this.maxBatchOperationCount,
                   ensureContinuousOperationIndexes: false,
                   serializerCore: this.serializerCore,
-                  cancellationToken: cancellationToken).ConfigureAwait(false);
+                  cancellationToken: cancellationToken,
+                  isClientEncrypted: isClientEncrypted,
+                  intendedCollectionRidValue: intendedCollectionRidValue).ConfigureAwait(false);
         }
     }
 
