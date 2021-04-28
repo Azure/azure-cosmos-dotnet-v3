@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return aeadAes256CbcHmac256EncryptionAlgorithm;
         }
 
-        public ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
+        private ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             string keyId)
