@@ -24,6 +24,146 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 DateParseHandling = DateParseHandling.None,
             });
 
+        internal enum TypeMarker : byte
+        {
+            Null = 1, // not used
+            Boolean = 2,
+            Double = 3,
+            Long = 4,
+            String = 5,
+        }
+
+        /// <remarks>
+        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
+        public static async Task<Stream> EncryptAsync(
+            Stream input,
+            EncryptionSettings encryptionSettings,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                throw new ArgumentNullException(nameof(input));
+            }
+
+            Debug.Assert(diagnosticsContext != null);
+
+            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+
+            foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
+            {
+                // possibly a wrong path configured in the Client Encryption Policy, ignore.
+                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                {
+                    continue;
+                }
+
+                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
+
+                if (settingforProperty == null)
+                {
+                    throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
+                }
+
+                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
+
+                EncryptProperty(
+                    itemJObj,
+                    propertyValue,
+                    aeadAes256CbcHmac256EncryptionAlgorithm);
+            }
+
+            input.Dispose();
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+        }
+
+        /// <remarks>
+        /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
+        /// Else input stream will be disposed, and a new stream is returned.
+        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
+        /// </remarks>
+        public static async Task<Stream> DecryptAsync(
+            Stream input,
+            EncryptionSettings encryptionSettings,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return input;
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(diagnosticsContext != null);
+
+            JObject itemJObj = RetrieveItem(input);
+
+            await DecryptObjectAsync(
+                itemJObj,
+                encryptionSettings,
+                diagnosticsContext,
+                cancellationToken);
+
+            input.Dispose();
+            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+        }
+
+        public static async Task<JObject> DecryptAsync(
+            JObject document,
+            EncryptionSettings encryptionSettings,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(document != null);
+
+            await DecryptObjectAsync(
+                document,
+                encryptionSettings,
+                diagnosticsContext,
+                cancellationToken);
+
+            return document;
+        }
+
+        internal static (TypeMarker, byte[]) Serialize(JToken propertyValue)
+        {
+            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
+
+            // UTF-8 Encoding
+            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
+
+            return propertyValue.Type switch
+            {
+                JTokenType.Boolean => (TypeMarker.Boolean, sqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
+                JTokenType.Float => (TypeMarker.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
+                JTokenType.Integer => (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
+                JTokenType.String => (TypeMarker.String, sqlVarcharSerializer.Serialize(propertyValue.ToObject<string>())),
+                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {propertyValue.Type}. "),
+            };
+        }
+
+        internal static JToken DeserializeAndAddProperty(
+            byte[] serializedBytes,
+            TypeMarker typeMarker)
+        {
+            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
+
+            // UTF-8 Encoding
+            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
+
+            return typeMarker switch
+            {
+                TypeMarker.Boolean => sqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
+                TypeMarker.Double => sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
+                TypeMarker.Long => sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
+                TypeMarker.String => sqlVarcharSerializer.Deserialize(serializedBytes),
+                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {typeMarker}. "),
+            };
+        }
+
         private static void EncryptProperty(
             JObject itemJObj,
             JToken propertyValue,
@@ -142,53 +282,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             cipherTextWithTypeMarker[0] = (byte)typeMarker;
             Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
             return cipherTextWithTypeMarker;
-        }
-
-        /// <remarks>
-        /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
-        /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
-        /// </remarks>
-        public static async Task<Stream> EncryptAsync(
-            Stream input,
-            EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
-
-            Debug.Assert(diagnosticsContext != null);
-
-            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-
-            foreach (string propertyName in encryptionSettings.GetClientEncryptionPolicyPaths)
-            {
-                // possibly a wrong path configured in the Client Encryption Policy, ignore.
-                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
-                {
-                    continue;
-                }
-
-                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
-
-                if (settingforProperty == null)
-                {
-                    throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
-                }
-
-                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
-
-                EncryptProperty(
-                    itemJObj,
-                    propertyValue,
-                    aeadAes256CbcHmac256EncryptionAlgorithm);
-            }
-
-            input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
         private static JToken DecryptAndDeserializeValue(
@@ -323,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             Debug.Assert(diagnosticsContext != null);
 
-            foreach (string propertyName in encryptionSettings.GetClientEncryptionPolicyPaths)
+            foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
                 if (document.TryGetValue(propertyName, out JToken propertyValue))
                 {
@@ -347,54 +440,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return;
         }
 
-        /// <remarks>
-        /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
-        /// Else input stream will be disposed, and a new stream is returned.
-        /// In case of an exception, input stream won't be disposed, but position will be end of stream.
-        /// </remarks>
-        public static async Task<Stream> DecryptAsync(
-            Stream input,
-            EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            if (input == null)
-            {
-                return input;
-            }
-
-            Debug.Assert(input.CanSeek);
-            Debug.Assert(diagnosticsContext != null);
-
-            JObject itemJObj = RetrieveItem(input);
-
-            await DecryptObjectAsync(
-                itemJObj,
-                encryptionSettings,
-                diagnosticsContext,
-                cancellationToken);
-
-            input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
-        }
-
-        public static async Task<JObject> DecryptAsync(
-            JObject document,
-            EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            Debug.Assert(document != null);
-
-            await DecryptObjectAsync(
-                document,
-                encryptionSettings,
-                diagnosticsContext,
-                cancellationToken);
-
-            return document;
-        }
-
         private static JObject RetrieveItem(
             Stream input)
         {
@@ -413,51 +458,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return itemJObj;
-        }
-
-        internal static (TypeMarker, byte[]) Serialize(JToken propertyValue)
-        {
-            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-
-            // UTF-8 Encoding
-            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
-
-            return propertyValue.Type switch
-            {
-                JTokenType.Boolean => (TypeMarker.Boolean, sqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
-                JTokenType.Float => (TypeMarker.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
-                JTokenType.Integer => (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
-                JTokenType.String => (TypeMarker.String, sqlVarcharSerializer.Serialize(propertyValue.ToObject<string>())),
-                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {propertyValue.Type}. "),
-            };
-        }
-
-        internal static JToken DeserializeAndAddProperty(
-            byte[] serializedBytes,
-            TypeMarker typeMarker)
-        {
-            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-
-            // UTF-8 Encoding
-            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
-
-            return typeMarker switch
-            {
-                TypeMarker.Boolean => sqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
-                TypeMarker.Double => sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
-                TypeMarker.Long => sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
-                TypeMarker.String => sqlVarcharSerializer.Deserialize(serializedBytes),
-                _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {typeMarker}. "),
-            };
-        }
-
-        internal enum TypeMarker : byte
-        {
-            Null = 1, // not used
-            Boolean = 2,
-            Double = 3,
-            Long = 4,
-            String = 5,
         }
     }
 }

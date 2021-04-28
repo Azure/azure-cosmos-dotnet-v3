@@ -26,11 +26,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
         }
 
-        internal async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
+        public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
         {
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                     clientEncryptionKeyId: this.ClientEncryptionKeyId,
-                    container: this.encryptionContainer,
+                    encryptionContainer: this.encryptionContainer,
                     cancellationToken: cancellationToken,
                     shouldForceRefresh: false);
 
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                         clientEncryptionKeyId: this.ClientEncryptionKeyId,
-                        container: this.encryptionContainer,
+                        encryptionContainer: this.encryptionContainer,
                         cancellationToken: cancellationToken,
                         shouldForceRefresh: true);
 
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return aeadAes256CbcHmac256EncryptionAlgorithm;
         }
 
-        internal ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
+        public ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             string keyId)

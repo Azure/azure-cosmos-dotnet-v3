@@ -16,13 +16,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly FeedIterator feedIterator;
         private readonly EncryptionContainer encryptionContainer;
+        private readonly RequestOptions requestOptions;
 
         public EncryptionFeedIterator(
             FeedIterator feedIterator,
-            EncryptionContainer encryptionContainer)
+            EncryptionContainer encryptionContainer,
+            RequestOptions requestOptions)
         {
             this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
+            this.requestOptions = requestOptions ?? throw new ArgumentNullException(nameof(requestOptions));
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -32,18 +35,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
             {
-                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                this.encryptionContainer.SetRequestHeaders(this.requestOptions, encryptionSettings);
 
-                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
 
                 // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
                 if (responseMessage.StatusCode == HttpStatusCode.BadRequest
                     && string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
                 {
-                    await this.encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(
+                    await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                         cancellationToken: cancellationToken,
-                        obsoleteEncryptionSettings: encryptionSettings,
-                        shouldForceRefresh: true);
+                        obsoleteEncryptionSettings: encryptionSettings);
 
                     throw new CosmosException(
                         "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
@@ -74,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            if (!encryptionSettings.GetClientEncryptionPolicyPaths.Any())
+            if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return content;
             }

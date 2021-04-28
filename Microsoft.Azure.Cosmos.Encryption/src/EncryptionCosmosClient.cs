@@ -28,55 +28,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
 
-        internal async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
-            string clientEncryptionKeyId,
-            Container container,
-            CancellationToken cancellationToken = default,
-            bool shouldForceRefresh = false)
-        {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            EncryptionContainer encryptionContainer = (EncryptionContainer)container;
-
-            // Client Encryption key Id is unique within a Database.
-            string cacheKey = container.Database.Id + "/" + clientEncryptionKeyId;
-
-            return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
-                     cacheKey,
-                     obsoleteValue: null,
-                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(container, clientEncryptionKeyId, cancellationToken),
-                     cancellationToken,
-                     forceRefresh: shouldForceRefresh);
-        }
-
-        internal async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
-            Container container,
-            string clientEncryptionKeyId,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            ClientEncryptionKey clientEncryptionKey = container.Database.GetClientEncryptionKey(clientEncryptionKeyId);
-            try
-            {
-                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
-            }
-            catch (CosmosException ex)
-            {
-                if (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 
         public override CosmosResponseFactory ResponseFactory => this.cosmosClient.ResponseFactory;
@@ -217,6 +168,53 @@ namespace Microsoft.Azure.Cosmos.Encryption
         protected override void Dispose(bool disposing)
         {
             this.cosmosClient.Dispose();
+        }
+
+        public async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
+            string clientEncryptionKeyId,
+            EncryptionContainer encryptionContainer,
+            CancellationToken cancellationToken = default,
+            bool shouldForceRefresh = false)
+        {
+            if (encryptionContainer == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionContainer));
+            }
+
+            // Client Encryption key Id is unique within a Database.
+            string cacheKey = encryptionContainer.Database.Id + "/" + clientEncryptionKeyId;
+
+            return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
+                     cacheKey,
+                     obsoleteValue: null,
+                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, cancellationToken),
+                     cancellationToken,
+                     forceRefresh: shouldForceRefresh);
+        }
+
+        private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
+            EncryptionContainer encryptionContainer,
+            string clientEncryptionKeyId,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            ClientEncryptionKey clientEncryptionKey = encryptionContainer.Database.GetClientEncryptionKey(clientEncryptionKeyId);
+            try
+            {
+                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                }
+                else
+                {
+                    throw;
+                }
+            }
         }
     }
 }

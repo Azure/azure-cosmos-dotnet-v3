@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -15,19 +16,31 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly ConcurrentDictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName = new ConcurrentDictionary<string, EncryptionSettingForProperty>();
 
-        private EncryptionContainer encryptionContainer;
+        private readonly EncryptionContainer encryptionContainer;
 
         private ClientEncryptionPolicy clientEncryptionPolicy;
 
         public string ContainerRidValue { get; private set; }
 
-        internal System.Collections.Generic.ICollection<string> GetClientEncryptionPolicyPaths => this.encryptionSettingsDictByPropertyName.Keys;
+        public ICollection<string> PropertiesToEncrypt => this.encryptionSettingsDictByPropertyName.Keys;
 
-        internal EncryptionSettingForProperty GetEncryptionSettingForProperty(string propertyName)
+        public static Task<EncryptionSettings> CreateAsync(EncryptionContainer encryptionContainer)
+        {
+            EncryptionSettings encryptionSettings = new EncryptionSettings(encryptionContainer);
+
+            return encryptionSettings.InitializeEncryptionSettingsAsync();
+        }
+
+        public EncryptionSettingForProperty GetEncryptionSettingForProperty(string propertyName)
         {
             this.encryptionSettingsDictByPropertyName.TryGetValue(propertyName, out EncryptionSettingForProperty encryptionSettingsForProperty);
 
             return encryptionSettingsForProperty;
+        }
+
+        private EncryptionSettings(EncryptionContainer encryptionContainer)
+        {
+            this.encryptionContainer = encryptionContainer;
         }
 
         private EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
@@ -66,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                      clientEncryptionKeyId: clientEncryptionKeyId,
-                     container: this.encryptionContainer,
+                     encryptionContainer: this.encryptionContainer,
                      cancellationToken: cancellationToken,
                      shouldForceRefresh: true);
             }
@@ -96,16 +109,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionSettingForProperty encryptionSettingsForProperty)
         {
             this.encryptionSettingsDictByPropertyName[propertyName] = encryptionSettingsForProperty;
-        }
-
-        public static async Task<EncryptionSettings> GetEncryptionSettingsAsync(EncryptionContainer encryptionContainer)
-        {
-            EncryptionSettings encryptionSettings = new EncryptionSettings
-            {
-                encryptionContainer = encryptionContainer,
-            };
-
-            return await encryptionSettings.InitializeEncryptionSettingsAsync();
         }
     }
 }

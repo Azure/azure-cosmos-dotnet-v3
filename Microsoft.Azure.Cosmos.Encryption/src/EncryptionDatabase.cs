@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
         }
 
-        internal EncryptionCosmosClient EncryptionCosmosClient { get; }
+        public EncryptionCosmosClient EncryptionCosmosClient { get; }
 
         public override string Id => this.database.Id;
 

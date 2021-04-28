@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (container is EncryptionContainer encryptionContainer)
             {
-                await encryptionContainer.InitEncryptionContainerCacheIfNotInitAsync(cancellationToken);
+                await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: cancellationToken);
             }
 
             return container;
@@ -109,7 +109,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             return new EncryptionFeedIterator(
                 query.ToStreamIterator(),
-                encryptionContainer);
+                encryptionContainer,
+                new RequestOptions());
         }
 
         /// <summary>

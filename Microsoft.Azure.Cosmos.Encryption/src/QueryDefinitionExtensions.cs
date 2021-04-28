@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
 
                 // get the path's encryption setting.
-                EncryptionSettings encryptionSettings = await encryptionContainer.GetorUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                EncryptionSettings encryptionSettings = await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
                 EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
 
                 if (settingsForProperty == null)
