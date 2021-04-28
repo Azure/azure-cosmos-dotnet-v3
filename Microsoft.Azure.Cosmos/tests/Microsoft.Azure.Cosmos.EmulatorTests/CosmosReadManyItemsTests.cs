@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             IReadOnlyList<string> pkPaths = new List<string> { "/pk", "/description" };
             ContainerProperties containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPaths: pkPaths);
-            Container container = await this.database.CreateContainerAsync(this.containerSettings);
+            Container container = await this.database.CreateContainerAsync(containerSettings);
 
             for (int i = 0; i < 5; i++)
             {
