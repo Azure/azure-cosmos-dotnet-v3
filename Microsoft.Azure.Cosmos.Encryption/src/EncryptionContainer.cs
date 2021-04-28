@@ -506,7 +506,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
             using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder"))
             {
-                ChangeFeedProcessorBuilder changeFeedProcessorBuilder = this.container.GetChangeFeedProcessorBuilder(
+                return this.container.GetChangeFeedProcessorBuilder(
                     processorName,
                     async (IReadOnlyCollection<JObject> documents, CancellationToken cancellationToken) =>
                     {
@@ -527,8 +527,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         // Call the original passed in delegate
                         await onChangesDelegate(decryptedItems, cancellationToken);
                     });
-
-                return changeFeedProcessorBuilder;
             }
         }
 
@@ -778,6 +776,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
+            // This handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
+            // The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
+            // So when the container being referenced here gets recreated we would end up with a stale Container Rid and this would result in BadRequest( and a substatus 1024).
+            // This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
             if (responseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest && string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
             {
                 streamPayload = await EncryptionProcessor.DecryptAsync(
@@ -791,6 +793,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken: cancellationToken,
                     obsoleteEncryptionSettings: encryptionSettings);
 
+                // updated Rid in the header.
                 this.SetRequestHeaders(clonedRequestOptions, encryptionSettings);
 
                 streamPayload = await EncryptionProcessor.EncryptAsync(
