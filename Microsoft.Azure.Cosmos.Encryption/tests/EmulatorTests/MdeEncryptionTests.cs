@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     [TestClass]
     public class MdeEncryptionTests
     {
-        private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("key1", "tempmetadata1");
-        private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("key2", "tempmetadata2");
+        private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("custom", "key1", "tempmetadata1");
+        private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("custom", "key2", "tempmetadata2");
 
         private static CosmosClient client;
         private static CosmosClient encryptionCosmosClient;
@@ -233,17 +233,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateClientEncryptionKey()
         {
             string cekId = "anotherCek";
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1");
+            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("custom", cekId, "testmetadata1");
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(name: cekId, value: metadata1.Value),
+                new EncryptionKeyWrapMetadata("custom", name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
             // creating another key with same id should fail
-            metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata2");
+            metadata1 = new EncryptionKeyWrapMetadata("custom", cekId, "testmetadata2");
 
             try
             {
@@ -264,22 +264,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionRewrapClientEncryptionKey()
         {
             string cekId = "rewrapkeytest";
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1");
+            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("custom", cekId, "testmetadata1");
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(name: cekId, value: metadata1.Value),
+                new EncryptionKeyWrapMetadata("custom", name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
-            EncryptionKeyWrapMetadata updatedMetaData = new EncryptionKeyWrapMetadata(cekId, metadata1 + "updatedmetadata");
+            EncryptionKeyWrapMetadata updatedMetaData = new EncryptionKeyWrapMetadata("custom", cekId, metadata1 + "updatedmetadata");
             clientEncryptionKeyProperties = await MdeEncryptionTests.RewarpClientEncryptionKeyAsync(
                 cekId,
                 updatedMetaData);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(name: cekId, value: updatedMetaData.Value),
+                new EncryptionKeyWrapMetadata("custom", name: cekId, value: updatedMetaData.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
         }
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1");
+                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("custom", cekId, "testmetadata1");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1" + "updated");
+                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("custom", cekId, "testmetadata1" + "updated");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.RewrapClientEncryptionKeyAsync(
                        cekId,
@@ -814,7 +814,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
             // The Dek should be rewrapped if the KEK is revoked.
             // When an access to KeyVault fails, the Dek is fetched from the backend(force refresh to update the stale DEK) and cache is updated.
-            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("revokedKek", "revokedKek-metadata");         
+            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("custom", "revokedKek", "revokedKek-metadata");         
 
            await database.CreateClientEncryptionKeyAsync(
                    "keywithRevokedKek",
