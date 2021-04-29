@@ -90,6 +90,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
             string itemId,
             ItemRequestOptions cosmosItemRequestOptions = null)
         {
+            cosmosItemRequestOptions ??= new ItemRequestOptions();
+            cosmosItemRequestOptions.EnableContentResponseOnWrite = false;
             using (ResponseMessage response = await container.DeleteItemStreamAsync(itemId, partitionKey, cosmosItemRequestOptions).ConfigureAwait(false))
             {
                 return response.IsSuccessStatusCode;
