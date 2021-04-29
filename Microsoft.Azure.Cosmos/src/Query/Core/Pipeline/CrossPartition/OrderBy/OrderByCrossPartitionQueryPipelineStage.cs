@@ -1175,6 +1175,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 public const string Object = "IS_OBJECT";
             }
 
+            private static class ExtendedTypesIsSystemFunctions
+            {
+                public const string Undefined = "not IS_DEFINED";
+                public const string Defined = "IS_DEFINED";
+            }
+
             private static readonly ReadOnlyMemory<string> SystemFunctionSortOrder = new string[]
             {
                 IsSystemFunctions.Undefined,
@@ -1184,6 +1190,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 IsSystemFunctions.String,
                 IsSystemFunctions.Array,
                 IsSystemFunctions.Object,
+            };
+
+            private static readonly ReadOnlyMemory<string> ExtendedTypesSystemFunctionSortOrder = new string[]
+            {
+                ExtendedTypesIsSystemFunctions.Undefined,
+                ExtendedTypesIsSystemFunctions.Defined
             };
 
             private static class SortOrder
@@ -1197,6 +1209,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 public const int Object = 6;
             }
 
+            private static class ExtendedTypesSortOrder
+            {
+                public const int Undefined = 0;
+                public const int Defined = 1;
+            }
+
             private CosmosElementToIsSystemFunctionsVisitor()
             {
             }
@@ -1208,7 +1226,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public ReadOnlyMemory<string> Visit(CosmosBinary cosmosBinary, bool isAscending)
             {
-                throw new NotImplementedException();
+                return GetExtendedTypesIsDefinedFunctions(ExtendedTypesSortOrder.Defined, isAscending);
             }
 
             public ReadOnlyMemory<string> Visit(CosmosBoolean cosmosBoolean, bool isAscending)
@@ -1218,7 +1236,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public ReadOnlyMemory<string> Visit(CosmosGuid cosmosGuid, bool isAscending)
             {
-                throw new NotImplementedException();
+                return GetExtendedTypesIsDefinedFunctions(ExtendedTypesSortOrder.Defined, isAscending);
             }
 
             public ReadOnlyMemory<string> Visit(CosmosNull cosmosNull, bool isAscending)
@@ -1249,6 +1267,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             private static ReadOnlyMemory<string> GetIsDefinedFunctions(int index, bool isAscending)
             {
                 return isAscending ? SystemFunctionSortOrder.Slice(index + 1) : SystemFunctionSortOrder.Slice(start: 0, index);
+            }
+
+            private static ReadOnlyMemory<string> GetExtendedTypesIsDefinedFunctions(int index, bool isAscending)
+            {
+                return isAscending ?
+                    ExtendedTypesSystemFunctionSortOrder.Slice(index + 1) :
+                    ExtendedTypesSystemFunctionSortOrder.Slice(start: 0, index);
             }
         }
 
