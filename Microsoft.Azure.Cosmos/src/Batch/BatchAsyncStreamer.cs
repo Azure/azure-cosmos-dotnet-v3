@@ -153,13 +153,16 @@ namespace Microsoft.Azure.Cosmos
         private void ResetTimer()
         {
             this.currentTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.batchTimeout);
-            this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
+            this.timerTask = this.GetTimerTaskAsync(this.cancellationTokenSource.Token);
+        }
+
+        private async Task GetTimerTaskAsync(CancellationToken cancellationToken)
+        {
+            await this.currentTimer.StartTimerAsync();
+            if (!cancellationToken.IsCancellationRequested)
             {
-                if (task.IsCompleted)
-                {
-                    this.DispatchTimer();
-                }
-            }, this.cancellationTokenSource.Token);
+                this.DispatchTimer();
+            }
         }
 
         private void StartCongestionControlTimer()
