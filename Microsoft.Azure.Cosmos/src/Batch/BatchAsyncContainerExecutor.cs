@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -38,6 +40,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly TimerWheel timerWheel;
         private readonly RetryOptions retryOptions;
         private readonly int defaultMaxDegreeOfConcurrency = 50;
+        private readonly AsyncLazy<TryCatch<ExecutorCaches>> lazyExecutorCaches;
 
         /// <summary>
         /// For unit testing.
@@ -68,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
             this.timerWheel = TimerWheel.CreateTimerWheel(BatchAsyncContainerExecutor.TimerWheelResolution, BatchAsyncContainerExecutor.TimerWheelBucketCount);
             this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
+            this.lazyExecutorCaches = new AsyncLazy<TryCatch<ExecutorCaches>>(valueFactory: (trace, innerCancellationToken) => this.TryInitializeExecutorCachesAsync(trace, innerCancellationToken));
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
@@ -190,15 +194,48 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        private async Task<TryCatch<ExecutorCaches>> TryInitializeExecutorCachesAsync(
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                ContainerProperties cachedContainerPropertiesAsync = await this.cosmosContainer.GetCachedContainerPropertiesAsync(
+                    forceRefresh: false,
+                    trace: trace,
+                    cancellationToken: cancellationToken);
+                PartitionKeyDefinition partitionKeyDefinition = cachedContainerPropertiesAsync?.PartitionKey;
+                CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
+                return TryCatch<ExecutorCaches>.FromResult(new ExecutorCaches
+                {
+                    partitionKeyDefinition = partitionKeyDefinition,
+                    collectionRoutingMap = collectionRoutingMap
+                });
+            }
+            catch (Exception ex)
+            {
+                return TryCatch<ExecutorCaches>.FromException(ex);
+            }
+        }
+
         private async Task<string> ResolvePartitionKeyRangeIdAsync(
             ItemBatchOperation operation,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            PartitionKeyDefinition partitionKeyDefinition = await this.cosmosContainer.GetPartitionKeyDefinitionAsync(cancellationToken);
-            CollectionRoutingMap collectionRoutingMap = await this.cosmosContainer.GetRoutingMapAsync(cancellationToken);
+            if (!this.lazyExecutorCaches.ValueInitialized)
+            {
+                TryCatch<ExecutorCaches> executorCaches = await this.lazyExecutorCaches.GetValueAsync(operation.Trace, cancellationToken);
+                if (!executorCaches.Succeeded)
+                {
+                    throw executorCaches.Exception;
+                }
+            }
 
-            Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object epkObj) == null, "EPK is not supported");
+            PartitionKeyDefinition partitionKeyDefinition = this.lazyExecutorCaches.Result.Result.partitionKeyDefinition;
+            CollectionRoutingMap collectionRoutingMap = this.lazyExecutorCaches.Result.Result.collectionRoutingMap;
+
+            Debug.Assert(operation.RequestOptions?.Properties?.TryGetValue(WFConstants.BackendHeaders.EffectivePartitionKeyString, out object _) == null, "EPK is not supported");
             Documents.Routing.PartitionKeyInternal partitionKeyInternal = await this.GetPartitionKeyInternalAsync(operation, cancellationToken);
             operation.PartitionKeyJson = partitionKeyInternal.ToJsonString();
             string effectivePartitionKeyString = partitionKeyInternal.GetEffectivePartitionKeyString(partitionKeyDefinition);
@@ -294,6 +331,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.limitersByPartitionkeyRange[partitionKeyRangeId];
+        }
+
+        private struct ExecutorCaches
+        {
+            public PartitionKeyDefinition partitionKeyDefinition;
+            public CollectionRoutingMap collectionRoutingMap;
         }
     }
 }
