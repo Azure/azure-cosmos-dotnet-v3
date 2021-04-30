@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 foreach (TransactionalBatchOperationResult transactionalBatchOperationResult in response)
                 {
                     // FIXME this should check for BadRequest StatusCode too, requires a service fix to return 400 instead of -1 which is currently returned.
-                    if (string.Equals(response.Headers.Get(EncryptionContainer.SubStatusHeader), EncryptionContainer.IncorrectContainerRidSubStatus))
+                    if (string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
                     {
                         await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                             cancellationToken: cancellationToken,
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new CosmosException(
                             "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
                             response.StatusCode,
-                            int.Parse(EncryptionContainer.IncorrectContainerRidSubStatus),
+                            int.Parse(Constants.IncorrectContainerRidSubStatus),
                             response.Headers.ActivityId,
                             response.Headers.RequestCharge);
                     }

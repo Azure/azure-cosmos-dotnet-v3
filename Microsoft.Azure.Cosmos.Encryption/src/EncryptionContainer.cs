@@ -16,10 +16,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionContainer : Container
     {
-        public const string SubStatusHeader = "x-ms-substatus";
-
-        public const string IncorrectContainerRidSubStatus = "1024";
-
         private readonly Container container;
 
         public CosmosSerializer CosmosSerializer { get; }
@@ -803,7 +799,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
             if (isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(SubStatusHeader), IncorrectContainerRidSubStatus))
+                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
                 // Even though the streamPayload position is expected to be 0,
                 // because for MemoryStream we just use the underlying buffer to send over the wire rather than using the Stream APIs
@@ -874,7 +870,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(SubStatusHeader), IncorrectContainerRidSubStatus))
+                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
                 // get the latest encryption settings.
                 await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
@@ -949,7 +945,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(SubStatusHeader), IncorrectContainerRidSubStatus))
+                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
                 streamPayload.Position = 0;
                 streamPayload = await this.DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
@@ -1024,7 +1020,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(SubStatusHeader), IncorrectContainerRidSubStatus))
+                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
                 streamPayload.Position = 0;
                 streamPayload = await this.DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
