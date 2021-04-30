@@ -37,8 +37,9 @@
         private static int maxRuntimeInSeconds;
         private static bool shouldDeleteContainerOnFinish;
         private static int numWorkers;
+        private static bool allowBulkExecution;
         private static int partitionKeyCount;
-        private static int rps;
+        private static int requestsPerSec;
         private static readonly string partitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
 
         public static async Task Main(string[] args)
@@ -90,7 +91,7 @@
 
             const int ticksPerMillisecond = 10000;
             const int ticksPerSecond = 1000 * ticksPerMillisecond;
-            int eachTicks = (int)(ticksPerSecond / Program.rps);
+            int eachTicks = (int)(ticksPerSecond / Program.requestsPerSec);
             long usageTicks = 0;
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -248,8 +249,9 @@
             Program.itemSize = GetConfig(configuration, "ItemSize", 1024);
             Program.itemPropertyCount = GetConfig(configuration, "ItemPropertyCount", 10);
             Program.partitionKeyCount = GetConfig(configuration, "PartitionKeyCount", int.MaxValue);
-            Program.rps = GetConfig(configuration, "RequestsPerSec", 1000);
+            Program.requestsPerSec = GetConfig(configuration, "RequestsPerSec", 1000);
             Program.numWorkers = GetConfig(configuration, "NumWorkers", 1);
+            Program.allowBulkExecution = GetConfig(configuration, "AllowBulkExecution", false);
             Program.preSerializedItemCount = GetConfig(configuration, "PreSerializedItemCount", 0);
             Program.maxRuntimeInSeconds = GetConfig(configuration, "MaxRuntimeInSeconds", 300);
             Program.shouldDeleteContainerOnFinish = GetConfig(configuration, "ShouldDeleteContainerOnFinish", false);
@@ -287,7 +289,7 @@
             new CosmosClient(endpoint, authKey, new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                AllowBulkExecution = false,
+                AllowBulkExecution = Program.allowBulkExecution,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 PortReuseMode = PortReuseMode.ReuseUnicastPort
             });
