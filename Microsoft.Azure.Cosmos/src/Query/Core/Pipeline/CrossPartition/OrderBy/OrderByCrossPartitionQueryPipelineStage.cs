@@ -1166,6 +1166,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private static class IsSystemFunctions
             {
+                public const string Defined = "IS_DEFINED";
                 public const string Undefined = "NOT IS_DEFINED";
                 public const string Null = "IS_NULL";
                 public const string Boolean = "IS_BOOLEAN";
@@ -1173,12 +1174,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 public const string String = "IS_STRING";
                 public const string Array = "IS_ARRAY";
                 public const string Object = "IS_OBJECT";
-            }
-
-            private static class ExtendedTypesIsSystemFunctions
-            {
-                public const string Undefined = "NOT IS_DEFINED";
-                public const string Defined = "IS_DEFINED";
             }
 
             private static readonly ReadOnlyMemory<string> SystemFunctionSortOrder = new string[]
@@ -1194,8 +1189,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private static readonly ReadOnlyMemory<string> ExtendedTypesSystemFunctionSortOrder = new string[]
             {
-                ExtendedTypesIsSystemFunctions.Undefined,
-                ExtendedTypesIsSystemFunctions.Defined
+                IsSystemFunctions.Undefined,
+                IsSystemFunctions.Defined
             };
 
             private static class SortOrder
