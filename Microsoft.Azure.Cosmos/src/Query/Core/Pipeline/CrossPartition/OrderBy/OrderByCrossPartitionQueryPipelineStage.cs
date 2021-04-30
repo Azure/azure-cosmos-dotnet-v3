@@ -1166,7 +1166,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private static class IsSystemFunctions
             {
-                public const string Undefined = "not IS_DEFINED";
+                public const string Undefined = "NOT IS_DEFINED";
                 public const string Null = "IS_NULL";
                 public const string Boolean = "IS_BOOLEAN";
                 public const string Number = "IS_NUMBER";
@@ -1177,7 +1177,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private static class ExtendedTypesIsSystemFunctions
             {
-                public const string Undefined = "not IS_DEFINED";
+                public const string Undefined = "NOT IS_DEFINED";
                 public const string Defined = "IS_DEFINED";
             }
 
