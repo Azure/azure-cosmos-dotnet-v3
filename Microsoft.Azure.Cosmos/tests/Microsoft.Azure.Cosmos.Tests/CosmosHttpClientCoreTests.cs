@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using System.Reflection;
+    using System.Linq;
 
     [TestClass]
     public class CosmosHttpClientCoreTests
@@ -51,6 +53,27 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void VerifyAllRetryPolicyEndWithAtLeast65SecondTimeout()
+        {
+            List<Type> list = Assembly.GetAssembly(typeof(HttpTimeoutPolicy)).GetTypes()
+                .Where(myType => myType.IsClass && !myType.IsAbstract && myType.IsSubclassOf(typeof(HttpTimeoutPolicy))).ToList();
+
+            foreach(Type type in list)
+            {
+                FieldInfo property = type.GetField("Instance", BindingFlags.Public | BindingFlags.Static);
+                HttpTimeoutPolicy timeoutPolicy = (HttpTimeoutPolicy)property.GetValue(null);
+                IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeouts = timeoutPolicy.GetTimeoutEnumerator();
+                (TimeSpan requestTimeout, TimeSpan delayForNextRequest)? last = null;
+                while (timeouts.MoveNext())
+                {
+                    last = timeouts.Current;
+                }
+
+                Assert.IsTrue(last.Value.requestTimeout >= TimeSpan.FromSeconds(65), "Last timeout must be greater than 65 seconds for HttpRequestException to trigger failovers");
+            }
+        }
+        
+        [TestMethod]
         public async Task RetryTransientIssuesTestAsync()
         {
             using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();
@@ -64,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     TimeSpan.FromSeconds(5.1),
                     TimeSpan.FromSeconds(10.1),
-                    TimeSpan.FromSeconds(20.1)
+                    TimeSpan.FromSeconds(65.1)
                 }},
                 {HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,  new List<TimeSpan>()
                 {

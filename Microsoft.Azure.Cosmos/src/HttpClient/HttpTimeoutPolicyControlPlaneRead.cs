@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos
         {
             (TimeSpan.FromSeconds(5), TimeSpan.Zero),
             (TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(1)),
-            (TimeSpan.FromSeconds(20), TimeSpan.Zero), 
+            (TimeSpan.FromSeconds(65), TimeSpan.Zero), 
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyControlPlaneRead.Name;
