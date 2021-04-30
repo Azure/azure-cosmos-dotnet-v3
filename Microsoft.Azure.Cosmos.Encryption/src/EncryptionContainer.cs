@@ -526,8 +526,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 decryptedItems.Add(decryptedDocument.ToObject<T>());
                             }
 
-                            // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable, we can hit issue with either Json
-                            // serialization say an item was not encrypted but the policy shows it as encrypted, or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
+                            // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
+                            // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
+                            // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
                             catch (Exception)
                             {
                                 // most likely the encryption policy has changed.
@@ -679,7 +680,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             throw new NotImplementedException();
         }
-		
+
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<T> onChangesDelegate)
@@ -723,7 +724,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             throw new NotImplementedException();
         }
-		
+
         public async Task<EncryptionSettings> GetOrUpdateEncryptionSettingsFromCacheAsync(
             CancellationToken cancellationToken,
             EncryptionSettings obsoleteEncryptionSettings = null)
