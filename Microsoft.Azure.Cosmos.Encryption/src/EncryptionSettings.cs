@@ -14,11 +14,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionSettings
     {
+        // TODO: Good to have constants available in the Cosmos SDK. Tracked via https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2431
+        private const string IntendedCollectionHeader = "x-ms-cosmos-intended-collection-rid";
+
+        private const string IsClientEncryptedHeader = "x-ms-cosmos-is-client-encrypted";
+
         private readonly ConcurrentDictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName = new ConcurrentDictionary<string, EncryptionSettingForProperty>();
 
         private readonly EncryptionContainer encryptionContainer;
 
         private ClientEncryptionPolicy clientEncryptionPolicy;
+
+        private string databaseRidValue;
 
         public string ContainerRidValue { get; private set; }
 
@@ -36,6 +43,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.encryptionSettingsDictByPropertyName.TryGetValue(propertyName, out EncryptionSettingForProperty encryptionSettingsForProperty);
 
             return encryptionSettingsForProperty;
+        }
+
+        public void SetRequestHeaders(RequestOptions requestOptions)
+        {
+            requestOptions.AddRequestHeaders = (headers) =>
+            {
+                headers.Add(IsClientEncryptedHeader, bool.TrueString);
+                headers.Add(IntendedCollectionHeader, this.ContainerRidValue);
+            };
         }
 
         private EncryptionSettings(EncryptionContainer encryptionContainer)
@@ -64,7 +80,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ContainerResponse containerResponse = await this.encryptionContainer.ReadContainerAsync();
 
-            // also set the Container Rid.
+            // set the Database Rid.
+            this.databaseRidValue = containerResponse.Resource.SelfLink.Split('/').ElementAt(1);
+
+            // set the Container Rid.
             this.ContainerRidValue = containerResponse.Resource.SelfLink.Split('/').ElementAt(3);
 
             // set the ClientEncryptionPolicy for the Settings.
@@ -80,8 +99,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                      clientEncryptionKeyId: clientEncryptionKeyId,
                      encryptionContainer: this.encryptionContainer,
-                     cancellationToken: cancellationToken,
-                     shouldForceRefresh: true);
+                     databaseRid: this.databaseRidValue,
+                     cancellationToken: cancellationToken);
             }
 
             // update the property level setting.
@@ -92,7 +111,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionSettingForProperty encryptionSettingsForProperty = new EncryptionSettingForProperty(
                     propertyToEncrypt.ClientEncryptionKeyId,
                     encryptionType,
-                    this.encryptionContainer);
+                    this.encryptionContainer,
+                    this.databaseRidValue);
 
                 string propertyName = propertyToEncrypt.Path.Substring(1);
 

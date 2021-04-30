@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -184,48 +185,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override async Task<TransactionalBatchResponse> ExecuteAsync(
             CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
-            using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync"))
-            {
-                TransactionalBatchResponse response = null;
-
-                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: default);
-                if (!encryptionSettings.PropertiesToEncrypt.Any())
-                {
-                    return await this.transactionalBatch.ExecuteAsync(cancellationToken);
-                }
-                else
-                {
-                    TransactionalBatchRequestOptions requestOptions = new TransactionalBatchRequestOptions();
-                    this.encryptionContainer.SetRequestHeaders(requestOptions, encryptionSettings);
-                    response = await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
-                }
-
-                foreach (TransactionalBatchOperationResult transactionalBatchOperationResult in response)
-                {
-                    // FIXME this should return BadRequest and not (-1), requires a backend fix.
-                    if (transactionalBatchOperationResult.StatusCode == (System.Net.HttpStatusCode)(-1)
-                        && string.Equals(response.Headers.Get("x-ms-substatus"), "1024"))
-                    {
-                        await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                            cancellationToken: cancellationToken,
-                            obsoleteEncryptionSettings: encryptionSettings);
-
-                        throw new CosmosException(
-                           "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
-                           response.StatusCode,
-                           1024,
-                           response.Headers.ActivityId,
-                           response.Headers.RequestCharge);
-                    }
-                }
-
-                return await this.DecryptTransactionalBatchResponseAsync(
-                        response,
-                        encryptionSettings,
-                        diagnosticsContext,
-                        cancellationToken);
-            }
+            return await this.ExecuteAsync(requestOptions: null, cancellationToken: cancellationToken);
         }
 
         public override async Task<TransactionalBatchResponse> ExecuteAsync(
@@ -254,15 +214,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         clonedRequestOptions = new TransactionalBatchRequestOptions();
                     }
 
-                    this.encryptionContainer.SetRequestHeaders(clonedRequestOptions, encryptionSettings);
+                    encryptionSettings.SetRequestHeaders(clonedRequestOptions);
                     response = await this.transactionalBatch.ExecuteAsync(clonedRequestOptions, cancellationToken);
                 }
 
                 foreach (TransactionalBatchOperationResult transactionalBatchOperationResult in response)
                 {
                     // FIXME this should return BadRequest and not (-1), requires a backend fix.
-                    if (transactionalBatchOperationResult.StatusCode == (System.Net.HttpStatusCode)(-1)
-                        && string.Equals(response.Headers.Get("x-ms-substatus"), "1024"))
+                    if (transactionalBatchOperationResult.StatusCode == (HttpStatusCode)(-1)
+                        && string.Equals(response.Headers.Get(EncryptionContainer.SubStatusHeader), EncryptionContainer.IncorrectContainerRidSubStatus))
                     {
                         await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                             cancellationToken: cancellationToken,
@@ -271,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new CosmosException(
                             "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
                             response.StatusCode,
-                            1024,
+                            int.Parse(EncryptionContainer.IncorrectContainerRidSubStatus),
                             response.Headers.ActivityId,
                             response.Headers.RequestCharge);
                     }

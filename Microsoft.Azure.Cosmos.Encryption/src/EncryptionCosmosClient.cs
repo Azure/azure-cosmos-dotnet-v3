@@ -173,6 +173,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
             string clientEncryptionKeyId,
             EncryptionContainer encryptionContainer,
+            string databaseRid,
             CancellationToken cancellationToken = default,
             bool shouldForceRefresh = false)
         {
@@ -181,8 +182,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(encryptionContainer));
             }
 
+            if (string.IsNullOrEmpty(databaseRid))
+            {
+                throw new ArgumentNullException(nameof(databaseRid));
+            }
+
             // Client Encryption key Id is unique within a Database.
-            string cacheKey = encryptionContainer.Database.Id + "/" + clientEncryptionKeyId;
+            string cacheKey = databaseRid + "|" + clientEncryptionKeyId;
 
             return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
                      cacheKey,

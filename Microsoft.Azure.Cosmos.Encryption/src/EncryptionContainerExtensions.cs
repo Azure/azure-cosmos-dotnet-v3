@@ -40,10 +40,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (container is EncryptionContainer encryptionContainer)
+            if (container is not EncryptionContainer encryptionContainer)
             {
-                await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: cancellationToken);
+                throw new ArgumentOutOfRangeException($"{nameof(InitializeEncryptionAsync)} requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
             }
+
+            await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: cancellationToken);
 
             return container;
         }

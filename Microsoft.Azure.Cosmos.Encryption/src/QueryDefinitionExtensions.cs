@@ -75,7 +75,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (queryDefinition is EncryptionQueryDefinition encryptionQueryDefinition)
             {
                 EncryptionContainer encryptionContainer = (EncryptionContainer)encryptionQueryDefinition.Container;
-                Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
 
                 // get the path's encryption setting.
                 EncryptionSettings encryptionSettings = await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
@@ -93,22 +92,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Unsupported argument with Path: {path} for query. For executing queries on encrypted path requires the use of deterministic encryption type. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
-                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
-
-                JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
-                (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
-
-                byte[] cipherText = aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
-
-                if (cipherText == null)
-                {
-                    throw new InvalidOperationException($"{nameof(AddParameterAsync)} returned null cipherText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-                }
-
-                byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-                cipherTextWithTypeMarker[0] = (byte)typeMarker;
-                Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-                queryDefinitionwithEncryptedValues.WithParameter(name, cipherTextWithTypeMarker);
+                Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
+                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(settingsForProperty, valueStream, cancellationToken);
+                queryDefinitionwithEncryptedValues.WithParameterStream(name, encryptedValueStream);
 
                 return queryDefinitionwithEncryptedValues;
             }

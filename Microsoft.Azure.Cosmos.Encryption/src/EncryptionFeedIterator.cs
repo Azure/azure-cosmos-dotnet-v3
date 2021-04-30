@@ -36,13 +36,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
             {
                 EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
-                this.encryptionContainer.SetRequestHeaders(this.requestOptions, encryptionSettings);
+                encryptionSettings.SetRequestHeaders(this.requestOptions);
 
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
 
                 // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
                 if (responseMessage.StatusCode == HttpStatusCode.BadRequest
-                    && string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
+                    && string.Equals(responseMessage.Headers.Get(EncryptionContainer.SubStatusHeader), EncryptionContainer.IncorrectContainerRidSubStatus))
                 {
                     await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                         cancellationToken: cancellationToken,
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new CosmosException(
                         "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
                         responseMessage.StatusCode,
-                        1024,
+                        int.Parse(EncryptionContainer.IncorrectContainerRidSubStatus),
                         responseMessage.Headers.ActivityId,
                         responseMessage.Headers.RequestCharge);
                 }

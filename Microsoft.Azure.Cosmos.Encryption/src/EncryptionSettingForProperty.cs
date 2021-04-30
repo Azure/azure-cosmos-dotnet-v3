@@ -17,13 +17,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionType EncryptionType { get; }
 
+        private readonly string databaseRid;
+
         private readonly EncryptionContainer encryptionContainer;
 
-        public EncryptionSettingForProperty(string clientEncryptionKeyId, EncryptionType encryptionType, EncryptionContainer encryptionContainer)
+        public EncryptionSettingForProperty(
+            string clientEncryptionKeyId,
+            EncryptionType encryptionType,
+            EncryptionContainer encryptionContainer,
+            string databaseRid)
         {
             this.ClientEncryptionKeyId = clientEncryptionKeyId ?? throw new ArgumentNullException(nameof(clientEncryptionKeyId));
             this.EncryptionType = encryptionType;
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
+            this.databaseRid = databaseRid ?? throw new ArgumentNullException(nameof(databaseRid));
         }
 
         public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
@@ -31,8 +38,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                     clientEncryptionKeyId: this.ClientEncryptionKeyId,
                     encryptionContainer: this.encryptionContainer,
-                    cancellationToken: cancellationToken,
-                    shouldForceRefresh: false);
+                    databaseRid: this.databaseRid,
+                    cancellationToken: cancellationToken);
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey;
 
@@ -55,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                         clientEncryptionKeyId: this.ClientEncryptionKeyId,
                         encryptionContainer: this.encryptionContainer,
+                        databaseRid: this.databaseRid,
                         cancellationToken: cancellationToken,
                         shouldForceRefresh: true);
 
