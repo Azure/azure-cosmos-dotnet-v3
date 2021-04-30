@@ -679,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             throw new NotImplementedException();
         }
-
+		
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<T> onChangesDelegate)
@@ -723,7 +723,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             throw new NotImplementedException();
         }
-
+		
         public async Task<EncryptionSettings> GetOrUpdateEncryptionSettingsFromCacheAsync(
             CancellationToken cancellationToken,
             EncryptionSettings obsoleteEncryptionSettings = null)
