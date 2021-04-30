@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System.Linq;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -118,36 +119,52 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         public void MonadicCreate_SingleOrderByContinuationToken()
         {
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
+            Guid guid = Guid.Parse("69D5AB17-C94A-4173-A278-B59D0D9C7C37");
+            byte[] randomBytes = guid.ToByteArray();
+            string hexString = PartitionKeyInternal.HexConvert.ToHex(randomBytes, 0, randomBytes.Length);
 
-            ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
-                token: "asdf",
-                range: new Documents.Routing.Range<string>("A", "B", true, false));
+            foreach ((string serializedToken, CosmosElement element) in new (string, CosmosElement)[]
+            {
+                ("[42, 37]", CosmosArray.Parse("[42, 37]")),
+                ($@"{{C_Binary(""0x{hexString}"")}}", CosmosBinary.Create(new ReadOnlyMemory<byte>(randomBytes))),
+                ("false", CosmosBoolean.Create(false)),
+                ($@"{{C_Guid(""{guid.ToString()}"")}}", CosmosGuid.Create(guid)),
+                ("null", CosmosNull.Create()),
+                ("1", CosmosInt64.Create(1)),
+                ("{\"foo\": false}", CosmosObject.Parse("{\"foo\": false}")),
+                ("asdf", CosmosString.Create("asdf"))
+            })
+            {
+                ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
+                    token: serializedToken,
+                    range: new Documents.Routing.Range<string>("A", "B", true, false));
 
-            OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
-                parallelContinuationToken,
-                new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", CosmosString.Create("asdf") } })) },
-                rid: "rid",
-                skipCount: 42,
-                filter: "filter");
+                OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
+                    parallelContinuationToken,
+                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element} })) },
+                    rid: "rid",
+                    skipCount: 42,
+                    filter: "filter");
 
-            TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
-                documentContainer: mockDocumentContainer.Object,
-                sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c._ts"),
-                targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
-                partitionKey: null,
-                orderByColumns: new List<OrderByColumn>()
-                {
-                    new OrderByColumn("_ts", SortOrder.Ascending)
-                },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
-                maxConcurrency: 10,
-                cancellationToken: default,
-                continuationToken: CosmosArray.Create(
-                    new List<CosmosElement>()
+                TryCatch<IQueryPipelineStage> monadicCreate = OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: mockDocumentContainer.Object,
+                    sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c ORDER BY c.item"),
+                    targetRanges: new List<FeedRangeEpk>() { new FeedRangeEpk(new Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)) },
+                    partitionKey: null,
+                    orderByColumns: new List<OrderByColumn>()
                     {
+                    new OrderByColumn("item", SortOrder.Ascending)
+                    },
+                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                    maxConcurrency: 10,
+                    cancellationToken: default,
+                    continuationToken: CosmosArray.Create(
+                        new List<CosmosElement>()
+                        {
                         OrderByContinuationToken.ToCosmosElement(orderByContinuationToken)
-                    }));
-            Assert.IsTrue(monadicCreate.Succeeded);
+                        }));
+                Assert.IsTrue(monadicCreate.Succeeded);
+            }
         }
 
         [TestMethod]
