@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// This class provides extension methods for <see cref="QueryDefinition"/>.
@@ -93,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
 
                 Stream valueStream = encryptionContainer.CosmosSerializer.ToStream(value);
-                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(settingsForProperty, valueStream, cancellationToken);
+                Stream encryptedValueStream = await EncryptionProcessor.EncryptValueStreamAsync(valueStream, settingsForProperty, cancellationToken);
                 queryDefinitionwithEncryptedValues.WithParameterStream(name, encryptedValueStream);
 
                 return queryDefinitionwithEncryptedValues;

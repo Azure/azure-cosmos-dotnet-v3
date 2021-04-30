@@ -220,9 +220,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 foreach (TransactionalBatchOperationResult transactionalBatchOperationResult in response)
                 {
-                    // FIXME this should return BadRequest and not (-1), requires a backend fix.
-                    if (transactionalBatchOperationResult.StatusCode == (HttpStatusCode)(-1)
-                        && string.Equals(response.Headers.Get(EncryptionContainer.SubStatusHeader), EncryptionContainer.IncorrectContainerRidSubStatus))
+                    // FIXME this should check for BadRequest StatusCode too, requires a service fix to return 400 instead of -1 which is currently returned.
+                    if (string.Equals(response.Headers.Get(EncryptionContainer.SubStatusHeader), EncryptionContainer.IncorrectContainerRidSubStatus))
                     {
                         await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
                             cancellationToken: cancellationToken,
