@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 string.Equals(responseMessage.Headers.Get(SubStatusHeader), IncorrectContainerRidSubStatus))
             {
                 // Even though the streamPayload position is expected to be 0,
-                // because for MemoryStream's we just use the underlying buffer to send over the wire rather than using the Stream APIs
+                // because for MemoryStream we just use the underlying buffer to send over the wire rather than using the Stream APIs
                 // resetting it 0 to be on a safer side.
                 streamPayload.Position = 0;
 
