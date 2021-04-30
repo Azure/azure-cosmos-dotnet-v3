@@ -225,11 +225,12 @@ namespace Microsoft.Azure.Cosmos
             cancellationToken.ThrowIfCancellationRequested();
             if (!this.lazyExecutorCaches.ValueInitialized)
             {
-                TryCatch<ExecutorCaches> executorCaches = await this.lazyExecutorCaches.GetValueAsync(operation.Trace, cancellationToken);
-                if (!executorCaches.Succeeded)
-                {
-                    throw executorCaches.Exception;
-                }
+                await this.lazyExecutorCaches.GetValueAsync(NoOpTrace.Singleton, cancellationToken);
+            }
+
+            if (this.lazyExecutorCaches.Result.Failed)
+            {
+                throw this.lazyExecutorCaches.Result.Exception.InnerException;
             }
 
             PartitionKeyDefinition partitionKeyDefinition = this.lazyExecutorCaches.Result.Result.partitionKeyDefinition;
