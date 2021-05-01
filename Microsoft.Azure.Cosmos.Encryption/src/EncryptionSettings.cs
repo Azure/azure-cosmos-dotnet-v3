@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography;
@@ -79,6 +81,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             cancellationToken.ThrowIfCancellationRequested();
 
             ContainerResponse containerResponse = await this.encryptionContainer.ReadContainerAsync();
+
+            Debug.Assert(containerResponse.StatusCode == HttpStatusCode.OK, "ReadContainerAsync request has failed as part of InitializeEncryptionSettingsAsync operation. ");
+            Debug.Assert(containerResponse.Resource != null, "Null resource received in ContainerResponse as part of InitializeEncryptionSettingsAsync operation. ");
 
             // set the Database Rid.
             this.databaseRidValue = containerResponse.Resource.SelfLink.Split('/').ElementAt(1);

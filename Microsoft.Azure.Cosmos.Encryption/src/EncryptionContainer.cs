@@ -759,7 +759,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken,
-            bool isRetry = true)
+            bool isRetry = false)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
@@ -780,7 +780,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
             // only clone it on the first try.
-            if (isRetry)
+            if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
             }
@@ -797,7 +797,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
             // So when the container being referenced here gets recreated we would end up with a stale encryption settings and container Rid and this would result in BadRequest( and a substatus 1024).
             // This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
-            if (isRetry &&
+            if (!isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
                 string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
@@ -822,7 +822,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                        clonedRequestOptions,
                        diagnosticsContext,
                        cancellationToken,
-                       isRetry: false);
+                       isRetry: true);
             }
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
@@ -840,7 +840,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken,
-            bool isRetry = true)
+            bool isRetry = false)
         {
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
@@ -855,7 +855,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
             // only clone it on the first try.
-            if (isRetry)
+            if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
             }
@@ -868,7 +868,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (isRetry &&
+            if (!isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
                 string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
@@ -883,7 +883,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     clonedRequestOptions,
                     diagnosticsContext,
                     cancellationToken,
-                    isRetry: false);
+                    isRetry: true);
             }
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
@@ -902,7 +902,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken,
-            bool isRetry = true)
+            bool isRetry = false)
         {
             if (partitionKey == null)
             {
@@ -929,7 +929,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
             // only clone it on the first try.
-            if (isRetry)
+            if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
             }
@@ -943,7 +943,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (isRetry &&
+            if (!isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
                 string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
@@ -961,7 +961,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     clonedRequestOptions,
                     diagnosticsContext,
                     cancellationToken,
-                    isRetry: false);
+                    isRetry: true);
             }
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(
@@ -979,7 +979,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions requestOptions,
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken,
-            bool isRetry = true)
+            bool isRetry = false)
         {
             if (partitionKey == null)
             {
@@ -1005,7 +1005,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
             // only clone it on the first try.
-            if (isRetry)
+            if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
             }
@@ -1018,7 +1018,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (isRetry &&
+            if (!isRetry &&
                 responseMessage.StatusCode == HttpStatusCode.BadRequest &&
                 string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
@@ -1035,7 +1035,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     clonedRequestOptions,
                     diagnosticsContext,
                     cancellationToken,
-                    isRetry: false);
+                    isRetry: true);
             }
 
             responseMessage.Content = await EncryptionProcessor.DecryptAsync(

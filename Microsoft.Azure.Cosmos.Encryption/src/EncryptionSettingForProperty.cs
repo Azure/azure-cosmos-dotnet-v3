@@ -27,10 +27,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             EncryptionContainer encryptionContainer,
             string databaseRid)
         {
-            this.ClientEncryptionKeyId = clientEncryptionKeyId ?? throw new ArgumentNullException(nameof(clientEncryptionKeyId));
+            this.ClientEncryptionKeyId = string.IsNullOrEmpty(clientEncryptionKeyId) ? throw new ArgumentNullException(nameof(clientEncryptionKeyId)) : clientEncryptionKeyId;
             this.EncryptionType = encryptionType;
             this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
-            this.databaseRid = databaseRid ?? throw new ArgumentNullException(nameof(databaseRid));
+            this.databaseRid = string.IsNullOrEmpty(databaseRid) ? throw new ArgumentNullException(nameof(databaseRid)) : databaseRid;
         }
 
         public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
