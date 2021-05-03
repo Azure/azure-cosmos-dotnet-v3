@@ -38,11 +38,12 @@
         private static bool shouldDeleteContainerOnFinish;
         private static int numWorkers;
         private static bool allowBulkExecution;
+        private static bool omitContentInWriteResponse;
         private static int partitionKeyCount;
         private static int requestsPerSec;
         private static readonly string partitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
 
-        public static async Task Main(string[] args)
+        public static async Task Main(string[] _)
         {
             Container container = null;
             try
@@ -56,7 +57,6 @@
             }
             catch (Exception e)
             {
-                Exception baseException = e.GetBaseException();
                 Console.WriteLine("Error: {0}", e);
             }
             finally
@@ -99,6 +99,15 @@
             CancellationToken cancellationToken = cancellationTokenSource.Token;
             Stopwatch stopwatch = Stopwatch.StartNew();
 
+            ItemRequestOptions itemRequestOptions = null;
+            if(Program.omitContentInWriteResponse)
+            {
+                itemRequestOptions = new ItemRequestOptions()
+                {
+                    EnableContentResponseOnWrite = false
+                };
+            }
+
             for (int workerIndex = 0; workerIndex < numWorkers; workerIndex++)
             {
                 int workerIndexLocal = workerIndex;
@@ -111,7 +120,7 @@
                     {
                         docCounter++;
 
-                        MemoryStream stream = dataSource.GetNextDocItem(workerIndexLocal, out PartitionKey partitionKeyValue);
+                        MemoryStream stream = dataSource.GetNextDocItem(out PartitionKey partitionKeyValue);
 
                         long elapsedTicks = stopwatch.ElapsedTicks;
                         if (usageTicks < elapsedTicks)
@@ -125,7 +134,7 @@
                             await Task.Delay((int)((usageTicks - elapsedTicks - ticksPerSecond) / ticksPerMillisecond));
                         }
 
-                        _ = container.UpsertItemStreamAsync(stream, partitionKeyValue, null, cancellationToken)
+                        _ = container.UpsertItemStreamAsync(stream, partitionKeyValue, itemRequestOptions, cancellationToken)
                             .ContinueWith((Task<ResponseMessage> task) =>
                             {
                                 if (task.IsCompletedSuccessfully)
@@ -210,21 +219,28 @@
             + $"   P99.9: {latenciesList[(int)(requestCount * 0.999)].TotalMilliseconds}"
             + $"   Max: {latenciesList[requestCount - 1].TotalMilliseconds}");
 
-            Console.WriteLine("Average RUs (non-failed): " + totalRequestCharge / (100.0 * nonFailedCountFinal));
+            Console.WriteLine("Average RUs (non-failed): " + (totalRequestCharge / (100.0 * nonFailedCountFinal)));
         }
 
         private class MyDocument
         {
-            public string id { get; set; }
-            public string pk { get; set; }
-            public List<string> arr {get; set;}
-            public string other { get; set; }
+            [JsonProperty("id")]
+            public string Id { get; set; }
+
+            [JsonProperty("pk")]
+            public string PK { get; set; }
+
+            [JsonProperty("arr")]
+            public List<string> Arr {get; set;}
+
+            [JsonProperty("other")]
+            public string Other { get; set; }
 
             [JsonProperty(PropertyName = "_ts")]
-            public int lastModified { get; set; }
+            public int LastModified { get; set; }
 
             [JsonProperty(PropertyName = "_rid")]
-            public string resourceId { get; set; }
+            public string ResourceId { get; set; }
         }
 
         private static async Task<Container> InitializeAsync()
@@ -252,6 +268,7 @@
             Program.requestsPerSec = GetConfig(configuration, "RequestsPerSec", 1000);
             Program.numWorkers = GetConfig(configuration, "NumWorkers", 1);
             Program.allowBulkExecution = GetConfig(configuration, "AllowBulkExecution", false);
+            Program.omitContentInWriteResponse = GetConfig(configuration, "OmitContentInWriteResponse", true);
             Program.preSerializedItemCount = GetConfig(configuration, "PreSerializedItemCount", 0);
             Program.maxRuntimeInSeconds = GetConfig(configuration, "MaxRuntimeInSeconds", 300);
             Program.shouldDeleteContainerOnFinish = GetConfig(configuration, "ShouldDeleteContainerOnFinish", false);
@@ -285,14 +302,16 @@
 
         private static CosmosClient GetClientInstance(
             string endpoint,
-            string authKey) =>
-            new CosmosClient(endpoint, authKey, new CosmosClientOptions()
+            string authKey)
+        {
+            return new CosmosClient(endpoint, authKey, new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
                 AllowBulkExecution = Program.allowBulkExecution,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 PortReuseMode = PortReuseMode.ReuseUnicastPort
             });
+        }
 
         private static async Task CleanupContainerAsync(Container container)
         {
@@ -381,9 +400,9 @@
             private readonly int itemSize;
             private readonly int partitionKeyCount;
             private static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings() { NullValueHandling = NullValueHandling.Ignore };
-            private string padding = string.Empty;
-            private PartitionKey[] partitionKeys;
-            private ConcurrentDictionary<PartitionKey, ConcurrentBag<MemoryStream>> itemsByPK;
+            private readonly string padding = string.Empty;
+            private readonly PartitionKey[] partitionKeys;
+            private readonly ConcurrentDictionary<PartitionKey, ConcurrentBag<MemoryStream>> itemsByPK;
             private int itemIndex = 0;
 
             public DataSource(int itemCount, int preSerializedItemCount, int itemPropertyCount, int itemSize, int partitionKeyCount)
@@ -403,7 +422,7 @@
                 }
 
                 // Find length and keep some bytes for the system generated properties
-                int currentLen = (int)CreateNextDocItem(partitionKeyValuePrefix + "0").Length + 250;
+                int currentLen = (int)this.CreateNextDocItem(partitionKeyValuePrefix + "0").Length + 250;
                 this.padding = this.itemSize > currentLen ? new string('x', this.itemSize - currentLen) : string.Empty;
 
                 int pkIndex = this.partitionKeyCount;
@@ -421,13 +440,13 @@
                         this.partitionKeys[pkIndex] = new PartitionKey(partitionKeyValue);
                         if(i < preSerializedItemCount)
                         {
-                            itemsByPK.TryAdd(this.partitionKeys[pkIndex], new ConcurrentBag<MemoryStream>());
+                            this.itemsByPK.TryAdd(this.partitionKeys[pkIndex], new ConcurrentBag<MemoryStream>());
                         }
                     }
 
                     if(i < preSerializedItemCount)
                     {
-                        itemsByPK[this.partitionKeys[pkIndex]].Add(this.CreateNextDocItem(partitionKeyValue));
+                        this.itemsByPK[this.partitionKeys[pkIndex]].Add(this.CreateNextDocItem(partitionKeyValue));
                     }
 
                     pkIndex++;
@@ -440,19 +459,19 @@
 
                 MyDocument myDocument = new MyDocument()
                 {
-                    id = id,
-                    pk = partitionKey,
-                    arr = this.additionalProperties,
-                    other = this.padding
+                    Id = id,
+                    PK = partitionKey,
+                    Arr = this.additionalProperties,
+                    Other = this.padding
                 };
                 string value = JsonConvert.SerializeObject(myDocument, JsonSerializerSettings);
                 return new MemoryStream(Encoding.UTF8.GetBytes(value));
             }
 
-            public MemoryStream GetNextDocItem(int workerIndex, out PartitionKey partitionKey)
+            public MemoryStream GetNextDocItem(out PartitionKey partitionKey)
             {
-                int incremented = Interlocked.Increment(ref itemIndex);
-                int currentPKIndex = incremented % partitionKeyCount;
+                int incremented = Interlocked.Increment(ref this.itemIndex);
+                int currentPKIndex = incremented % this.partitionKeyCount;
                 partitionKey = this.partitionKeys[currentPKIndex];
 
                 if(this.itemsByPK.TryGetValue(partitionKey, out ConcurrentBag<MemoryStream> itemsForPK)
