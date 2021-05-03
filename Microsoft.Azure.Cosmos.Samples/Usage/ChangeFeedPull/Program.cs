@@ -11,6 +11,7 @@
 
     class Program
     {
+        private static readonly string partitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
         private readonly ConcurrentQueue<ChangeSet> changeQueue = new ConcurrentQueue<ChangeSet>();
 
         public static async Task Main(string[] _)
@@ -119,7 +120,9 @@
 
         private static MyDocument Transform(MyDocument doc)
         {
-            return new MyDocument(doc);
+            MyDocument returnValue = new MyDocument(doc);
+            returnValue.PK = Program.partitionKeyValuePrefix + returnValue.PK;
+            return returnValue;
         }
 
         private class MyDocument
