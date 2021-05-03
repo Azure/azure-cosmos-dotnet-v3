@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public MockedItemStreamBulkBenchmark()
         {
-            this.benchmarkHelper = new MockedItemBenchmarkHelper();
+            this.benchmarkHelper = new MockedItemBenchmarkHelper(useBulk: true);
         }
 
         public async Task CreateItem()
