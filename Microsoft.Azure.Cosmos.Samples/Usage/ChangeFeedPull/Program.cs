@@ -2,33 +2,65 @@
 {
     using System;
     using System.Collections.Concurrent;
-    using System.Diagnostics;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Extensions.Configuration;
+    using Newtonsoft.Json;
 
     class Program
     {
-        ConcurrentQueue<string> continuationTokenQueue = new ConcurrentQueue<string>();
+        private readonly ConcurrentQueue<ChangeSet> changeQueue = new ConcurrentQueue<ChangeSet>();
 
-        ConcurrentDictionary<string, int> pendingCountByContinuationToken = new ConcurrentDictionary<string, int>();
-
-        PartitionKey emptyPartitionKey = new PartitionKey(string.Empty);
-
-        ItemRequestOptions targetItemRequestOptions = new ItemRequestOptions()
+        public static async Task Main(string[] _)
         {
-            EnableContentResponseOnWrite = false            
-        };
+            try
+            {
+                IConfigurationRoot configuration = new ConfigurationBuilder()
+                    .AddJsonFile("appSettings.json")
+                    .Build();
 
-        private async Task RunAsync(Container source, Container target)
+                string endpoint = configuration["EndPointUrl"];
+                string authKey = configuration["AuthorizationKey"];
+
+                using (CosmosClient sourceClient = new CosmosClientBuilder(endpoint, authKey)
+                    .WithThrottlingRetryOptions(TimeSpan.FromSeconds(1), maxRetryAttemptsOnThrottledRequests: 0)
+                    .Build())
+                using (CosmosClient targetClient = new CosmosClientBuilder(endpoint, authKey)
+                    .WithThrottlingRetryOptions(TimeSpan.FromSeconds(1), maxRetryAttemptsOnThrottledRequests: 0)
+                    .WithBulkExecution(true)
+                    .Build())
+                {
+                    Container source = sourceClient.GetContainer("samples", "bulktesttwocore");
+                    Container target = targetClient.GetContainer("samples", "target");
+                    Console.WriteLine("Starting...");
+                    await new Program().RunAsync(source, target);
+                }
+            }
+            finally
+            {
+                Console.WriteLine("End of demo, press any key to exit.");
+                Console.ReadKey();
+            }
+        }
+
+
+        private Task RunAsync(Container source, Container target)
+        {
+            return Task.WhenAll(
+                Task.Run(() => this.ReadSourceAsync(source)),
+                Task.Run(() => this.WriteTargetAsync(target)));
+        }
+
+        private async Task ReadSourceAsync(Container source)
         {
             FeedIterator<MyDocument> iterator = source
                 .GetChangeFeedIterator<MyDocument>(
                 changeFeedRequestOptions: new ChangeFeedRequestOptions()
                 {
                     StartTime = DateTime.MinValue.ToUniversalTime(),
-                    // MaxItemCount = 1000
+                    MaxItemCount = 200
                 });
 
             while (true)
@@ -53,20 +85,7 @@
                             continue;
                         }
 
-                        string continuationToken = response.ContinuationToken;
-                        this.continuationTokenQueue.Enqueue(continuationToken);
-                        this.pendingCountByContinuationToken.TryAdd(continuationToken, response.Count);
-
-                        Task _ = Task.Run(() =>
-                        {
-                            foreach (MyDocument doc in response.Resource)
-                            {
-                                MyDocument transformedDoc = Transform(doc);
-
-                                Task _ = target.CreateItemAsync(transformedDoc, new PartitionKey(transformedDoc.pk), this.targetItemRequestOptions)
-                                    .ContinueWith(_ => this.UpdateProgressAsync(target, continuationToken));
-                            }
-                        });
+                        this.changeQueue.Enqueue(new ChangeSet(response.Resource, response.ContinuationToken));
                     }
                 }
                 catch (CosmosException ex)
@@ -74,89 +93,74 @@
                     Console.WriteLine(ex.StatusCode + " " + ex.Message);
                 }
             }
+        }
 
+        private async Task WriteTargetAsync(Container target)
+        {
+            while (true)
+            {
+                if (!this.changeQueue.TryDequeue(out ChangeSet changeSet))
+                {
+                    Console.Write(".");
+                    await Task.Delay(10);
+                    continue;
+                }
+
+                List<Task> tasks = new List<Task>();
+                foreach (MyDocument doc in changeSet.Documents)
+                {
+                    MyDocument transformedDoc = Transform(doc);
+                    tasks.Add(target.UpsertItemAsync(transformedDoc, new PartitionKey(transformedDoc.PK)));
+                }
+
+                await Task.WhenAll(tasks);
+            }
         }
 
         private static MyDocument Transform(MyDocument doc)
         {
-            string sourceId = doc.id;
-            doc.id = doc.pk;
-            doc.pk = sourceId;
-            return doc;
-        }
-
-        private async Task UpdateProgressAsync(Container target, string continuationToken)
-        {
-            int updatedPendingCountForContinuationToken = this.pendingCountByContinuationToken.AddOrUpdate(
-                continuationToken,
-                -1,
-                (key, old) => old - 1);
-
-            if (updatedPendingCountForContinuationToken == 0
-                && this.continuationTokenQueue.TryPeek(out string firstPendingContinuationToken)
-                && firstPendingContinuationToken == continuationToken)
-            {
-                await target.UpsertItemAsync(new
-                {
-                    id = "Progress",
-                    pk = string.Empty,
-                    cont = continuationToken
-                }, this.emptyPartitionKey);
-
-                bool wasDequeued = this.continuationTokenQueue.TryDequeue(out string dequeuedToken);
-                Debug.Assert(wasDequeued);
-                Debug.Assert(dequeuedToken == continuationToken);
-            }
+            return new MyDocument(doc);
         }
 
         private class MyDocument
         {
-            public string id { get; set; }
+            [JsonProperty("id")]
+            public string Id { get; set; }
 
-            public string pk { get; set; }
+            [JsonProperty("pk")]
+            public string PK { get; set; }
 
-            public string other { get; set; }
+            [JsonProperty("arr")]
+            public List<string> Arr { get; set; }
+
+            [JsonProperty("other")]
+            public string Other { get; set; }
+
+            [JsonProperty(PropertyName = "_ts")]
+            public int LastModified { get; set; }
+
+            [JsonProperty(PropertyName = "_rid")]
+            public string ResourceId { get; set; }
+
+            public MyDocument(MyDocument other)
+            {
+                this.Id = other.Id;
+                this.PK = other.PK;
+                this.Other = other.Other;
+                this.Arr = other.Arr;
+            }
         }
 
-        static async Task Main(string[] args)
+        private struct ChangeSet
         {
-            try
+            public ChangeSet(IEnumerable<MyDocument> documents, string continuationToken)
             {
-                IConfigurationRoot configuration = new ConfigurationBuilder()
-                    .AddJsonFile("appSettings.json")
-                    .Build();
-
-                string endpoint = configuration["EndPointUrl"];
-                if (string.IsNullOrEmpty(endpoint))
-                {
-                    throw new ArgumentNullException("Please specify a valid endpoint in the appSettings.json");
-                }
-
-                string authKey = configuration["AuthorizationKey"];
-                if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
-                {
-                    throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
-                }
-
-                using (CosmosClient client = new CosmosClientBuilder(endpoint, authKey)
-                    .WithThrottlingRetryOptions(TimeSpan.FromSeconds(1), maxRetryAttemptsOnThrottledRequests: 0).Build())
-                {
-                    Database samples = client.GetDatabase("samples");
-                    Container target = await samples.CreateContainerIfNotExistsAsync("target", "/pk", 24000);
-                    await Task.Delay(5000);
-
-                    await target.ReplaceThroughputAsync(40000);
-                    await Task.Delay(5000);
-
-                    Console.WriteLine("Starting...");
-                    await new Program().RunAsync(client.GetContainer("samples", "temp"), target);
-                }
+                this.Documents = documents;
+                this.ContinuationToken = continuationToken;
             }
-            finally
-            {
-                Console.WriteLine("End of demo, press any key to exit.");
-                Console.ReadKey();
-            }
+
+            public IEnumerable<MyDocument> Documents { get; }
+            public string ContinuationToken { get; }
         }
     }
 }
