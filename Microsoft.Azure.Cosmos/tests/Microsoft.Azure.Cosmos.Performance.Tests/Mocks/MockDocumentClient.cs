@@ -157,8 +157,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<bool>(),
-                    It.IsAny<CancellationToken>(),
-                    It.IsAny<ITrace>())).Returns(Task.FromResult(containerProperties));
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>())).Returns(Task.FromResult(containerProperties));
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(

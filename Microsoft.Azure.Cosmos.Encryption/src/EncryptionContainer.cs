@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -777,6 +778,50 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<ResponseMessage> ReadManyItemsStreamAsync(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandler onChangesDelegate)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
         {
             throw new NotImplementedException();
         }
