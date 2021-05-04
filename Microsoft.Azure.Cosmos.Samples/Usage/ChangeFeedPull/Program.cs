@@ -3,6 +3,9 @@
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Fluent;
@@ -12,7 +15,10 @@
     class Program
     {
         private static readonly string partitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
-        private readonly ConcurrentQueue<ChangeSet> changeQueue = new ConcurrentQueue<ChangeSet>();
+        private readonly List<ConcurrentQueue<ChangeSet>> changeQueues = new List<ConcurrentQueue<ChangeSet>>();
+        private int readCount = 0;
+        private int writtenCount = 0;
+        private int minQueueLength;
 
         public static async Task Main(string[] _)
         {
@@ -47,28 +53,57 @@
         }
 
 
-        private Task RunAsync(Container source, Container target)
+        private async Task RunAsync(Container source, Container target)
         {
-            return Task.WhenAll(
-                Task.Run(() => this.ReadSourceAsync(source)),
-                Task.Run(() => this.WriteTargetAsync(target)));
+            IEnumerable<FeedRange> feedRanges = await source.GetFeedRangesAsync();
+            foreach (FeedRange feedRange in feedRanges)
+            {
+                this.changeQueues.Add(new ConcurrentQueue<ChangeSet>());
+            }
+
+            Console.WriteLine("Feed range count: " + this.changeQueues.Count);
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            await Task.WhenAny(
+                Task.Run(() => this.ReadSourceAsync(source, feedRanges)),
+                Task.Run(() => this.WriteTargetAsync(target)),
+                Task.Run(() => this.PrintStatusAsync(stopwatch)));
         }
 
-        private async Task ReadSourceAsync(Container source)
+        private async Task ReadSourceAsync(Container source, IEnumerable<FeedRange> feedRanges)
         {
-            FeedIterator<MyDocument> iterator = source
-                .GetChangeFeedIterator<MyDocument>(
-                changeFeedRequestOptions: new ChangeFeedRequestOptions()
-                {
-                    StartTime = DateTime.MinValue.ToUniversalTime(),
-                    MaxItemCount = 200
-                });
+            List<FeedIterator<MyDocument>> iterators = new List<FeedIterator<MyDocument>>();
+
+            foreach (FeedRange feedRange in feedRanges)
+            {
+                iterators.Add(source
+                    .GetChangeFeedIterator<MyDocument>(
+                    feedRange,
+                    changeFeedRequestOptions: new ChangeFeedRequestOptions()
+                    {
+                        StartTime = DateTime.MinValue.ToUniversalTime(),
+                        MaxItemCount = 200
+                    }));
+            }
+
+            int iteratorIndex = -1;
 
             while (true)
             {
                 try
                 {
-                    FeedResponse<MyDocument> response = await iterator.ReadNextAsync();
+                    iteratorIndex++;
+                    if (iteratorIndex == iterators.Count)
+                    {
+                        iteratorIndex = 0;
+                    }
+
+                    while(this.minQueueLength > 5)
+                    {
+                        await Task.Delay(500);
+                    }
+
+                    FeedResponse<MyDocument> response = await iterators[iteratorIndex].ReadNextAsync();
                     if ((int)response.StatusCode == 304)
                     {
                         Console.WriteLine("304");
@@ -83,38 +118,63 @@
                         // shouldn't be, but anyway
                         if (response.Count == 0)
                         {
+                            Console.Write("0");
                             continue;
                         }
 
-                        this.changeQueue.Enqueue(new ChangeSet(response.Resource, response.ContinuationToken));
+                        this.changeQueues[iteratorIndex].Enqueue(new ChangeSet(response.Resource, response.ContinuationToken));
+                        Interlocked.Add(ref this.readCount, response.Resource.Count());
                     }
                 }
-                catch (CosmosException ex)
+                catch (Exception ex)
                 {
-                    Console.WriteLine(ex.StatusCode + " " + ex.Message);
+                    Console.WriteLine(ex.ToString());
                 }
             }
         }
 
-        private async Task WriteTargetAsync(Container target)
+        private Task WriteTargetAsync(Container target)
+        {
+            List<Task> tasks = new List<Task>();
+            for (int index = 0; index < this.changeQueues.Count; index++)
+            {
+                int indexLocal = index;
+                tasks.Add(Task.Run(async () =>
+                {
+                    while (true)
+                    {
+                        if (!this.changeQueues[indexLocal].TryDequeue(out ChangeSet changeSet))
+                        {
+                            await Task.Delay(50);
+                            continue;
+                        }
+
+                        List<Task> tasks = new List<Task>();
+                        foreach (MyDocument doc in changeSet.Documents)
+                        {
+                            MyDocument transformedDoc = Transform(doc);
+                            tasks.Add(target.UpsertItemAsync(transformedDoc, new PartitionKey(transformedDoc.PK)));
+                        }
+
+                        await Task.WhenAll(tasks);
+                        Interlocked.Add(ref this.writtenCount, tasks.Count);
+                    }
+                }));
+            }
+
+            return Task.WhenAll(tasks);
+        }
+
+        private async Task PrintStatusAsync(Stopwatch stopwatch)
         {
             while (true)
             {
-                if (!this.changeQueue.TryDequeue(out ChangeSet changeSet))
-                {
-                    Console.Write(".");
-                    await Task.Delay(10);
-                    continue;
-                }
-
-                List<Task> tasks = new List<Task>();
-                foreach (MyDocument doc in changeSet.Documents)
-                {
-                    MyDocument transformedDoc = Transform(doc);
-                    tasks.Add(target.UpsertItemAsync(transformedDoc, new PartitionKey(transformedDoc.PK)));
-                }
-
-                await Task.WhenAll(tasks);
+                long elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000;
+                Console.Write($" Read RPS: {(elapsedSeconds == 0 ? -1 : this.readCount / elapsedSeconds)}");
+                Console.WriteLine($" Write RPS: {(elapsedSeconds == 0 ? -1 : this.writtenCount / elapsedSeconds)}");
+                Console.WriteLine("Queue lengths:" + string.Join(' ', this.changeQueues.Select(q => q.Count.ToString().PadLeft(5))));
+                this.minQueueLength = this.changeQueues.Min(q => q.Count);
+                await Task.Delay(1000);
             }
         }
 
@@ -144,6 +204,9 @@
 
             [JsonProperty(PropertyName = "_rid")]
             public string ResourceId { get; set; }
+
+            public MyDocument()
+            { }
 
             public MyDocument(MyDocument other)
             {
