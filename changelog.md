@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2308](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2308) & [#2425](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2425) Dedicated Gateway: Adds MaxIntegratedCacheStaleness to Item and Query Request Options  
 - [#2371](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2371) Request Options : Adds delegate on request options to access and add headers
 - [#2398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2398) Patch : Adds TrySerializeValueParameter and makes PatchOperation<T> internal since it is not used in any public API
+- [#2331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2331) ChangeFeedProcessor: Adds support for manual checkpoint, context, and stream
 
 ### <a name="3.18.0"/> [3.18.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.0) - 2021-04-26
 
