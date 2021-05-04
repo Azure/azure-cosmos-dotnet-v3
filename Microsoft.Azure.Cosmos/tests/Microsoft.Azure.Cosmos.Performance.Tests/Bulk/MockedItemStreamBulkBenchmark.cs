@@ -46,20 +46,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task ReadItemNotExists()
-        {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
-                MockedItemBenchmarkHelper.NonExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
-            {
-                if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
-                {
-                    throw new Exception();
-                }
-            }
-        }
-
-        public async Task ReadItemExists()
+        public async Task ReadItem()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
                 MockedItemBenchmarkHelper.ExistingItemId,
@@ -72,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task ReadItemExistsWithDiagnosticToString()
+        public async Task ReadItemWithDiagnosticToString()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
                 MockedItemBenchmarkHelper.ExistingItemId,
@@ -106,26 +93,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        public async Task DeleteItemExists()
+        public async Task DeleteItem()
         {
             using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
                 MockedItemBenchmarkHelper.ExistingItemId,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    throw new Exception();
-                }
-            }
-        }
-
-        public async Task DeleteItemNotExists()
-        {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
-                MockedItemBenchmarkHelper.NonExistingItemId,
-                new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
-            {
-                if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {
                     throw new Exception();
                 }

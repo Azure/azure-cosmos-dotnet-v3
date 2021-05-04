@@ -12,14 +12,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public Task UpsertItem();
 
-        public Task ReadItemNotExists();
-
-        public Task ReadItemExists();
+        public Task ReadItem();
 
         public Task UpdateItem();
 
-        public Task DeleteItemExists();
-
-        public Task DeleteItemNotExists();
+        public Task DeleteItem();
     }
 }

@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
                     {
-                        ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
+                        ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
                         ETag = Guid.NewGuid().ToString()
                     }
                 };

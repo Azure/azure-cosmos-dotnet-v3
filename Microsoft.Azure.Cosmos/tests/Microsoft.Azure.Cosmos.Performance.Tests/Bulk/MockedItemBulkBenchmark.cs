@@ -36,30 +36,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
-        public async Task DeleteItemExists()
+        public async Task DeleteItem()
         {
-            await this.CurrentBenchmark.DeleteItemExists();
+            await this.CurrentBenchmark.DeleteItem();
         }
 
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
-        public async Task DeleteItemNotExists()
+        public async Task ReadItem()
         {
-            await this.CurrentBenchmark.DeleteItemNotExists();
-        }
-
-        [Benchmark]
-        [BenchmarkCategory("GateBenchmark")]
-        public async Task ReadItemExists()
-        {
-            await this.CurrentBenchmark.ReadItemExists();
-        }
-
-        [Benchmark]
-        [BenchmarkCategory("GateBenchmark")]
-        public async Task ReadItemNotExists()
-        {
-            await this.CurrentBenchmark.ReadItemNotExists();
+            await this.CurrentBenchmark.ReadItem();
         }
 
         [Benchmark]

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
@@ -41,22 +40,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
-        public async Task ReadItemNotExists()
-        {
-            try
-            {
-                ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
-                    MockedItemBenchmarkHelper.NonExistingItemId,
-                    MockedItemBenchmarkHelper.ExistingPartitionId);
-                throw new Exception();
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(ex.Diagnostics);
-            }
-        }
-
-        public async Task ReadItemExists()
+        public async Task ReadItem()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
@@ -85,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
-        public async Task DeleteItemExists()
+        public async Task DeleteItem()
         {
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
@@ -97,20 +81,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
-        }
-
-        public async Task DeleteItemNotExists()
-        {
-            try
-            {
-                ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
-                    MockedItemBenchmarkHelper.NonExistingItemId,
-                    MockedItemBenchmarkHelper.ExistingPartitionId);
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(ex.Diagnostics);
-            }
         }
     }
 }
