@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
+    using Moq;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -214,6 +215,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(exception.StartsWith("Microsoft.Azure.Cosmos.CosmosException : Response status code does not indicate success: Forbidden (403); Substatus: 999999; "));
                 string diagnostics = ce.Diagnostics.ToString();
                 Assert.IsTrue(diagnostics.Contains("999999"));
+            }
+        }
+
+        [TestMethod]
+        public async Task TwoNegativeCreateItemTest()
+        {
+            Mock<TransportClient> mock = new Mock<TransportClient>();
+            mock.Setup(x => x.InvokeStoreAsync(
+                    It.IsAny<TransportAddressUri>(),
+                    It.IsAny<ResourceOperation>(),
+                    It.IsAny<DocumentServiceRequest>()))
+                .Throws(new ForbiddenException("mock exception", subStatusCode: SubStatusCodes.WriteForbidden));
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(x => x.WithTransportClientHandlerFactory((o) => mock.Object));
+
+            for(int i = 0; i < 10; i++)
+            {
+                try
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                    await client.GetContainer(this.database.Id, this.Container.Id).ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new Cosmos.PartitionKey(testItem.pk));
+                    Assert.Fail("Request should throw exception.");
+                }
+                catch (Exception) { }
             }
         }
 

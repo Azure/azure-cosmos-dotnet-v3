@@ -71,9 +71,15 @@ namespace Microsoft.Azure.Cosmos
             // Received Connection error (HttpRequestException), initiate the endpoint rediscovery
             if (exception is HttpRequestException _)
             {
-                DefaultTrace.TraceWarning("Endpoint not reachable. Refresh cache and retry");
+                DefaultTrace.TraceWarning("ClientRetryPolicy: Gateway HttpRequestException Endpoint not reachable. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                // Mark both read and write requests because it gateway exception.
+                // This means all requests going to the region will fail.
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: this.isReadRequest,
+                    markBothReadAndWriteAsUnavailable: true,
                     forceRefresh: false,
                     retryOnPreferredLocations: true);
             }
@@ -152,6 +158,18 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
+            // Received request timeout on a write region, initiate the endpoint rediscovery
+            // This only enabled for partition level failover scenarios
+            if (statusCode == HttpStatusCode.RequestTimeout)
+            {
+                DefaultTrace.TraceWarning("ClientRetryPolicy: RequestTimeout. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
+                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                     this.documentServiceRequest);
+            }
+
             // Received 403.3 on write region, initiate the endpoint rediscovery
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
@@ -162,9 +180,13 @@ namespace Microsoft.Azure.Cosmos
                     return ShouldRetryResult.RetryAfter(TimeSpan.Zero);
                 }
 
-                DefaultTrace.TraceWarning("Endpoint not writable. Refresh cache and retry");
+                DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not writable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: false,
+                    markBothReadAndWriteAsUnavailable: false,
                     forceRefresh: true,
                     retryOnPreferredLocations: false);
             }
@@ -174,9 +196,12 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.DatabaseAccountNotFound
                 && (this.isReadRequest || this.canUseMultipleWriteLocations))
             {
-                DefaultTrace.TraceWarning("Endpoint not available for reads. Refresh cache and retry");
+                DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not available for reads. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: this.isReadRequest,
+                    markBothReadAndWriteAsUnavailable: false,
                     forceRefresh: false,
                     retryOnPreferredLocations: false);
             }
@@ -191,6 +216,10 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.ServiceUnavailable
                 && subStatusCode == SubStatusCodes.Unknown)
             {
+                DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
+                    this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
+                    this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
                 this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                      this.documentServiceRequest);
 
@@ -202,12 +231,15 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ShouldRetryResult> ShouldRetryOnEndpointFailureAsync(
             bool isReadRequest,
+            bool markBothReadAndWriteAsUnavailable,
             bool forceRefresh,
             bool retryOnPreferredLocations)
         {
             if (!this.enableEndpointDiscovery || this.failoverRetryCount > MaxRetryCount)
             {
-                DefaultTrace.TraceInformation("ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}", this.failoverRetryCount);
+                DefaultTrace.TraceInformation("ClientRetryPolicy: ShouldRetryOnEndpointFailureAsync() Not retrying. Retry count = {0}, Endpoint = {1}", 
+                    this.failoverRetryCount,
+                    this.locationEndpoint?.ToString() ?? string.Empty);
                 return ShouldRetryResult.NoRetry();
             }
 
@@ -215,11 +247,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.locationEndpoint != null)
             {
-                if (isReadRequest)
+                if (isReadRequest || markBothReadAndWriteAsUnavailable)
                 {
                     this.globalEndpointManager.MarkEndpointUnavailableForRead(this.locationEndpoint);
                 }
-                else
+                
+                if (!isReadRequest || markBothReadAndWriteAsUnavailable)
                 {
                     this.globalEndpointManager.MarkEndpointUnavailableForWrite(this.locationEndpoint);
                 }
@@ -228,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan retryDelay = TimeSpan.Zero;
             if (!isReadRequest)
             {
-                DefaultTrace.TraceInformation("Failover happening. retryCount {0}", this.failoverRetryCount);
+                DefaultTrace.TraceInformation("ClientRetryPolicy: Failover happening. retryCount {0}", this.failoverRetryCount);
 
                 if (this.failoverRetryCount > 1)
                 {
@@ -320,7 +353,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.serviceUnavailableRetryCount++ >= ClientRetryPolicy.MaxServiceUnavailableRetryCount)
             {
-                DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Not retrying. Retry count = {this.serviceUnavailableRetryCount}.");
+                DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Not retrying. Retry count = {this.serviceUnavailableRetryCount}.");
                 return ShouldRetryResult.NoRetry();
             }
 
@@ -336,11 +369,11 @@ namespace Microsoft.Azure.Cosmos
             if (availablePreferredLocations <= 1)
             {
                 // No other regions to retry on
-                DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Not retrying. No other regions available for the request. AvailablePreferredLocations = {availablePreferredLocations}.");
+                DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Not retrying. No other regions available for the request. AvailablePreferredLocations = {availablePreferredLocations}.");
                 return ShouldRetryResult.NoRetry();
             }
 
-            DefaultTrace.TraceInformation($"ShouldRetryOnServiceUnavailable() Retrying. Received on endpoint {this.locationEndpoint}, IsReadRequest = {this.isReadRequest}.");
+            DefaultTrace.TraceInformation($"ClientRetryPolicy: ShouldRetryOnServiceUnavailable() Retrying. Received on endpoint {this.locationEndpoint}, IsReadRequest = {this.isReadRequest}.");
 
             // Retrying on second PreferredLocations
             // RetryCount is used as zero-based index
