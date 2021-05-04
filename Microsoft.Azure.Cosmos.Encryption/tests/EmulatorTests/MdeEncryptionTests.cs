@@ -54,6 +54,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 "key2",
                 metadata2);
 
+
+            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "revokedKek", "revokedKek-metadata");
+            await database.CreateClientEncryptionKeyAsync(
+                "keywithRevokedKek",
+                DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                revokedKekmetadata);
+
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
             {
                 new ClientEncryptionIncludedPath()
@@ -67,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_ArrayFormat",
-                    ClientEncryptionKeyId = "key2",
+                    ClientEncryptionKeyId = "keywithRevokedKek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -304,16 +311,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionCreateItemWithNullProperty()
         {
+            CosmosClient clientWithNoCaching = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
+            CosmosClient encryptionCosmosClient = clientWithNoCaching.WithEncryption(testEncryptionKeyStoreProvider);
+            Database database = encryptionCosmosClient.GetDatabase(MdeEncryptionTests.database.Id);
+
+            Container encryptionContainer = database.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
+
             TestDoc testDoc = TestDoc.Create();
 
             testDoc.Sensitive_ArrayFormat = null;
             testDoc.Sensitive_StringFormat = null;
-            ItemResponse<TestDoc> createResponse = await MdeEncryptionTests.encryptionContainer.CreateItemAsync(
+
+            ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
+                   testDoc,
+                   new PartitionKey(testDoc.PK));
+
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // no access to key.
+            testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+
+            testDoc = TestDoc.Create();
+
+            testDoc.Sensitive_ArrayFormat = null;
+            testDoc.Sensitive_StringFormat = null;
+
+            createResponse = await encryptionContainer.CreateItemAsync(
                     testDoc,
                     new PartitionKey(testDoc.PK));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            testEncryptionKeyStoreProvider.RevokeAccessSet = false;
         }
 
 
@@ -462,18 +501,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             // string/int
+            string[] arrayofStringValues = new string[] { testDoc1.Sensitive_StringFormat, "randomValue" };
+
             QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
-                    "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
+                    "SELECT * FROM c where array_contains(@Sensitive_StringFormat, c.Sensitive_StringFormat) " +
+                    "AND c.Sensitive_IntArray = @Sensitive_IntArray " +
+                    "AND c.Sensitive_NestedObjectFormatL1 = @Sensitive_NestedObjectFormatL1");
 
             await withEncryptedParameter.AddParameterAsync(
                     "@Sensitive_StringFormat",
-                    testDoc1.Sensitive_StringFormat,
+                    arrayofStringValues,
                     "/Sensitive_StringFormat");
-            
+
             await withEncryptedParameter.AddParameterAsync(
-                    "@Sensitive_IntFormat",
-                    testDoc1.Sensitive_IntFormat,
-                    "/Sensitive_IntFormat");
+                    "@Sensitive_IntArray",
+                    testDoc1.Sensitive_IntArray,
+                    "/Sensitive_IntArray");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_NestedObjectFormatL1",
+                    testDoc1.Sensitive_NestedObjectFormatL1,
+                    "/Sensitive_NestedObjectFormatL1");
 
             TestDoc expectedDoc = new TestDoc(testDoc1);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
@@ -1343,13 +1391,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
             // The Dek should be rewrapped if the KEK is revoked.
             // When an access to KeyVault fails, the Dek is fetched from the backend(force refresh to update the stale DEK) and cache is updated.
-            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "revokedKek", "revokedKek-metadata");         
-
-           await database.CreateClientEncryptionKeyAsync(
-                   "keywithRevokedKek",
-                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-                   revokedKekmetadata);
-
             ClientEncryptionIncludedPath pathwithRevokedKek = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_NestedObjectFormatL1",

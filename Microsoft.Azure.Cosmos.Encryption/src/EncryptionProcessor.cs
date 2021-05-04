@@ -68,12 +68,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
-                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
-
-                EncryptProperty(
+                await EncryptPropertyAsync(
                     itemJObj,
                     propertyValue,
-                    aeadAes256CbcHmac256EncryptionAlgorithm);
+                    settingforProperty,
+                    cancellationToken);
             }
 
             input.Dispose();
@@ -143,23 +142,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(settingsForProperty));
             }
 
-            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
-
             JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
-            (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
 
-            byte[] cipherText = aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(serializedData);
+            propertyValueToEncrypt = await EncryptJTokenAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
 
-            if (cipherText == null)
-            {
-                throw new InvalidOperationException($"{nameof(EncryptValueStreamAsync)} returned null cipherText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-            }
-
-            byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
-            cipherTextWithTypeMarker[0] = (byte)typeMarker;
-            Buffer.BlockCopy(cipherText, 0, cipherTextWithTypeMarker, 1, cipherText.Length);
-
-            return EncryptionProcessor.BaseSerializer.ToStream(cipherTextWithTypeMarker);
+            return EncryptionProcessor.BaseSerializer.ToStream(propertyValueToEncrypt);
         }
 
         private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
@@ -198,77 +185,77 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
-        private static void EncryptProperty(
-            JObject itemJObj,
-            JToken propertyValue,
-            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm)
+        private static async Task<JToken> EncryptJTokenAsync(
+           JToken propertyValueToEncrypt,
+           EncryptionSettingForProperty encryptionSettingForProperty,
+           CancellationToken cancellationToken)
         {
             /* Top Level can be an Object*/
-            if (propertyValue.Type == JTokenType.Object)
+            if (propertyValueToEncrypt.Type == JTokenType.Object)
             {
-                foreach (JProperty jProperty in propertyValue.Children<JProperty>())
+                foreach (JProperty jProperty in propertyValueToEncrypt.Children<JProperty>())
                 {
                     if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                     {
-                        EncryptProperty(
-                            itemJObj,
+                        await EncryptJTokenAsync(
                             jProperty.Value,
-                            aeadAes256CbcHmac256EncryptionAlgorithm);
+                            encryptionSettingForProperty,
+                            cancellationToken);
                     }
                     else
                     {
-                        jProperty.Value = SerializeAndEncryptValue(jProperty.Value, aeadAes256CbcHmac256EncryptionAlgorithm);
+                        jProperty.Value = await SerializeAndEncryptValueAsync(jProperty.Value, encryptionSettingForProperty, cancellationToken);
                     }
                 }
             }
-            else if (propertyValue.Type == JTokenType.Array)
+            else if (propertyValueToEncrypt.Type == JTokenType.Array)
             {
-                if (propertyValue.Children().Any())
+                if (propertyValueToEncrypt.Children().Any())
                 {
                     // objects as array elements.
-                    if (propertyValue.Children().First().Type == JTokenType.Object)
+                    if (propertyValueToEncrypt.Children().First().Type == JTokenType.Object)
                     {
-                        foreach (JObject arrayjObject in propertyValue.Children<JObject>())
+                        foreach (JObject arrayjObject in propertyValueToEncrypt.Children<JObject>())
                         {
                             foreach (JProperty jProperty in arrayjObject.Properties())
                             {
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
-                                    EncryptProperty(
-                                        itemJObj,
+                                    await EncryptJTokenAsync(
                                         jProperty.Value,
-                                        aeadAes256CbcHmac256EncryptionAlgorithm);
+                                        encryptionSettingForProperty,
+                                        cancellationToken);
                                 }
 
                                 // primitive type
                                 else
                                 {
-                                    jProperty.Value = SerializeAndEncryptValue(jProperty.Value, aeadAes256CbcHmac256EncryptionAlgorithm);
+                                    jProperty.Value = await SerializeAndEncryptValueAsync(jProperty.Value, encryptionSettingForProperty, cancellationToken);
                                 }
                             }
                         }
                     }
 
                     // array as elements.
-                    else if (propertyValue.Children().First().Type == JTokenType.Array)
+                    else if (propertyValueToEncrypt.Children().First().Type == JTokenType.Array)
                     {
-                        foreach (JArray jArray in propertyValue.Value<JArray>())
+                        foreach (JArray jArray in propertyValueToEncrypt.Value<JArray>())
                         {
                             for (int i = 0; i < jArray.Count(); i++)
                             {
                                 // iterates over individual elements
                                 if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
                                 {
-                                    EncryptProperty(
-                                        itemJObj,
+                                    await EncryptJTokenAsync(
                                         jArray[i],
-                                        aeadAes256CbcHmac256EncryptionAlgorithm);
+                                        encryptionSettingForProperty,
+                                        cancellationToken);
                                 }
 
                                 // primitive type
                                 else
                                 {
-                                    jArray[i] = SerializeAndEncryptValue(jArray[i], aeadAes256CbcHmac256EncryptionAlgorithm);
+                                    jArray[i] = await SerializeAndEncryptValueAsync(jArray[i], encryptionSettingForProperty, cancellationToken);
                                 }
                             }
                         }
@@ -277,24 +264,44 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     // array of primitive types.
                     else
                     {
-                        for (int i = 0; i < propertyValue.Count(); i++)
+                        for (int i = 0; i < propertyValueToEncrypt.Count(); i++)
                         {
-                            propertyValue[i] = SerializeAndEncryptValue(propertyValue[i], aeadAes256CbcHmac256EncryptionAlgorithm);
+                            propertyValueToEncrypt[i] = await SerializeAndEncryptValueAsync(propertyValueToEncrypt[i], encryptionSettingForProperty, cancellationToken);
                         }
                     }
                 }
             }
             else
             {
-                itemJObj.Property(propertyValue.Path).Value = SerializeAndEncryptValue(
-                    itemJObj.Property(propertyValue.Path).Value,
-                    aeadAes256CbcHmac256EncryptionAlgorithm);
+                propertyValueToEncrypt = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, encryptionSettingForProperty, cancellationToken);
+            }
+
+            return propertyValueToEncrypt;
+        }
+
+        private static async Task EncryptPropertyAsync(
+            JObject itemJObj,
+            JToken propertyValue,
+            EncryptionSettingForProperty encryptionSettingForProperty,
+            CancellationToken cancellationToken)
+        {
+            if (propertyValue.Type == JTokenType.Object || propertyValue.Type == JTokenType.Array)
+            {
+                await EncryptJTokenAsync(propertyValue, encryptionSettingForProperty, cancellationToken);
+            }
+            else
+            {
+                itemJObj.Property(propertyValue.Path).Value = await EncryptJTokenAsync(
+                    propertyValue,
+                    encryptionSettingForProperty,
+                    cancellationToken);
             }
         }
 
-        private static JToken SerializeAndEncryptValue(
+        private static async Task<JToken> SerializeAndEncryptValueAsync(
            JToken jToken,
-           AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm)
+           EncryptionSettingForProperty encryptionSettingForProperty,
+           CancellationToken cancellationToken)
         {
             JToken propertyValueToEncrypt = jToken;
 
@@ -305,11 +312,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             (TypeMarker typeMarker, byte[] plainText) = Serialize(propertyValueToEncrypt);
 
+            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await encryptionSettingForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
             byte[] cipherText = aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt(plainText);
 
             if (cipherText == null)
             {
-                throw new InvalidOperationException($"{nameof(SerializeAndEncryptValue)} returned null cipherText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. ");
+                throw new InvalidOperationException($"{nameof(SerializeAndEncryptValueAsync)} returned null cipherText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Encrypt)}. ");
             }
 
             byte[] cipherTextWithTypeMarker = new byte[cipherText.Length + 1];
@@ -318,9 +326,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return cipherTextWithTypeMarker;
         }
 
-        private static JToken DecryptAndDeserializeValue(
+        private static async Task<JToken> DecryptAndDeserializeValueAsync(
            JToken jToken,
-           AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm)
+           EncryptionSettingForProperty encryptionSettingForProperty,
+           CancellationToken cancellationToken)
         {
             byte[] cipherTextWithTypeMarker = jToken.ToObject<byte[]>();
 
@@ -332,11 +341,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] cipherText = new byte[cipherTextWithTypeMarker.Length - 1];
             Buffer.BlockCopy(cipherTextWithTypeMarker, 1, cipherText, 0, cipherTextWithTypeMarker.Length - 1);
 
+            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await encryptionSettingForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
             byte[] plainText = aeadAes256CbcHmac256EncryptionAlgorithm.Decrypt(cipherText);
 
             if (plainText == null)
             {
-                throw new InvalidOperationException($"{nameof(DecryptAndDeserializeValue)} returned null plainText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
+                throw new InvalidOperationException($"{nameof(DecryptAndDeserializeValueAsync)} returned null plainText from {nameof(aeadAes256CbcHmac256EncryptionAlgorithm.Decrypt)}. ");
             }
 
             return DeserializeAndAddProperty(
@@ -344,11 +354,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
 
-        private static void DecryptProperty(
+        private static async Task DecryptPropertyAsync(
             JObject itemJObj,
-            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm,
+            EncryptionSettingForProperty encryptionSettingForProperty,
             string propertyName,
-            JToken propertyValue)
+            JToken propertyValue,
+            CancellationToken cancellationToken)
         {
             if (propertyValue.Type == JTokenType.Object)
             {
@@ -356,17 +367,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                     {
-                        DecryptProperty(
+                        await DecryptPropertyAsync(
                             itemJObj,
-                            aeadAes256CbcHmac256EncryptionAlgorithm,
+                            encryptionSettingForProperty,
                             jProperty.Name,
-                            jProperty.Value);
+                            jProperty.Value,
+                            cancellationToken);
                     }
                     else
                     {
-                        jProperty.Value = DecryptAndDeserializeValue(
+                        jProperty.Value = await DecryptAndDeserializeValueAsync(
                             jProperty.Value,
-                            aeadAes256CbcHmac256EncryptionAlgorithm);
+                            encryptionSettingForProperty,
+                            cancellationToken);
                     }
                 }
             }
@@ -382,17 +395,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             {
                                 if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
                                 {
-                                    DecryptProperty(
+                                    await DecryptPropertyAsync(
                                         itemJObj,
-                                        aeadAes256CbcHmac256EncryptionAlgorithm,
+                                        encryptionSettingForProperty,
                                         jProperty.Name,
-                                        jProperty.Value);
+                                        jProperty.Value,
+                                        cancellationToken);
                                 }
                                 else
                                 {
-                                    jProperty.Value = DecryptAndDeserializeValue(
+                                    jProperty.Value = await DecryptAndDeserializeValueAsync(
                                         jProperty.Value,
-                                        aeadAes256CbcHmac256EncryptionAlgorithm);
+                                        encryptionSettingForProperty,
+                                        cancellationToken);
                                 }
                             }
                         }
@@ -406,17 +421,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 // iterates over individual elements
                                 if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
                                 {
-                                    DecryptProperty(
+                                    await DecryptPropertyAsync(
                                         itemJObj,
-                                        aeadAes256CbcHmac256EncryptionAlgorithm,
+                                        encryptionSettingForProperty,
                                         jArray[i].Path,
-                                        jArray[i]);
+                                        jArray[i],
+                                        cancellationToken);
                                 }
                                 else
                                 {
-                                    jArray[i] = DecryptAndDeserializeValue(
+                                    jArray[i] = await DecryptAndDeserializeValueAsync(
                                         jArray[i],
-                                        aeadAes256CbcHmac256EncryptionAlgorithm);
+                                        encryptionSettingForProperty,
+                                        cancellationToken);
                                 }
                             }
                         }
@@ -427,18 +444,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         for (int i = 0; i < propertyValue.Count(); i++)
                         {
-                            propertyValue[i] = DecryptAndDeserializeValue(
+                            propertyValue[i] = await DecryptAndDeserializeValueAsync(
                                 propertyValue[i],
-                                aeadAes256CbcHmac256EncryptionAlgorithm);
+                                encryptionSettingForProperty,
+                                cancellationToken);
                         }
                     }
                 }
             }
             else
             {
-                itemJObj.Property(propertyName).Value = DecryptAndDeserializeValue(
+                itemJObj.Property(propertyName).Value = await DecryptAndDeserializeValueAsync(
                     itemJObj.Property(propertyName).Value,
-                    aeadAes256CbcHmac256EncryptionAlgorithm);
+                    encryptionSettingForProperty,
+                    cancellationToken);
             }
         }
 
@@ -461,13 +480,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
                     }
 
-                    AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
-
-                    DecryptProperty(
+                    await DecryptPropertyAsync(
                         document,
-                        aeadAes256CbcHmac256EncryptionAlgorithm,
+                        settingsForProperty,
                         propertyName,
-                        propertyValue);
+                        propertyValue,
+                        cancellationToken);
                 }
             }
 
