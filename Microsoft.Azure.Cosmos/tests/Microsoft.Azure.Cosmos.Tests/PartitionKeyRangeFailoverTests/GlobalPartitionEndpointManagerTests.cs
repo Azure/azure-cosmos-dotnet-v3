@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Clears all the setups. No network calls should be done on the next operation.
             mockHttpHandler.Reset();
             mockTransport.Reset();
+            mockTransport.Setup(x => x.Dispose());
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
@@ -120,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 out TransportAddressUri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
-
+            
             MockSetupsHelper.SetupServiceUnavailableException(
                 mockTransport,
                 primaryRegionprimaryReplicaUri);
@@ -185,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Clears all the setups. No network calls should be done on the next operation.
             mockHttpHandler.Reset();
             mockTransport.Reset();
+            mockTransport.Setup(x => x.Dispose());
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
@@ -280,6 +282,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Clears all the setups. No network calls should be done on the next operation.
             mockHttpHandler.Reset();
             mockTransport.Reset();
+            mockTransport.Setup(x => x.Dispose());
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
