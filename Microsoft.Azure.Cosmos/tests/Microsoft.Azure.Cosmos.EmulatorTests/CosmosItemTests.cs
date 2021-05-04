@@ -219,30 +219,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task TwoNegativeCreateItemTest()
-        {
-            Mock<TransportClient> mock = new Mock<TransportClient>();
-            mock.Setup(x => x.InvokeStoreAsync(
-                    It.IsAny<TransportAddressUri>(),
-                    It.IsAny<ResourceOperation>(),
-                    It.IsAny<DocumentServiceRequest>()))
-                .Throws(new ForbiddenException("mock exception", subStatusCode: SubStatusCodes.WriteForbidden));
-
-            using CosmosClient client = TestCommon.CreateCosmosClient(x => x.WithTransportClientHandlerFactory((o) => mock.Object));
-
-            for(int i = 0; i < 10; i++)
-            {
-                try
-                {
-                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-                    await client.GetContainer(this.database.Id, this.Container.Id).ReadItemAsync<ToDoActivity>(id: testItem.id, partitionKey: new Cosmos.PartitionKey(testItem.pk));
-                    Assert.Fail("Request should throw exception.");
-                }
-                catch (Exception) { }
-            }
-        }
-
-        [TestMethod]
         public async Task NegativeCreateDropItemTest()
         {
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
