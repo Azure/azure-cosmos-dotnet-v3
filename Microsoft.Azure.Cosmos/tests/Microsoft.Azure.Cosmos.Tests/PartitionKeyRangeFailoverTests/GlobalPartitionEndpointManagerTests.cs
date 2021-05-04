@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            CosmosClient customClient = new CosmosClient(
+            using CosmosClient customClient = new CosmosClient(
                 globalEndpoint,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
                 cosmosClientOptions);
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            CosmosClient customClient = new CosmosClient(
+           using CosmosClient customClient = new CosmosClient(
                 globalEndpoint,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
                 cosmosClientOptions);
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            CosmosClient customClient = new CosmosClient(
+            using CosmosClient customClient = new CosmosClient(
                 globalEndpoint,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
                 cosmosClientOptions);
