@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
@@ -172,6 +173,27 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 return new StoreResponse()
                 {
                     ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    Status = (int)System.Net.HttpStatusCode.OK,
+                    Headers = headers,
+                };
+            }
+
+            if (request.OperationType == OperationType.Batch)
+            {
+                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+                {
+                    new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
+                    {
+                        ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
+                        ETag = Guid.NewGuid().ToString()
+                    }
+                };
+
+                MemoryStream responseContent = new BatchResponsePayloadWriter(results).GeneratePayloadAsync().GetAwaiter().GetResult();
+
+                return new StoreResponse()
+                {
+                    ResponseBody = responseContent,
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
