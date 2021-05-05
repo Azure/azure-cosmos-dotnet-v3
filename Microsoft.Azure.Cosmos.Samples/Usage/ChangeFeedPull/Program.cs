@@ -15,7 +15,11 @@
     class Program
     {
         private static readonly string partitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
+        private static int QueueCount;
+        private static int ChangeFeedPageSize;
+
         private readonly List<ConcurrentQueue<ChangeSet>> changeQueues = new List<ConcurrentQueue<ChangeSet>>();
+        private readonly ConcurrentQueue<ChangeSetCompletion> checkpointerQueue = new ConcurrentQueue<ChangeSetCompletion>();
         private int readCount = 0;
         private int writtenCount = 0;
         private int minQueueLength;
@@ -39,9 +43,11 @@
                     .WithBulkExecution(true)
                     .Build())
                 {
-                    Container source = sourceClient.GetContainer("samples", "bulktesttwocore");
+                    Container source = sourceClient.GetContainer("samples", "twokb");
                     Container target = targetClient.GetContainer("samples", "target");
-                    Console.WriteLine("Starting...");
+                    Program.QueueCount = int.Parse(configuration["QueueCount"]);
+                    Program.ChangeFeedPageSize = int.Parse(configuration["ChangeFeedPageSize"]);
+                    Console.WriteLine($"Starting...");
                     await new Program().RunAsync(source, target);
                 }
             }
@@ -52,26 +58,25 @@
             }
         }
 
-
         private async Task RunAsync(Container source, Container target)
         {
-            IEnumerable<FeedRange> feedRanges = await source.GetFeedRangesAsync();
-            foreach (FeedRange feedRange in feedRanges)
+            for (int i = 0; i < Program.QueueCount; i++)
             {
                 this.changeQueues.Add(new ConcurrentQueue<ChangeSet>());
             }
 
-            Console.WriteLine("Feed range count: " + this.changeQueues.Count);
-
             Stopwatch stopwatch = Stopwatch.StartNew();
             await Task.WhenAny(
-                Task.Run(() => this.ReadSourceAsync(source, feedRanges)),
+                Task.Run(() => this.ReadSourceAsync(source)),
                 Task.Run(() => this.WriteTargetAsync(target)),
+                Task.Run(() => this.CheckpointAsync()),
                 Task.Run(() => this.PrintStatusAsync(stopwatch)));
         }
 
-        private async Task ReadSourceAsync(Container source, IEnumerable<FeedRange> feedRanges)
+        private async Task ReadSourceAsync(Container source)
         {
+            IEnumerable<FeedRange> feedRanges = await source.GetFeedRangesAsync();
+
             List<FeedIterator<MyDocument>> iterators = new List<FeedIterator<MyDocument>>();
 
             foreach (FeedRange feedRange in feedRanges)
@@ -82,21 +87,22 @@
                     changeFeedRequestOptions: new ChangeFeedRequestOptions()
                     {
                         StartTime = DateTime.MinValue.ToUniversalTime(),
-                        MaxItemCount = 200
+                        MaxItemCount = Program.ChangeFeedPageSize
                     }));
             }
 
-            int iteratorIndex = -1;
+            // For now, read only one source partition
+            int iteratorIndex = 0; // -1
 
             while (true)
             {
                 try
                 {
-                    iteratorIndex++;
-                    if (iteratorIndex == iterators.Count)
-                    {
-                        iteratorIndex = 0;
-                    }
+                    //iteratorIndex++;
+                    //if (iteratorIndex == iterators.Count)
+                    //{
+                    //    iteratorIndex = 0;
+                    //}
 
                     while(this.minQueueLength > 5)
                     {
@@ -122,7 +128,20 @@
                             continue;
                         }
 
-                        this.changeQueues[iteratorIndex].Enqueue(new ChangeSet(response.Resource, response.ContinuationToken));
+                        List<MyDocument>[] changeSets = new List<MyDocument>[Program.QueueCount];
+                        TaskCompletionSource<bool>[] taskCompletionSources = new TaskCompletionSource<bool>[Program.QueueCount];
+                        foreach(MyDocument doc in response.Resource)
+                        {
+                            int queueIndex = (doc.PK + doc.Id).GetHashCode() % Program.QueueCount;
+                            changeSets[queueIndex].Add(doc);
+                        }
+
+                        for (int queueIndex = 0; queueIndex < Program.QueueCount; queueIndex++)
+                        {
+                            this.changeQueues[queueIndex].Enqueue(new ChangeSet(changeSets[queueIndex], taskCompletionSources[queueIndex]));
+                        }
+
+                        this.checkpointerQueue.Enqueue(new ChangeSetCompletion(response.ContinuationToken, taskCompletionSources.Select(tcs => tcs.Task)));
                         Interlocked.Add(ref this.readCount, response.Resource.Count());
                     }
                 }
@@ -157,12 +176,28 @@
                         }
 
                         await Task.WhenAll(tasks);
+                        changeSet.TaskCompletionSource.SetResult(true);
                         Interlocked.Add(ref this.writtenCount, tasks.Count);
                     }
                 }));
             }
 
             return Task.WhenAll(tasks);
+        }
+
+        private async Task CheckpointAsync()
+        {
+            while(true)
+            {
+                if(!this.checkpointerQueue.TryDequeue(out ChangeSetCompletion changeSetCompletion))
+                {
+                    await Task.Delay(500);
+                }
+
+                await changeSetCompletion.When();
+                
+                // write the checkpoint
+            }
         }
 
         private async Task PrintStatusAsync(Stopwatch stopwatch)
@@ -219,14 +254,32 @@
 
         private struct ChangeSet
         {
-            public ChangeSet(IEnumerable<MyDocument> documents, string continuationToken)
+            public ChangeSet(IEnumerable<MyDocument> documents, TaskCompletionSource<bool> tcs)
             {
                 this.Documents = documents;
-                this.ContinuationToken = continuationToken;
+                this.TaskCompletionSource = tcs;
             }
 
             public IEnumerable<MyDocument> Documents { get; }
+            public TaskCompletionSource<bool> TaskCompletionSource { get; }
+        }
+
+        private struct ChangeSetCompletion
+        {
+            private readonly IEnumerable<Task> tasks;
+
+            public ChangeSetCompletion(string continuationToken, IEnumerable<Task> tasks)
+            {
+                this.ContinuationToken = continuationToken;
+                this.tasks = tasks;
+            }
+
             public string ContinuationToken { get; }
+
+            public Task When()
+            {
+                return Task.WhenAll(this.tasks);
+            }
         }
     }
 }
