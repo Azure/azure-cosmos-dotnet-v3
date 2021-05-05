@@ -17,18 +17,24 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     internal class BatchResponsePayloadWriter
     {
         private readonly List<TransactionalBatchOperationResult> results;
+        private byte[] record;
 
         public BatchResponsePayloadWriter(List<TransactionalBatchOperationResult> results)
         {
             this.results = results;
         }
 
-        internal async Task<MemoryStream> GeneratePayloadAsync()
+        internal async Task PrepareAsync()
         {
             MemoryStream responseStream = new MemoryStream();
             await responseStream.WriteRecordIOAsync(default, this.WriteOperationResult);
             responseStream.Position = 0;
-            return responseStream;
+            this.record = responseStream.GetBuffer();
+        }
+
+        internal MemoryStream GeneratePayload()
+        {
+            return new MemoryStream(this.record, 0, this.record.Length, writable: false, publiclyVisible: true);
         }
 
         private Result WriteOperationResult(long index, out ReadOnlyMemory<byte> buffer)

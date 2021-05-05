@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     {
         internal static readonly byte[] testItemResponsePayload;
         internal static readonly byte[] testItemFeedResponsePayload;
+        internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
 
         static MockRequestHelper()
         {
@@ -31,6 +32,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 fs.CopyTo(ms);
                 MockRequestHelper.testItemFeedResponsePayload = ms.ToArray();
             }
+
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+                {
+                    new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
+                    {
+                        ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                        ETag = Guid.NewGuid().ToString()
+                    }
+                };
+
+            batchResponsePayloadWriter = new BatchResponsePayloadWriter(results);
+            batchResponsePayloadWriter.PrepareAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -180,16 +193,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             if (request.OperationType == OperationType.Batch)
             {
-                List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
-                {
-                    new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
-                    {
-                        ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
-                        ETag = Guid.NewGuid().ToString()
-                    }
-                };
-
-                MemoryStream responseContent = new BatchResponsePayloadWriter(results).GeneratePayloadAsync().GetAwaiter().GetResult();
+                MemoryStream responseContent = batchResponsePayloadWriter.GeneratePayload();
 
                 return new StoreResponse()
                 {
