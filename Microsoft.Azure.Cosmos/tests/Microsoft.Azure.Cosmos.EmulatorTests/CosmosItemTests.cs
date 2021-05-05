@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
-    using Moq;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper

@@ -642,19 +642,28 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [DataTestMethod]
-        [DataRow(true, false, false, false, DisplayName = "Read request - Single master - no preferred locations - should NOT retry")]
-        [DataRow(false, false, false, false, DisplayName = "Write request - Single master - no preferred locations - should NOT retry")]
-        [DataRow(true, true, false, false, DisplayName = "Read request - Multi master - no preferred locations - should NOT retry")]
-        [DataRow(false, true, false, false, DisplayName = "Write request - Multi master - no preferred locations - should NOT retry")]
-        [DataRow(true, false, true, true, DisplayName = "Read request - Single master - with preferred locations - should retry")]
-        [DataRow(false, false, true, false, DisplayName = "Write request - Single master - with preferred locations - should NOT retry")]
-        [DataRow(true, true, true, true, DisplayName = "Read request - Multi master - with preferred locations - should retry")]
-        [DataRow(false, true, true, true, DisplayName = "Write request - Multi master - with preferred locations - should retry")]
+        [DataRow(true, false, false, false, false, DisplayName = "Read request - Single master - no preferred locations - should NOT retry")]
+        [DataRow(false, false, false, false, false, DisplayName = "Write request - Single master - no preferred locations - should NOT retry")]
+        [DataRow(true, true, false, false, false, DisplayName = "Read request - Multi master - no preferred locations - should NOT retry")]
+        [DataRow(false, true, false, false, false, DisplayName = "Write request - Multi master - no preferred locations - should NOT retry")]
+        [DataRow(true, false, true, true, false, DisplayName = "Read request - Single master - with preferred locations - should retry")]
+        [DataRow(false, false, true, false, false, DisplayName = "Write request - Single master - with preferred locations - should NOT retry")]
+        [DataRow(true, true, true, true, false, DisplayName = "Read request - Multi master - with preferred locations - should retry")]
+        [DataRow(false, true, true, true, false, DisplayName = "Write request - Multi master - with preferred locations - should retry")]
+        [DataRow(true, false, false, false, true, DisplayName = "Read request - Single master - no preferred locations - should NOT retry")]
+        [DataRow(false, false, false, false, true, DisplayName = "Write request - Single master - no preferred locations - should NOT retry")]
+        [DataRow(true, true, false, false, true, DisplayName = "Read request - Multi master - no preferred locations - should NOT retry")]
+        [DataRow(false, true, false, false, true, DisplayName = "Write request - Multi master - no preferred locations - should NOT retry")]
+        [DataRow(true, false, true, true, true, DisplayName = "Read request - Single master - with preferred locations - should retry")]
+        [DataRow(false, false, true, false, true, DisplayName = "Write request - Single master - with preferred locations - should NOT retry")]
+        [DataRow(true, true, true, true, true, DisplayName = "Read request - Multi master - with preferred locations - should retry")]
+        [DataRow(false, true, true, true, true, DisplayName = "Write request - Multi master - with preferred locations - should retry")]
         public async Task ClientRetryPolicy_ValidateRetryOnServiceUnavailable(
             bool isReadRequest,
             bool useMultipleWriteLocations,
             bool usesPreferredLocations,
-            bool shouldHaveRetried)
+            bool shouldHaveRetried,
+            bool enablePartitionLevelFailover)
         {
             const bool enableEndpointDiscovery = true;
 
@@ -667,6 +676,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isPreferredLocationsListEmpty: !usesPreferredLocations,
+                enablePartitionLevelFailover: enablePartitionLevelFailover,
                 preferedRegionListOverride: preferredList,
                 enforceSingleMasterSingleWriteLocation: true);
 
@@ -765,7 +775,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             bool enableEndpointDiscovery,
             bool isPreferredLocationsListEmpty,
             bool enforceSingleMasterSingleWriteLocation = false, // Some tests depend on the Initialize to create an account with multiple write locations, even when not multi master
-            ReadOnlyCollection<string> preferedRegionListOverride = null)
+            ReadOnlyCollection<string> preferedRegionListOverride = null,
+            bool enablePartitionLevelFailover = false)
         {
             this.databaseAccount = LocationCacheTests.CreateDatabaseAccount(
                 useMultipleWriteLocations,
@@ -811,7 +822,15 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
 
             this.endpointManager = new GlobalEndpointManager(mockedClient.Object, connectionPolicy);
-            this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
+
+            if (enablePartitionLevelFailover)
+            {
+                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(this.endpointManager);
+            }
+            else
+            {
+                this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
+            }
         }
 
         private async Task ValidateLocationCacheAsync(

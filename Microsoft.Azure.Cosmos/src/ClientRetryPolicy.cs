@@ -158,14 +158,14 @@ namespace Microsoft.Azure.Cosmos
                 return null;
             }
 
-            // Received request timeout on a write region, initiate the endpoint rediscovery
-            // This only enabled for partition level failover scenarios
+            // Received request timeout
             if (statusCode == HttpStatusCode.RequestTimeout)
             {
                 DefaultTrace.TraceWarning("ClientRetryPolicy: RequestTimeout. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
+                // Mark the partition key range as unavailable to retry future request on a new region.
                 this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                      this.documentServiceRequest);
             }
@@ -174,6 +174,7 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.Forbidden
                 && subStatusCode == SubStatusCodes.WriteForbidden)
             {
+                // It's a write forbidden so it safe to retry
                 if (this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                      this.documentServiceRequest))
                 {
@@ -199,6 +200,7 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not available for reads. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
+
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: this.isReadRequest,
                     markBothReadAndWriteAsUnavailable: false,
@@ -220,6 +222,8 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
+                // Mark the partition as unavailable.
+                // Let the ClientRetry logic decide if the request should be retried
                 this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                      this.documentServiceRequest);
 
