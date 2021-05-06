@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Performance.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     {
         internal static readonly byte[] testItemResponsePayload;
         internal static readonly byte[] testItemFeedResponsePayload;
+        internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
 
         static MockRequestHelper()
         {
@@ -30,6 +32,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 fs.CopyTo(ms);
                 MockRequestHelper.testItemFeedResponsePayload = ms.ToArray();
             }
+
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+                {
+                    new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
+                    {
+                        ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                        ETag = Guid.NewGuid().ToString()
+                    }
+                };
+
+            batchResponsePayloadWriter = new BatchResponsePayloadWriter(results);
+            batchResponsePayloadWriter.PrepareAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -172,6 +186,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 return new StoreResponse()
                 {
                     ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    Status = (int)System.Net.HttpStatusCode.OK,
+                    Headers = headers,
+                };
+            }
+
+            if (request.OperationType == OperationType.Batch)
+            {
+                MemoryStream responseContent = batchResponsePayloadWriter.GeneratePayload();
+
+                return new StoreResponse()
+                {
+                    ResponseBody = responseContent,
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
