@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IDocumentClientRetryPolicy retryPolicy;
 
-        private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>();
+        private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
