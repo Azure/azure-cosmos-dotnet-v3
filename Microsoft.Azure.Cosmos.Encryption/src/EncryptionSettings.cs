@@ -5,8 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Collections.ObjectModel;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
@@ -21,11 +20,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private const string IsClientEncryptedHeader = "x-ms-cosmos-is-client-encrypted";
 
-        private readonly ConcurrentDictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName = new ConcurrentDictionary<string, EncryptionSettingForProperty>();
+        private readonly Dictionary<string, EncryptionSettingForProperty> encryptionSettingsDictByPropertyName;
 
         public string ContainerRidValue { get; }
 
-        public ReadOnlyCollection<string> PropertiesToEncrypt { get; private set; }
+        public IEnumerable<string> PropertiesToEncrypt { get; }
 
         public static Task<EncryptionSettings> CreateAsync(EncryptionContainer encryptionContainer, CancellationToken cancellationToken)
         {
@@ -51,6 +50,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private EncryptionSettings(string containerRidValue)
         {
             this.ContainerRidValue = containerRidValue;
+            this.encryptionSettingsDictByPropertyName = new Dictionary<string, EncryptionSettingForProperty>();
+            this.PropertiesToEncrypt = this.encryptionSettingsDictByPropertyName.Keys;
         }
 
         private static EncryptionType GetEncryptionTypeForProperty(ClientEncryptionIncludedPath clientEncryptionIncludedPath)
@@ -115,13 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            encryptionSettings.SetPropertiesToEncrypt();
             return encryptionSettings;
-        }
-
-        private void SetPropertiesToEncrypt()
-        {
-            this.PropertiesToEncrypt = (ReadOnlyCollection<string>)this.encryptionSettingsDictByPropertyName.Keys;
         }
 
         private void SetEncryptionSettingForProperty(
