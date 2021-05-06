@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 EncryptionContainer encryptionContainer = (EncryptionContainer)encryptionQueryDefinition.Container;
 
                 // get the path's encryption setting.
-                EncryptionSettings encryptionSettings = await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                EncryptionSettings encryptionSettings = await encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
                 EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(path.Substring(1));
 
                 if (settingsForProperty == null)

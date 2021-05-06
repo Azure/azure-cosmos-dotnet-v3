@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: default)
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
                     .GetResult();
@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: default)
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
                     .GetResult();
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("EncryptItemStream"))
             {
-                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: default)
+                EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
                     .GetResult();
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 TransactionalBatchResponse response = null;
 
-                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: default);
+                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
                 if (!encryptionSettings.PropertiesToEncrypt.Any())
                 {
                     return await this.transactionalBatch.ExecuteAsync(requestOptions, cancellationToken);
@@ -222,8 +222,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 if (string.Equals(response.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
                 {
                     await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                        cancellationToken: cancellationToken,
-                        obsoleteEncryptionSettings: encryptionSettings);
+                        obsoleteEncryptionSettings: encryptionSettings,
+                        cancellationToken: cancellationToken);
 
                     throw new CosmosException(
                         "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + response.ErrorMessage,
