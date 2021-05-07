@@ -17,101 +17,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly CosmosClient cosmosClient;
 
-        private readonly AsyncCache<string, ClientEncryptionPolicy> clientEncryptionPolicyCacheByContainerId;
-
         private readonly AsyncCache<string, ClientEncryptionKeyProperties> clientEncryptionKeyPropertiesCacheByKeyId;
 
         public EncryptionCosmosClient(CosmosClient cosmosClient, EncryptionKeyStoreProvider encryptionKeyStoreProvider)
         {
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(cosmosClient));
             this.EncryptionKeyStoreProvider = encryptionKeyStoreProvider ?? throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
-            this.clientEncryptionPolicyCacheByContainerId = new AsyncCache<string, ClientEncryptionPolicy>();
             this.clientEncryptionKeyPropertiesCacheByKeyId = new AsyncCache<string, ClientEncryptionKeyProperties>();
         }
 
         public EncryptionKeyStoreProvider EncryptionKeyStoreProvider { get; }
-
-        /// <summary>
-        /// Gets or Adds ClientEncryptionPolicy. The Cache gets seeded initially either via InitializeEncryptionAsync call on the container,
-        /// or during the the first request to create an item.
-        /// </summary>
-        /// <param name="container"> The container handler to read the policies from.</param>
-        /// <param name="cancellationToken"> cancellation token </param>
-        /// <param name="shouldForceRefresh"> force refresh the cache </param>
-        /// <returns> task result </returns>
-        internal async Task<ClientEncryptionPolicy> GetClientEncryptionPolicyAsync(
-            Container container,
-            CancellationToken cancellationToken = default,
-            bool shouldForceRefresh = false)
-        {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            // container Id is unique within a Database.
-            string cacheKey = container.Database.Id + "/" + container.Id;
-
-            // cache it against Database and Container ID key.
-            return await this.clientEncryptionPolicyCacheByContainerId.GetAsync(
-                 cacheKey,
-                 obsoleteValue: null,
-                 async () =>
-                 {
-                     ContainerResponse containerResponse = await container.ReadContainerAsync();
-                     ClientEncryptionPolicy clientEncryptionPolicy = containerResponse.Resource.ClientEncryptionPolicy;
-                     return clientEncryptionPolicy;
-                 },
-                 cancellationToken,
-                 forceRefresh: shouldForceRefresh);
-        }
-
-        internal async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
-            string clientEncryptionKeyId,
-            Container container,
-            CancellationToken cancellationToken = default,
-            bool shouldForceRefresh = false)
-        {
-            if (container == null)
-            {
-                throw new ArgumentNullException(nameof(container));
-            }
-
-            // Client Encryption key Id is unique within a Database.
-            string cacheKey = container.Database.Id + "/" + clientEncryptionKeyId;
-
-            return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
-                     cacheKey,
-                     obsoleteValue: null,
-                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(container, clientEncryptionKeyId, cancellationToken),
-                     cancellationToken,
-                     forceRefresh: shouldForceRefresh);
-        }
-
-        internal async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
-            Container container,
-            string clientEncryptionKeyId,
-            CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            ClientEncryptionKey clientEncryptionKey = container.Database.GetClientEncryptionKey(clientEncryptionKeyId);
-            try
-            {
-                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
-            }
-            catch (CosmosException ex)
-            {
-                if (ex.StatusCode == HttpStatusCode.NotFound)
-                {
-                    throw new InvalidOperationException($"Encryption Based Container without Data Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
 
         public override CosmosClientOptions ClientOptions => this.cosmosClient.ClientOptions;
 
@@ -253,6 +168,64 @@ namespace Microsoft.Azure.Cosmos.Encryption
         protected override void Dispose(bool disposing)
         {
             this.cosmosClient.Dispose();
+        }
+
+        public async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
+            string clientEncryptionKeyId,
+            EncryptionContainer encryptionContainer,
+            string databaseRid,
+            CancellationToken cancellationToken = default,
+            bool shouldForceRefresh = false)
+        {
+            if (encryptionContainer == null)
+            {
+                throw new ArgumentNullException(nameof(encryptionContainer));
+            }
+
+            if (string.IsNullOrEmpty(databaseRid))
+            {
+                throw new ArgumentNullException(nameof(databaseRid));
+            }
+
+            if (string.IsNullOrEmpty(clientEncryptionKeyId))
+            {
+                throw new ArgumentNullException(nameof(clientEncryptionKeyId));
+            }
+
+            // Client Encryption key Id is unique within a Database.
+            string cacheKey = databaseRid + "|" + clientEncryptionKeyId;
+
+            return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
+                     cacheKey,
+                     obsoleteValue: null,
+                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, cancellationToken),
+                     cancellationToken,
+                     forceRefresh: shouldForceRefresh);
+        }
+
+        private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
+            EncryptionContainer encryptionContainer,
+            string clientEncryptionKeyId,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            ClientEncryptionKey clientEncryptionKey = encryptionContainer.Database.GetClientEncryptionKey(clientEncryptionKeyId);
+            try
+            {
+                return await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new InvalidOperationException($"Encryption Based Container without Client Encryption Keys. Please make sure you have created the Client Encryption Keys:{ex.Message}. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                }
+                else
+                {
+                    throw;
+                }
+            }
         }
     }
 }
