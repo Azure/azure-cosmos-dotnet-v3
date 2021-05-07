@@ -244,7 +244,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateClientEncryptionKey()
         {
             string cekId = "anotherCek";
+			
             EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, cekId, "testmetadata1");
+			
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
@@ -1180,7 +1182,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionValidatePolicyRefreshPostDatabaseDelete()
         {
             CosmosClient mainClient = TestCommon.CreateCosmosClient(builder => builder
-                .Build());            
+                .Build());
 
             TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
             {

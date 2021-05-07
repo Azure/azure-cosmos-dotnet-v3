@@ -35,7 +35,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
             {
-                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+				
                 encryptionSettings.SetRequestHeaders(this.requestOptions);
 
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
@@ -45,8 +46,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     && string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
                 {
                     await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                        cancellationToken: cancellationToken,
-                        obsoleteEncryptionSettings: encryptionSettings);
+                       obsoleteEncryptionSettings: encryptionSettings,
+                       cancellationToken: cancellationToken);
 
                     throw new CosmosException(
                         "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,

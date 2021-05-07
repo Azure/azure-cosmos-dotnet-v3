@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
     {
         private readonly Container container;
 
+        private readonly AsyncCache<string, EncryptionSettings> encryptionSettingsByContainerName;
+
         public CosmosSerializer CosmosSerializer { get; }
 
         public CosmosResponseFactory ResponseFactory { get; }
@@ -47,8 +49,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override Scripts.Scripts Scripts => this.container.Scripts;
 
         public override Database Database => this.container.Database;
-
-        private readonly AsyncCache<string, EncryptionSettings> encryptionSettingsByContainerName;
 
         public override async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
@@ -510,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                         foreach (JObject document in documents)
                         {
-                            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+                            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
                             try
                             {
                                 JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
@@ -529,8 +529,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                             {
                                 // most likely the encryption policy has changed.
                                 encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                                    cancellationToken: cancellationToken,
-                                    obsoleteEncryptionSettings: encryptionSettings);
+                                    obsoleteEncryptionSettings: encryptionSettings,
+                                    cancellationToken: cancellationToken);
 
                                 JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
                                        document,
@@ -722,13 +722,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         public async Task<EncryptionSettings> GetOrUpdateEncryptionSettingsFromCacheAsync(
-            CancellationToken cancellationToken,
-            EncryptionSettings obsoleteEncryptionSettings = null)
+            EncryptionSettings obsoleteEncryptionSettings,
+            CancellationToken cancellationToken)
         {
             return await this.encryptionSettingsByContainerName.GetAsync(
                 this.Id,
                 obsoleteValue: obsoleteEncryptionSettings,
-                singleValueInitFunc: async () => await EncryptionSettings.CreateAsync(this),
+                singleValueInitFunc: () => EncryptionSettings.CreateAsync(this, cancellationToken),
                 cancellationToken: cancellationToken);
         }
 
@@ -761,7 +761,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken,
             bool isRetry = false)
         {
-            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.container.CreateItemStreamAsync(
@@ -842,7 +842,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CancellationToken cancellationToken,
             bool isRetry = false)
         {
-            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken: cancellationToken);
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.container.ReadItemStreamAsync(
@@ -874,8 +874,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 // get the latest encryption settings.
                 await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                    cancellationToken: cancellationToken,
-                    obsoleteEncryptionSettings: encryptionSettings);
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    cancellationToken: cancellationToken);
 
                 return await this.ReadItemHelperAsync(
                     id,
@@ -908,8 +908,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
-
-            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+			
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.container.ReplaceItemStreamAsync(
@@ -986,7 +986,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
-            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(cancellationToken);
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
                 return await this.container.UpsertItemStreamAsync(
@@ -1072,8 +1072,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             // get the latest encryption settings.
             await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-               cancellationToken: cancellationToken,
-               obsoleteEncryptionSettings: encryptionSettings);
+               obsoleteEncryptionSettings: encryptionSettings,
+               cancellationToken: cancellationToken);
 
             return streamPayload;
         }

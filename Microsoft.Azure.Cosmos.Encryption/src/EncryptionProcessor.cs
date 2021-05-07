@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     propertyValue,
                     settingforProperty,
                     cancellationToken);
+
             }
 
             input.Dispose();
@@ -141,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 throw new ArgumentNullException(nameof(settingsForProperty));
             }
-
+			
             JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
             propertyValueToEncrypt = await EncryptJTokenAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
@@ -353,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 plainText,
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
-
+		
         private static async Task DecryptPropertyAsync(
             JObject itemJObj,
             EncryptionSettingForProperty encryptionSettingForProperty,
