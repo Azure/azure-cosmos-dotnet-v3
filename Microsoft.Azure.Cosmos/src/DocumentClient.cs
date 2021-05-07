@@ -6580,7 +6580,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
-            await this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(accountProperties);
+            this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

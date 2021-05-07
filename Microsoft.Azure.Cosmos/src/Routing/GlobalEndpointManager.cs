@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Uri defaultEndpoint;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
-        private readonly object backgroundAccountRefreshLock;
-        private readonly AsyncCache<string, AccountProperties> databaseAccountCache;
+        private readonly AsyncCache<string, AccountProperties> databaseAccountCache = new AsyncCache<string, AccountProperties>();
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+        private readonly object backgroundAccountRefreshLock = new object();
         private readonly object isAccountRefreshInProgressLock = new object();
         private bool isAccountRefreshInProgress = false;
-        private bool isBackgroundAccountRefreshActive;
+        private bool isBackgroundAccountRefreshActive = false;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
         {
@@ -51,12 +51,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.owner = owner;
             this.defaultEndpoint = owner.ServiceEndpoint;
             this.connectionPolicy = connectionPolicy;
-            this.databaseAccountCache = new AsyncCache<string, AccountProperties>();
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
 
-            this.isBackgroundAccountRefreshActive = false;
-            this.backgroundAccountRefreshLock = new object();
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
             // GetEntryAssembly returns null when loaded from native netstandard2.0
@@ -347,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public virtual async Task InitializeAccountPropertiesAndStartBackgroundRefreshAsync(AccountProperties databaseAccount)
+        public virtual void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -373,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
-                await this.BackgroundRefreshLocationPrivateAsync();
+                this.StartLocationBackgroundRefreshLoop();
             }
             catch
             {
@@ -392,37 +389,29 @@ namespace Microsoft.Azure.Cosmos.Routing
             await this.RefreshDatabaseAccountInternalAsync(waitForRefresh: forceRefresh);
         }
 
-        private async Task BackgroundRefreshLocationPrivateAsync()
-        {
-            if (this.cancellationTokenSource.IsCancellationRequested)
-            {
-                return;
-            }
-
-            DefaultTrace.TraceInformation("GlobalEndpointManager: BackgroundRefreshLocationPrivateAsync() refreshing locations");
-
-            if (this.locationCache.ShouldRefreshEndpoints(out bool canRefreshInBackground))
-            {
-                if (!canRefreshInBackground)
-                {
-                    await this.RefreshDatabaseAccountInternalAsync();
-                }
-
-                this.StartLocationBackgroundRefreshWithTimer();
-            }
-            else
-            {
-                this.isBackgroundAccountRefreshActive = false;
-            }
-        }
-
 #pragma warning disable VSTHRD100 // Avoid async void methods
-        private async void StartLocationBackgroundRefreshWithTimer()
+        private async void StartLocationBackgroundRefreshLoop()
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
                 return;
+            }
+
+            DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() refreshing locations");
+
+            if (!this.locationCache.ShouldRefreshEndpoints(out bool canRefreshInBackground))
+            {
+                if (!canRefreshInBackground)
+                {
+                    DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() stropped.");
+                    lock (this.backgroundAccountRefreshLock)
+                    {
+                        this.isBackgroundAccountRefreshActive = false;
+                    }
+
+                    return;
+                }
             }
 
             try
@@ -431,10 +420,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Invoking refresh");
 
-                await this.RefreshDatabaseAccountInternalAsync();
-
-                // Start the background
-                await this.BackgroundRefreshLocationPrivateAsync();
+                await this.RefreshDatabaseAccountInternalAsync(waitForRefresh: false);
             }
             catch (Exception ex)
             {
@@ -444,10 +430,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     return;
                 }
-
-                // Start the timer again to wait for the refresh
-                this.StartLocationBackgroundRefreshWithTimer();
             }
+
+            // Call itself to create a loop to continuously do background refresh every 5 minutes
+            this.StartLocationBackgroundRefreshLoop();
         }
 
         private Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
@@ -464,7 +450,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Thread safe refresh account and location info.
         /// </summary>
-        private async Task RefreshDatabaseAccountInternalAsync(bool waitForRefresh = false)
+        private async Task RefreshDatabaseAccountInternalAsync(bool waitForRefresh)
         {
             if (this.isAccountRefreshInProgress && !waitForRefresh)
             {

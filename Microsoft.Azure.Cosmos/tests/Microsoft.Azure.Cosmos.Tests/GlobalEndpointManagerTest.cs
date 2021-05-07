@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
-            await globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(databaseAccount);
+            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
             //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
@@ -393,14 +393,14 @@ namespace Microsoft.Azure.Cosmos
 
             GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
-            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(databaseAccount).Wait();
+            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
             //Remove location 1 from read locations and validate that the read endpoint switches to the next preferred location
             readableLocations.Remove(readLocation1);
             databaseAccount.ReadLocationsInternal = readableLocations;
 
-            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(databaseAccount).Wait();
+            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
 
             //Add location 1 back to read locations and validate that location 1 becomes the read endpoint again.
