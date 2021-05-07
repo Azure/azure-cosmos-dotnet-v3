@@ -167,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isPreferredLocationsListEmpty: isPreferredLocationsListEmpty);
 
-            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            await this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false))
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 preferedRegionListOverride: preferredList);
 
-            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            await this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: true, isMasterResourceType: false))
@@ -321,7 +321,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 isPreferredLocationsListEmpty: false,
                 preferedRegionListOverride: preferredList);
 
-            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            await this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false))
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            await this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(true);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: false, isMasterResourceType: false))
@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 enableEndpointDiscovery: true,
                 isPreferredLocationsListEmpty: false);
 
-            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            await this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(true);
 
             int expectedRetryCount = isReadRequest || enableMultipleWriteLocations ? 2 : 1;
@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 preferedRegionListOverride: preferredList,
                 enforceSingleMasterSingleWriteLocation: true);
 
-            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            await this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(true);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
@@ -680,7 +680,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 preferedRegionListOverride: preferredList,
                 enforceSingleMasterSingleWriteLocation: true);
 
-            await this.endpointManager.RefreshLocationAsync(this.databaseAccount);
+            await this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(this.databaseAccount);
             ClientRetryPolicy retryPolicy = this.CreateClientRetryPolicy(enableEndpointDiscovery);
 
             using (DocumentServiceRequest request = this.CreateRequest(isReadRequest: isReadRequest, isMasterResourceType: false))
@@ -984,7 +984,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         private async Task ValidateGlobalEndpointLocationCacheRefreshAsync()
         {
-            IEnumerable<Task> refreshLocations = Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.RefreshLocationAsync(null)));
+            IEnumerable<Task> refreshLocations = Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(null)));
 
             await Task.WhenAll(refreshLocations);
 
@@ -992,7 +992,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             this.mockedClient.ResetCalls();
 
-            foreach (Task task in Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.RefreshLocationAsync(null))))
+            foreach (Task task in Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefreshAsync(null))))
             {
                 await task;
             }

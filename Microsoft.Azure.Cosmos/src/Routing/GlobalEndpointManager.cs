@@ -32,10 +32,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Uri defaultEndpoint;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
-        private readonly object refreshLock;
+        private readonly object backgroundAccountRefreshLock;
         private readonly AsyncCache<string, AccountProperties> databaseAccountCache;
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
-        private bool isRefreshing;
+        private readonly object isAccountRefreshInProgressLock = new object();
+        private bool isAccountRefreshInProgress = false;
+        private bool isBackgroundAccountRefreshActive;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
         {
@@ -53,8 +55,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
 
-            this.isRefreshing = false;
-            this.refreshLock = new object();
+            this.isBackgroundAccountRefreshActive = false;
+            this.backgroundAccountRefreshLock = new object();
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
             // GetEntryAssembly returns null when loaded from native netstandard2.0
@@ -218,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (location == null)
                     {
-                        DefaultTrace.TraceCritical("location is null for TryMoveNextLocationThreadSafe");
+                        DefaultTrace.TraceCritical("GlobalEndpointManager: location is null for TryMoveNextLocationThreadSafe");
                         return;
                     }
 
@@ -274,10 +276,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
+                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
                     if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
-                        DefaultTrace.TraceInformation("Exception is not retriable");
+                        DefaultTrace.TraceInformation("GlobalEndpointManager: Exception is not retriable");
                         this.CancellationTokenSource.Cancel();
                         this.NonRetriableException = e;
                     }
@@ -315,14 +317,14 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public virtual void MarkEndpointUnavailableForRead(Uri endpoint)
         {
-            DefaultTrace.TraceInformation("Marking endpoint {0} unavailable for read", endpoint);
+            DefaultTrace.TraceInformation("GlobalEndpointManager: Marking endpoint {0} unavailable for read", endpoint);
 
             this.locationCache.MarkEndpointUnavailableForRead(endpoint);
         }
 
         public virtual void MarkEndpointUnavailableForWrite(Uri endpoint)
         {
-            DefaultTrace.TraceInformation("Marking endpoint {0} unavailable for Write", endpoint);
+            DefaultTrace.TraceInformation("GlobalEndpointManager: Marking endpoint {0} unavailable for Write", endpoint);
 
             this.locationCache.MarkEndpointUnavailableForWrite(endpoint);
         }
@@ -345,75 +347,77 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public virtual async Task RefreshLocationAsync(AccountProperties databaseAccount, bool forceRefresh = false)
+        public async Task InitializeAccountPropertiesAndStartBackgroundRefreshAsync(AccountProperties databaseAccount)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
 
-            if (forceRefresh)
-            {
-                AccountProperties refreshedDatabaseAccount = await this.RefreshDatabaseAccountInternalAsync();
+            this.locationCache.OnDatabaseAccountRead(databaseAccount);
 
-                this.locationCache.OnDatabaseAccountRead(refreshedDatabaseAccount);
+            if (this.isBackgroundAccountRefreshActive)
+            {
                 return;
             }
 
-            lock (this.refreshLock)
+            lock (this.backgroundAccountRefreshLock)
             {
-                if (this.isRefreshing)
+                if (this.isBackgroundAccountRefreshActive)
                 {
                     return;
                 }
 
-                this.isRefreshing = true;
+                this.isBackgroundAccountRefreshActive = true;
             }
 
             try
             {
-                await this.RefreshLocationPrivateAsync(databaseAccount);
+                await this.BackgroundRefreshLocationPrivateAsync();
             }
             catch
             {
-                this.isRefreshing = false;
+                this.isBackgroundAccountRefreshActive = false;
                 throw;
             }
         }
 
-        private async Task RefreshLocationPrivateAsync(AccountProperties databaseAccount)
+        public async Task RefreshLocationAsync()
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
 
-            DefaultTrace.TraceInformation("RefreshLocationAsync() refreshing locations");
+            await this.RefreshDatabaseAccountInternalAsync();
+        }
 
-            if (databaseAccount != null)
+        private async Task BackgroundRefreshLocationPrivateAsync()
+        {
+            if (this.cancellationTokenSource.IsCancellationRequested)
             {
-                this.locationCache.OnDatabaseAccountRead(databaseAccount);
+                return;
             }
+
+            DefaultTrace.TraceInformation("GlobalEndpointManager: BackgroundRefreshLocationPrivateAsync() refreshing locations");
 
             if (this.locationCache.ShouldRefreshEndpoints(out bool canRefreshInBackground))
             {
-                if (databaseAccount == null && !canRefreshInBackground)
+                if (!canRefreshInBackground)
                 {
-                    databaseAccount = await this.RefreshDatabaseAccountInternalAsync();
-
-                    this.locationCache.OnDatabaseAccountRead(databaseAccount);
+                    await this.RefreshDatabaseAccountInternalAsync();
                 }
 
-                this.StartRefreshLocationTimer();
+                this.StartLocationBackgroundRefreshWithTimer();
             }
             else
             {
-                this.isRefreshing = false;
+                this.isBackgroundAccountRefreshActive = false;
             }
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods
-        private async void StartRefreshLocationTimer()
+        private async void StartLocationBackgroundRefreshWithTimer()
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
@@ -425,22 +429,24 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 await Task.Delay(this.backgroundRefreshLocationTimeIntervalInMS, this.cancellationTokenSource.Token);
 
-                DefaultTrace.TraceInformation("StartRefreshLocationTimerAsync() - Invoking refresh");
+                DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Invoking refresh");
 
-                AccountProperties databaseAccount = await this.RefreshDatabaseAccountInternalAsync();
+                await this.RefreshDatabaseAccountInternalAsync();
 
-                await this.RefreshLocationPrivateAsync(databaseAccount);
+                // Start the background
+                await this.BackgroundRefreshLocationPrivateAsync();
             }
             catch (Exception ex)
             {
+                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
+
                 if (this.cancellationTokenSource.IsCancellationRequested && (ex is TaskCanceledException || ex is ObjectDisposedException))
                 {
                     return;
                 }
 
-                DefaultTrace.TraceCritical("StartRefreshLocationTimerAsync() - Unable to refresh database account from any location. Exception: {0}", ex.ToString());
-
-                this.StartRefreshLocationTimer();
+                // Start the timer again to wait for the refresh
+                this.StartLocationBackgroundRefreshWithTimer();
             }
         }
 
@@ -455,19 +461,49 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.connectionPolicy.PreferredLocations));
         }
 
-        private Task<AccountProperties> RefreshDatabaseAccountInternalAsync()
+        /// <summary>
+        /// Thread safe refresh account and location info.
+        /// </summary>
+        private async Task RefreshDatabaseAccountInternalAsync()
         {
+            if (this.isAccountRefreshInProgress)
+            {
+                return;
+            }
+
+            lock (this.isAccountRefreshInProgressLock)
+            {
+                if (this.isAccountRefreshInProgress)
+                {
+                    return;
+                }
+
+                this.isAccountRefreshInProgress = true;
+            }
+
+            try
+            {
 #nullable disable // Needed because AsyncCache does not have nullable enabled
-            return this.databaseAccountCache.GetAsync(
-                key: string.Empty,
-                obsoleteValue: null,
-                singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                    this.defaultEndpoint,
-                    this.connectionPolicy.PreferredLocations,
-                    this.GetDatabaseAccountAsync),
-                cancellationToken: this.cancellationTokenSource.Token,
-                forceRefresh: true);
+                AccountProperties accountProperties = await this.databaseAccountCache.GetAsync(
+                    key: string.Empty,
+                    obsoleteValue: null,
+                    singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                        this.defaultEndpoint,
+                        this.connectionPolicy.PreferredLocations,
+                        this.GetDatabaseAccountAsync),
+                    cancellationToken: this.cancellationTokenSource.Token,
+                    forceRefresh: true);
+
+                this.locationCache.OnDatabaseAccountRead(accountProperties);
 #nullable enable
+            }
+            finally
+            {
+                lock (this.isAccountRefreshInProgressLock)
+                {
+                    this.isAccountRefreshInProgress = false;
+                }
+            }
         }
     }
 }
