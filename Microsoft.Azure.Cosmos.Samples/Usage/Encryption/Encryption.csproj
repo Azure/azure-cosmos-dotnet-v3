@@ -36,9 +36,5 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>
-	
-  <PropertyGroup>
-    <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
-  </PropertyGroup>  
-   
+ 
 </Project>
