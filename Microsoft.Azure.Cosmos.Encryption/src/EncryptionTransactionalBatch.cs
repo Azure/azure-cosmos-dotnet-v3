@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("TransactionalBatch.ExecuteAsync.WithRequestOptions"))
             {
                 TransactionalBatchResponse response = null;
-				
+
                 EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
                 if (!encryptionSettings.PropertiesToEncrypt.Any())
                 {
