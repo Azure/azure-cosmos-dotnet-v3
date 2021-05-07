@@ -382,14 +382,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public virtual async Task RefreshLocationAsync()
+        public virtual async Task RefreshLocationAsync(bool forceRefresh = false)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
 
-            await this.RefreshDatabaseAccountInternalAsync();
+            await this.RefreshDatabaseAccountInternalAsync(waitForRefresh: forceRefresh);
         }
 
         private async Task BackgroundRefreshLocationPrivateAsync()
@@ -464,16 +464,19 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Thread safe refresh account and location info.
         /// </summary>
-        private async Task RefreshDatabaseAccountInternalAsync()
+        private async Task RefreshDatabaseAccountInternalAsync(bool waitForRefresh = false)
         {
-            if (this.isAccountRefreshInProgress)
+            if (this.isAccountRefreshInProgress && !waitForRefresh)
             {
                 return;
             }
 
+            bool isRefreshingBeforeLock = this.isAccountRefreshInProgress;
             lock (this.isAccountRefreshInProgressLock)
             {
-                if (this.isAccountRefreshInProgress)
+                // If it was refreshing before the lock then the account was already just
+                // refreshed. No reason to refresh it again.
+                if (this.isAccountRefreshInProgress || isRefreshingBeforeLock)
                 {
                     return;
                 }

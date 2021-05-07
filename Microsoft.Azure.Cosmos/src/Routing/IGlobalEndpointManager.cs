@@ -29,6 +29,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         Task InitializeAccountPropertiesAndStartBackgroundRefreshAsync(AccountProperties databaseAccount);
 
-        Task RefreshLocationAsync();
+        Task RefreshLocationAsync(bool forceRefresh = false);
     }
 }
