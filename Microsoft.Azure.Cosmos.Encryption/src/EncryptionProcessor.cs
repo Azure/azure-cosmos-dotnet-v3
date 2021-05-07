@@ -198,6 +198,73 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
+        internal static JToken EncryptProperty(
+            JToken propertyValue,
+            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm)
+        {
+            /* Top Level can be an Object*/
+            if (propertyValue.Type == JTokenType.Object)
+            {
+                foreach (JProperty jProperty in propertyValue.Children<JProperty>())
+                {
+                    jProperty.Value = EncryptionProcessor.EncryptProperty(
+                        jProperty.Value,
+                        aeadAes256CbcHmac256EncryptionAlgorithm);
+                }
+            }
+            else if (propertyValue.Type == JTokenType.Array)
+            {
+                if (propertyValue.Children().Any())
+                {
+                    // objects as array elements.
+                    if (propertyValue.Children().First().Type == JTokenType.Object)
+                    {
+                        foreach (JObject arrayjObject in propertyValue.Children<JObject>())
+                        {
+                            foreach (JProperty jProperty in arrayjObject.Properties())
+                            {
+                                jProperty.Value = EncryptionProcessor.EncryptProperty(
+                                    jProperty.Value,
+                                    aeadAes256CbcHmac256EncryptionAlgorithm);
+                            }
+                        }
+                    }
+
+                    // array as elements.
+                    else if (propertyValue.Children().First().Type == JTokenType.Array)
+                    {
+                        foreach (JArray jArray in propertyValue.Value<JArray>())
+                        {
+                            for (int i = 0; i < jArray.Count(); i++)
+                            {
+                                // iterates over individual elements
+                                jArray[i] = EncryptionProcessor.EncryptProperty(
+                                    jArray[i],
+                                    aeadAes256CbcHmac256EncryptionAlgorithm);
+                            }
+                        }
+                    }
+
+                    // array of primitive types.
+                    else
+                    {
+                        for (int i = 0; i < propertyValue.Count(); i++)
+                        {
+                            propertyValue[i] = SerializeAndEncryptValue(propertyValue[i], aeadAes256CbcHmac256EncryptionAlgorithm);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                propertyValue = SerializeAndEncryptValue(
+                    propertyValue,
+                    aeadAes256CbcHmac256EncryptionAlgorithm);
+            }
+
+            return propertyValue;
+        }
+
         private static void EncryptProperty(
             JObject itemJObj,
             JToken propertyValue,
