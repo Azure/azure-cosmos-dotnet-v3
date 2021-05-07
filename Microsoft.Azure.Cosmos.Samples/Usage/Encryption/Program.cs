@@ -7,7 +7,7 @@
     using Azure.Identity;
     using Cosmos.Samples.Shared;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Encryption;  
+    using Microsoft.Azure.Cosmos.Encryption;
     using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.Data.Encryption.AzureKeyVaultProvider;
     using Microsoft.Extensions.Configuration;
@@ -86,7 +86,7 @@
             if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
             {
                 throw new ArgumentException("Please specify a valid AuthorizationKey in the appSettings.json");
-            }           
+            }
 
             CosmosClient encryptionCosmosClient = new CosmosClient(endpoint, authKey);
 
