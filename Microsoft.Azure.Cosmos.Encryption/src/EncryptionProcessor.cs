@@ -24,6 +24,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 DateParseHandling = DateParseHandling.None,
             });
 
+        private static readonly SqlSerializerFactory SqlSerializerFactory = SqlSerializerFactory.Default;
+
+        // UTF-8 Encoding
+        private static readonly SqlVarCharSerializer SqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
+
         private enum TypeMarker : byte
         {
             Null = 1, // not used
@@ -73,7 +78,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     propertyValue,
                     settingforProperty,
                     cancellationToken);
-
             }
 
             input.Dispose();
@@ -142,27 +146,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 throw new ArgumentNullException(nameof(settingsForProperty));
             }
-			
+
             JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
-            propertyValueToEncrypt = await EncryptJTokenAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
+            JToken encryptedPropertyValue = await EncryptJTokenAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
 
-            return EncryptionProcessor.BaseSerializer.ToStream(propertyValueToEncrypt);
+            return EncryptionProcessor.BaseSerializer.ToStream(encryptedPropertyValue);
         }
 
         private static (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
-            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-
-            // UTF-8 Encoding
-            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
-
             return propertyValue.Type switch
             {
-                JTokenType.Boolean => (TypeMarker.Boolean, sqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
-                JTokenType.Float => (TypeMarker.Double, sqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
-                JTokenType.Integer => (TypeMarker.Long, sqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
-                JTokenType.String => (TypeMarker.String, sqlVarcharSerializer.Serialize(propertyValue.ToObject<string>())),
+                JTokenType.Boolean => (TypeMarker.Boolean, SqlSerializerFactory.GetDefaultSerializer<bool>().Serialize(propertyValue.ToObject<bool>())),
+                JTokenType.Float => (TypeMarker.Double, SqlSerializerFactory.GetDefaultSerializer<double>().Serialize(propertyValue.ToObject<double>())),
+                JTokenType.Integer => (TypeMarker.Long, SqlSerializerFactory.GetDefaultSerializer<long>().Serialize(propertyValue.ToObject<long>())),
+                JTokenType.String => (TypeMarker.String, SqlVarcharSerializer.Serialize(propertyValue.ToObject<string>())),
                 _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {propertyValue.Type}. "),
             };
         }
@@ -171,17 +170,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
             byte[] serializedBytes,
             TypeMarker typeMarker)
         {
-            SqlSerializerFactory sqlSerializerFactory = new SqlSerializerFactory();
-
-            // UTF-8 Encoding
-            SqlVarCharSerializer sqlVarcharSerializer = new SqlVarCharSerializer(size: -1, codePageCharacterEncoding: 65001);
-
             return typeMarker switch
             {
-                TypeMarker.Boolean => sqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
-                TypeMarker.Double => sqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
-                TypeMarker.Long => sqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
-                TypeMarker.String => sqlVarcharSerializer.Deserialize(serializedBytes),
+                TypeMarker.Boolean => SqlSerializerFactory.GetDefaultSerializer<bool>().Deserialize(serializedBytes),
+                TypeMarker.Double => SqlSerializerFactory.GetDefaultSerializer<double>().Deserialize(serializedBytes),
+                TypeMarker.Long => SqlSerializerFactory.GetDefaultSerializer<long>().Deserialize(serializedBytes),
+                TypeMarker.String => SqlVarcharSerializer.Deserialize(serializedBytes),
                 _ => throw new InvalidOperationException($"Invalid or Unsupported Data Type Passed : {typeMarker}. "),
             };
         }
@@ -191,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
            EncryptionSettingForProperty encryptionSettingForProperty,
            CancellationToken cancellationToken)
         {
-            /* Top Level can be an Object*/
+            // Top Level can be an Object
             if (propertyValueToEncrypt.Type == JTokenType.Object)
             {
                 foreach (JProperty jProperty in propertyValueToEncrypt.Children<JProperty>())
@@ -354,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 plainText,
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
-		
+
         private static async Task DecryptPropertyAsync(
             JObject itemJObj,
             EncryptionSettingForProperty encryptionSettingForProperty,
