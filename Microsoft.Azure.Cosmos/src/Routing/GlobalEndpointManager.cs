@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task InitializeAccountPropertiesAndStartBackgroundRefreshAsync(AccountProperties databaseAccount)
+        public virtual async Task InitializeAccountPropertiesAndStartBackgroundRefreshAsync(AccountProperties databaseAccount)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -382,7 +382,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task RefreshLocationAsync()
+        public virtual async Task RefreshLocationAsync()
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
