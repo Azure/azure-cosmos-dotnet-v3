@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
             {
                 EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
-				
                 encryptionSettings.SetRequestHeaders(this.requestOptions);
 
                 ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);

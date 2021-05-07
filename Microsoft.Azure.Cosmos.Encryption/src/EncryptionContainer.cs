@@ -908,7 +908,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
-			
+
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
