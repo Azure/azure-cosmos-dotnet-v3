@@ -35,6 +35,28 @@ namespace Microsoft.Azure.Cosmos.Tests
                 typeof(RequestInvokerHandler),
                 typeof(DiagnosticsHandler),
                 typeof(RetryHandler),
+                typeof(RouterHandler)
+            };
+
+            RequestHandler handler = client.RequestHandler;
+            foreach (Type type in types)
+            {
+                Assert.IsTrue(type.Equals(handler.GetType()));
+                handler = handler.InnerHandler;
+            }
+
+            Assert.IsNull(handler);
+        }
+        [TestMethod]
+        public void HandlerOrderIfTelemetryIsEnabled()
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(isTelemetryEnabled: true);
+
+            Type[] types = new Type[]
+            {
+                typeof(RequestInvokerHandler),
+                typeof(DiagnosticsHandler),
+                typeof(RetryHandler),
                 typeof(TelemetryHandler),
                 typeof(RouterHandler)
             };
@@ -48,6 +70,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsNull(handler);
         }
+
 
         [TestMethod]
         public async Task TestPreProcessingHandler()

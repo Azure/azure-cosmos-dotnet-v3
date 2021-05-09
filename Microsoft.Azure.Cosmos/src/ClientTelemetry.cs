@@ -22,117 +22,67 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
 
+    /// <summary>
+    /// This class collect all the telemetry information
+    /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        internal const String RequestKey = "telemetry";
-
-        internal const int OneKbToBytes = 1024;
-
-        internal const int RequestLatencyMaxMicroSec = 300000000;
-        internal const int RequestLatencySuccessPrecision = 4;
-        internal const int RequestLatencyFailurePrecision = 2;
-        internal const string RequestLatencyName = "RequestLatency";
-        internal const string RequestLatencyUnit = "MicroSec";
-
-        internal const int RequestChargeMax = 10000;
-        internal const int RequestChargePrecision = 2;
-        internal const string RequestChargeName = "RequestCharge";
-        internal const string RequestChargeUnit = "RU";
-
-        internal const int CpuMax = 100;
-        internal const int CpuPrecision = 2;
-        internal const String CpuName = "CPU";
-        internal const String CpuUnit = "Percentage";
-
-        internal const string VmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
-
-        internal const double Percentile50 = 50.0;
-        internal const double Percentile90 = 90.0;
-        internal const double Percentile95 = 95.0;
-        internal const double Percentile99 = 99.0;
-        internal const double Percentile999 = 99.9;
-        internal const string DateFormat = "YYYY-MM-ddTHH:mm:ssZ";
-        public const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
-        public const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
-        internal const double DefaultTimeStampInSeconds = 600;
-
-        internal static readonly List<ResourceType> AllowedResourceTypes = new List<ResourceType>(new ResourceType[]
-        {
-            ResourceType.Document
-        });
-
-        internal readonly ClientTelemetryInfo ClientTelemetryInfo;
-        internal readonly CosmosHttpClient HttpClient;
         internal readonly CancellationTokenSource CancellationTokenSource;
-
-        internal bool IsClientTelemetryEnabled;
-
+        internal ClientTelemetryInfo ClientTelemetryInfo;
         internal double ClientTelemetrySchedulingInSeconds;
+        internal DocumentClient documentClient;
 
+        internal HttpClient httpClient;
         private bool isDisposed = false;
 
-        public ClientTelemetry(bool? acceleratedNetworking,
-                               string clientId,
-                               string processId,
-                               string userAgent,
-                               ConnectionMode connectionMode,
-                               string globalDatabaseAccountName,
-                               CosmosHttpClient httpClient,
-                               bool isClientTelemetryEnabled)
+        private Task accountInfoTask;
+        private Task vmTask;
+        private Task telemetryTask;
+
+        public ClientTelemetry(
+            DocumentClient documentClient,
+            bool? acceleratedNetworking,
+            ConnectionPolicy connectionPolicy)
         {
+            this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
+            if (connectionPolicy == null)
+            {
+                throw new ArgumentNullException(nameof(connectionPolicy));
+            }
+
             this.ClientTelemetryInfo = new ClientTelemetryInfo(
-                clientId: clientId, 
-                processId: processId, 
-                userAgent: userAgent, 
-                connectionMode: connectionMode,
-                globalDatabaseAccountName: globalDatabaseAccountName, 
+                clientId: Guid.NewGuid().ToString(), 
+                processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
+                userAgent: connectionPolicy.UserAgentContainer.UserAgent, 
+                connectionMode: connectionPolicy.ConnectionMode,
                 acceleratedNetworking: acceleratedNetworking);
 
-            this.HttpClient = httpClient;
-            this.IsClientTelemetryEnabled = IsTelemetryEnabled(isClientTelemetryEnabled);
-            this.ClientTelemetrySchedulingInSeconds = CosmosConfigurationManager
-                .GetEnvironmentVariable<double>(
-                    EnvPropsClientTelemetrySchedulingInSeconds, 
-                    DefaultTimeStampInSeconds);
+            this.ClientTelemetrySchedulingInSeconds = ClientTelemetryOptions.GetSchedulingInSeconds();
+            this.httpClient = ClientTelemetryOptions.GetHttpClient(connectionPolicy);
             this.CancellationTokenSource = new CancellationTokenSource();
         }
-
-        internal static bool IsTelemetryEnabled(bool defaultValue)
-        {
-            return CosmosConfigurationManager
-                .GetEnvironmentVariable<bool>(ClientTelemetry.EnvPropsClientTelemetryEnabled,
-                    defaultValue);
-        }
-
+       
+        /// <summary>
+        /// It is a separate thread which collects virtual machine metadata information.
+        /// </summary>
+        /// <returns>Async Task</returns>
         internal async Task LoadAzureVmMetaDataAsync()
         {
             try
             {
-                static ValueTask<HttpRequestMessage> CreateRequestMessage()
+                HttpRequestMessage request = new HttpRequestMessage()
                 {
-                    HttpRequestMessage request = new HttpRequestMessage
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = new Uri(VmMetadataUrL)
-                    };
-                    request.Headers.Add("Metadata", "true");
+                    RequestUri = new Uri(ClientTelemetryOptions.GetVmMetadataUrl()),
+                    Method = HttpMethod.Get,
+                };
+                request.Headers.Add("Metadata", "true");
 
-                    return new ValueTask<HttpRequestMessage>(request);
-                }
-
-                using HttpResponseMessage httpResponseMessage = await this.HttpClient.SendHttpAsync(
-                    createRequestMessageAsync: CreateRequestMessage,
-                    resourceType: ResourceType.Unknown,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                    clientSideRequestStatistics: null,
-                    cancellationToken: default);
-                AzureVMMetadata azMetadata = await ProcessResponseAsync(httpResponseMessage);
+                using HttpResponseMessage httpResponseMessage = await this.httpClient.SendAsync(request, this.CancellationTokenSource.Token);
+                   
+                AzureVMMetadata azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
 
                 this.ClientTelemetryInfo.ApplicationRegion = azMetadata.Location;
-                this.ClientTelemetryInfo.HostEnvInfo = String.Concat(azMetadata.OSType, "|",
-                    azMetadata.SKU, "|",
-                    azMetadata.VMSize, "|",
-                    azMetadata.AzEnvironment);
+                this.ClientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(azMetadata);
             }
             catch (Exception ex)
             {
@@ -140,12 +90,18 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal static async Task<AzureVMMetadata> ProcessResponseAsync(HttpResponseMessage httpResponseMessage)
-        {
-            string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
-            return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
-        }
-
+        /// <summary>
+        /// This function is being called on each operation and it collects corresponding telemetry information.
+        /// </summary>
+        /// <param name="cosmosDiagnostics"></param>
+        /// <param name="statusCode"></param>
+        /// <param name="responseSizeInBytes"></param>
+        /// <param name="containerId"></param>
+        /// <param name="databaseId"></param>
+        /// <param name="operationType"></param>
+        /// <param name="resourceType"></param>
+        /// <param name="consistencyLevel"></param>
+        /// <param name="requestCharge"></param>
         internal void Collect(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
                             int responseSizeInBytes,
@@ -165,16 +121,16 @@ namespace Microsoft.Azure.Cosmos
                     operationType: operationType,
                     resourceType: resourceType, 
                     consistencyLevel: consistencyLevel, 
-                    metricsName: RequestLatencyName, 
-                    unitName: RequestLatencyUnit);
+                    metricsName: ClientTelemetryOptions.RequestLatencyName, 
+                    unitName: ClientTelemetryOptions.RequestLatencyUnit);
 
             this.ClientTelemetryInfo
                 .OperationInfoMap
                 .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram latencyHistogram);
 
             latencyHistogram ??= statusCode.IsSuccess()
-                ? new LongConcurrentHistogram(1, RequestLatencyMaxMicroSec, RequestLatencySuccessPrecision)
-                : new LongConcurrentHistogram(1, RequestLatencyMaxMicroSec, RequestLatencyFailurePrecision);
+                ? new LongConcurrentHistogram(1, ClientTelemetryOptions.RequestLatencyMaxMicroSec, ClientTelemetryOptions.RequestLatencySuccessPrecision)
+                : new LongConcurrentHistogram(1, ClientTelemetryOptions.RequestLatencyMaxMicroSec, ClientTelemetryOptions.RequestLatencyFailurePrecision);
             latencyHistogram.RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
             this.ClientTelemetryInfo.OperationInfoMap[reportPayloadLatency] = latencyHistogram;
 
@@ -187,14 +143,14 @@ namespace Microsoft.Azure.Cosmos
                    operationType: operationType,
                    resourceType: resourceType, 
                    consistencyLevel: consistencyLevel, 
-                   metricsName: RequestChargeName, 
-                   unitName: RequestChargeUnit);
+                   metricsName: ClientTelemetryOptions.RequestChargeName, 
+                   unitName: ClientTelemetryOptions.RequestChargeUnit);
 
             this.ClientTelemetryInfo
                 .OperationInfoMap
                 .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram requestChargeHistogram);
 
-            requestChargeHistogram ??= new LongConcurrentHistogram(1, RequestChargeMax, RequestChargePrecision);
+            requestChargeHistogram ??= new LongConcurrentHistogram(1, ClientTelemetryOptions.RequestChargeMax, ClientTelemetryOptions.RequestChargePrecision);
             requestChargeHistogram.RecordValue((long)requestCharge);
             this.ClientTelemetryInfo.OperationInfoMap[reportPayloadRequestCharge] = requestChargeHistogram;
         }
@@ -230,7 +186,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseSizeInBytes != 0)
             {
-                reportPayload.GreaterThan1Kb = responseSizeInBytes > OneKbToBytes;
+                reportPayload.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
             }
 
             return reportPayload;
@@ -242,32 +198,24 @@ namespace Microsoft.Azure.Cosmos
             {
                 return;
             }
-           
-            if (this.IsClientTelemetryEnabled)
+            try
             {
-                try
-                {
-                    await Task.Delay(
-                        TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds),
-                        this.CancellationTokenSource.Token);
+                await Task.Delay(
+                    TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds),
+                    this.CancellationTokenSource.Token);
 
-                    this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(DateFormat);
+                this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
-                    this.RecordCpuUtilization();
-                    this.CalculateMetrics();
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError("Exception in CalculateAndSendTelemetryInformationAsync() : " + ex.Message);
-                }
-                finally
-                {
-                    await this.CalculateAndSendTelemetryInformationAsync();
-                }
+                this.RecordSystemUtilization();
+                this.CalculateMetrics();
             }
-            else
+            catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("CalculateAndSendTelemetryInformationAsync() : Client Telemetry is disabled.");
+                DefaultTrace.TraceError("Exception in CalculateAndSendTelemetryInformationAsync() : " + ex.Message);
+            }
+            finally
+            {
+                await this.CalculateAndSendTelemetryInformationAsync();
             }
         }
 
@@ -278,57 +226,55 @@ namespace Microsoft.Azure.Cosmos
             this.FillMetric(this.ClientTelemetryInfo.SystemInfoMap);
         }
 
-        private void RecordCpuUtilization()
+        private void RecordSystemUtilization()
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1, CpuMax, CpuPrecision);
-            List<double> cpuHistory = DiagnosticsHandlerHelper.Instance.GetCpuDiagnostics();
-
-            foreach (double cpuUtilization in cpuHistory)
-            {
-                cpuHistogram.RecordValue((long)cpuUtilization);
-            }
-            ReportPayload cpuReportPayload = new ReportPayload(CpuName, CpuUnit);
-            this.ClientTelemetryInfo.SystemInfoMap.Add(cpuReportPayload, cpuHistogram);
+            // Waiting for msdata repo changes
         }
 
         private void FillMetric(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
         {
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in metrics)
             {
-                this.FillMetricsInfo(entry.Key, entry.Value);
+                ReportPayload payload = entry.Key;
+                LongConcurrentHistogram histogram = entry.Value;
+
+                LongConcurrentHistogram copyHistogram = (LongConcurrentHistogram)histogram.Copy();
+                payload.MetricInfo.Count = copyHistogram.TotalCount;
+                payload.MetricInfo.Max = copyHistogram.GetMaxValue();
+                payload.MetricInfo.Min = copyHistogram.GetMinValue();
+                payload.MetricInfo.Mean = copyHistogram.GetMean();
+                IDictionary<Double, Double> percentile = new Dictionary<Double, Double>
+                {
+                    { ClientTelemetryOptions.Percentile50,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile50) },
+                    { ClientTelemetryOptions.Percentile90,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile90) },
+                    { ClientTelemetryOptions.Percentile95,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile95) },
+                    { ClientTelemetryOptions.Percentile99,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile99) },
+                    { ClientTelemetryOptions.Percentile999, copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile999) }
+                };
+                payload.MetricInfo.Percentiles = percentile;
             }
         }
 
-        private void FillMetricsInfo(ReportPayload payload, LongConcurrentHistogram histogram)
+        /// <summary>
+        ///  Start telemetry Process which trigger 3 seprate processes
+        ///  1. Set Account information
+        ///  2. Load VM metedata information
+        ///  3. Calculate and Send telemetry Information (infinite process)
+        /// </summary>
+        internal void Start()
         {
-            LongConcurrentHistogram copyHistogram = (LongConcurrentHistogram)histogram.Copy();
-            payload.MetricInfo.Count = copyHistogram.TotalCount;
-            payload.MetricInfo.Max = copyHistogram.GetMaxValue();
-            payload.MetricInfo.Min = copyHistogram.GetMinValue();
-            payload.MetricInfo.Mean = copyHistogram.GetMean();
-            IDictionary<Double, Double> percentile = new Dictionary<Double, Double>
-            {
-                { Percentile50,  copyHistogram.GetValueAtPercentile(Percentile50) },
-                { Percentile90,  copyHistogram.GetValueAtPercentile(Percentile90) },
-                { Percentile95,  copyHistogram.GetValueAtPercentile(Percentile95) },
-                { Percentile99,  copyHistogram.GetValueAtPercentile(Percentile99) },
-                { Percentile999, copyHistogram.GetValueAtPercentile(Percentile999) }
-            };
-            payload.MetricInfo.Percentiles = percentile;
+            this.accountInfoTask = Task.Run(this.SetAccountNameAsync);
+            this.vmTask = Task.Run(this.LoadAzureVmMetaDataAsync);
+
+            this.telemetryTask = Task.Run(this.CalculateAndSendTelemetryInformationAsync);
         }
 
-        internal async Task InitAsync()
+        internal async Task SetAccountNameAsync()
         {
-            if (this.IsClientTelemetryEnabled)
-            {
-                await this.LoadAzureVmMetaDataAsync();
-                _ = Task.Run(this.CalculateAndSendTelemetryInformationAsync);
-            } 
-            else
-            {
-                DefaultTrace.TraceWarning("Client Telemetry is disabled");
-            }
-           
+            AccountProperties accountProperties = await this.documentClient.GetDatabaseAccountAsync();
+
+            Console.WriteLine("SetAccountNameAsync : " + accountProperties.Id);
+            this.ClientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
         }
 
         internal void Reset()
@@ -356,6 +302,10 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.CancellationTokenSource.Cancel();
                     this.CancellationTokenSource.Dispose();
+
+                    this.telemetryTask = null;
+                    this.vmTask = null;
+                    this.accountInfoTask = null;
                 }
 
                 this.isDisposed = true;

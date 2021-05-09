@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Text;
     using HdrHistogram;
@@ -17,29 +18,28 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public string ProcessId { get; }
         public string UserAgent { get; }
         public ConnectionMode ConnectionMode { get; }
-        public string GlobalDatabaseAccountName { get; }
+        public string GlobalDatabaseAccountName { get; set;  }
         public string ApplicationRegion { get; set; }
         public string HostEnvInfo { get; set; }
         public bool? AcceleratedNetworking { get; }
-        public IDictionary<ReportPayload, LongConcurrentHistogram> SystemInfoMap { get; set; }
-        public IDictionary<ReportPayload, LongConcurrentHistogram> CacheRefreshInfoMap { get; set; }
-        public IDictionary<ReportPayload, LongConcurrentHistogram> OperationInfoMap { get; set; }
+
+        public ConcurrentDictionary<ReportPayload, LongConcurrentHistogram> SystemInfoMap { get; set; }
+        public ConcurrentDictionary<ReportPayload, LongConcurrentHistogram> CacheRefreshInfoMap { get; set; }
+        public ConcurrentDictionary<ReportPayload, LongConcurrentHistogram> OperationInfoMap { get; set; }
         public ClientTelemetryInfo(string clientId,
                                    string processId,
                                    string userAgent,
                                    ConnectionMode connectionMode,
-                                   string globalDatabaseAccountName,
                                    bool? acceleratedNetworking)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionMode = connectionMode;
-            this.GlobalDatabaseAccountName = globalDatabaseAccountName;
             this.AcceleratedNetworking = acceleratedNetworking;
-            this.SystemInfoMap = new Dictionary<ReportPayload, LongConcurrentHistogram>();
-            this.CacheRefreshInfoMap = new Dictionary<ReportPayload, LongConcurrentHistogram>();
-            this.OperationInfoMap = new Dictionary<ReportPayload, LongConcurrentHistogram>();
+            this.SystemInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
+            this.CacheRefreshInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
+            this.OperationInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
         }
 
     }

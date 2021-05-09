@@ -70,13 +70,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public void IncludeTelemetryInformation()
         {
-            if (!this.TestClient.ClientOptions.EnableClientTelemetry)
+            if (!this.TestClient.ClientOptions.EnableClientTelemetry.HasValue)
             {
                 return;
             }
 
             ClientTelemetryInfo clientTelementry = 
-                this.TestClient.DocumentClient.clientTelemetry.ClientTelemetryInfo;
+                this.TestClient.Telemetry.ClientTelemetryInfo;
             if (clientTelementry.OperationInfoMap.Count == 0)
             {
                 throw new Exception();
