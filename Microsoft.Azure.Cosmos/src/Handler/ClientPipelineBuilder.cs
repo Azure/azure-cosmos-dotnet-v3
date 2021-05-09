@@ -24,8 +24,10 @@ namespace Microsoft.Azure.Cosmos
 
         public ClientPipelineBuilder(
             CosmosClient client,
+            DocumentClient documentClient,
             ConsistencyLevel? requestedClientConsistencyLevel,
-            IReadOnlyCollection<RequestHandler> customHandlers)
+            IReadOnlyCollection<RequestHandler> customHandlers,
+            ConnectionPolicy connectionPolicy)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
@@ -41,9 +43,11 @@ namespace Microsoft.Azure.Cosmos
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
 
-            this.telemetryHandler = new TelemetryHandler(client);
-            Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
-
+            if (connectionPolicy.EnableClientTelemetry)
+            {
+                this.telemetryHandler = new TelemetryHandler(client, documentClient, connectionPolicy);
+                Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
+            }
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
         }
@@ -146,9 +150,12 @@ namespace Microsoft.Azure.Cosmos
             current.InnerHandler = this.retryHandler;
             current = current.InnerHandler;
 
-            Debug.Assert(this.telemetryHandler != null, nameof(this.telemetryHandler));
-            current.InnerHandler = this.telemetryHandler;
-            current = current.InnerHandler;
+            if (this.telemetryHandler != null)
+            {
+                Debug.Assert(this.telemetryHandler != null, nameof(this.telemetryHandler));
+                current.InnerHandler = this.telemetryHandler;
+                current = current.InnerHandler;
+            }
 
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();

@@ -632,7 +632,7 @@ namespace Microsoft.Azure.Cosmos
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
-        internal bool EnableClientTelemetry { get; set; }
+        internal bool? EnableClientTelemetry { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
@@ -669,9 +669,13 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory,
-                EnableClientTelemetry = this.EnableClientTelemetry
+                HttpClientFactory = this.httpClientFactory
             };
+
+            if (this.EnableClientTelemetry.HasValue)
+            {
+                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+            }
 
             if (this.ApplicationRegion != null)
             {

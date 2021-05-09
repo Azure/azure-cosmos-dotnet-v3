@@ -60,28 +60,5 @@ namespace Microsoft.Azure.Cosmos.Handler
             }
         }
 
-        public List<double> GetCpuDiagnostics()
-        {
-            List<double> readingList = new List<double>();
-            if (this.isCpuMonitorEnabled)
-            {
-                CpuLoadHistory cpuHistory = this.cpuMonitor.GetCpuLoad();
-                this.GetDetails(cpuHistory.ToString(), readingList);
-            }
-            return readingList;
-        }
-
-        internal void GetDetails(string cpuHistory, List<double> readingList)
-        {
-            if (!string.IsNullOrEmpty(cpuHistory))
-            {
-                string[] readings = cpuHistory.Split(',');
-                foreach (string reading in readings)
-                {
-                    string cleanedUpReading = reading.Trim().Replace(")", string.Empty);
-                    readingList.Add(double.Parse(cleanedUpReading.Split(' ')[1]));
-                }
-            }
-        }
     }
 }

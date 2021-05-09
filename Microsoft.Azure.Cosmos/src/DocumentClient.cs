@@ -109,8 +109,7 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
-        private const bool DefaultEnableClientTelemetry = false;
-
+        
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
@@ -133,8 +132,6 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
-        private bool enableClientTelemetry = DefaultEnableClientTelemetry;
-
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
@@ -175,7 +172,6 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
-        public ClientTelemetry clientTelemetry { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -380,8 +376,7 @@ namespace Microsoft.Azure.Cosmos
                       ISessionContainer sessionContainer = null,
                       bool? enableCpuMonitor = null,
                       Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                      IStoreClientFactory storeClientFactory = null,
-                      bool? enableClientTelemetry = null)
+                      IStoreClientFactory storeClientFactory = null)
             : this(serviceEndpoint,
                 AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
                 sendingRequestEventArgs,
@@ -394,8 +389,7 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer,
                 enableCpuMonitor,
                 transportClientHandlerFactory,
-                storeClientFactory,
-                enableClientTelemetry)
+                storeClientFactory)
         {
         }
 
@@ -417,7 +411,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="enableCpuMonitor">Flag that indicates whether client-side CPU monitoring is enabled for improved troubleshooting.</param>
         /// <param name="transportClientHandlerFactory">Transport client handler factory.</param>
         /// <param name="storeClientFactory">Factory that creates store clients sharing the same transport client to optimize network resource reuse across multiple document clients in the same process.</param>
-        /// <param name="enableClientTelemetry">Telemetry is enabled or not</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -441,8 +434,7 @@ namespace Microsoft.Azure.Cosmos
                               ISessionContainer sessionContainer = null,
                               bool? enableCpuMonitor = null,
                               Func<TransportClient, TransportClient> transportClientHandlerFactory = null,
-                              IStoreClientFactory storeClientFactory = null,
-                              bool? enableClientTelemetry = null)
+                              IStoreClientFactory storeClientFactory = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -471,8 +463,7 @@ namespace Microsoft.Azure.Cosmos
                 handler: handler,
                 sessionContainer: sessionContainer,
                 enableCpuMonitor: enableCpuMonitor,
-                storeClientFactory: storeClientFactory,
-                enableClientTelemetry: enableClientTelemetry);
+                storeClientFactory: storeClientFactory);
         }
 
         /// <summary>
@@ -648,8 +639,7 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer = null,
             bool? enableCpuMonitor = null,
             IStoreClientFactory storeClientFactory = null,
-            TokenCredential tokenCredential = null,
-            bool? enableClientTelemetry = null)
+            TokenCredential tokenCredential = null)
         {
             if (serviceEndpoint == null)
             {
@@ -879,14 +869,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.rntbdPortReuseMode = connectionPolicy.PortReuseMode.Value;
                 }
-
-                this.enableClientTelemetry = connectionPolicy.EnableClientTelemetry;
             }
-            if (enableClientTelemetry.HasValue)
-            {
-                this.enableClientTelemetry = this.enableClientTelemetry || enableClientTelemetry.Value;
-            }
-
+           
             this.ServiceEndpoint = serviceEndpoint.OriginalString.EndsWith("/", StringComparison.Ordinal) ? serviceEndpoint : new Uri(serviceEndpoint.OriginalString + "/");
 
             this.ConnectionPolicy = connectionPolicy ?? ConnectionPolicy.Default;
@@ -999,16 +983,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.InitializeDirectConnectivity(storeClientFactory);
             }
-
-            this.clientTelemetry = new ClientTelemetry(acceleratedNetworking: null,
-                    clientId: Guid.NewGuid().ToString(),
-                    processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName,
-                    userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
-                    connectionMode: this.ConnectionPolicy.ConnectionMode,
-                    globalDatabaseAccountName: this.accountServiceConfiguration.AccountProperties.Id,
-                    httpClient: this.httpClient,
-                    isClientTelemetryEnabled: this.enableClientTelemetry);
-            await this.clientTelemetry.InitAsync();
         }
 
         private async Task InitializeCachesAsync(string databaseName, DocumentCollection collection, CancellationToken cancellationToken)
@@ -1262,11 +1236,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.queryPartitionProvider != null && this.queryPartitionProvider.IsValueCreated)
             {
                 this.queryPartitionProvider.Value.Dispose();
-            }
-
-            if (this.clientTelemetry != null && this.enableClientTelemetry)
-            {
-                this.clientTelemetry.Dispose();
             }
 
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);

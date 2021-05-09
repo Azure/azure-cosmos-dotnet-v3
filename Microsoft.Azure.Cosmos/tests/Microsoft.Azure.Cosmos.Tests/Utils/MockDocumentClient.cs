@@ -264,15 +264,6 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
 
-            this.clientTelemetry = new ClientTelemetry(acceleratedNetworking: null,
-                        clientId: Guid.NewGuid().ToString(),
-                        processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName,
-                        userAgent: this.ConnectionPolicy.UserAgentContainer.UserAgent,
-                        connectionMode: this.ConnectionPolicy.ConnectionMode,
-                        globalDatabaseAccountName: "testAccount",
-                        httpClient: null,
-                        isClientTelemetryEnabled: true);
-
         }
     }
 }

@@ -17,11 +17,21 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly CosmosClient client;
+        private readonly ClientTelemetry clientTelemetry;
+        private readonly ConsistencyLevel consistencyLevel;
 
-        public TelemetryHandler(CosmosClient client)
+        public TelemetryHandler(CosmosClient client, DocumentClient documentClient, ConnectionPolicy connectionPolicy)
         {
-            this.client = client ?? throw new ArgumentNullException(nameof(client));
+            this.clientTelemetry = new ClientTelemetry(
+                documentClient: documentClient,
+                acceleratedNetworking: null,
+                connectionPolicy: connectionPolicy);
+
+            client.Telemetry = this.clientTelemetry;
+
+            this.consistencyLevel = (Cosmos.ConsistencyLevel)documentClient.ConsistencyLevel;
+
+            this.clientTelemetry.Start();
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -31,9 +41,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                this.client
-                    .DocumentClient
-                    .clientTelemetry
+                this.clientTelemetry
                     .Collect(
                           cosmosDiagnostics: response.Diagnostics,
                           statusCode: response.StatusCode,
@@ -50,18 +58,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private bool IsAllowed(RequestMessage request)
         { 
-            return ClientTelemetry.IsTelemetryEnabled(this.client
-                       .ClientOptions
-                       .EnableClientTelemetry) && 
-                   ClientTelemetry.AllowedResourceTypes.Contains(request.ResourceType);
+            return ClientTelemetryOptions.AllowedResourceTypes.Contains(request.ResourceType);
         }
 
         private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)
         {
-            ConsistencyLevel? defaultConsistencyLevel = request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault();
-            if (defaultConsistencyLevel == null)
-                return this.client.ClientOptions.ConsistencyLevel.GetValueOrDefault();
-            return defaultConsistencyLevel;     
+            return request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault() ?? this.consistencyLevel;   
         }
 
         private int GetPayloadSize(ResponseMessage response)

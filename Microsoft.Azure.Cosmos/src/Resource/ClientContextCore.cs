@@ -76,8 +76,7 @@ namespace Microsoft.Azure.Cosmos
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
                handler: httpMessageHandler,
-               sessionContainer: clientOptions.SessionContainer,
-               enableClientTelemetry: clientOptions.EnableClientTelemetry);
+               sessionContainer: clientOptions.SessionContainer);
 
             return ClientContextCore.Create(
                 cosmosClient,
@@ -108,8 +107,10 @@ namespace Microsoft.Azure.Cosmos
                 //Request pipeline 
                 ClientPipelineBuilder clientPipelineBuilder = new ClientPipelineBuilder(
                     cosmosClient,
+                    documentClient,
                     clientOptions.ConsistencyLevel,
-                    clientOptions.CustomHandlers);
+                    clientOptions.CustomHandlers,
+                    clientOptions.GetConnectionPolicy());
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
