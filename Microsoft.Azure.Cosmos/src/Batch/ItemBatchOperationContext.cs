@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -27,11 +28,15 @@ namespace Microsoft.Azure.Cosmos
 
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
+            ITrace trace,
             IDocumentClientRetryPolicy retryPolicy = null)
         {
             this.PartitionKeyRangeId = partitionKeyRangeId;
+            this.Trace = trace;
             this.retryPolicy = retryPolicy;
         }
+
+        public ITrace Trace { get; private set; }
 
         /// <summary>
         /// Based on the Retry Policy, if a failed response should retry.
@@ -40,6 +45,7 @@ namespace Microsoft.Azure.Cosmos
             TransactionalBatchOperationResult batchOperationResult,
             CancellationToken cancellationToken)
         {
+            // append Traces
             if (this.retryPolicy == null
                 || batchOperationResult.IsSuccessStatusCode)
             {
@@ -54,6 +60,7 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncBatcher completer,
             TransactionalBatchOperationResult result)
         {
+            // append traces
             if (this.AssertBatcher(completer))
             {
                 this.taskCompletionSource.SetResult(result);

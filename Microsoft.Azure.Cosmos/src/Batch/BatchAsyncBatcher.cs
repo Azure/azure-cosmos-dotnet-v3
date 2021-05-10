@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos
                     // Any overflow goes to a new batch
                     foreach (ItemBatchOperation operation in pendingOperations)
                     {
-                        await this.retrier(operation, trace, cancellationToken);
+                        await this.retrier(operation, cancellationToken);
                     }
                 }
                 catch (Exception ex)
@@ -175,10 +175,10 @@ namespace Microsoft.Azure.Cosmos
 
                             if (!response.IsSuccessStatusCode)
                             {
-                                Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
+                                ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
                                 if (shouldRetry.ShouldRetry)
                                 {
-                                    await this.retrier(itemBatchOperation, trace, cancellationToken);
+                                    await this.retrier(itemBatchOperation, cancellationToken);
                                     continue;
                                 }
                             }
@@ -244,6 +244,5 @@ namespace Microsoft.Azure.Cosmos
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
     internal delegate Task BatchAsyncBatcherRetryDelegate(
         ItemBatchOperation operation,
-        ITrace trace,
         CancellationToken cancellationToken);
 }
