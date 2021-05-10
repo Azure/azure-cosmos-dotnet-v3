@@ -88,7 +88,7 @@ namespace CosmosBenchmark
         /// <returns>a Task object.</returns>
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
-            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
+            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key, config.UseAzureActiveDirectoryAuth))
             {
                 Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                 if (config.CleanupOnStart)
