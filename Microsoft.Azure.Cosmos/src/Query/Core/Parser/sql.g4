@@ -89,6 +89,8 @@ logical_scalar_expression
 	: binary_scalar_expression
 	| in_scalar_expression
 	| like_scalar_expression
+	| logical_scalar_expression K_AND logical_scalar_expression
+	| logical_scalar_expression K_OR logical_scalar_expression
 	;
 
 in_scalar_expression
@@ -112,8 +114,6 @@ binary_scalar_expression
 	| binary_scalar_expression bitwise_and_operator binary_scalar_expression
 	| binary_scalar_expression bitwise_exclusive_or_operator binary_scalar_expression
 	| binary_scalar_expression bitwise_inclusive_or_operator binary_scalar_expression
-	| binary_scalar_expression K_AND binary_scalar_expression
-	| binary_scalar_expression K_OR binary_scalar_expression
 	| binary_scalar_expression string_concat_operator binary_scalar_expression
 	;
 
@@ -179,7 +179,7 @@ scalar_expression_list : scalar_expression (',' scalar_expression)*;
 
 object_property_list : object_property (',' object_property)* ;
 
-object_property : STRING_LITERAL ':' scalar_expression ;
+object_property : (STRING_LITERAL | IDENTIFIER) ':' scalar_expression ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
@@ -238,8 +238,8 @@ NUMERIC_LITERAL
 	;
 
 STRING_LITERAL
-	: '"' (ESC | SAFECODEPOINT)* '"'
-	| '\'' (ESC | SAFECODEPOINT)* '\''
+	: '"' (ESC | SAFECODEPOINTWITHDOUBLEQUOTATION)* '"'
+	| '\'' (ESC | SAFECODEPOINTWITHSINGLEQUOTATION)* '\''
 	;
 
 fragment ESC
@@ -254,9 +254,13 @@ fragment HEX
    : [0-9a-fA-F]
    ;
 
-fragment SAFECODEPOINT
-   : ~ ["\\\u0000-\u001F]
-   ;
+fragment SAFECODEPOINTWITHSINGLEQUOTATION
+	: ~ ['\\\u0000-\u001F]
+	;
+
+fragment SAFECODEPOINTWITHDOUBLEQUOTATION
+	: ~ ["\\\u0000-\u001F]
+	;
 
 IDENTIFIER
 	: 
