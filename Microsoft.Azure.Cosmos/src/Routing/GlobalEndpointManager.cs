@@ -71,19 +71,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
                     }
                 }
-
-                string minimumIntervalForNonForceRefreshLocationInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS];
-                if (!string.IsNullOrEmpty(minimumIntervalForNonForceRefreshLocationInMSConfig))
-                {
-                    if (int.TryParse(minimumIntervalForNonForceRefreshLocationInMSConfig, out int minimumIntervalForNonForceRefreshLocationInMS))
-                    {
-                        this.MinTimeBetweenAccountRefresh = TimeSpan.FromMilliseconds(minimumIntervalForNonForceRefreshLocationInMS);
-                    }
-                }
 #if NETSTANDARD20
             }
 #endif  
 #endif
+            string minimumIntervalForNonForceRefreshLocationInMSConfig = Environment.GetEnvironmentVariable(GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS);
+            if (!string.IsNullOrEmpty(minimumIntervalForNonForceRefreshLocationInMSConfig))
+            {
+                if (int.TryParse(minimumIntervalForNonForceRefreshLocationInMSConfig, out int minimumIntervalForNonForceRefreshLocationInMS))
+                {
+                    this.MinTimeBetweenAccountRefresh = TimeSpan.FromMilliseconds(minimumIntervalForNonForceRefreshLocationInMS);
+                }
+                else
+                {
+                    DefaultTrace.TraceError($"GlobalEndpointManager: Failed to parse {GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS}; Value:{minimumIntervalForNonForceRefreshLocationInMSConfig}");
+                }
+            }
         }
 
         public ReadOnlyCollection<Uri> ReadEndpoints => this.locationCache.ReadEndpoints;
