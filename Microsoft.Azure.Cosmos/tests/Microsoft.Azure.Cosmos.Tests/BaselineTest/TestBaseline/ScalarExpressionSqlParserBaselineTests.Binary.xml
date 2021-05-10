@@ -343,6 +343,42 @@
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Double AND]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 AND r.age = 2 AND r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((r.age = 1) AND (r.age = 2)) AND (r.age = 3))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double OR]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 OR r.age = 2 OR r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((r.age = 1) OR (r.age = 2)) OR (r.age = 3))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[AND and then OR]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 AND r.age = 2 OR r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((r.age = 1) AND (r.age = 2)) OR (r.age = 3))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OR and then AND]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 OR r.age = 2 AND r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((r.age = 1) OR ((r.age = 2) AND (r.age = 3)))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Missing Right]]></Description>
       <Query><![CDATA[SELECT VALUE 42 +]]></Query>
     </Input>
