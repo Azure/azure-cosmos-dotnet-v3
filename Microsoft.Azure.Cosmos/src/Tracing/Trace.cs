@@ -88,7 +88,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 level: level,
                 component: component,
                 parent: this);
-            this.children.Add(child);
+
+            lock (this.children)
+            {
+                this.children.Add(child);
+            }
+
             return child;
         }
 

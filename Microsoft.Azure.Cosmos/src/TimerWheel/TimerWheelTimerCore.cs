@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Timers
 
             this.timerWheel = timerWheel ?? throw new ArgumentNullException(nameof(timerWheel));
             this.Timeout = timeoutPeriod;
-            this.taskCompletionSource = new TaskCompletionSource<object>();
+            this.taskCompletionSource = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             this.memberLock = new object();
         }
 

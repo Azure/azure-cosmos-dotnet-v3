@@ -260,6 +260,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
         }
 
+        internal static void SetupRequestTimeoutException(
+            Mock<TransportClient> mockTransportClient,
+            TransportAddressUri physicalUri)
+        {
+            mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
+                .Returns(() =>
+                {
+                    Console.WriteLine($"RequestTimeoutThrown: {physicalUri}");
+                    throw new RequestTimeoutException($"Mock request timeout exception on URI:{physicalUri}", physicalUri.Uri);
+                });
+        }
+
         internal static void SetupCreateItemResponse(
             Mock<TransportClient> mockTransportClient,
             TransportAddressUri physicalUri)

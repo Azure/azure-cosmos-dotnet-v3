@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public abstract ValueTask DisposeAsync();
 
-        public void SetCancellationToken(CancellationToken cancellationToken)
+        public virtual void SetCancellationToken(CancellationToken cancellationToken)
         {
             this.cancellationToken = cancellationToken;
         }
