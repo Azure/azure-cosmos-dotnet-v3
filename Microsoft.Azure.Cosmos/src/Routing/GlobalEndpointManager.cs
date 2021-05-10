@@ -466,7 +466,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (this.SkipRefresh(forceRefresh))
             {
-                Console.WriteLine("Skip Refreshing before lock");
                 return;
             }
             
@@ -475,14 +474,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 // Check again if should refresh after obtaining the lock
                 if (this.SkipRefresh(forceRefresh))
                 {
-                    Console.WriteLine("Skip Refreshing");
                     return;
                 }
 
                 // If the refresh is already in progress just return. No reason to do another refresh.
                 if (this.isAccountRefreshInProgress)
                 {
-                    Console.WriteLine("In progress Refreshing");
                     return;
                 }
 
@@ -491,7 +488,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
-                Console.WriteLine("Refreshing");
 #nullable disable // Needed because AsyncCache does not have nullable enabled
                 AccountProperties accountProperties = await this.databaseAccountCache.GetAsync(
                     key: string.Empty,
@@ -511,7 +507,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 lock (this.isAccountRefreshInProgressLock)
                 {
-                    Console.WriteLine("Finished Refreshing");
                     this.isAccountRefreshInProgress = false;
                 }
             }
