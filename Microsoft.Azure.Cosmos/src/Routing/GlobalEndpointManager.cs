@@ -519,7 +519,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool SkipRefresh(bool forceRefresh)
         {
             TimeSpan timeSinceLastRefresh = DateTime.UtcNow - this.LastBackgroundRefreshUtc;
-            return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh < timeSinceLastRefresh)
+            return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh > timeSinceLastRefresh)
                 && !forceRefresh;
         }
     }

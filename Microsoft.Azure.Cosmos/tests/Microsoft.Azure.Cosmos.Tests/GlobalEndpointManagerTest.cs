@@ -359,6 +359,9 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public void ReadLocationRemoveAndAddMockTest()
         {
+            string originalConfigValue = System.Configuration.ConfigurationManager.AppSettings["MinimumIntervalForNonForceRefreshLocationInMS"];
+            System.Configuration.ConfigurationManager.AppSettings["MinimumIntervalForNonForceRefreshLocationInMS"] = "1000";
+
             // Setup dummpy read locations for the database account
             Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
@@ -410,6 +413,8 @@ namespace Microsoft.Azure.Cosmos
             //Sleep a bit for the refresh timer to kick in and rediscover location 1
             Thread.Sleep(2000);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+
+            System.Configuration.ConfigurationManager.AppSettings["MinimumIntervalForNonForceRefreshLocationInMS"] = originalConfigValue;
         }
     }
 }

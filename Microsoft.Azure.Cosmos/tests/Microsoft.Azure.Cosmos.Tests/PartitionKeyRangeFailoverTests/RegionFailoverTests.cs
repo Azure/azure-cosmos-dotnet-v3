@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                {
                    // Simulate the legacy gateway being down. After 40 requests simulate the write region pointing to new location.
                    count++;
-                   if(count < 40)
+                   if(count < 2)
                    {
                        return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegion, readRegions));
                    }
