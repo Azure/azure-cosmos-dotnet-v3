@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.IsNull(handler);
         }
+
         [TestMethod]
         public void HandlerOrderIfTelemetryIsEnabled()
         {
@@ -67,10 +68,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(type.Equals(handler.GetType()));
                 handler = handler.InnerHandler;
             }
-
             Assert.IsNull(handler);
         }
-
 
         [TestMethod]
         public async Task TestPreProcessingHandler()

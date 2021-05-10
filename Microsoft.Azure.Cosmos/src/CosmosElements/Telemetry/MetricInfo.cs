@@ -22,5 +22,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         internal double Min { get; set; }
         internal double Max { get; set; }
         internal IDictionary<Double, Double> Percentiles { get; set; }
+
+        public override string ToString()
+        {
+            return base.ToString() + " : " +
+                this.MetricsName + " : " +
+                this.UnitName + " : " +
+                this.Mean + " : " +
+                this.Count + " : " +
+                this.Min + " : " +
+                this.Max + " : " +
+                this.Percentiles;
+        }
     }
 }
