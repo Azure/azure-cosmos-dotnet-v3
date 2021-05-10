@@ -33,7 +33,7 @@ namespace CosmosBenchmark
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
                 await Program.AddAzureInfoToRunSummary();
-                
+
                 ThreadPool.SetMinThreads(config.MinThreadPoolSize, config.MinThreadPoolSize);
 
                 if (config.EnableLatencyPercentiles)
@@ -76,7 +76,7 @@ namespace CosmosBenchmark
                 RunSummary.Location = jObject["compute"]["location"].ToString();
                 Console.WriteLine($"Azure VM Location:{RunSummary.Location}");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine("Failed to get Azure VM info:" + e.ToString());
             }
@@ -99,18 +99,26 @@ namespace CosmosBenchmark
                 ContainerResponse containerResponse = await Program.CreatePartitionedContainerAsync(config, cosmosClient);
                 Container container = containerResponse;
 
-                int? currentContainerThroughput = await container.ReadThroughputAsync();
+                int containerThroughput = config.Throughput;
 
-                if (!currentContainerThroughput.HasValue)
+                // AAD doesn't support read throughput
+                if (!config.EnableAzureActiveDirectoryAuth)
                 {
-                    // Container throughput is not configured. It is shared database throughput
-                    ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
-                    throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
-                        $"Container {config.Container} must have a configured throughput.");
+                    int? currentContainerThroughput = await container.ReadThroughputAsync();
+
+                    if (!currentContainerThroughput.HasValue)
+                    {
+                        // Container throughput is not configured. It is shared database throughput
+                        ThroughputResponse throughputResponse = await database.ReadThroughputAsync(requestOptions: null);
+                        throw new InvalidOperationException($"Using database {config.Database} with {throughputResponse.Resource.Throughput} RU/s. " +
+                            $"Container {config.Container} must have a configured throughput.");
+                    }
+
+                    containerThroughput = currentContainerThroughput.Value;
+                    Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
                 }
 
-                Console.WriteLine($"Using container {config.Container} with {currentContainerThroughput} RU/s");
-                int taskCount = config.GetTaskCount(currentContainerThroughput.Value);
+                int taskCount = config.GetTaskCount(containerThroughput);
 
                 Console.WriteLine("Starting Inserts with {0} tasks", taskCount);
                 Console.WriteLine();
@@ -175,8 +183,8 @@ namespace CosmosBenchmark
                 {
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config, 
-                        runSummary, 
+                        config,
+                        runSummary,
                         cosmosClient);
                 }
 
@@ -185,8 +193,8 @@ namespace CosmosBenchmark
         }
 
         private async Task PublishResults(
-            BenchmarkConfig config, 
-            RunSummary runSummary, 
+            BenchmarkConfig config,
+            RunSummary runSummary,
             CosmosClient benchmarkClient)
         {
             if (string.IsNullOrEmpty(config.ResultsEndpoint))
@@ -282,8 +290,8 @@ namespace CosmosBenchmark
             {
                 return await container.ReadContainerAsync();
             }
-            catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            { 
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
                 // Show user cost of running this test
                 double estimatedCostPerMonth = 0.06 * options.Throughput;
                 double estimatedCostPerHour = estimatedCostPerMonth / (24 * 30);
