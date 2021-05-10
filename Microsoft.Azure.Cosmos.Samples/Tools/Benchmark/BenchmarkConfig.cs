@@ -11,6 +11,7 @@ namespace CosmosBenchmark
     using Azure.Core;
     using Azure.Identity;
     using CommandLine;
+    using CommandLine.Text;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -29,8 +30,8 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
-        [Option(Required = false, HelpText = "Use Azure Active Directory auth")]
-        public bool UseAzureActiveDirectoryAuth { get; set; } = false;
+        [Option(Required = false, HelpText = "Enable Azure Active Directory auth")]
+        public bool EnableAzureActiveDirectoryAuth { get; set; } = false;
 
         [Option(Required = false, HelpText = "Database to use")]
         public string Database { get; set; } = "db";
@@ -144,9 +145,15 @@ namespace CosmosBenchmark
         {
             BenchmarkConfig options = null;
             Parser parser = new Parser((settings) => settings.CaseSensitive = false);
-            parser.ParseArguments<BenchmarkConfig>(args)
-                .WithParsed<BenchmarkConfig>(e => options = e)
-                .WithNotParsed<BenchmarkConfig>(e => BenchmarkConfig.HandleParseError(e));
+            ParserResult<BenchmarkConfig> result = parser.ParseArguments<BenchmarkConfig>(args);
+
+            result.WithParsed<BenchmarkConfig>(e => options = e)
+                .WithNotParsed(errors => {
+                    HelpText helpText = HelpText.AutoBuild(result,
+                                                      h => HelpText.DefaultParsingErrorsHandler(result, h),
+                                                      e => e);
+                    Console.WriteLine(helpText);
+                });
 
             if (options.PublishResults)
             {
@@ -215,19 +222,6 @@ namespace CosmosBenchmark
                                 }
                             },
                             desiredConsistencyLevel: consistencyLevel);
-        }
-
-        private static void HandleParseError(IEnumerable<Error> errors)
-        {
-            using (ConsoleColorContext ct = new ConsoleColorContext(ConsoleColor.Red))
-            {
-                foreach (Error e in errors)
-                {
-                    Console.WriteLine(e.ToString());
-                }
-            }
-
-            Environment.Exit(errors.Count());
         }
     }
 }
