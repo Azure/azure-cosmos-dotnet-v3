@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.Exceptions
 {
     using System;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class MalformedContinuationTokenException : QueryException
     {
@@ -23,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Exceptions
         {
         }
 
-        public override TResult Accept<TResult>(QueryExceptionVisitor<TResult> visitor)
+        public override TResult Accept<TResult>(QueryExceptionVisitor<TResult> visitor, ITrace trace)
         {
-            return visitor.Visit(this);
+            return visitor.Visit(this, trace);
         }
     }
 }

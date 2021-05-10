@@ -1369,27 +1369,13 @@
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.PatchOperation;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {
-        "Microsoft.Azure.Cosmos.PatchOperation`1;Microsoft.Azure.Cosmos.PatchOperation;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "T get_Value()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "T Value[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"value\")]": {
-              "Type": "Property",
-              "Attributes": [
-                "JsonPropertyAttribute"
-              ],
-              "MethodInfo": "T Value;CanRead:True;CanWrite:False;T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            }
-          },
-          "NestedTypes": {}
-        }
-      },
+      "Subclasses": {},
       "Members": {
+        "Boolean TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer, System.IO.Stream ByRef)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer, System.IO.Stream ByRef);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.PatchOperation Add[T](System.String, T)": {
           "Type": "Method",
           "Attributes": [],
@@ -1443,24 +1429,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String Path;CanRead:True;CanWrite:False;System.String get_Path();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.PatchOperation`1;Microsoft.Azure.Cosmos.PatchOperation;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "T get_Value()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "T Value[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"value\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "T Value;CanRead:True;CanWrite:False;T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -1797,7 +1765,32 @@
           "NestedTypes": {}
         }
       },
-      "Members": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Action`1[Microsoft.Azure.Cosmos.Headers] AddRequestHeaders": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] AddRequestHeaders;CanRead:True;CanWrite:True;System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Action`1[Microsoft.Azure.Cosmos.Headers] get_AddRequestHeaders();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AddRequestHeaders(System.Action`1[Microsoft.Azure.Cosmos.Headers]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.TransactionalBatch;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {

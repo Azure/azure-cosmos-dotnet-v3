@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// The exception that is thrown in a thread upon cancellation of an operation that
@@ -28,6 +30,20 @@ namespace Microsoft.Azure.Cosmos
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             this.Diagnostics = diagnostics ?? throw new ArgumentNullException(nameof(diagnostics));
+        }
+
+        internal CosmosOperationCanceledException(
+            OperationCanceledException originalException,
+            ITrace trace)
+        {
+            this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            trace.AddDatum("Operation Cancelled Exception", originalException);
+            this.Diagnostics = new CosmosTraceDiagnostics(trace);
         }
 
         /// <inheritdoc/>
