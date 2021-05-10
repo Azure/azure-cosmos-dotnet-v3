@@ -6,11 +6,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
@@ -58,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
+                    Stream decryptedContent = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
                         encryptionSettings,
                         diagnosticsContext,
@@ -69,58 +67,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 return responseMessage;
             }
-        }
-
-        private async Task<Stream> DeserializeAndDecryptResponseAsync(
-            Stream content,
-            EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            if (!encryptionSettings.PropertiesToEncrypt.Any())
-            {
-                return content;
-            }
-
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-            JArray results = new JArray();
-
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
-            {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
-            }
-
-            foreach (JToken value in documents)
-            {
-                if (value is not JObject document)
-                {
-                    results.Add(value);
-                    continue;
-                }
-
-                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                    document,
-                    encryptionSettings,
-                    diagnosticsContext,
-                    cancellationToken);
-
-                results.Add(decryptedDocument);
-            }
-
-            JObject decryptedResponse = new JObject();
-            foreach (JProperty property in contentJObj.Properties())
-            {
-                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
-                {
-                    decryptedResponse.Add(property.Name, (JToken)results);
-                }
-                else
-                {
-                    decryptedResponse.Add(property.Name, property.Value);
-                }
-            }
-
-            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
         }
     }
 }
