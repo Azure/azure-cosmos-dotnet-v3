@@ -130,6 +130,20 @@
                 description: "Logical OR > String Concat",
                 scalarExpression: "1 || 2 OR 3 || 4"));
 
+            // Binary with logical expressions
+            inputs.Add(CreateInput(
+                description: "AND with LIKE expressions",
+                scalarExpression: "r.name LIKE 12  AND r.name LIKE 34"));
+            inputs.Add(CreateInput(
+                description: "OR with LIKE expression",
+                scalarExpression: "r.name LIKE 12  OR r.name LIKE 34"));
+            inputs.Add(CreateInput(
+                description: "AND with IN expression",
+                scalarExpression: "r.name IN (1,2,3)  AND r.name IN (4,5,6)"));
+            inputs.Add(CreateInput(
+                description: "OR with IN expression",
+                scalarExpression: "r.name IN (1,2,3)  OR r.name IN (4,5,6)"));
+
             // Negative
             inputs.Add(CreateInput(description: "Missing Right", scalarExpression: "42 +"));
             inputs.Add(CreateInput(description: "Missing Left", scalarExpression: "AND 1337"));
