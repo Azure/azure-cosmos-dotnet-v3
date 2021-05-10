@@ -185,10 +185,11 @@ namespace CosmosBenchmark
                 clientOptions.ConsistencyLevel = (Microsoft.Azure.Cosmos.ConsistencyLevel)Enum.Parse(typeof(Microsoft.Azure.Cosmos.ConsistencyLevel), this.ConsistencyLevel, ignoreCase: true);
             }
 
+
             if (useAadAuth)
             {
                 return new CosmosClient(
-                    accountKey,
+                    this.EndPoint,
                     new ManagedIdentityCredential(),
                     clientOptions);
             }
