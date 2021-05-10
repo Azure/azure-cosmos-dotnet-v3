@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
@@ -31,10 +32,9 @@ namespace Microsoft.Azure.Cosmos
         internal ClientTelemetryInfo ClientTelemetryInfo;
         internal double ClientTelemetrySchedulingInSeconds;
         internal DocumentClient documentClient;
-
         internal HttpClient httpClient;
-        private bool isDisposed = false;
 
+        private bool isDisposed = false;
         private Task accountInfoTask;
         private Task vmTask;
         private Task telemetryTask;
@@ -221,9 +221,9 @@ namespace Microsoft.Azure.Cosmos
 
         private void CalculateMetrics()
         {
-            this.FillMetric(this.ClientTelemetryInfo.CacheRefreshInfoMap);
-            this.FillMetric(this.ClientTelemetryInfo.OperationInfoMap);
-            this.FillMetric(this.ClientTelemetryInfo.SystemInfoMap);
+            this.FillMetricInformation(this.ClientTelemetryInfo.CacheRefreshInfoMap);
+            this.FillMetricInformation(this.ClientTelemetryInfo.OperationInfoMap);
+            this.FillMetricInformation(this.ClientTelemetryInfo.SystemInfoMap);
         }
 
         private void RecordSystemUtilization()
@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
             // Waiting for msdata repo changes
         }
 
-        private void FillMetric(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
+        private void FillMetricInformation(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
         {
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in metrics)
             {
@@ -272,8 +272,6 @@ namespace Microsoft.Azure.Cosmos
         internal async Task SetAccountNameAsync()
         {
             AccountProperties accountProperties = await this.documentClient.GetDatabaseAccountAsync();
-
-            Console.WriteLine("SetAccountNameAsync : " + accountProperties.Id);
             this.ClientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
         }
 

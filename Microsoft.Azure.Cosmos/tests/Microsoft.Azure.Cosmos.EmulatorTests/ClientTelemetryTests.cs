@@ -295,7 +295,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int operationInfoMapCount,
             IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
         {
-            Thread.Sleep(2000);
+            Thread.Sleep(6000);
 
             Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
@@ -309,8 +309,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
                 Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-
-                //Assert.AreEqual(5, entry.Key.MetricInfo.Percentiles.Count, "Percentile count Not matched");
+                Assert.IsTrue(entry.Key.MetricInfo.Max > 0);
+                Assert.IsTrue(entry.Key.MetricInfo.Mean > 0);
+                Assert.AreEqual(5, entry.Key.MetricInfo.Percentiles.Count, "Percentile count Not matched");
             }
         }
 
