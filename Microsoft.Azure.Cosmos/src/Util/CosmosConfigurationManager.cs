@@ -19,5 +19,15 @@ namespace Microsoft.Azure.Cosmos
             }
             return (T)Convert.ChangeType(value, typeof(T));
         }
+
+        public static T GetEnvironmentVariable<T>(string variable, Exception ex)
+        {
+            string value = Environment.GetEnvironmentVariable(variable);
+            if (string.IsNullOrEmpty(value))
+            {
+                throw ex;
+            }
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
     }
 }

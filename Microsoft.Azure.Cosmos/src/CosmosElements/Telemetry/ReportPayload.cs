@@ -19,9 +19,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         public OperationType Operation { get; set; }
         public ResourceType Resource { get; set; }
         public int StatusCode { get; set; }
+        public int ResponseSizeInBytes { get; set; }
         public MetricInfo MetricInfo { get; set; }
-        public ReportPayload(string metricInfoName, string unitName)
+
+        public ReportPayload(string regionsContacted, 
+            int responseSizeInBytes, 
+            Cosmos.ConsistencyLevel consistency, 
+            string databaseName, 
+            string containerName, 
+            OperationType operation, 
+            ResourceType resource, 
+            int statusCode, string metricInfoName, string unitName)
         {
+            this.RegionsContacted = regionsContacted;
+            this.ResponseSizeInBytes = responseSizeInBytes;
+            if (responseSizeInBytes != 0)
+            {
+                this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
+            }
+            this.Consistency = consistency;
+            this.DatabaseName = databaseName;
+            this.ContainerName = containerName;
+            this.Operation = operation;
+            this.Resource = resource;
+            this.StatusCode = statusCode;
             this.MetricInfo = new MetricInfo(metricInfoName, unitName);
         }
 

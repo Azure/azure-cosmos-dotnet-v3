@@ -25,10 +25,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
             this.clientTelemetry = new ClientTelemetry(
                 documentClient: documentClient,
                 acceleratedNetworking: null,
-                connectionPolicy: connectionPolicy);
+                connectionPolicy: connectionPolicy,
+                authorizationTokenProvider: client.AuthorizationTokenProvider);
 
             client.Telemetry = this.clientTelemetry;
-
+//TODO: get account level in client telemetry task
             this.consistencyLevel = (Cosmos.ConsistencyLevel)documentClient.ConsistencyLevel;
 
             this.clientTelemetry.Start();

@@ -43,11 +43,12 @@ namespace Microsoft.Azure.Cosmos
         internal const double Percentile999 = 99.9;
         internal const string DateFormat = "yyyy-MM-ddTHH:mm:ssZ";
 
-        public const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
-        public const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
-        public const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
-    
-        internal static readonly List<ResourceType> AllowedResourceTypes = new List<ResourceType>(new ResourceType[]
+        internal const string EnvPropsClientTelemetrySchedulingInSeconds = "COSMOS.CLIENT_TELEMETRY_SCHEDULING_IN_SECONDS";
+        internal const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
+        internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
+        internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
+
+        internal static readonly HashSet<ResourceType> AllowedResourceTypes = new HashSet<ResourceType>(new ResourceType[]
         {
             ResourceType.Document
         });
@@ -79,15 +80,14 @@ namespace Microsoft.Azure.Cosmos
                     azMetadata.SKU, "|",
                     azMetadata.VMSize, "|",
                     azMetadata.AzEnvironment);
-        }
+        } 
 
-        internal static HttpClient GetHttpClient(ConnectionPolicy connectionPolicy)
+        internal static string GetClientTelemetryEndpoint()
         {
-            return connectionPolicy.HttpClientFactory != null
-                    ? connectionPolicy.HttpClientFactory.Invoke()
-                    : new HttpClient(CosmosHttpClientCore.CreateHttpClientHandler(
-                        gatewayModeMaxConnectionLimit: connectionPolicy.MaxConnectionLimit,
-                        webProxy: null));
+            return CosmosConfigurationManager
+                .GetEnvironmentVariable<string>(
+                    ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
+                    new ArgumentNullException("Telemetry Endpoint is not configured"));
         }
     }
 }
