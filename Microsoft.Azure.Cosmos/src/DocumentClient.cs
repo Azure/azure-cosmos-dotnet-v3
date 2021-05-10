@@ -148,11 +148,11 @@ namespace Microsoft.Azure.Cosmos
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
-        private CosmosHttpClient httpClient;
+        public CosmosHttpClient httpClient { get; private set; }
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
-        // Setting this flag to false will result in store client factory not being disposed when client is disposed.
-        // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
+    // Setting this flag to false will result in store client factory not being disposed when client is disposed.
+    // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
         private bool isStoreClientFactoryCreatedInternally;
 
         //Id counter.
@@ -6934,5 +6934,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         #endregion
+
     }
 }

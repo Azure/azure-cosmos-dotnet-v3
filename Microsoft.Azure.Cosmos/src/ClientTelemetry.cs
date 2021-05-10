@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos
         internal ClientTelemetryInfo ClientTelemetryInfo;
         internal double ClientTelemetrySchedulingInSeconds;
         internal DocumentClient documentClient;
-        internal HttpClient httpClient;
+        internal CosmosHttpClient httpClient;
+        internal AuthorizationTokenProvider TokenProvider;
 
         private bool isDisposed = false;
         private Task accountInfoTask;
@@ -42,7 +44,8 @@ namespace Microsoft.Azure.Cosmos
         public ClientTelemetry(
             DocumentClient documentClient,
             bool? acceleratedNetworking,
-            ConnectionPolicy connectionPolicy)
+            ConnectionPolicy connectionPolicy,
+            AuthorizationTokenProvider authorizationTokenProvider)
         {
             this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
             if (connectionPolicy == null)
@@ -58,10 +61,35 @@ namespace Microsoft.Azure.Cosmos
                 acceleratedNetworking: acceleratedNetworking);
 
             this.ClientTelemetrySchedulingInSeconds = ClientTelemetryOptions.GetSchedulingInSeconds();
-            this.httpClient = ClientTelemetryOptions.GetHttpClient(connectionPolicy);
+            this.httpClient = documentClient.httpClient;
             this.CancellationTokenSource = new CancellationTokenSource();
+            this.TokenProvider = authorizationTokenProvider;
         }
-       
+
+        /// <summary>
+        ///  Start telemetry Process which trigger 3 seprate processes
+        ///  1. Set Account information
+        ///  2. Load VM metedata information
+        ///  3. Calculate and Send telemetry Information (infinite process)
+        /// </summary>
+        internal void Start()
+        {
+            this.accountInfoTask = Task.Run(this.SetAccountNameAsync);
+            this.vmTask = Task.Run(this.LoadAzureVmMetaDataAsync);
+
+            this.telemetryTask = Task.Run(this.CalculateAndSendTelemetryInformationAsync);
+        }
+
+        /// <summary>
+        /// Gets Account Properties from cache if available otherwise make a network call
+        /// </summary>
+        /// <returns>It is a Task</returns>
+        internal async Task SetAccountNameAsync()
+        {
+            AccountProperties accountProperties = await this.documentClient.GlobalEndpointManager.GetDatabaseAccountAsync();
+            this.ClientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
+        }
+
         /// <summary>
         /// It is a separate thread which collects virtual machine metadata information.
         /// </summary>
@@ -70,14 +98,19 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                HttpRequestMessage request = new HttpRequestMessage()
+                static ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
-                    RequestUri = new Uri(ClientTelemetryOptions.GetVmMetadataUrl()),
-                    Method = HttpMethod.Get,
-                };
-                request.Headers.Add("Metadata", "true");
+                    HttpRequestMessage request = new HttpRequestMessage()
+                    {
+                        RequestUri = new Uri(ClientTelemetryOptions.GetVmMetadataUrl()),
+                        Method = HttpMethod.Get,
+                    };
+                    request.Headers.Add("Metadata", "true");
 
-                using HttpResponseMessage httpResponseMessage = await this.httpClient.SendAsync(request, this.CancellationTokenSource.Token);
+                    return new ValueTask<HttpRequestMessage>(request);
+                }
+                using HttpResponseMessage httpResponseMessage = await this.httpClient
+                    .SendHttpAsync(CreateRequestMessage, ResourceType.Unknown, HttpTimeoutPolicyDefault.Instance, null, this.CancellationTokenSource.Token);
                    
                 AzureVMMetadata azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
 
@@ -87,6 +120,32 @@ namespace Microsoft.Azure.Cosmos
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Exception in LoadAzureVmMetaDataAsync() " + ex.Message);
+            }
+        }
+
+        internal async Task CalculateAndSendTelemetryInformationAsync()
+        {
+            if (this.CancellationTokenSource.IsCancellationRequested)
+            {
+                return;
+            }
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), this.CancellationTokenSource.Token);
+
+                this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
+
+                this.RecordSystemUtilization();
+                this.CalculateMetrics();
+                //this.Send();
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Exception in CalculateAndSendTelemetryInformationAsync() : " + ex.Message);
+            }
+            finally
+            {
+                await this.CalculateAndSendTelemetryInformationAsync();
             }
         }
 
@@ -112,111 +171,55 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
-            ReportPayload reportPayloadLatency =
-                this.CreateReportPayload(cosmosDiagnostics: cosmosDiagnostics, 
-                    statusCode: statusCode, 
-                    responseSizeInBytes: responseSizeInBytes, 
-                    containerId: containerId, 
-                    databaseId: databaseId, 
-                    operationType: operationType,
-                    resourceType: resourceType, 
-                    consistencyLevel: consistencyLevel, 
-                    metricsName: ClientTelemetryOptions.RequestLatencyName, 
-                    unitName: ClientTelemetryOptions.RequestLatencyUnit);
-
-            this.ClientTelemetryInfo
-                .OperationInfoMap
-                .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram latencyHistogram);
-
-            latencyHistogram ??= statusCode.IsSuccess()
-                ? new LongConcurrentHistogram(1, ClientTelemetryOptions.RequestLatencyMaxMicroSec, ClientTelemetryOptions.RequestLatencySuccessPrecision)
-                : new LongConcurrentHistogram(1, ClientTelemetryOptions.RequestLatencyMaxMicroSec, ClientTelemetryOptions.RequestLatencyFailurePrecision);
-            latencyHistogram.RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
-            this.ClientTelemetryInfo.OperationInfoMap[reportPayloadLatency] = latencyHistogram;
-
-            ReportPayload reportPayloadRequestCharge =
-               this.CreateReportPayload(cosmosDiagnostics: cosmosDiagnostics, 
-                   statusCode: statusCode, 
-                   responseSizeInBytes: responseSizeInBytes, 
-                   containerId: containerId, 
-                   databaseId: databaseId, 
-                   operationType: operationType,
-                   resourceType: resourceType, 
-                   consistencyLevel: consistencyLevel, 
-                   metricsName: ClientTelemetryOptions.RequestChargeName, 
-                   unitName: ClientTelemetryOptions.RequestChargeUnit);
-
-            this.ClientTelemetryInfo
-                .OperationInfoMap
-                .TryGetValue(reportPayloadLatency, out LongConcurrentHistogram requestChargeHistogram);
-
-            requestChargeHistogram ??= new LongConcurrentHistogram(1, ClientTelemetryOptions.RequestChargeMax, ClientTelemetryOptions.RequestChargePrecision);
-            requestChargeHistogram.RecordValue((long)requestCharge);
-            this.ClientTelemetryInfo.OperationInfoMap[reportPayloadRequestCharge] = requestChargeHistogram;
-        }
-
-        internal ReportPayload CreateReportPayload(CosmosDiagnostics cosmosDiagnostics,
-                                                  HttpStatusCode statusCode,
-                                                  int responseSizeInBytes,
-                                                  string containerId,
-                                                  string databaseId,
-                                                  OperationType operationType,
-                                                  ResourceType resourceType,
-                                                  ConsistencyLevel? consistencyLevel,
-                                                  string metricsName,
-                                                  string unitName)
-        {
             IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
             IList<Uri> regionUris = new List<Uri>();
             foreach ((_, Uri uri) in regionList)
             {
                 regionUris.Add(uri);
             }
-
-            ReportPayload reportPayload = new ReportPayload(metricsName, unitName)
-            {
-                RegionsContacted = string.Join(",", regionUris),
-                Consistency = consistencyLevel.GetValueOrDefault(),
-                DatabaseName = databaseId,
-                ContainerName = containerId,
-                Operation = operationType,
-                Resource = resourceType,
-                StatusCode = (int)statusCode
-            };
-
-            if (responseSizeInBytes != 0)
-            {
-                reportPayload.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
-            }
-
-            return reportPayload;
+            
+            // Recordig Request Latency
+            this.ClientTelemetryInfo
+                .OperationInfoMap
+                .GetOrAdd(new ReportPayload(regionsContacted: string.Join(",", regionUris),
+                                            responseSizeInBytes: responseSizeInBytes,
+                                            consistency: consistencyLevel.GetValueOrDefault(),
+                                            databaseName: databaseId,
+                                            containerName: containerId,
+                                            operation: operationType,
+                                            resource: resourceType,
+                                            statusCode: (int)statusCode, 
+                                            ClientTelemetryOptions.RequestLatencyName, 
+                                            ClientTelemetryOptions.RequestLatencyUnit), 
+                          new LongConcurrentHistogram(1,
+                                                      ClientTelemetryOptions.RequestLatencyMaxMicroSec,
+                                                      statusCode.IsSuccess() ? 
+                                                        ClientTelemetryOptions.RequestLatencySuccessPrecision : 
+                                                        ClientTelemetryOptions.RequestLatencyFailurePrecision))
+                .RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
+            
+            // Recording Request Charge
+            this.ClientTelemetryInfo
+                .OperationInfoMap
+                .GetOrAdd(new ReportPayload(regionsContacted: string.Join(",", regionUris),
+                                                            responseSizeInBytes: responseSizeInBytes,
+                                                            consistency: consistencyLevel.GetValueOrDefault(),
+                                                            databaseName: databaseId,
+                                                            containerName: containerId,
+                                                            operation: operationType,
+                                                            resource: resourceType,
+                                                            statusCode: (int)statusCode, 
+                                                            ClientTelemetryOptions.RequestChargeName, 
+                                                            ClientTelemetryOptions.RequestChargeUnit), 
+                          new LongConcurrentHistogram(1, 
+                                                      ClientTelemetryOptions.RequestChargeMax, 
+                                                      ClientTelemetryOptions.RequestChargePrecision))
+                .RecordValue((long)requestCharge);
         }
 
-        internal async Task CalculateAndSendTelemetryInformationAsync()
+        private void RecordSystemUtilization()
         {
-            if (this.CancellationTokenSource.IsCancellationRequested)
-            {
-                return;
-            }
-            try
-            {
-                await Task.Delay(
-                    TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds),
-                    this.CancellationTokenSource.Token);
-
-                this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
-
-                this.RecordSystemUtilization();
-                this.CalculateMetrics();
-            }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Exception in CalculateAndSendTelemetryInformationAsync() : " + ex.Message);
-            }
-            finally
-            {
-                await this.CalculateAndSendTelemetryInformationAsync();
-            }
+            // Waiting for msdata repo changes
         }
 
         private void CalculateMetrics()
@@ -224,11 +227,6 @@ namespace Microsoft.Azure.Cosmos
             this.FillMetricInformation(this.ClientTelemetryInfo.CacheRefreshInfoMap);
             this.FillMetricInformation(this.ClientTelemetryInfo.OperationInfoMap);
             this.FillMetricInformation(this.ClientTelemetryInfo.SystemInfoMap);
-        }
-
-        private void RecordSystemUtilization()
-        {
-            // Waiting for msdata repo changes
         }
 
         private void FillMetricInformation(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
@@ -255,32 +253,21 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        /// <summary>
-        ///  Start telemetry Process which trigger 3 seprate processes
-        ///  1. Set Account information
-        ///  2. Load VM metedata information
-        ///  3. Calculate and Send telemetry Information (infinite process)
-        /// </summary>
-        internal void Start()
+       /* private void Send()
         {
-            this.accountInfoTask = Task.Run(this.SetAccountNameAsync);
-            this.vmTask = Task.Run(this.LoadAzureVmMetaDataAsync);
 
-            this.telemetryTask = Task.Run(this.CalculateAndSendTelemetryInformationAsync);
-        }
-
-        internal async Task SetAccountNameAsync()
-        {
-            AccountProperties accountProperties = await this.documentClient.GetDatabaseAccountAsync();
-            this.ClientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
-        }
+            this.TokenProvider.AddAuthorizationHeaderAsync(
+                       new INameValueCollection.(),
+                       new Uri(ClientTelemetryOptions.GetClientTelemetryEndpoint()),
+                       "POST",
+                       AuthorizationTokenType.PrimaryMasterKey);
+        }*/
 
         internal void Reset()
         {
             this.ClientTelemetryInfo.OperationInfoMap.Clear();
             this.ClientTelemetryInfo.SystemInfoMap.Clear();
             this.ClientTelemetryInfo.CacheRefreshInfoMap.Clear();
-
         }
 
         public void Dispose()
