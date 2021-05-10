@@ -210,7 +210,7 @@ K_ORDER : O R D E R;
 K_SELECT : S E L E C T;
 K_TOP : T O P;
 K_TRUE : 'true';
-K_UDF : U D F;
+K_UDF : 'udf';
 K_UNDEFINED : 'undefined';
 K_VALUE : V A L U E;
 K_WHERE : W H E R E;

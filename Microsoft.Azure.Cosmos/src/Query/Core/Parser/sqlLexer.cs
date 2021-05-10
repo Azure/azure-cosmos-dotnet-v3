@@ -79,7 +79,7 @@ internal partial class sqlLexer : Lexer {
 		"'/'", "'%'", "'+'", "'-'", "'<'", "'>'", "'>='", "'<='", "'='", "'!='", 
 		"'&'", "'^'", "'|'", "'||'", "'~'", "'{'", "'}'", null, null, null, null, 
 		null, null, null, null, null, null, "'false'", null, null, null, null, 
-		null, null, null, "'null'", null, null, null, null, null, "'true'", null, 
+		null, null, null, "'null'", null, null, null, null, null, "'true'", "'udf'", 
 		"'undefined'"
 	};
 	private static readonly string[] _SymbolicNames = {
@@ -466,8 +466,8 @@ internal partial class sqlLexer : Lexer {
 		'\x2', '\x2', '\x2', '\x178', '\x179', '\a', 'v', '\x2', '\x2', '\x179', 
 		'\x17A', '\a', 't', '\x2', '\x2', '\x17A', '\x17B', '\a', 'w', '\x2', 
 		'\x2', '\x17B', '\x17C', '\a', 'g', '\x2', '\x2', '\x17C', 'j', '\x3', 
-		'\x2', '\x2', '\x2', '\x17D', '\x17E', '\x5', '\xB1', 'Y', '\x2', '\x17E', 
-		'\x17F', '\x5', '\x8F', 'H', '\x2', '\x17F', '\x180', '\x5', '\x93', 'J', 
+		'\x2', '\x2', '\x2', '\x17D', '\x17E', '\a', 'w', '\x2', '\x2', '\x17E', 
+		'\x17F', '\a', '\x66', '\x2', '\x2', '\x17F', '\x180', '\a', 'h', '\x2', 
 		'\x2', '\x180', 'l', '\x3', '\x2', '\x2', '\x2', '\x181', '\x182', '\a', 
 		'w', '\x2', '\x2', '\x182', '\x183', '\a', 'p', '\x2', '\x2', '\x183', 
 		'\x184', '\a', '\x66', '\x2', '\x2', '\x184', '\x185', '\a', 'g', '\x2', 

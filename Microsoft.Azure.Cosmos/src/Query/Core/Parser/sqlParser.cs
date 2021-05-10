@@ -79,7 +79,7 @@ internal partial class sqlParser : Parser {
 		"'/'", "'%'", "'+'", "'-'", "'<'", "'>'", "'>='", "'<='", "'='", "'!='", 
 		"'&'", "'^'", "'|'", "'||'", "'~'", "'{'", "'}'", null, null, null, null, 
 		null, null, null, null, null, null, "'false'", null, null, null, null, 
-		null, null, null, "'null'", null, null, null, null, null, "'true'", null, 
+		null, null, null, "'null'", null, null, null, null, null, "'true'", "'udf'", 
 		"'undefined'"
 	};
 	private static readonly string[] _SymbolicNames = {
