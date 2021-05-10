@@ -27,17 +27,20 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
 
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
+        private const string MinimumIntervalForNonForceRefreshLocationInMS = "MinimumIntervalForNonForceRefreshLocationInMS";
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
         private readonly LocationCache locationCache;
         private readonly Uri defaultEndpoint;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
         private readonly AsyncCache<string, AccountProperties> databaseAccountCache = new AsyncCache<string, AccountProperties>();
+        private readonly TimeSpan MinTimeBetweenAccountRefresh = TimeSpan.FromSeconds(15);
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
         private readonly object isAccountRefreshInProgressLock = new object();
         private bool isAccountRefreshInProgress = false;
         private bool isBackgroundAccountRefreshActive = false;
+        private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
         public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
         {
@@ -66,6 +69,15 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (!int.TryParse(backgroundRefreshLocationTimeIntervalInMSConfig, out this.backgroundRefreshLocationTimeIntervalInMS))
                     {
                         this.backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
+                    }
+                }
+
+                string minimumIntervalForNonForceRefreshLocationInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS];
+                if (!string.IsNullOrEmpty(minimumIntervalForNonForceRefreshLocationInMSConfig))
+                {
+                    if (int.TryParse(minimumIntervalForNonForceRefreshLocationInMSConfig, out int minimumIntervalForNonForceRefreshLocationInMS))
+                    {
+                        this.MinTimeBetweenAccountRefresh = TimeSpan.FromMilliseconds(minimumIntervalForNonForceRefreshLocationInMS);
                     }
                 }
 #if NETSTANDARD20
@@ -386,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            await this.RefreshDatabaseAccountInternalAsync(waitForRefresh: forceRefresh);
+            await this.RefreshDatabaseAccountInternalAsync(forceRefresh: forceRefresh);
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods
@@ -420,7 +432,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Invoking refresh");
 
-                await this.RefreshDatabaseAccountInternalAsync(waitForRefresh: false);
+                await this.RefreshDatabaseAccountInternalAsync(forceRefresh: false);
             }
             catch (Exception ex)
             {
@@ -450,20 +462,27 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Thread safe refresh account and location info.
         /// </summary>
-        private async Task RefreshDatabaseAccountInternalAsync(bool waitForRefresh)
+        private async Task RefreshDatabaseAccountInternalAsync(bool forceRefresh)
         {
-            if (this.isAccountRefreshInProgress && !waitForRefresh)
+            if (this.SkipRefresh(forceRefresh))
             {
+                Console.WriteLine("Skip Refreshing before lock");
                 return;
             }
-
-            bool isRefreshingBeforeLock = this.isAccountRefreshInProgress;
+            
             lock (this.isAccountRefreshInProgressLock)
             {
-                // If it was refreshing before the lock then the account was already just
-                // refreshed. No reason to refresh it again.
-                if (this.isAccountRefreshInProgress || isRefreshingBeforeLock)
+                // Check again if should refresh after obtaining the lock
+                if (this.SkipRefresh(forceRefresh))
                 {
+                    Console.WriteLine("Skip Refreshing");
+                    return;
+                }
+
+                // If the refresh is already in progress just return. No reason to do another refresh.
+                if (this.isAccountRefreshInProgress)
+                {
+                    Console.WriteLine("In progress Refreshing");
                     return;
                 }
 
@@ -472,6 +491,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
+                Console.WriteLine("Refreshing");
 #nullable disable // Needed because AsyncCache does not have nullable enabled
                 AccountProperties accountProperties = await this.databaseAccountCache.GetAsync(
                     key: string.Empty,
@@ -483,6 +503,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     cancellationToken: this.cancellationTokenSource.Token,
                     forceRefresh: true);
 
+                this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
 #nullable enable
             }
@@ -490,9 +511,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 lock (this.isAccountRefreshInProgressLock)
                 {
+                    Console.WriteLine("Finished Refreshing");
                     this.isAccountRefreshInProgress = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// If the account is currently refreshing or the last refresh occurred less than the minimum time
+        /// just return. This is used to avoid refreshing to often and preventing to much pressure on the gateway.
+        /// </summary>
+        private bool SkipRefresh(bool forceRefresh)
+        {
+            TimeSpan timeSinceLastRefresh = DateTime.UtcNow - this.LastBackgroundRefreshUtc;
+            return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh < timeSinceLastRefresh)
+                && !forceRefresh;
         }
     }
 }

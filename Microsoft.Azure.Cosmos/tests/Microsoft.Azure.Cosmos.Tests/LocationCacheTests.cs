@@ -528,24 +528,23 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
-        [Owner("atulk")]
-        public async Task ValidateAsync()
+        [DataRow(true, true, true)]
+        [DataRow(true, false, false)]
+        [DataRow(true, false, true)]
+        [DataRow(true, true, false)]
+        [DataRow(false, false, false)]
+        [DataRow(false, true, true)]
+        [DataRow(false, true, false)]
+        [DataRow(false, true, true)]
+        public async Task ValidateAsync(
+            bool useMultipleWriteEndpoints,
+            bool endpointDiscoveryEnabled,
+            bool isPreferredListEmpty)
         {
-            bool[] boolValues = new bool[] {true, false};
-
-            foreach (bool useMultipleWriteEndpoints in boolValues)
-            {
-                foreach (bool endpointDiscoveryEnabled in boolValues)
-                {
-                    foreach (bool isPreferredListEmpty in boolValues)
-                    {
-                        await this.ValidateLocationCacheAsync(
-                            useMultipleWriteEndpoints,
-                            endpointDiscoveryEnabled,
-                            isPreferredListEmpty);
-                    }
-                }
-            }
+            await this.ValidateLocationCacheAsync(
+                useMultipleWriteEndpoints,
+                endpointDiscoveryEnabled,
+                isPreferredListEmpty);
         }
 
         [TestMethod]
@@ -906,21 +905,21 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                                   CultureInfo.InvariantCulture) * 1000 * 2;
                     await Task.Delay(delayInMilliSeconds);
 
-                    string config =  $"Delay{expirationTime};" + 
+                    string config = $"Delay{expirationTime};" +
                                      $"useMultipleWriteLocations:{useMultipleWriteLocations};" +
                                      $"endpointDiscoveryEnabled:{endpointDiscoveryEnabled};" +
                                      $"isPreferredListEmpty:{isPreferredListEmpty}";
 
                     CollectionAssert.AreEqual(
-                        currentWriteEndpoints, 
-                        this.cache.WriteEndpoints, 
+                        currentWriteEndpoints,
+                        this.cache.WriteEndpoints,
                         "Write Endpoints failed;" +
                             $"config:{config};" +
                             $"Current:{string.Join(",", currentWriteEndpoints)};" +
                             $"Cache:{string.Join(",", this.cache.WriteEndpoints)};");
 
                     CollectionAssert.AreEqual(
-                        currentReadEndpoints, 
+                        currentReadEndpoints,
                         this.cache.ReadEndpoints,
                         "Read Endpoints failed;" +
                             $"config:{config};" +
@@ -984,7 +983,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
         private async Task ValidateGlobalEndpointLocationCacheRefreshAsync()
         {
-            IEnumerable<Task> refreshLocations = Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(null)));
+            IEnumerable<Task> refreshLocations = Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.RefreshLocationAsync(false)));
 
             await Task.WhenAll(refreshLocations);
 
@@ -992,7 +991,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
 
             this.mockedClient.ResetCalls();
 
-            foreach (Task task in Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(null))))
+            foreach (Task task in Enumerable.Range(0, 10).Select(index => Task.Factory.StartNew(() => this.endpointManager.RefreshLocationAsync(false))))
             {
                 await task;
             }
