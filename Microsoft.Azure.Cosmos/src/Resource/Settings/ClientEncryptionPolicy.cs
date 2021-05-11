@@ -86,10 +86,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             if (!string.Equals(clientEncryptionIncludedPath.EncryptionType, "Deterministic") &&
-                !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized") &&
-                !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Plaintext"))
+                !string.Equals(clientEncryptionIncludedPath.EncryptionType, "Randomized"))
             {
-                throw new ArgumentException("EncryptionType should be either 'Deterministic' or 'Randomized' or 'Plaintext'.", nameof(clientEncryptionIncludedPath));
+                throw new ArgumentException("EncryptionType should be either 'Deterministic' or 'Randomized'. ", nameof(clientEncryptionIncludedPath));
             }
 
             if (string.IsNullOrWhiteSpace(clientEncryptionIncludedPath.EncryptionAlgorithm))
@@ -99,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!string.Equals(clientEncryptionIncludedPath.EncryptionAlgorithm, "AEAD_AES_256_CBC_HMAC_SHA256"))
             {
-                throw new ArgumentException("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'.", nameof(clientEncryptionIncludedPath));
+                throw new ArgumentException("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'. ", nameof(clientEncryptionIncludedPath));
             }
         }
     }
