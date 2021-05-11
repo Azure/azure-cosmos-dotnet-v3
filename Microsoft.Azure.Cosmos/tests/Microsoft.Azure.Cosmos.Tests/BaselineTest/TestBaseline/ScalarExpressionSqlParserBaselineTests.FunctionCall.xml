@@ -23,7 +23,7 @@
       <Query><![CDATA[SELECT VALUE STARTSWITH('asdf', 'as')]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT VALUE STARTSWITH("asdf', 'as")]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT VALUE STARTSWITH("asdf", "as")]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
