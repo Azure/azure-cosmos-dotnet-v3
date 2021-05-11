@@ -1374,8 +1374,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
                 Assert.Fail("Create Item should have failed.");
             }
-            catch(RequestFailedException)
-            {               
+            catch(InvalidOperationException)
+            {
             }
 
             // for unwrap to succeed 

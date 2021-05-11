@@ -33,13 +33,36 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.databaseRid = string.IsNullOrEmpty(databaseRid) ? throw new ArgumentNullException(nameof(databaseRid)) : databaseRid;
         }
 
-        public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
+        public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(
+            string ifNoneMatchEtags,
+            bool shouldForceRefresh,
+            bool forceRefreshGatewayCache,
+            CancellationToken cancellationToken)
         {
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties;
+            try
+            {
+                clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                     clientEncryptionKeyId: this.ClientEncryptionKeyId,
                     encryptionContainer: this.encryptionContainer,
                     databaseRid: this.databaseRid,
+                    ifNoneMatchEtag: ifNoneMatchEtags,
+                    shouldForceRefresh: shouldForceRefresh,
                     cancellationToken: cancellationToken);
+            }
+            catch (CosmosException ex)
+            {
+                if (ex.StatusCode == HttpStatusCode.NotModified && !forceRefreshGatewayCache)
+                {
+                    throw new InvalidOperationException($"The Client Encryption Key needs to be rewrapped with a valid Key Encryption Key." +
+                        $" The Key Encryption Key used to wrap the Client Encryption Key has been revoked: {ex.Message}." +
+                        $" Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey;
 
@@ -57,20 +80,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // The access to master key was probably revoked. Try to fetch the latest ClientEncryptionKeyProperties from the backend.
                 // This will succeed provided the user has rewraped the Client Encryption Key with right set of meta data.
                 // This is based on the AKV provider implementaion so we expect a RequestFailedException in case other providers are used in unwrap implementation.
-                if (ex.Status == (int)HttpStatusCode.Forbidden)
+                // We dont retry if the etag was already tried upon.
+                if (ex.Status == (int)HttpStatusCode.Forbidden && !string.Equals(clientEncryptionKeyProperties.ETag, ifNoneMatchEtags))
                 {
-                    clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
-                        clientEncryptionKeyId: this.ClientEncryptionKeyId,
-                        encryptionContainer: this.encryptionContainer,
-                        databaseRid: this.databaseRid,
-                        cancellationToken: cancellationToken,
-                        shouldForceRefresh: true);
-
-                    // just bail out if this fails.
-                    protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
-                        clientEncryptionKeyProperties,
-                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
-                        this.ClientEncryptionKeyId);
+                    if (!forceRefreshGatewayCache)
+                    {
+                        return await this.BuildEncryptionAlgorithmForSettingAsync(
+                           ifNoneMatchEtags: null,
+                           cancellationToken: cancellationToken,
+                           shouldForceRefresh: true,
+                           forceRefreshGatewayCache: true);
+                    }
+                    else
+                    {
+                        return await this.BuildEncryptionAlgorithmForSettingAsync(
+                            ifNoneMatchEtags: clientEncryptionKeyProperties.ETag,
+                            cancellationToken: cancellationToken,
+                            shouldForceRefresh: true,
+                            forceRefreshGatewayCache: false);
+                    }
                 }
                 else
                 {

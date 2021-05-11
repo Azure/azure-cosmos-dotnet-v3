@@ -68,7 +68,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
-                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
+                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(
+                    ifNoneMatchEtags: null,
+                    shouldForceRefresh: false,
+                    forceRefreshGatewayCache: false,
+                    cancellationToken: cancellationToken);
 
                 EncryptProperty(
                     itemJObj,
@@ -143,7 +147,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(settingsForProperty));
             }
 
-            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
+            AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(
+                ifNoneMatchEtags: null,
+                shouldForceRefresh: false,
+                forceRefreshGatewayCache: false,
+                cancellationToken: cancellationToken);
 
             JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
             (EncryptionProcessor.TypeMarker typeMarker, byte[] serializedData) = EncryptionProcessor.Serialize(propertyValueToEncrypt);
@@ -461,7 +469,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
                     }
 
-                    AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken: cancellationToken);
+                    AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingsForProperty.BuildEncryptionAlgorithmForSettingAsync(
+                        ifNoneMatchEtags: null,
+                        shouldForceRefresh: false,
+                        forceRefreshGatewayCache: false,
+                        cancellationToken: cancellationToken);
 
                     DecryptProperty(
                         document,
