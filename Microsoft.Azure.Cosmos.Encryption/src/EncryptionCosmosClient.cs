@@ -213,11 +213,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             return await this.clientEncryptionKeyPropertiesCacheByKeyId.GetAsync(
-                     cacheKey,
-                     obsoleteValue: null,
-                     async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, requestOptions, cancellationToken),
-                     cancellationToken,
-                     forceRefresh: shouldForceRefresh);
+                cacheKey,
+                obsoleteValue: null,
+                async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, requestOptions, cancellationToken),
+                cancellationToken,
+                forceRefresh: shouldForceRefresh);
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(
