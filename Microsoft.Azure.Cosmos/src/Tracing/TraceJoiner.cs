@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             return traceForest;
         }
 
-        private class TraceForest : ITrace
+        private sealed class TraceForest : ITrace
         {
             private static readonly CallerInfo EmptyInfo = new CallerInfo(string.Empty, string.Empty, 0);
 
