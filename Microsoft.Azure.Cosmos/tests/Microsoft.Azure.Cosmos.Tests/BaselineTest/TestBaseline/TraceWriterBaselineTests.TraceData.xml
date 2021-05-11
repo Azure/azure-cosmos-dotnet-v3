@@ -536,6 +536,122 @@
   </Result>
   <Result>
     <Input>
+      <Description>Client Side Request Stats For Gateway Request</Description>
+      <Setup><![CDATA[
+        TraceForBaselineTesting rootTrace;
+        using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue)
+            {
+                RequestEndTimeUtc = DateTime.MaxValue
+            };
+
+            HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                new Uri("http://someUri1.com"),
+                HttpMethod.Get,
+                ResourceType.Document,
+                new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
+                exception: null
+                );
+            datum.HttpResponseStatisticsList.Add(httpResponseStatistics);
+
+            HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                new Uri("http://someUri1.com"),
+                HttpMethod.Get,
+                ResourceType.Document,
+                responseMessage: null,
+                exception: new OperationCanceledException()
+                );
+            datum.HttpResponseStatisticsList.Add(httpResponseStatisticsException);
+
+            rootTrace.AddDatum("Client Side Request Stats", datum);
+        }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        (
+            [Client Side Request Stats]
+            Start Time: 12:00:00:000
+            End Time: 11:59:59:999
+            Contacted Replicas
+            Failed to Contact Replicas
+            Regions Contacted
+            Address Resolution Statistics
+            ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
+            │Start Time (utc)│End Time (utc)│Endpoint                                          │
+            ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
+            └────────────────┴──────────────┴──────────────────────────────────────────────────┘
+            Store Response Statistics
+            Http Response Statistics
+              HttpResponse
+                RequestStartTime: 0001-01-01T00:00:00.0000000
+                RequestEndTime: 9999-12-31T23:59:59.9999999
+                RequestUri: http://someuri1.com/
+                ResourceType: Document
+                HttpMethod: GET
+                StatusCode: OK
+              HttpResponse
+                RequestStartTime: 0001-01-01T00:00:00.0000000
+                RequestEndTime: 9999-12-31T23:59:59.9999999
+                RequestUri: http://someuri1.com/
+                ResourceType: Document
+                HttpMethod: GET
+                ExceptionType: System.OperationCanceledException
+                ExceptionMessage: The operation was canceled.
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
+  },
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Side Request Stats": {
+      "Id": "AggregatedClientSideRequestStatistics",
+      "ContactedReplicas": [],
+      "RegionsContacted": [],
+      "FailedReplicas": [],
+      "AddressResolutionStatistics": [],
+      "StoreResponseStatistics": [],
+      "HttpResponseStats": [
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "RequestUri": "http://someuri1.com/",
+          "ResourceType": "Document",
+          "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
+          "StatusCode": "OK"
+        },
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "RequestUri": "http://someuri1.com/",
+          "ResourceType": "Document",
+          "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
+          "ExceptionType": "System.OperationCanceledException",
+          "ExceptionMessage": "The operation was canceled."
+        }
+      ]
+    }
+  }
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>CPU History</Description>
       <Setup><![CDATA[
     TraceForBaselineTesting rootTrace;

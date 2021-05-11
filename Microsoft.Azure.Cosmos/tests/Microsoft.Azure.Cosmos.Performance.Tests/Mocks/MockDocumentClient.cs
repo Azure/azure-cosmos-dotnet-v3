@@ -157,8 +157,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<bool>(),
-                    It.IsAny<CancellationToken>(),
-                    It.IsAny<ITrace>())).Returns(Task.FromResult(containerProperties));
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>())).Returns(Task.FromResult(containerProperties));
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                    {
+                        Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
+                    },
+                string.Empty);
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
@@ -169,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                             It.IsAny<CancellationToken>(),
                             It.IsAny<ITrace>()
                         )
-                ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+                ).Returns(Task.FromResult<CollectionRoutingMap>(routingMap));
 
             List<PartitionKeyRange> result = new List<PartitionKeyRange>
             {

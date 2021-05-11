@@ -190,8 +190,10 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>()
+                        It.IsAny<ITrace>(),
+                        It.IsAny<IClientSideRequestStatistics>(),
+                        It.IsAny<CancellationToken>()
+                        
                     )
                 ).Returns(() => {
                     ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
@@ -205,8 +207,9 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>()
+                        It.IsAny<ITrace>(),
+                        It.IsAny<IClientSideRequestStatistics>(),
+                        It.IsAny<CancellationToken>()
                     )
                 ).Returns(() =>
                 {
@@ -257,7 +260,7 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
 
             this.MockGlobalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
             this.MockGlobalEndpointManager.Setup(gep => gep.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>())).Returns(new Uri("http://localhost"));
-            this.MockGlobalEndpointManager.Setup(gep => gep.RefreshLocationAsync(It.IsAny<AccountProperties>(), It.IsAny<bool>())).Returns(Task.CompletedTask);
+            this.MockGlobalEndpointManager.Setup(gep => gep.InitializeAccountPropertiesAndStartBackgroundRefresh(It.IsAny<AccountProperties>()));
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
         }

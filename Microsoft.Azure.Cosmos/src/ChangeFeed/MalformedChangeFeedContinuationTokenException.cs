@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.ChangeFeed
 {
     using System;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class MalformedChangeFeedContinuationTokenException : ChangeFeedException
     {
@@ -23,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         {
         }
 
-        public override TResult Accept<TResult>(ChangeFeedExceptionVisitor<TResult> visitor)
+        public override TResult Accept<TResult>(ChangeFeedExceptionVisitor<TResult> visitor, ITrace trace)
         {
-            return visitor.Visit(this);
+            return visitor.Visit(this, trace);
         }
     }
 }

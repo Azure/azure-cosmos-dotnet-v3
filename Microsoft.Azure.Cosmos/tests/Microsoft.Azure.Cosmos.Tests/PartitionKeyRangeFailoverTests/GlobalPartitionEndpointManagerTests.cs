@@ -10,10 +10,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class GlobalPartitionEndpointManagerTests
@@ -66,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            CosmosClient customClient = new CosmosClient(
+            using CosmosClient customClient = new CosmosClient(
                 globalEndpoint,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
                 cosmosClientOptions);
@@ -75,11 +78,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ToDoActivity toDoActivity = new ToDoActivity()
             {
-                id = "TestItem",
-                pk = "TestPk"
+                Id = "TestItem",
+                Pk = "TestPk"
             };
 
-            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.pk));
+            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             mockTransport.VerifyAll();
             mockHttpHandler.VerifyAll();
@@ -87,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Clears all the setups. No network calls should be done on the next operation.
             mockHttpHandler.Reset();
             mockTransport.Reset();
+            mockTransport.Setup(x => x.Dispose());
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
@@ -94,11 +98,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ToDoActivity toDoActivity2 = new ToDoActivity()
             {
-                id = "TestItem2",
-                pk = "TestPk"
+                Id = "TestItem2",
+                Pk = "TestPk"
             };
 
-            response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.pk));
+            response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
 
@@ -117,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 out TransportAddressUri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
-
+            
             MockSetupsHelper.SetupServiceUnavailableException(
                 mockTransport,
                 primaryRegionprimaryReplicaUri);
@@ -150,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            CosmosClient customClient = new CosmosClient(
+           using CosmosClient customClient = new CosmosClient(
                 globalEndpoint,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
                 cosmosClientOptions);
@@ -159,14 +163,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ToDoActivity toDoActivity = new ToDoActivity()
             {
-                id = "TestItem",
-                pk = "TestPk"
+                Id = "TestItem",
+                Pk = "TestPk"
             };
 
             // First create will fail because it is not certain if the payload was sent or not.
             try
             {
-                await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.pk));
+                await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
                 Assert.Fail("Should throw an exception");
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.ServiceUnavailable)
@@ -174,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(ce);
             }
 
-            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.pk));
+            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             mockTransport.VerifyAll();
             mockHttpHandler.VerifyAll();
@@ -182,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Clears all the setups. No network calls should be done on the next operation.
             mockHttpHandler.Reset();
             mockTransport.Reset();
+            mockTransport.Setup(x => x.Dispose());
 
             MockSetupsHelper.SetupCreateItemResponse(
                 mockTransport,
@@ -189,11 +194,107 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ToDoActivity toDoActivity2 = new ToDoActivity()
             {
-                id = "TestItem2",
-                pk = "TestPk"
+                Id = "TestItem2",
+                Pk = "TestPk"
             };
 
-            response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.pk));
+            response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task TestRequestTimeoutExceptionScenarioAsync()
+        {
+            GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                out string secondaryRegionNameForUri,
+                out string globalEndpoint,
+                out string secondaryRegionEndpiont,
+                out string databaseName,
+                out string containerName,
+                out ResourceId containerResourceId,
+                out Mock<IHttpHandler> mockHttpHandler,
+                out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
+                out TransportAddressUri primaryRegionprimaryReplicaUri);
+
+            Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
+
+            MockSetupsHelper.SetupRequestTimeoutException(
+                mockTransport,
+                primaryRegionprimaryReplicaUri);
+
+            // Partition key ranges are the same in both regions so the SDK
+            // does not need to go the secondary to get the partition key ranges.
+            // Only the addresses need to be mocked on the secondary
+            MockSetupsHelper.SetupAddresses(
+                mockHttpHandler: mockHttpHandler,
+                partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
+                regionEndpoint: secondaryRegionEndpiont,
+                regionName: secondaryRegionNameForUri,
+                containerResourceId: containerResourceId,
+                primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
+
+            MockSetupsHelper.SetupCreateItemResponse(
+                mockTransport,
+                secondaryRegionPrimaryReplicaUri);
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                EnablePartitionLevelFailover = true,
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                ApplicationPreferredRegions = new List<string>()
+                    {
+                        Regions.EastUS,
+                        Regions.WestUS
+                    },
+                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                TransportClientHandlerFactory = (original) => mockTransport.Object,
+            };
+
+            using CosmosClient customClient = new CosmosClient(
+                globalEndpoint,
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                cosmosClientOptions);
+
+            Container container = customClient.GetContainer(databaseName, containerName);
+
+            ToDoActivity toDoActivity = new ToDoActivity()
+            {
+                Id = "TestItem",
+                Pk = "TestPk"
+            };
+
+            // First create will fail because it is not certain if the payload was sent or not.
+            try
+            {
+                await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                Assert.Fail("Should throw an exception");
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.RequestTimeout)
+            {
+                Assert.IsNotNull(ce);
+            }
+
+            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            mockTransport.VerifyAll();
+            mockHttpHandler.VerifyAll();
+
+            // Clears all the setups. No network calls should be done on the next operation.
+            mockHttpHandler.Reset();
+            mockTransport.Reset();
+            mockTransport.Setup(x => x.Dispose());
+
+            MockSetupsHelper.SetupCreateItemResponse(
+                mockTransport,
+                secondaryRegionPrimaryReplicaUri);
+
+            ToDoActivity toDoActivity2 = new ToDoActivity()
+            {
+                Id = "TestItem2",
+                Pk = "TestPk"
+            };
+
+            response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
 
@@ -273,23 +374,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 regionName: primaryRegionNameForUri,
                 containerResourceId: containerResourceId,
                 primaryReplicaUri: out primaryRegionprimaryReplicaUri);
-        }
-
-        private class ToDoActivity
-        {
-            public string id { get; set; }
-            public string pk { get; set; }
-
-            public override bool Equals(object obj)
-            {
-                if (!(obj is ToDoActivity input))
-                {
-                    return false;
-                }
-
-                return string.Equals(this.id, input.id)
-                    && string.Equals(this.pk, input.pk);
-            }
         }
     }
 }

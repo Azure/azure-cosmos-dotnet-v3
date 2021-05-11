@@ -45,8 +45,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
         public async ValueTask<bool> MoveNextAsync(ITrace trace)
         {
-            this.cancellationToken.ThrowIfCancellationRequested();
-
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
@@ -60,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
 
             IQueryPipelineStage stage = tryCreateStage.Result;
+            stage.SetCancellationToken(this.cancellationToken);
             if (!await stage.MoveNextAsync(trace))
             {
                 this.Current = default;
