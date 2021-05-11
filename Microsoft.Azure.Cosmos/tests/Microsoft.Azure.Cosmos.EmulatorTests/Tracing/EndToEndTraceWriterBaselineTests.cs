@@ -879,7 +879,7 @@
                 CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 20; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                     createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
@@ -897,10 +897,12 @@
                     traces.Add(trace);
                 }
 
-                ITrace joinedTrace = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Bulk Operation", joinedTrace, startLineNumber, endLineNumber));
+                foreach (ITrace trace in traces)
+                {
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber));
+                }
             }
             //----------------------------------------------------------------
 
