@@ -29,14 +29,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -52,7 +51,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -61,9 +60,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -71,34 +73,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -223,14 +209,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -246,7 +231,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -255,9 +240,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -265,34 +253,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -417,14 +389,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -440,7 +411,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -449,9 +420,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -459,34 +433,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -611,14 +569,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -634,7 +591,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -643,9 +600,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -653,34 +613,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -805,14 +749,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -828,7 +771,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -837,9 +780,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -847,34 +793,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -999,14 +929,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1022,7 +951,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -1031,9 +960,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -1041,34 +973,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -1193,14 +1109,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1216,7 +1131,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -1225,9 +1140,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -1235,34 +1153,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -1387,14 +1289,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1410,7 +1311,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -1419,9 +1320,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -1429,34 +1333,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -1581,14 +1469,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1604,7 +1491,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -1613,9 +1500,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -1623,34 +1513,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -1775,14 +1649,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1798,7 +1671,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -1807,9 +1680,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -1817,34 +1693,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
@@ -1982,14 +1842,13 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-└── Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    ├── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
-    │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+└── CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    │   (
+    │       [Client Configuration]
+    │       Redacted To Not Change The Baselines From Run To Run
+    │   )
+    ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2134,7 +1993,7 @@
         └── Create Trace(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
-  "name": "Trace Forest",
+  "name": "CreateItemAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
     "member": "MemberName",
@@ -2143,9 +2002,12 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
+  "data": {
+    "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+  },
   "children": [
     {
-      "name": "CreateItemAsync",
+      "name": "ItemSerialize",
       "id": "00000000-0000-0000-0000-000000000000",
       "caller info": {
         "member": "MemberName",
@@ -2153,34 +2015,18 @@
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Get Collection Cache",
+      "id": "00000000-0000-0000-0000-000000000000",
+      "caller info": {
+        "member": "MemberName",
+        "file": "FilePath",
+        "line": 42
       },
-      "children": [
-        {
-          "name": "ItemSerialize",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        },
-        {
-          "name": "Get Collection Cache",
-          "id": "00000000-0000-0000-0000-000000000000",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
-          "start time": "12:00:00:000",
-          "duration in milliseconds": 0
-        }
-      ]
+      "start time": "12:00:00:000",
+      "duration in milliseconds": 0
     },
     {
       "name": "Batch Dispatch Async",
