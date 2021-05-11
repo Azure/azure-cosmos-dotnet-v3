@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
             this.MetricsName = metricsName;
             this.UnitName = unitName;
         }
-        internal String MetricsName { get; set; }
-        internal String UnitName { get; set; }
+        internal String MetricsName { get; }
+        internal String UnitName { get; }
         internal double Mean { get; set; }
         internal long Count { get; set; }
         internal double Min { get; set; }

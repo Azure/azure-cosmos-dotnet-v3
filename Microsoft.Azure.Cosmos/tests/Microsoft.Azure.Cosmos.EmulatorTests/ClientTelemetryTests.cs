@@ -35,8 +35,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata"); 
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "2");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://juno-test.documents-dev.windows-int.net/api/clienttelemetry/trace");
+
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
             cosmosClientBuilder
                 .WithTelemetryEnabled();
@@ -62,6 +64,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
+
             await base.TestCleanup();
         }
 
@@ -69,9 +75,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task PointSuccessOperationsTest()
         {
             // Create an item
-            var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-            ItemResponse<dynamic> createResponse = await this.container.CreateItemAsync<dynamic>(testItem);
-            dynamic testItemCreated = createResponse.Resource;
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
+            ItemResponse<ToDoActivity> createResponse = await this.container.CreateItemAsync<ToDoActivity>(testItem);
+            ToDoActivity testItemCreated = createResponse.Resource;
             List<Documents.OperationType> allowedOperations
                = new List<Documents.OperationType>(new Documents.OperationType[] {
                                 Documents.OperationType.Create
@@ -84,20 +90,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
 
             // Read an Item
-            await this.container.ReadItemAsync<dynamic>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await this.container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Read);
             expectedOperationCodeMap.Add(Documents.OperationType.Read, HttpStatusCode.OK);
             this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
 
             // Upsert an Item
-            await this.container.UpsertItemAsync<dynamic>(testItem);
+            await this.container.UpsertItemAsync<ToDoActivity>(testItem);
 
             allowedOperations.Add(Documents.OperationType.Upsert);
             expectedOperationCodeMap.Add(Documents.OperationType.Upsert, HttpStatusCode.OK);
             this.AssertClientTelemetryInfo(allowedOperations, 6, expectedOperationCodeMap);
 
             // Replace an Item
-            await this.container.ReplaceItemAsync<dynamic>(testItemCreated, testItemCreated["id"].ToString());
+            await this.container.ReplaceItemAsync<ToDoActivity>(testItemCreated, testItemCreated.id.ToString());
             allowedOperations.Add(Documents.OperationType.Replace);
             expectedOperationCodeMap.Add(Documents.OperationType.Replace, HttpStatusCode.OK);
             this.AssertClientTelemetryInfo(allowedOperations, 8, expectedOperationCodeMap);
@@ -107,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 PatchOperation.Add("/new", "patched")
             };
-            await ((ContainerInternal)this.container).PatchItemAsync<dynamic>(
+            await ((ContainerInternal)this.container).PatchItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.id),
                 patch);
@@ -117,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.AssertClientTelemetryInfo(allowedOperations, 10, expectedOperationCodeMap);
 
             // Delete an Item
-            await this.container.DeleteItemAsync<dynamic>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await this.container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
             allowedOperations.Add(Documents.OperationType.Delete);
             expectedOperationCodeMap.Add(Documents.OperationType.Delete, HttpStatusCode.NoContent);
             this.AssertClientTelemetryInfo(allowedOperations, 12, expectedOperationCodeMap);
@@ -127,14 +133,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task PointFailureOperationsTest()
         {
             // Create an item with invalid Id
-            var testItem = new { 
-                id = "Invalid#/\\?Id",
-                partitionKeyPath = "MyTestPkValue", 
-                details = "it's working", 
-                status = "done" 
-            };
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "Invalid#/\\?Id");
 
-            await this.container.CreateItemAsync<dynamic>(testItem);
+            await this.container.CreateItemAsync<ToDoActivity>(testItem);
             List<Documents.OperationType> allowedOperations
                = new List<Documents.OperationType>(new Documents.OperationType[] {
                                 Documents.OperationType.Create
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await this.container.ReadItemAsync<JObject>(
                     testItem.id, 
-                    new Cosmos.PartitionKey(testItem.partitionKeyPath));
+                    new Cosmos.PartitionKey(testItem.pk));
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
             {
@@ -256,12 +257,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task QueryOperationTest()
         {
-            var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-            ItemResponse<object> createResponse = await this.container.CreateItemAsync<dynamic>(testItem);
-            this.cosmosClient.Telemetry.Reset();
+            Console.WriteLine(DateTime.UtcNow + " : Starting ");
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
+            ItemResponse<ToDoActivity> createResponse = await this.container.CreateItemAsync<ToDoActivity>(testItem);
+
             if (createResponse.StatusCode == HttpStatusCode.Created)
             { 
-
                 string sqlQueryText = "SELECT * FROM c";
 
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
@@ -280,14 +281,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             List<Documents.OperationType> allowedOperations
                = new List<Documents.OperationType>(new Documents.OperationType[] {
-                                            Documents.OperationType.Query
+                                            Documents.OperationType.Query,
+                                            Documents.OperationType.Create
                });
             IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
                = new Dictionary<OperationType, HttpStatusCode>
                {
-                   { OperationType.Query, HttpStatusCode.OK }
+                   { OperationType.Query, HttpStatusCode.OK },
+                   { OperationType.Create, HttpStatusCode.Created }
                };
-            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
+            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
         }
 
         private void AssertClientTelemetryInfo(
@@ -295,8 +298,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int operationInfoMapCount,
             IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
         {
+            Console.WriteLine(DateTime.UtcNow + " : into assertion and sleeping for 2 sec");
             Thread.Sleep(10000);
-
+            Console.WriteLine(DateTime.UtcNow + " : into assertion and woke up after 2 sec");
             Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
             {
@@ -309,10 +313,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
                 Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-
-                Console.WriteLine(entry.Key.MetricInfo.Max);
-                Console.WriteLine(entry.Key.MetricInfo.Mean);
-                Console.WriteLine(entry.Key.MetricInfo.Count);
 
                 Assert.IsTrue(entry.Key.MetricInfo.Max >= 0);
                 Assert.IsTrue(entry.Key.MetricInfo.Mean >= 0);

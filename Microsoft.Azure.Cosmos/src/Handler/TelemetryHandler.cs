@@ -18,7 +18,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class TelemetryHandler : RequestHandler
     {
         private readonly ClientTelemetry clientTelemetry;
-        private readonly ConsistencyLevel consistencyLevel;
 
         public TelemetryHandler(CosmosClient client, DocumentClient documentClient, ConnectionPolicy connectionPolicy)
         {
@@ -29,9 +28,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 authorizationTokenProvider: client.AuthorizationTokenProvider);
 
             client.Telemetry = this.clientTelemetry;
-//TODO: get account level in client telemetry task
-            this.consistencyLevel = (Cosmos.ConsistencyLevel)documentClient.ConsistencyLevel;
-
             this.clientTelemetry.Start();
         }
 
@@ -64,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)
         {
-            return request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault() ?? this.consistencyLevel;   
+            return request.RequestOptions?.BaseConsistencyLevel.GetValueOrDefault();   
         }
 
         private int GetPayloadSize(ResponseMessage response)
