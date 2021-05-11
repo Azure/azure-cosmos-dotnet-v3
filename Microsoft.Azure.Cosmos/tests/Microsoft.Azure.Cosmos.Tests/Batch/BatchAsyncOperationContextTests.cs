@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string expectedPkRangeId = Guid.NewGuid().ToString();
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(expectedPkRangeId);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(expectedPkRangeId, NoOpTrace.Singleton);
             operation.AttachContext(batchAsyncOperationContext);
 
             Assert.IsNotNull(batchAsyncOperationContext.OperationTask);
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void TaskIsCreatedOnInitialization()
         {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
             operation.AttachContext(batchAsyncOperationContext);
 
             Assert.IsNotNull(batchAsyncOperationContext.OperationTask);
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TaskResultIsSetOnCompleteAsync()
         {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
             operation.AttachContext(batchAsyncOperationContext);
 
             TransactionalBatchOperationResult expected = new TransactionalBatchOperationResult(HttpStatusCode.OK);
@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Exception failure = new Exception("It failed");
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty);
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
             operation.AttachContext(batchAsyncOperationContext);
 
             batchAsyncOperationContext.Fail(null, failure);
@@ -78,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void CannotAttachMoreThanOnce()
         {
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty));
-            Assert.ThrowsException<InvalidOperationException>(() => operation.AttachContext(new ItemBatchOperationContext(string.Empty)));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton));
+            Assert.ThrowsException<InvalidOperationException>(() => operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton)));
         }
 
         [TestMethod]
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsFalse(shouldRetryResult.ShouldRetry);
         }
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsFalse(shouldRetryResult.ShouldRetry);
         }
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult((HttpStatusCode)StatusCodes.TooManyRequests);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge);
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsFalse(shouldRetryResult.ShouldRetry);
         }
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.PartitionKeyRangeGone };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingSplit };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new ResourceThrottleRetryPolicy(1));
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.Gone) { SubStatusCode = SubStatusCodes.CompletingPartitionMigration };
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy));
             ShouldRetryResult shouldRetryResult = await operation.Context.ShouldRetryAsync(result, default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
