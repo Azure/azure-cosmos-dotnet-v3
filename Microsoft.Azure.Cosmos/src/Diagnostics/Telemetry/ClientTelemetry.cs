@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Handler;
@@ -21,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
 
@@ -31,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
     {
         internal readonly CancellationTokenSource CancellationTokenSource;
         internal ClientTelemetryInfo ClientTelemetryInfo;
-        internal double ClientTelemetrySchedulingInSeconds;
+        internal TimeSpan ClientTelemetrySchedulingInSeconds;
         internal DocumentClient documentClient;
         internal CosmosHttpClient httpClient;
         internal AuthorizationTokenProvider TokenProvider;
@@ -131,13 +134,16 @@ namespace Microsoft.Azure.Cosmos
             }
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(this.ClientTelemetrySchedulingInSeconds), this.CancellationTokenSource.Token);
-
+                Console.WriteLine(DateTime.UtcNow + " : -- Delaying -- ");
+                await Task.Delay(this.ClientTelemetrySchedulingInSeconds, this.CancellationTokenSource.Token);
+                Console.WriteLine(DateTime.UtcNow + " : -- Calculating and Sending data -- ");
                 this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
                 this.RecordSystemUtilization();
                 this.CalculateMetrics();
-                //this.Send();
+                Console.WriteLine(DateTime.UtcNow + " : " + this.ClientTelemetryInfo.ToString());
+                await this.SendAsync();
+                Console.WriteLine(DateTime.UtcNow + " : -- Done -- ");
             }
             catch (Exception ex)
             {
@@ -171,6 +177,7 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
+            //Console.WriteLine(DateTime.UtcNow + " : Collecting telemetry for : " + operationType);
             IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
             IList<Uri> regionUris = new List<Uri>();
             foreach ((_, Uri uri) in regionList)
@@ -178,6 +185,12 @@ namespace Microsoft.Azure.Cosmos
                 regionUris.Add(uri);
             }
             
+            // If consistency level is not mentioned in request then take the sdk/account level
+            if (consistencyLevel == null)
+            {
+                consistencyLevel = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
+            }
+
             // Recordig Request Latency
             this.ClientTelemetryInfo
                 .OperationInfoMap
@@ -253,15 +266,69 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-       /* private void Send()
+        private async Task SendAsync()
         {
+            string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
+            string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo);
+            // If endpoint is not configured then do not send telemetry information
+            if (string.IsNullOrEmpty(endpointUrl))
+            {
+                DefaultTrace.TraceError("Telemetry endpoint is not configured");
+                return;
+            }
 
-            this.TokenProvider.AddAuthorizationHeaderAsync(
-                       new INameValueCollection.(),
-                       new Uri(ClientTelemetryOptions.GetClientTelemetryEndpoint()),
+            async ValueTask<HttpRequestMessage> CreateRequestMessage()
+            {
+                Uri endpoint = new Uri(endpointUrl);
+                HttpRequestMessage request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = endpoint,
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+
+                INameValueCollection headersCollection = new NameValueCollectionWrapperFactory().CreateNewNameValueCollection();
+                await this.TokenProvider.AddAuthorizationHeaderAsync(
+                       headersCollection,
+                       endpoint,
                        "POST",
                        AuthorizationTokenType.PrimaryMasterKey);
-        }*/
+
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentType, "application/json");
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentEncoding, "gzip");
+                request.Headers.Add(HttpConstants.HttpHeaders.XDate, headersCollection[HttpConstants.HttpHeaders.XDate]);
+                request.Headers.Add(HttpConstants.HttpHeaders.Authorization, headersCollection[HttpConstants.HttpHeaders.Authorization]);
+                //  Waiting for Msdata changes then replacekeys
+                request.Headers.Add("x-ms-databaseaccount-name", this.ClientTelemetryInfo.GlobalDatabaseAccountName);
+                String envName = ClientTelemetryOptions.GetEnvironmentName();
+                if (!string.IsNullOrEmpty(envName))
+                {
+                    request.Headers.Add("x-ms-environment-name", envName);
+                }
+                return request;
+            }
+
+            try 
+            {
+                HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
+                                                    ResourceType.Unknown,
+                                                    HttpTimeoutPolicyDefault.Instance,
+                                                    null,
+                                                    this.CancellationTokenSource.Token);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    //Once information is sent to telemetry endpoint successfully then clean Maps to collect new information otherwise keep collecting it.
+                    this.Reset();
+                }
+               
+            } 
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError(ex.Message);
+            }
+
+        }
 
         internal void Reset()
         {

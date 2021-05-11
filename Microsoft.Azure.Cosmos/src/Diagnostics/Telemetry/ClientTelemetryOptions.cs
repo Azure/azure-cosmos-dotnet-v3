@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
         internal const string EnvPropsClientTelemetryEnabled = "COSMOS.CLIENT_TELEMETRY_ENABLED";
         internal const string EnvPropsClientTelemetryVmMetadataUrl = "COSMOS.VM_METADATA_URL";
         internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
+        internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
 
         internal static readonly HashSet<ResourceType> AllowedResourceTypes = new HashSet<ResourceType>(new ResourceType[]
         {
@@ -60,12 +61,18 @@ namespace Microsoft.Azure.Cosmos
                     DefaultVmMetadataUrL);
         }
 
-        internal static double GetSchedulingInSeconds()
+        internal static TimeSpan GetSchedulingInSeconds()
         {
-            return CosmosConfigurationManager
+            double scheduledTimeInSeconds = CosmosConfigurationManager
                 .GetEnvironmentVariable<double>(
                     ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds,
                     ClientTelemetryOptions.DefaultTimeStampInSeconds);
+
+            if (scheduledTimeInSeconds <= 0)
+            {
+                throw new ArgumentException("Telemetry Scheduled time can not be less than or equal to 0.");
+            }
+            return TimeSpan.FromSeconds(scheduledTimeInSeconds);
         }
 
         internal static async Task<AzureVMMetadata> ProcessResponseAsync(HttpResponseMessage httpResponseMessage)
@@ -86,8 +93,16 @@ namespace Microsoft.Azure.Cosmos
         {
             return CosmosConfigurationManager
                 .GetEnvironmentVariable<string>(
-                    ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, 
-                    new ArgumentNullException("Telemetry Endpoint is not configured"));
+                    ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint,
+                    string.Empty);
+        }
+
+        internal static string GetEnvironmentName()
+        {
+            return CosmosConfigurationManager
+                .GetEnvironmentVariable<string>(
+                    ClientTelemetryOptions.EnvPropsClientTelemetryEnvironmentName, 
+                    string.Empty);
         }
     }
 }
