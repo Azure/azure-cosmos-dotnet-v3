@@ -302,7 +302,79 @@
       <Query><![CDATA[SELECT VALUE 1 || 2 OR 3 || 4]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT VALUE ((1 || (2 OR 3)) || 4)]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT VALUE ((1 || 2) OR (3 || 4))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[AND with LIKE expressions]]></Description>
+      <Query><![CDATA[SELECT VALUE r.name LIKE 12  AND r.name LIKE 34]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((r.name LIKE 12) AND (r.name LIKE 34))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OR with LIKE expression]]></Description>
+      <Query><![CDATA[SELECT VALUE r.name LIKE 12  OR r.name LIKE 34]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((r.name LIKE 12) OR (r.name LIKE 34))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[AND with IN expression]]></Description>
+      <Query><![CDATA[SELECT VALUE r.name IN (1,2,3)  AND r.name IN (4,5,6)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((r.name IN (1, 2, 3)) AND (r.name IN (4, 5, 6)))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OR with IN expression]]></Description>
+      <Query><![CDATA[SELECT VALUE r.name IN (1,2,3)  OR r.name IN (4,5,6)]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((r.name IN (1, 2, 3)) OR (r.name IN (4, 5, 6)))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double AND]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 AND r.age = 2 AND r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((r.age = 1) AND (r.age = 2)) AND (r.age = 3))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double OR]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 OR r.age = 2 OR r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((r.age = 1) OR (r.age = 2)) OR (r.age = 3))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[AND and then OR]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 AND r.age = 2 OR r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE (((r.age = 1) AND (r.age = 2)) OR (r.age = 3))]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[OR and then AND]]></Description>
+      <Query><![CDATA[SELECT VALUE r.age = 1 OR r.age = 2 AND r.age = 3]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE ((r.age = 1) OR ((r.age = 2) AND (r.age = 3)))]]></ParsedQuery>
     </Output>
   </Result>
   <Result>

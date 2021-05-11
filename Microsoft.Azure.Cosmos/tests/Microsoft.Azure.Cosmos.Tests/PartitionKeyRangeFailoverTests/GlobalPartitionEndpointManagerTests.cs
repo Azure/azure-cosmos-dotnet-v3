@@ -375,29 +375,5 @@ namespace Microsoft.Azure.Cosmos.Tests
                 containerResourceId: containerResourceId,
                 primaryReplicaUri: out primaryRegionprimaryReplicaUri);
         }
-
-        private class ToDoActivity
-        {
-            [JsonProperty(propertyName:"id")]
-            public string Id { get; set; }
-            [JsonProperty(propertyName: "pk")]
-            public string Pk { get; set; }
-
-            public override bool Equals(object obj)
-            {
-                if (!(obj is ToDoActivity input))
-                {
-                    return false;
-                }
-
-                return string.Equals(this.Id, input.Id)
-                    && string.Equals(this.Pk, input.Pk);
-            }
-
-            public override int GetHashCode()
-            {
-                return base.GetHashCode();
-            }
-        }
     }
 }

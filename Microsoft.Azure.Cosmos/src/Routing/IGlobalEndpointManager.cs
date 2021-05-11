@@ -27,6 +27,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         bool CanUseMultipleWriteLocations(DocumentServiceRequest request);
 
-        Task RefreshLocationAsync(AccountProperties databaseAccount, bool forceRefresh = false);
+        void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount);
+
+        Task RefreshLocationAsync(bool forceRefresh = false);
     }
 }
