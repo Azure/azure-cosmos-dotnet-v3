@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        private readonly List<ITrace> traces;
+        private readonly ITrace initialTrace;
 
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
@@ -40,10 +39,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
-            this.traces = new List<ITrace>
-            {
-                trace
-            };
+            this.initialTrace = trace;
             this.retryPolicy = retryPolicy;
         }
 
@@ -64,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
             ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
             if (shouldRetry.ShouldRetry)
             {
-                this.traces.Add(batchOperationResult.Trace);
+                this.initialTrace.AddChild(batchOperationResult.Trace);
             }
 
             return shouldRetry;
@@ -76,8 +72,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.AssertBatcher(completer))
             {
-                this.traces.Add(result.Trace);
-                result.Trace = TraceJoiner.JoinTraces(this.traces);
+                this.initialTrace.AddChild(result.Trace);
+                result.Trace = this.initialTrace;
                 this.taskCompletionSource.SetResult(result);
             }
 
@@ -101,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace)
         {
             this.PartitionKeyRangeId = newPartitionKeyRangeId;
-            this.traces.Add(trace);
+            this.initialTrace.AddChild(trace);
         }
 
         public void Dispose()

@@ -1249,7 +1249,7 @@
         private sealed class TraceForBaselineTesting : ITrace
         {
             public readonly Dictionary<string, object> data;
-            public readonly List<TraceForBaselineTesting> children;
+            public readonly List<ITrace> children;
 
             public TraceForBaselineTesting(
                 string name,
@@ -1261,7 +1261,7 @@
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
-                this.children = new List<TraceForBaselineTesting>();
+                this.children = new List<ITrace>();
                 this.data = new Dictionary<string, object>();
             }
 
@@ -1313,8 +1313,13 @@
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
-                this.children.Add(child);
+                this.AddChild(child);
                 return child;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                this.children.Add(trace);
             }
 
             public static TraceForBaselineTesting GetRootTrace()

@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos
             ItemBatchOperation operation,
             CancellationToken cancellationToken)
         {
-            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Retry Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Retry Async", TraceComponent.Batch, Tracing.TraceLevel.Verbose))
             {
                 string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, trace, cancellationToken).ConfigureAwait(false);
                 operation.Context.ReRouteOperation(resolvedPartitionKeyRangeId, trace);
