@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -26,43 +27,57 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly TaskCompletionSource<TransactionalBatchOperationResult> taskCompletionSource = new TaskCompletionSource<TransactionalBatchOperationResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        private readonly List<ITrace> traces;
+
         public ItemBatchOperationContext(
             string partitionKeyRangeId,
             ITrace trace,
             IDocumentClientRetryPolicy retryPolicy = null)
         {
-            this.PartitionKeyRangeId = partitionKeyRangeId;
-            this.Trace = trace;
+            if (trace == null)
+            {
+                throw new ArgumentNullException(nameof(trace));
+            }
+
+            this.PartitionKeyRangeId = partitionKeyRangeId ?? throw new ArgumentNullException(nameof(partitionKeyRangeId));
+            this.traces = new List<ITrace>
+            {
+                trace
+            };
             this.retryPolicy = retryPolicy;
         }
-
-        public ITrace Trace { get; private set; }
 
         /// <summary>
         /// Based on the Retry Policy, if a failed response should retry.
         /// </summary>
-        public Task<ShouldRetryResult> ShouldRetryAsync(
+        public async Task<ShouldRetryResult> ShouldRetryAsync(
             TransactionalBatchOperationResult batchOperationResult,
             CancellationToken cancellationToken)
         {
-            // append Traces
             if (this.retryPolicy == null
                 || batchOperationResult.IsSuccessStatusCode)
             {
-                return Task.FromResult(ShouldRetryResult.NoRetry());
+                return ShouldRetryResult.NoRetry();
             }
 
             ResponseMessage responseMessage = batchOperationResult.ToResponseMessage();
-            return this.retryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+            ShouldRetryResult shouldRetry = await this.retryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+            if (shouldRetry.ShouldRetry)
+            {
+                this.traces.Add(batchOperationResult.Trace);
+            }
+
+            return shouldRetry;
         }
 
         public void Complete(
             BatchAsyncBatcher completer,
             TransactionalBatchOperationResult result)
         {
-            // append traces
             if (this.AssertBatcher(completer))
             {
+                this.traces.Add(result.Trace);
+                result.Trace = TraceJoiner.JoinTraces(this.traces);
                 this.taskCompletionSource.SetResult(result);
             }
 
@@ -81,9 +96,12 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose();
         }
 
-        public void ReRouteOperation(string newPartitionKeyRangeId)
+        public void ReRouteOperation(
+            string newPartitionKeyRangeId,
+            ITrace trace)
         {
             this.PartitionKeyRangeId = newPartitionKeyRangeId;
+            this.traces.Add(trace);
         }
 
         public void Dispose()
