@@ -38,10 +38,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -114,9 +110,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -239,10 +232,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -315,9 +304,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -440,10 +426,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -516,9 +498,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -641,10 +620,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -717,9 +692,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -842,10 +814,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -918,9 +886,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -1043,10 +1008,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1119,9 +1080,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -1244,10 +1202,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1320,9 +1274,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -1445,10 +1396,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1521,9 +1468,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -1646,10 +1590,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1722,9 +1662,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -1847,10 +1784,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -1923,9 +1856,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -2061,10 +1991,6 @@
     │   ├── ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2101,10 +2027,6 @@
     ├── Batch Retry Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2141,10 +2063,6 @@
     ├── Batch Retry Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     ├── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-    │   │   (
-    │   │       [Client Configuration]
-    │   │       Redacted To Not Change The Baselines From Run To Run
-    │   │   )
     │   ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2181,10 +2099,6 @@
     ├── Batch Retry Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     │   └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
     └── Batch Dispatch Async(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        │   (
-        │       [Client Configuration]
-        │       Redacted To Not Change The Baselines From Run To Run
-        │   )
         ├── Using Wait(00000000-0000-0000-0000-000000000000)  Batch-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         ├── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
         │   └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
@@ -2278,9 +2192,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -2484,9 +2395,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -2690,9 +2598,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",
@@ -2896,9 +2801,6 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {
-        "Client Configuration": "Redacted To Not Change The Baselines From Run To Run"
-      },
       "children": [
         {
           "name": "Using Wait",

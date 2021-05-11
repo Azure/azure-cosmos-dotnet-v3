@@ -113,11 +113,10 @@ namespace Microsoft.Azure.Cosmos
             BatchPartitionMetric partitionMetric,
             CancellationToken cancellationToken = default)
         {
-            await this.clientContext.OperationHelperAsync("Batch Dispatch Async",
-                        requestOptions: null,
-                        task: (trace) => this.DispatchHelperAsync(trace, partitionMetric, cancellationToken),
-                        traceComponent: TraceComponent.Batch,
-                        traceLevel: Tracing.TraceLevel.Info);
+            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Dispatch Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            {
+                await this.DispatchHelperAsync(trace, partitionMetric, cancellationToken);
+            }
         }
 
         private async Task<object> DispatchHelperAsync(
