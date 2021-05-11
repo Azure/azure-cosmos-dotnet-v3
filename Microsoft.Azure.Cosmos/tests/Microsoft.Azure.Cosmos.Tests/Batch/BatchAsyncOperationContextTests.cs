@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class BatchAsyncOperationContextTests
     {
         [TestMethod]
-        public async Task TraceIsJoinedOnCompletion()
+        public async Task TraceIsJoinedOnCompletionWithRetry()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
@@ -57,6 +57,46 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(rootTrace, result.Trace.Children[0], "The first trace child should be the initial root");
             Assert.AreEqual(retryTrace, result.Trace.Children[1], "The second trace child should be the one from the retry");
             Assert.AreEqual(transportTrace, result.Trace.Children[2], "The third trace child should be the one from the final result");
+        }
+
+        [TestMethod]
+        public async Task TraceIsJoinedOnCompletionWithoutRetry()
+        {
+            IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
+                Mock.Of<ContainerInternal>(),
+                OperationType.Read,
+                new ResourceThrottleRetryPolicy(1));
+
+            Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
+
+            ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
+
+            // Start with the base trace
+            ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(Guid.NewGuid().ToString(), rootTrace, retryPolicy);
+            operation.AttachContext(batchAsyncOperationContext);
+
+            // Simulate a retry scenario that should not append to the context traces
+            Trace retryTrace = Trace.GetRootTrace(name: "TransportTrace");
+            TransactionalBatchOperationResult retryResult = new TransactionalBatchOperationResult(HttpStatusCode.Forbidden)
+            {
+                Trace = retryTrace
+            };
+            ShouldRetryResult shouldRetryResult = await batchAsyncOperationContext.ShouldRetryAsync(retryResult, default);
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
+
+            // Simulate the completion that should append to the context traces
+            Trace transportTrace = Trace.GetRootTrace(name: "TransportTrace");
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK)
+            {
+                Trace = transportTrace
+            };
+
+            batchAsyncOperationContext.Complete(null, result);
+
+            Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
+            Assert.AreEqual(2, result.Trace.Children.Count, "The final trace should have the initial trace, plus the final trace, since the result is not retried, it should not capture it");
+            Assert.AreEqual(rootTrace, result.Trace.Children[0], "The first trace child should be the initial root");
+            Assert.AreEqual(transportTrace, result.Trace.Children[1], "The second trace child should be the one from the final result");
         }
 
         [TestMethod]
