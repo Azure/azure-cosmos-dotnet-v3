@@ -896,7 +896,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         private static string GetStringValueFromNode(IParseTree parseTree)
         {
             string text = parseTree.GetText();
-            string textWithoutQuotes = text.Substring(1, text.Length - 2).Replace("\"", "\'");
+            string textWithoutQuotes = text.Substring(1, text.Length - 2);
             return textWithoutQuotes;
         }
 

@@ -737,6 +737,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                             stringBuilder.Append('"');
                             break;
 
+                        case '\'':
+                            stringBuilder.Append('\\');
+                            stringBuilder.Append('\'');
+                            break;
+
                         case '/':
                             stringBuilder.Append('\\');
                             stringBuilder.Append('/');
