@@ -64,6 +64,24 @@
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[Double Quotes Within Single Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : 'Some "String" Value' }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some 'String' Value"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single Quotes Within Double Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : "Some 'String' Value" }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some 'String' Value"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Missing Close Brace]]></Description>
       <Query><![CDATA[SELECT VALUE {]]></Query>
     </Input>

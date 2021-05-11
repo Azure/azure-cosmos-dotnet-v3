@@ -179,7 +179,7 @@ scalar_expression_list : scalar_expression (',' scalar_expression)*;
 
 object_property_list : object_property (',' object_property)* ;
 
-object_property : (STRING_LITERAL | IDENTIFIER) ':' scalar_expression ;
+object_property : STRING_LITERAL ':' scalar_expression ;
 /*--------------------------------------------------------------------------------*/
 
 /*--------------------------------------------------------------------------------*/
