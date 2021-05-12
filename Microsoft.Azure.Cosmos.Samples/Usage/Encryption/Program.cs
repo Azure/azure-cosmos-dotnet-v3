@@ -47,6 +47,13 @@
                     .AddJsonFile("appSettings.json")
                     .Build();
 
+                // Get the Akv Master Key Path.
+                MasterKeyUrl = configuration["MasterKeyUrl"];
+                if (string.IsNullOrEmpty(MasterKeyUrl))
+                {
+                    throw new ArgumentNullException("Please specify a valid Azure Key Path in the appSettings.json");
+                }
+
                 // Get the Token Credential that is capable of providing an OAuth Token.
                 TokenCredential tokenCredential = GetTokenCredential(configuration);
                 AzureKeyVaultKeyStoreProvider azureKeyVaultKeyStoreProvider = new AzureKeyVaultKeyStoreProvider(tokenCredential);
@@ -124,15 +131,8 @@
             string tenantId = configuration["TenantId"];
             if (string.IsNullOrEmpty(tenantId))
             {
-                throw new ArgumentNullException("Please specify a valid Tenant Id in the appSettings.json");
-            }
-
-            // Get the Akv Master Key Path.
-            MasterKeyUrl = configuration["MasterKeyUrl"];
-            if (string.IsNullOrEmpty(tenantId))
-            {
-                throw new ArgumentNullException("Please specify a valid Azure Key Path in the appSettings.json");
-            }
+                throw new ArgumentNullException("Please specify a valid TenantId in the appSettings.json");
+            }          
 
             // Certificate's public key must be at least 2048 bits.
             string clientCertThumbprint = configuration["ClientCertThumbprint"];
