@@ -17,22 +17,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionType EncryptionType { get; }
 
-        public EncryptionProcessor EncryptionProcessor { get; }
+        private readonly string databaseRid;
 
-        public EncryptionSettingForProperty(string clientEncryptionKeyId, EncryptionType encryptionType, EncryptionProcessor encryptionProcessor)
+        private readonly EncryptionContainer encryptionContainer;
+
+        public EncryptionSettingForProperty(
+            string clientEncryptionKeyId,
+            EncryptionType encryptionType,
+            EncryptionContainer encryptionContainer,
+            string databaseRid)
         {
-            this.ClientEncryptionKeyId = clientEncryptionKeyId ?? throw new ArgumentNullException(nameof(clientEncryptionKeyId));
+            this.ClientEncryptionKeyId = string.IsNullOrEmpty(clientEncryptionKeyId) ? throw new ArgumentNullException(nameof(clientEncryptionKeyId)) : clientEncryptionKeyId;
             this.EncryptionType = encryptionType;
-            this.EncryptionProcessor = encryptionProcessor ?? throw new ArgumentNullException(nameof(encryptionProcessor));
+            this.encryptionContainer = encryptionContainer ?? throw new ArgumentNullException(nameof(encryptionContainer));
+            this.databaseRid = string.IsNullOrEmpty(databaseRid) ? throw new ArgumentNullException(nameof(databaseRid)) : databaseRid;
         }
 
-        internal async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
+        public async Task<AeadAes256CbcHmac256EncryptionAlgorithm> BuildEncryptionAlgorithmForSettingAsync(CancellationToken cancellationToken)
         {
-            ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.EncryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+            ClientEncryptionKeyProperties clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                     clientEncryptionKeyId: this.ClientEncryptionKeyId,
-                    container: this.EncryptionProcessor.Container,
-                    cancellationToken: cancellationToken,
-                    shouldForceRefresh: false);
+                    encryptionContainer: this.encryptionContainer,
+                    databaseRid: this.databaseRid,
+                    cancellationToken: cancellationToken);
 
             ProtectedDataEncryptionKey protectedDataEncryptionKey;
 
@@ -42,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // Here a request is sent out to unwrap using the Master Key configured via the Key Encryption Key.
                 protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
                     clientEncryptionKeyProperties,
-                    this.EncryptionProcessor.EncryptionKeyStoreProvider,
+                    this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
                     this.ClientEncryptionKeyId);
             }
             catch (RequestFailedException ex)
@@ -52,16 +59,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 // This is based on the AKV provider implementaion so we expect a RequestFailedException in case other providers are used in unwrap implementation.
                 if (ex.Status == (int)HttpStatusCode.Forbidden)
                 {
-                    clientEncryptionKeyProperties = await this.EncryptionProcessor.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
+                    clientEncryptionKeyProperties = await this.encryptionContainer.EncryptionCosmosClient.GetClientEncryptionKeyPropertiesAsync(
                         clientEncryptionKeyId: this.ClientEncryptionKeyId,
-                        container: this.EncryptionProcessor.Container,
+                        encryptionContainer: this.encryptionContainer,
+                        databaseRid: this.databaseRid,
                         cancellationToken: cancellationToken,
                         shouldForceRefresh: true);
 
                     // just bail out if this fails.
                     protectedDataEncryptionKey = this.BuildProtectedDataEncryptionKey(
                         clientEncryptionKeyProperties,
-                        this.EncryptionProcessor.EncryptionKeyStoreProvider,
+                        this.encryptionContainer.EncryptionCosmosClient.EncryptionKeyStoreProvider,
                         this.ClientEncryptionKeyId);
                 }
                 else
@@ -77,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return aeadAes256CbcHmac256EncryptionAlgorithm;
         }
 
-        internal ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
+        private ProtectedDataEncryptionKey BuildProtectedDataEncryptionKey(
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             EncryptionKeyStoreProvider encryptionKeyStoreProvider,
             string keyId)

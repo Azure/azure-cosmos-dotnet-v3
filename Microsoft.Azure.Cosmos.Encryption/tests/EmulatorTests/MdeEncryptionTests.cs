@@ -25,8 +25,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     [TestClass]
     public class MdeEncryptionTests
     {
-        private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("key1", "tempmetadata1");
-        private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("key2", "tempmetadata2");
+        private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "key1", "tempmetadata1");
+        private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "key2", "tempmetadata2");
 
         private static CosmosClient client;
         private static CosmosClient encryptionCosmosClient;
@@ -233,17 +233,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateClientEncryptionKey()
         {
             string cekId = "anotherCek";
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1");
+            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1");
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(name: cekId, value: metadata1.Value),
+                new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
             // creating another key with same id should fail
-            metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata2");
+            metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata2");
 
             try
             {
@@ -264,22 +264,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionRewrapClientEncryptionKey()
         {
             string cekId = "rewrapkeytest";
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1");
+            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1");
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(name: cekId, value: metadata1.Value),
+                new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
-            EncryptionKeyWrapMetadata updatedMetaData = new EncryptionKeyWrapMetadata(cekId, metadata1 + "updatedmetadata");
+            EncryptionKeyWrapMetadata updatedMetaData = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, metadata1 + "updatedmetadata");
             clientEncryptionKeyProperties = await MdeEncryptionTests.RewarpClientEncryptionKeyAsync(
                 cekId,
                 updatedMetaData);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(name: cekId, value: updatedMetaData.Value),
+                new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", name: cekId, value: updatedMetaData.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
         }
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1");
+                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(cekId, "testmetadata1" + "updated");
+                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1" + "updated");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.RewrapClientEncryptionKeyAsync(
                        cekId,
@@ -798,6 +798,535 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionValidatePolicyRefreshPostContainerDeleteWithBulk()
+        {
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntArray",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ArrayFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
+            await encryptionContainerToDelete.InitializeEncryptionAsync();
+
+            // FIXME Set WithBulkExecution to true post SDK/Backend fix.
+            CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
+                .WithBulkExecution(false)
+                .Build());
+
+            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+            Database otherDatabase = otherEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
+
+            Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
+
+            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+
+            // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
+            using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
+            { }
+
+            paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_StringFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DateFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_BoolFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
+
+            TestDoc docToReplace = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+
+            docToReplace.Sensitive_StringFormat = "docTobeReplace";
+
+            TestDoc docToUpsert = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+            docToUpsert.Sensitive_StringFormat = "docTobeUpserted";
+
+            List<Task> tasks = new List<Task>()
+            {
+                MdeEncryptionTests.MdeUpsertItemAsync(otherEncryptionContainer, docToUpsert, HttpStatusCode.OK),
+                MdeEncryptionTests.MdeReplaceItemAsync(otherEncryptionContainer, docToReplace),
+                MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),
+            };
+
+            await Task.WhenAll(tasks);
+
+            tasks = new List<Task>()
+            {
+                MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerToDelete, docToReplace),
+                MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete),
+                MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerToDelete, docToUpsert),
+            };
+
+            await Task.WhenAll(tasks);
+
+            // validate if the right policy was used, by reading them all back.
+            FeedIterator<TestDoc> queryResponseIterator = otherEncryptionContainer.GetItemQueryIterator<TestDoc>("select * from c");
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task EncryptionValidatePolicyRefreshPostContainerDeleteTransactionBatch()
+        {
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_StringFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DateFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
+            await encryptionContainerToDelete.InitializeEncryptionAsync();
+
+            CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+            Database otherDatabase = otherEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
+
+            Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
+
+            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+
+            // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
+            using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
+            { }
+
+            paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntArray",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
+
+            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+
+            string partitionKey = "thePK";
+
+            TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
+            TestDoc doc2ToCreate = TestDoc.Create(partitionKey);
+
+            // check w.r.t to Batch if we are able to fail and update the policy.
+            TransactionalBatchResponse batchResponse = null;
+            try
+            {
+                batchResponse = await otherEncryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                   .CreateItem(doc1ToCreate)
+                   .CreateItemStream(doc2ToCreate.ToStream())
+                   .ReadItem(doc1ToCreate.Id)
+                   .DeleteItem(doc2ToCreate.Id)
+                   .ExecuteAsync();
+
+                Assert.Fail("CreateTransactionalBatch should have failed. ");
+            }
+            catch(CosmosException ex)
+            {
+                Assert.AreEqual("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. ", ex.Message);
+            }
+
+            // the previous failure would have updated the policy in the cache.
+            batchResponse = await otherEncryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+               .CreateItem(doc1ToCreate)
+               .CreateItemStream(doc2ToCreate.ToStream())
+               .ReadItem(doc1ToCreate.Id)
+               .DeleteItem(doc2ToCreate.Id)
+               .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+
+            TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
+            VerifyExpectedDocResponse(doc1ToCreate, doc1.Resource);
+
+            TransactionalBatchOperationResult<TestDoc> doc2 = batchResponse.GetOperationResultAtIndex<TestDoc>(1);
+            VerifyExpectedDocResponse(doc2ToCreate, doc2.Resource);
+        }       
+
+        [TestMethod]
+        public async Task EncryptionValidatePolicyRefreshPostContainerDeleteQuery()
+        {
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_StringFormat",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            Container encryptionContainerToDelete = await database.CreateContainerAsync(containerProperties, 400);
+            await encryptionContainerToDelete.InitializeEncryptionAsync();
+
+            CosmosClient otherClient = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            CosmosClient otherEncryptionClient = otherClient.WithEncryption(new TestEncryptionKeyStoreProvider());
+            Database otherDatabase = otherEncryptionClient.GetDatabase(MdeEncryptionTests.database.Id);
+
+            Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
+
+            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+
+            // Client 1 Deletes the Container referenced in Client 2 and Recreate with different policy
+            using (await database.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
+            { }
+
+            paths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntArray",
+                    ClientEncryptionKeyId = "key1",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ArrayFormat",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            clientEncryptionPolicy = new ClientEncryptionPolicy(paths);
+
+            containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            ContainerResponse containerResponse = await database.CreateContainerAsync(containerProperties, 400);
+
+            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+
+            // check w.r.t to query if we are able to fail and update the policy
+            try
+            {
+                await MdeEncryptionTests.ValidateQueryResultsAsync(
+                       otherEncryptionContainer,
+                       "SELECT * FROM c",
+                       testDoc);
+
+                Assert.Fail("ValidateQueryResultAsync should have failed. ");
+            }
+            catch(CosmosException ex)
+            {
+                if (ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("Query should have failed. ");
+                }
+
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. "));
+            }
+
+            // previous failure would have updated the policy in the cache.
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                       otherEncryptionContainer,
+                       "SELECT * FROM c",
+                       testDoc);
+        }
+
+        [TestMethod]
+        public async Task EncryptionValidatePolicyRefreshPostDatabaseDelete()
+        {
+            CosmosClient mainClient = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            EncryptionKeyWrapMetadata keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "myCek", "mymetadata1");
+
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30),
+            };
+
+            CosmosClient encryptionCosmosClient = mainClient.WithEncryption(testEncryptionKeyStoreProvider);
+            Database mainDatabase = await encryptionCosmosClient.CreateDatabaseAsync("databaseToBeDeleted");
+
+            ClientEncryptionKeyResponse clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
+                   keyWrapMetadata.Name,
+                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                   keyWrapMetadata);
+
+            Collection<ClientEncryptionIncludedPath> originalPaths = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_StringFormat",
+                    ClientEncryptionKeyId = "myCek",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ArrayFormat",
+                    ClientEncryptionKeyId = "myCek",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_NestedObjectFormatL1",
+                    ClientEncryptionKeyId = "myCek",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            ClientEncryptionPolicy clientEncryptionPolicy = new ClientEncryptionPolicy(originalPaths);
+
+            ContainerProperties containerProperties = new ContainerProperties("containerToBeDeleted", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            Container encryptionContainerToDelete = await mainDatabase.CreateContainerAsync(containerProperties, 400);
+            await encryptionContainerToDelete.InitializeEncryptionAsync();
+
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+
+            CosmosClient otherClient1 = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider2 = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero,
+            };
+
+            CosmosClient otherEncryptionClient = otherClient1.WithEncryption(testEncryptionKeyStoreProvider2);
+            Database otherDatabase = otherEncryptionClient.GetDatabase(mainDatabase.Id);
+
+            Container otherEncryptionContainer = otherDatabase.GetContainer(encryptionContainerToDelete.Id);
+
+            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+
+            // Client 1 Deletes the Database and  Container referenced in Client 2 and Recreate with different policy
+            // delete database and recreate with same key name
+            await mainClient.GetDatabase("databaseToBeDeleted").DeleteStreamAsync();
+
+            mainDatabase = await encryptionCosmosClient.CreateDatabaseAsync("databaseToBeDeleted");
+
+            keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "myCek", "mymetadata2");
+            clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
+                   keyWrapMetadata.Name,
+                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                   keyWrapMetadata);
+
+            using (await mainDatabase.GetContainer(encryptionContainerToDelete.Id).DeleteContainerStreamAsync())
+            { }
+
+            Collection<ClientEncryptionIncludedPath> newModifiedPath = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_IntArray",
+                    ClientEncryptionKeyId = "myCek",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_DateFormat",
+                    ClientEncryptionKeyId = "myCek",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_BoolFormat",
+                    ClientEncryptionKeyId = "myCek",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            clientEncryptionPolicy = new ClientEncryptionPolicy(newModifiedPath);
+
+            containerProperties = new ContainerProperties(encryptionContainerToDelete.Id, "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+
+            ContainerResponse containerResponse = await mainDatabase.CreateContainerAsync(containerProperties, 400);
+            //encryptionContainerToDelete = containerResponse;
+
+            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainerToDelete);
+
+            await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, testDoc);
+
+            // create new container in other client.
+            // The test basically validates if the new key created is referenced, Since the other client would have had the old key cached.
+            // and here we would not hit the incorrect container rid issue.
+            Collection<ClientEncryptionIncludedPath> newModifiedPath2 = new Collection<ClientEncryptionIncludedPath>()
+            {
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_StringFormat",
+                    ClientEncryptionKeyId = "myCek",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+            };
+
+            ClientEncryptionPolicy clientEncryptionPolicy2 = new ClientEncryptionPolicy(newModifiedPath2);
+
+            ContainerProperties containerProperties2 = new ContainerProperties("otherContainer2", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy2 };
+            Container otherEncryptionContainer2 = await otherDatabase.CreateContainerAsync(containerProperties2, 400);
+
+            // create an item
+            TestDoc newdoc = await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer2);
+
+            CosmosClient otherClient2 = TestCommon.CreateCosmosClient(builder => builder
+                .WithBulkExecution(true)
+                .Build());
+
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider3 = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30),
+            };
+
+            CosmosClient otherEncryptionClient2 = otherClient2.WithEncryption(testEncryptionKeyStoreProvider3);
+            Database otherDatabase2 = otherEncryptionClient2.GetDatabase(mainDatabase.Id);
+
+            Container otherEncryptionContainer3 = otherDatabase2.GetContainer(otherEncryptionContainer2.Id);
+            await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer3, newdoc);
+
+            // validate from other client that we indeed are using the key with metadata 2
+            Container otherEncryptionContainerFromClient2 = otherDatabase2.GetContainer(encryptionContainerToDelete.Id);
+            await MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainerFromClient2, testDoc);
+
+            // previous refrenced container.
+            await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+
+            List<Task> tasks = new List<Task>()
+            {
+                // readback item and create item from other Client.  
+                MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer),
+                MdeEncryptionTests.VerifyItemByReadAsync(otherEncryptionContainer, testDoc),                
+            };
+
+            await Task.WhenAll(tasks);
+
+            testDoc = await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer);
+
+            // to be sure if it was indeed encrypted with the new key.
+            await MdeEncryptionTests.VerifyItemByReadAsync(encryptionContainerToDelete, testDoc);
+
+
+            // validate if the right policy was used, by reading them all back.
+            FeedIterator<TestDoc> queryResponseIterator = encryptionContainerToDelete.GetItemQueryIterator<TestDoc>("select * from c");
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                await queryResponseIterator.ReadNextAsync();
+            }
+
+            queryResponseIterator = otherEncryptionContainer.GetItemQueryIterator<TestDoc>("select * from c");
+
+            while (queryResponseIterator.HasMoreResults)
+            {
+                await queryResponseIterator.ReadNextAsync();
+            }
+
+            await mainClient.GetDatabase("databaseToBeDeleted").DeleteStreamAsync();
+        }
+
+        [TestMethod]
         public async Task VerifyKekRevokeHandling()
         {
             CosmosClient clientWithNoCaching = TestCommon.CreateCosmosClient(builder => builder
@@ -814,7 +1343,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
             // The Dek should be rewrapped if the KEK is revoked.
             // When an access to KeyVault fails, the Dek is fetched from the backend(force refresh to update the stale DEK) and cache is updated.
-            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("revokedKek", "revokedKek-metadata");         
+            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "revokedKek", "revokedKek-metadata");         
 
            await database.CreateClientEncryptionKeyAsync(
                    "keywithRevokedKek",
@@ -913,12 +1442,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await encryptionContainer.InitializeEncryptionAsync();
 
             TestDoc testDoc = TestDoc.Create();
-
             ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+            await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+
 
             await database.DeleteStreamAsync();
         }
@@ -1216,6 +1749,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
             VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
         }
 
         // One of query or queryDefinition is to be passed in non-null
