@@ -1,0 +1,14 @@
+{
+  "Registrations": [
+    {
+      "Component": {
+        "Type": "git",
+        "Git": {
+          "RepositoryUrl": "https://github.com/HdrHistogram/HdrHistogram.NET",
+          "CommitHash": "58e33440549be69a13a56c60f5e68bbccaae86af"
+        }
+      },
+      "DevelopmentDependency": false
+    }
+  ]
+}
