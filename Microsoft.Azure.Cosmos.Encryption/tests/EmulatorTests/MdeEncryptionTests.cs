@@ -1503,40 +1503,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionPatchItem()
         {
-            TestDoc docToPatch = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
-            docToPatch.NonSensitive = Guid.NewGuid().ToString();
-            docToPatch.NonSensitiveInt++;
-            docToPatch.Sensitive_StringFormat = Guid.NewGuid().ToString();
-            docToPatch.Sensitive_DateFormat = new DateTime(2020, 02, 02);
-            docToPatch.Sensitive_DecimalFormat = 11.11m;
-            docToPatch.Sensitive_IntArray[1] = 1;
-            docToPatch.Sensitive_IntMultiDimArray[1, 0] = 7;
-            docToPatch.Sensitive_IntFormat = 2020;
-            docToPatch.Sensitive_BoolFormat = false;
-            docToPatch.Sensitive_FloatFormat = 2020.20f;
+            TestDoc docPostPatching = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            docPostPatching.NonSensitive = Guid.NewGuid().ToString();
+            docPostPatching.NonSensitiveInt++;
+            docPostPatching.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            docPostPatching.Sensitive_DateFormat = new DateTime(2020, 02, 02);
+            docPostPatching.Sensitive_DecimalFormat = 11.11m;
+            docPostPatching.Sensitive_IntArray[1] = 1;
+            docPostPatching.Sensitive_IntMultiDimArray[1, 0] = 7;
+            docPostPatching.Sensitive_IntFormat = 2020;
+            docPostPatching.Sensitive_BoolFormat = false;
+            docPostPatching.Sensitive_FloatFormat = 2020.20f;
 
             // Maximum 10 operations at a time (current limit)
             List<PatchOperation> patchOperations = new List<PatchOperation>
             {
                 PatchOperation.Increment("/NonSensitiveInt", 1),
-                PatchOperation.Replace("/NonSensitive", docToPatch.NonSensitive),
-                PatchOperation.Replace("/Sensitive_StringFormat", docToPatch.Sensitive_StringFormat),
-                PatchOperation.Replace("/Sensitive_DateFormat", docToPatch.Sensitive_DateFormat),
-                PatchOperation.Replace("/Sensitive_DecimalFormat", docToPatch.Sensitive_DecimalFormat),
-                PatchOperation.Set("/Sensitive_IntArray/1", docToPatch.Sensitive_IntArray[1]),
-                PatchOperation.Set("/Sensitive_IntMultiDimArray/1/0", docToPatch.Sensitive_IntMultiDimArray[1,0]),
-                PatchOperation.Replace("/Sensitive_IntFormat", docToPatch.Sensitive_IntFormat),
-                PatchOperation.Replace("/Sensitive_BoolFormat", docToPatch.Sensitive_BoolFormat),
-                PatchOperation.Replace("/Sensitive_FloatFormat", docToPatch.Sensitive_FloatFormat),
+                PatchOperation.Replace("/NonSensitive", docPostPatching.NonSensitive),
+                PatchOperation.Replace("/Sensitive_StringFormat", docPostPatching.Sensitive_StringFormat),
+                PatchOperation.Replace("/Sensitive_DateFormat", docPostPatching.Sensitive_DateFormat),
+                PatchOperation.Replace("/Sensitive_DecimalFormat", docPostPatching.Sensitive_DecimalFormat),
+                PatchOperation.Set("/Sensitive_IntArray/1", docPostPatching.Sensitive_IntArray[1]),
+                PatchOperation.Set("/Sensitive_IntMultiDimArray/1/0", docPostPatching.Sensitive_IntMultiDimArray[1,0]),
+                PatchOperation.Replace("/Sensitive_IntFormat", docPostPatching.Sensitive_IntFormat),
+                PatchOperation.Replace("/Sensitive_BoolFormat", docPostPatching.Sensitive_BoolFormat),
+                PatchOperation.Replace("/Sensitive_FloatFormat", docPostPatching.Sensitive_FloatFormat),
             };
 
             await MdeEncryptionTests.MdePatchItemAsync(
                 MdeEncryptionTests.encryptionContainer,
                 patchOperations,
-                docToPatch,
+                docPostPatching,
                 HttpStatusCode.OK);
 
-            docToPatch.Sensitive_ArrayFormat = new TestDoc.Sensitive_ArrayData[]
+            docPostPatching.Sensitive_ArrayFormat = new TestDoc.Sensitive_ArrayData[]
             {
                 new TestDoc.Sensitive_ArrayData
                 {
@@ -1550,7 +1550,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
             };
 
-            docToPatch.Sensitive_ArrayMultiTypes.SetValue(
+            docPostPatching.Sensitive_ArrayMultiTypes.SetValue(
                 new TestDoc.Sensitive_ArrayMultiType()
                 {
                     Sensitive_NestedObjectFormatL0 = new TestDoc.Sensitive_NestedObjectL0()
@@ -1565,7 +1565,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 0,
                 1);
 
-            docToPatch.Sensitive_NestedObjectFormatL1 = new TestDoc.Sensitive_NestedObjectL1()
+            docPostPatching.Sensitive_NestedObjectFormatL1 = new TestDoc.Sensitive_NestedObjectL1()
             {
                 Sensitive_IntArrayL1 = new int[2] { 999, 100 },
                 Sensitive_IntFormatL1 = 1999,
@@ -1591,23 +1591,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             patchOperations.Clear();
-            patchOperations.Add(PatchOperation.Add("/Sensitive_ArrayFormat/1", docToPatch.Sensitive_ArrayFormat[1]));
-            patchOperations.Add(PatchOperation.Replace("/Sensitive_ArrayMultiTypes/0/1", docToPatch.Sensitive_ArrayMultiTypes[0, 1]));
+            patchOperations.Add(PatchOperation.Add("/Sensitive_ArrayFormat/1", docPostPatching.Sensitive_ArrayFormat[1]));
+            patchOperations.Add(PatchOperation.Replace("/Sensitive_ArrayMultiTypes/0/1", docPostPatching.Sensitive_ArrayMultiTypes[0, 1]));
             patchOperations.Add(PatchOperation.Remove("/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2"));
-            patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docToPatch.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0]));
+            patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0]));
 
             await MdeEncryptionTests.MdePatchItemAsync(
                 MdeEncryptionTests.encryptionContainer,
                 patchOperations,
-                docToPatch,
+                docPostPatching,
                 HttpStatusCode.OK);
 
             patchOperations.Add(PatchOperation.Increment("/Sensitive_IntFormat", 1));
             try
             {
                 await MdeEncryptionTests.encryptionContainer.PatchItemAsync<TestDoc>(
-                    docToPatch.Id,
-                    new PartitionKey(docToPatch.PK),
+                    docPostPatching.Id,
+                    new PartitionKey(docPostPatching.PK),
                     patchOperations);
             }
             catch(InvalidOperationException ex)
