@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream decryptedContent = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
                         this.encryptor,
-                        diagnosticsContext,
                         cancellationToken);
 
                     return new DecryptedResponseMessage(responseMessage, decryptedContent);

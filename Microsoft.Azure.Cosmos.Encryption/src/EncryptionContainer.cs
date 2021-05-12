@@ -628,136 +628,111 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string processorName,
             ChangesHandler<T> onChangesDelegate)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder"))
-            {
-                return this.container.GetChangeFeedProcessorBuilder(
-                    processorName,
-                    async (
-                        IReadOnlyCollection<JObject> documents, 
-                        CancellationToken cancellationToken) =>
-                    {
-                        List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
-                            documents,
-                            diagnosticsContext,
-                            cancellationToken);
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    IReadOnlyCollection<JObject> documents,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
 
-                        // Call the original passed in delegate
-                        await onChangesDelegate(decryptedItems, cancellationToken);
-                    });
-            }
+                    // Call the original passed in delegate
+                    await onChangesDelegate(decryptedItems, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<T> onChangesDelegate)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder.ChangeFeedHandler"))
-            {
-                return this.container.GetChangeFeedProcessorBuilder(
-                    processorName,
-                    async (
-                        ChangeFeedProcessorContext context,
-                        IReadOnlyCollection<JObject> documents,
-                        CancellationToken cancellationToken) =>
-                    {
-                        List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
-                            documents,
-                            diagnosticsContext,
-                            cancellationToken);
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<JObject> documents,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
 
-                        // Call the original passed in delegate
-                        await onChangesDelegate(context, decryptedItems, cancellationToken);
-                    });
-            }
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedItems, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilderWithManualCheckpoint"))
-            {
-                return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
-                    processorName,
-                    async (
-                        ChangeFeedProcessorContext context,
-                        IReadOnlyCollection<JObject> documents,
-                        Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-                        CancellationToken cancellationToken) =>
-                    {
-                        List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
-                            documents,
-                            diagnosticsContext,
-                            cancellationToken);
+            return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<JObject> documents,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
 
-                        // Call the original passed in delegate
-                        await onChangesDelegate(context, decryptedItems, tryCheckpointAsync, cancellationToken);
-                    });
-            }
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedItems, tryCheckpointAsync, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
             ChangeFeedStreamHandler onChangesDelegate)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder.ChangeFeedStreamHandler"))
-            {
-                return this.container.GetChangeFeedProcessorBuilder(
-                    processorName,
-                    async (
-                        ChangeFeedProcessorContext context,
-                        Stream changes,
-                        CancellationToken cancellationToken) =>
-                    {
-                        EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                            obsoleteEncryptionSettings: null,
-                            cancellationToken: cancellationToken);
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    CancellationToken cancellationToken) =>
+                {
+                    EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: null,
+                        cancellationToken: cancellationToken);
 
-                        Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
-                            changes,
-                            encryptionSettings,
-                            diagnosticsContext,
-                            cancellationToken);
+                    Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
+                        changes,
+                        encryptionSettings,
+                        cancellationToken);
 
-                        // Call the original passed in delegate
-                        await onChangesDelegate(context, decryptedChanges, cancellationToken);
-                    });
-            }
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedChanges, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilderWithManualCheckpoint.Stream"))
-            {
-                return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
-                    processorName,
-                    async (
-                        ChangeFeedProcessorContext context,
-                        Stream changes,
-                        Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-                        CancellationToken cancellationToken) =>
-                    {
-                        EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                            obsoleteEncryptionSettings: null,
-                            cancellationToken: cancellationToken);
+            return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: null,
+                        cancellationToken: cancellationToken);
 
-                        Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
-                            changes,
-                            encryptionSettings,
-                            diagnosticsContext,
-                            cancellationToken);
+                    Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
+                        changes,
+                        encryptionSettings,
+                        cancellationToken);
 
-                        // Call the original passed in delegate
-                        await onChangesDelegate(context, decryptedChanges, tryCheckpointAsync, cancellationToken);
-                    });
-            }
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedChanges, tryCheckpointAsync, cancellationToken);
+                });
         }
 
         public override Task<ResponseMessage> ReadManyItemsStreamAsync(
@@ -1135,23 +1110,21 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(
             IReadOnlyCollection<JObject> documents,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             List<T> decryptedItems = new List<T>(documents.Count);
 
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: cancellationToken);
+
             foreach (JObject document in documents)
             {
-                EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                    obsoleteEncryptionSettings: null,
-                    cancellationToken: cancellationToken);
-
                 try
                 {
                     JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
                         document,
                         encryptionSettings,
-                        diagnosticsContext,
                         cancellationToken);
 
                     decryptedItems.Add(decryptedDocument.ToObject<T>());
@@ -1170,7 +1143,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
                            document,
                            encryptionSettings,
-                           diagnosticsContext,
                            cancellationToken);
 
                     decryptedItems.Add(decryptedDocument.ToObject<T>());
@@ -1183,7 +1155,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             if (!encryptionSettings.PropertiesToEncrypt.Any())
@@ -1207,13 +1178,33 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                    document,
-                    encryptionSettings,
-                    diagnosticsContext,
-                    cancellationToken);
+                try
+                {
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptionSettings,
+                        cancellationToken);
 
-                results.Add(decryptedDocument);
+                    results.Add(decryptedDocument);
+                }
+
+                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
+                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
+                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
+                catch (Exception)
+                {
+                    // most likely the encryption policy has changed.
+                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: encryptionSettings,
+                        cancellationToken: cancellationToken);
+
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptionSettings,
+                        cancellationToken);
+
+                    results.Add(decryptedDocument);
+                }
             }
 
             JObject decryptedResponse = new JObject();

@@ -569,7 +569,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
@@ -588,13 +587,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     continue;
                 }
 
-                (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
-                    document,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken);
+                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+                using (diagnosticsContext.CreateScope("EncryptionProcessor.DeserializeAndDecryptResponseAsync"))
+                {
+                    (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
 
-                result.Add(decryptedDocument);
+                    result.Add(decryptedDocument);
+                }
             }
 
             JObject decryptedResponse = new JObject();
