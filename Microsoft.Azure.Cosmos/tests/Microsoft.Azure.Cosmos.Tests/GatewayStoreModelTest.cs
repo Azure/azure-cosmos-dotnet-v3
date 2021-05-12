@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             bool failedToResolve = false;
             bool didNotRetry = false;
 
-            const string failedToResolveMessage = "Fail to reach gateway endpoint https://veryrandomurl123456789.documents.azure.com/, ";
+            const string failedToResolveMessage = "GlobalEndpointManager: Fail to reach gateway endpoint https://veryrandomurl123456789.documents.azure.com/, ";
             string didNotRetryMessage = null;
 
             void TraceHandler(string message)

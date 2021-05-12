@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos
                 retryDelay = TimeSpan.FromMilliseconds(ClientRetryPolicy.RetryIntervalInMS);
             }
 
-            await this.globalEndpointManager.RefreshLocationAsync(null, forceRefresh);
+            await this.globalEndpointManager.RefreshLocationAsync(forceRefresh);
 
             int retryLocationIndex = this.failoverRetryCount; // Used to generate a round-robin effect
             if (retryOnPreferredLocations)
