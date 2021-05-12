@@ -796,7 +796,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
             else
             {
-                throw new NotImplementedException();
+                // logical_expression binary_operator logical_expression
+                Contract.Requires(context.ChildCount == 3);
+
+                SqlScalarExpression left = (SqlScalarExpression)this.Visit(context.logical_scalar_expression(0));
+                
+                if (!CstToAstVisitor.binaryOperatorKindLookup.TryGetValue(
+                    context.children[1].GetText(),
+                    out SqlBinaryScalarOperatorKind operatorKind))
+                {
+                    throw new ArgumentOutOfRangeException($"Unknown logical operator: {context.children[1].GetText()}.");
+                }
+
+                SqlScalarExpression right = (SqlScalarExpression)this.Visit(context.logical_scalar_expression(1));
+
+                sqlObject = SqlBinaryScalarExpression.Create(operatorKind, left, right);
             }
 
             return sqlObject;
