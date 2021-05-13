@@ -322,6 +322,7 @@ namespace Microsoft.Azure.Documents
                 resourceType == ResourceType.Snapshot ||
                 resourceType == ResourceType.RoleAssignment ||
                 resourceType == ResourceType.RoleDefinition ||
+                resourceType == ResourceType.AuthPolicyElement ||
 #if !COSMOSCLIENT
                 resourceType == ResourceType.Topology ||
                 (resourceType == ResourceType.PartitionKeyRange && operationType != OperationType.GetSplitPoint

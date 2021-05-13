@@ -3,8 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Microsoft.Azure.Documents.Collections;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.Collections;
 
     internal interface IAuthorizationTokenProvider
     {

@@ -29,6 +29,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly List<LbChannelState> openChannels =
             new List<LbChannelState>();  // Guarded by capacityLock.
 
+        private readonly SemaphoreSlim concurrentOpeningChannelSlim;
+
         public LoadBalancingPartition(Uri serverUri, ChannelProperties channelProperties, bool localRegionRequest)
         {
             Debug.Assert(serverUri != null);
@@ -39,6 +41,9 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             this.maxCapacity = checked(channelProperties.MaxChannels *
                 channelProperties.MaxRequestsPerChannel);
+
+            this.concurrentOpeningChannelSlim =
+                new SemaphoreSlim(channelProperties.MaxConcurrentOpeningConnectionCount, channelProperties.MaxConcurrentOpeningConnectionCount);
         }
 
         public async Task<StoreResponse> RequestAsync(
@@ -160,7 +165,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             }
                             while (this.openChannels.Count < targetChannels)
                             {
-                                Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties, this.localRegionRequest);
+                                Channel newChannel = new Channel(activityId, this.serverUri, this.channelProperties, this.localRegionRequest, this.concurrentOpeningChannelSlim);
                                 newChannel.Initialize();
                                 this.openChannels.Add(new LbChannelState(newChannel, this.channelProperties.MaxRequestsPerChannel));
                                 this.capacity += this.channelProperties.MaxRequestsPerChannel;

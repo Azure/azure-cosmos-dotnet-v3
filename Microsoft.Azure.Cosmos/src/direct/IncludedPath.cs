@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Documents
     using System.Collections.ObjectModel;
     using System.Globalization;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary> 
     /// Specifies a path within a JSON document to be included in the Azure Cosmos DB service.

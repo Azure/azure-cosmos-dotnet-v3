@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Documents
 {
     using Newtonsoft.Json;
-    using System;
 
     /// <summary>
     /// Represents a database in the Azure Cosmos DB account.

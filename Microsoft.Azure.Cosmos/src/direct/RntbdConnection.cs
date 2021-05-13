@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Documents
     using System.Net.Security;
     using System.Net.Sockets;
     using System.Security.Authentication;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 #if COSMOSCLIENT
@@ -641,7 +640,7 @@ namespace Microsoft.Azure.Documents
 
         protected virtual byte[] BuildContextRequest(Guid activityId)
         {
-            return Rntbd.TransportSerialization.BuildContextRequest(activityId, this.userAgent, RntbdConstants.CallerId.Anonymous);
+            return Rntbd.TransportSerialization.BuildContextRequest(activityId, this.userAgent, RntbdConstants.CallerId.Anonymous, enableChannelMultiplexing: false);
         }
 
         private async Task NegotiateRntbdContextAsync(Stream negotiatingStream, Guid activityId, RntbdResponseState state)

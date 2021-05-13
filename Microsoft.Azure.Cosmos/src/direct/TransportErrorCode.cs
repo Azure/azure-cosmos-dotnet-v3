@@ -69,6 +69,10 @@ namespace Microsoft.Azure.Documents
         // The underlying connection is no longer usable.
         ConnectionBroken = 18,
 
+        // Concurrent opening channel is limit by MaxConcurrentOpeningConnectionCount, error code to indicate
+        // channel failed to enter the openingSlim within a certain period
+        ChannelWaitingToOpenTimeout = 19,
+
         // Keep this in sync with the documentation at
         // ${ENLISTMENT_ROOT}\docs\tsg\tsg914.md.
         // Insert new values above this comment.

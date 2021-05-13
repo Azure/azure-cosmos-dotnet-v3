@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Globalization;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 

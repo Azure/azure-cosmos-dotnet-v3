@@ -41,7 +41,9 @@ namespace Microsoft.Azure.Documents
             RntbdConstants.CallerId callerId = RntbdConstants.CallerId.Anonymous, // replicatedResourceClient
             bool enableTcpConnectionEndpointRediscovery = false,
             IAddressResolver addressResolver = null, // globalAddressResolver
-            TimeSpan localRegionOpenTimeout = default) 
+            TimeSpan localRegionOpenTimeout = default,
+            bool enableChannelMultiplexing = false,
+            int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue) // Optional for Rntbd
         {
             // <=0 means idle timeout is disabled.
             // valid value: >= 10 minutes
@@ -187,6 +189,8 @@ namespace Microsoft.Azure.Documents
                     this.connectionStateListener = new ConnectionStateListener(addressResolver);
                 }
 
+                StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
+
                 this.fallbackClient = new RntbdTransportClient(
                     requestTimeoutInSeconds,
                     maxConcurrentConnectionOpenRequests,
@@ -215,7 +219,9 @@ namespace Microsoft.Azure.Documents
                         IdleTimeout = TimeSpan.FromSeconds(idleTimeoutInSeconds),
                         EnableCpuMonitor = enableCpuMonitor,
                         CallerId = callerId,
-                        ConnectionStateListener = this.connectionStateListener
+                        ConnectionStateListener = this.connectionStateListener,
+                        EnableChannelMultiplexing = enableChannelMultiplexing,
+                        MaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCount
                     });
             }
             else
@@ -381,6 +387,41 @@ namespace Microsoft.Azure.Documents
                     nameof(rntbdPortPoolBindAttempts),
                     rntbdPortPoolBindAttempts, maxRntbdPortPoolBindAttempts);
                 rntbdPortPoolBindAttempts = maxRntbdPortPoolBindAttempts;
+            }
+        }
+
+        private static void ValidateRntbdMaxConcurrentOpeningConnectionCount(ref int rntbdMaxConcurrentOpeningConnectionCount)
+        {
+            // RntbdMaxConcurrentOpeningConnectionCount is used to control how fast connections can be opened. 
+            // Usually, each upcaller should choose a resonable value for rntbdMaxConcurrentOpeningConnectionCount.
+            // The RntbdMaxConcurrentOpeningConnectionUpperLimitConfig is added here to add another defense in case we need to mitigate tcp flood issue
+            // but the upcaller does not have a way to reconfig RntbdMaxConcurrentOpeningConnectionCount.
+            int rntbdMaxConcurrentOpeningConnectionUpperLimit = ushort.MaxValue;
+            const string RntbdMaxConcurrentOpeningConnectionUpperLimitConfig = "AZURE_COSMOS_TCP_MAX_CONCURRENT_OPENING_CONNECTION_UPPER_LIMIT";
+
+            string rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideString = Environment.GetEnvironmentVariable(RntbdMaxConcurrentOpeningConnectionUpperLimitConfig);
+            if (!string.IsNullOrEmpty(rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideString))
+            {
+                int rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt = 0;
+                if (Int32.TryParse(rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideString, out rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt))
+                {
+                    if (rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt <= 0)
+                    {
+                        throw new ArgumentException("RntbdMaxConcurrentOpeningConnectionUpperLimitConfig should be larger than 0");
+                    }
+
+                    rntbdMaxConcurrentOpeningConnectionUpperLimit = rntbdMaxConcurrentOpeningConnectionUpperLimitOverrideInt;
+                }
+            }
+
+            if (rntbdMaxConcurrentOpeningConnectionCount > rntbdMaxConcurrentOpeningConnectionUpperLimit)
+            {
+                DefaultTrace.TraceWarning(
+                    "The value of {0} is too large. Received {1}. Adjusting to {2}",
+                    nameof(rntbdMaxConcurrentOpeningConnectionCount),
+                    rntbdMaxConcurrentOpeningConnectionCount,
+                    rntbdMaxConcurrentOpeningConnectionUpperLimit);
+                rntbdMaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionUpperLimit;
             }
         }
     }

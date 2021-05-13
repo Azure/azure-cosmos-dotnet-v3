@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Documents
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.IO;
-    using System.Linq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 

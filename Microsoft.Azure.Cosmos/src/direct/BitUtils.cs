@@ -5,9 +5,6 @@
 //-----------------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using System;
-    using System.Collections.Generic;
-
     /// <summary>
     /// List of utility for doing bit (hacks).
     /// </summary>

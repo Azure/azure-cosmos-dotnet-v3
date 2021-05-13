@@ -3,7 +3,7 @@
 //------------------------------------------------------------
 
 namespace Microsoft.Azure.Documents
-{   
+{
     internal enum ContentSerializationFormat
     {
         /// <summary>

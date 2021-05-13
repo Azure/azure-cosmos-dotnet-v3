@@ -5,12 +5,9 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Net;
-    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
 
     internal sealed class AddressSelector
@@ -53,6 +50,28 @@ namespace Microsoft.Azure.Documents
                 await this.addressResolver.ResolveAsync(request, forceAddressRefresh, CancellationToken.None);
 
             return partitionAddressInformation.Get(this.protocol);
+        }
+
+        public void StartBackgroundAddressRefresh(DocumentServiceRequest request)
+        {
+            try
+            {
+                // DocumentServiceRequest is not thread safe and must be cloned to avoid
+                // concurrency issues since this a background task.
+                DocumentServiceRequest requestClone = request.Clone();
+                this.ResolveAllTransportAddressUriAsync(requestClone, true, true).ContinueWith((task) =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        DefaultTrace.TraceWarning(
+                            "Background refresh of the addresses failed with {0}", task.Exception.ToString());
+                    }
+                });
+            }
+            catch (Exception exception)
+            {
+                DefaultTrace.TraceWarning("Background refresh of the addresses failed with {0}", exception.ToString());
+            }
         }
     }
 }

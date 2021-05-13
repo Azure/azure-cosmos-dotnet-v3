@@ -5,11 +5,9 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using System.Diagnostics;
     using System.Globalization;
-    using System.Text;
-    using System.Threading;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     //Resource ID is 20 byte number. It is not a guid.

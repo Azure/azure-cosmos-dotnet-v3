@@ -3,7 +3,6 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
     using System;
 
     internal interface IServiceIdentity

@@ -79,7 +79,6 @@ namespace Microsoft.Azure.Documents
 
         public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             ShouldRetryResult result = ShouldRetryResult.NoRetry();
 
             if (exception is DocumentClientException dce)

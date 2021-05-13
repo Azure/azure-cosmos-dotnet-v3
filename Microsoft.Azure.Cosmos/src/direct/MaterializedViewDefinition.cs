@@ -3,9 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
     using System;
-    using System.Collections.Generic;
+    using Newtonsoft.Json;
 #if COSMOSCLIENT
     internal
 #else

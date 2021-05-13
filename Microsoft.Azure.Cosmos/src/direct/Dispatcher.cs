@@ -4,13 +4,11 @@
 namespace Microsoft.Azure.Documents.Rntbd
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Net;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
@@ -41,6 +39,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // guard the operation with connectionLock.
         private readonly CancellationTokenSource cancellation = new CancellationTokenSource();
         private readonly TimerPool idleTimerPool;
+        private readonly bool enableChannelMultiplexing;
 
         private bool disposed = false;
 
@@ -73,7 +72,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimeSpan receiveHangDetectionTime,
             TimeSpan sendHangDetectionTime,
             TimerPool idleTimerPool,
-            TimeSpan idleTimeout)
+            TimeSpan idleTimeout,
+            bool enableChannelMultiplexing)
         {
             this.connection = new Connection(
                 serverUri, hostNameCertificateOverride,
@@ -83,6 +83,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.connectionStateListener = connectionStateListener;
             this.serverUri = serverUri;
             this.idleTimerPool = idleTimerPool;
+            this.enableChannelMultiplexing = enableChannelMultiplexing;
         }
 
         #region Test hook.
@@ -600,7 +601,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private async Task NegotiateRntbdContextAsync(ChannelOpenArguments args)
         {
             byte[] contextMessage = TransportSerialization.BuildContextRequest(
-                args.CommonArguments.ActivityId, this.userAgent, args.CallerId);
+                args.CommonArguments.ActivityId, this.userAgent, args.CallerId, this.enableChannelMultiplexing);
 
             await this.connection.WriteRequestAsync(args.CommonArguments, new ArraySegment<byte>(contextMessage, 0, contextMessage.Length));
 

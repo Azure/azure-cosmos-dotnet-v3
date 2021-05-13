@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Documents.Routing
 
         public static readonly string MaximumExclusiveEffectivePartitionKey = ToHexEncodedBinaryString(new[] { new InfinityPartitionKeyComponent() });
 
+        private static readonly Int32 HashV2EPKLength = 32; // UInt128.Length * 2 (UInt128 gives 16 bytes as output, each byte takes 2 chars after hex-encoding)
         public static PartitionKeyInternal InclusiveMinimum
         {
             get
@@ -699,15 +700,72 @@ namespace Microsoft.Azure.Documents.Routing
 
         public static string GetMiddleRangeEffectivePartitionKey(string minInclusive, string maxExclusive, PartitionKeyDefinition partitionKeyDefinition)
         {
-            if (partitionKeyDefinition.Kind != PartitionKind.Hash)
+            switch (partitionKeyDefinition.Kind)
             {
-                throw new InvalidOperationException("Can determine middle of range only for hash partitioning.");
-            }
-
-            switch (partitionKeyDefinition.Version ?? PartitionKeyDefinitionVersion.V1)
-            {
-                case PartitionKeyDefinitionVersion.V2:
+                case PartitionKind.Hash:
                     {
+                        switch (partitionKeyDefinition.Version ?? PartitionKeyDefinitionVersion.V1)
+                        {
+                            case PartitionKeyDefinitionVersion.V2:
+                                {
+                                    Int128 min = 0;
+                                    if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
+                                    {
+                                        byte[] minBytes = PartitionKeyInternal.HexStringToByteArray(minInclusive);
+                                        Array.Reverse(minBytes);
+                                        min = new Int128(minBytes);
+                                    }
+
+                                    Int128 max = MaxHashV2Value;
+                                    if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
+                                    {
+                                        byte[] maxBytes = PartitionKeyInternal.HexStringToByteArray(maxExclusive);
+                                        Array.Reverse(maxBytes);
+                                        max = new Int128(maxBytes);
+                                    }
+
+                                    byte[] midBytes = (min + (max - min) / 2).Bytes;
+                                    Array.Reverse(midBytes);
+                                    return HexConvert.ToHex(midBytes, 0, midBytes.Length);
+                                }
+                            case PartitionKeyDefinitionVersion.V1:
+                                {
+                                    long min = 0;
+                                    long max = uint.MaxValue;
+                                    if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
+                                    {
+#pragma warning disable 0612
+                                        min = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(minInclusive).Components[0]).Value;
+#pragma warning restore 0612
+                                    }
+
+                                    if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
+                                    {
+#pragma warning disable 0612
+                                        max = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(maxExclusive).Components[0]).Value;
+#pragma warning restore 0612
+                                    }
+
+                                    return ToHexEncodedBinaryString(new[] { new NumberPartitionKeyComponent((min + max) / 2) });
+                                }
+
+                            default:
+                                throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
+                        }
+                    }
+
+                case PartitionKind.MultiHash:
+                    {
+                        if (partitionKeyDefinition.Version == PartitionKeyDefinitionVersion.V1)
+                        {
+                            throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion "+ partitionKeyDefinition.Version + " for MultiHash Partition kind");
+                        }
+
+                        //Extract only the first EPK from a multi-path partition key.
+                        //[Given this is invoked for equal range Split, we do not want to split a subrange of a top-level key]
+                        minInclusive = minInclusive.Substring(0, Math.Min(minInclusive.Length, HashV2EPKLength));
+                        maxExclusive = maxExclusive.Substring(0, Math.Min(maxExclusive.Length, HashV2EPKLength));
+
                         Int128 min = 0;
                         if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
                         {
@@ -728,29 +786,9 @@ namespace Microsoft.Azure.Documents.Routing
                         Array.Reverse(midBytes);
                         return HexConvert.ToHex(midBytes, 0, midBytes.Length);
                     }
-                case PartitionKeyDefinitionVersion.V1:
-                    {
-                        long min = 0;
-                        long max = uint.MaxValue;
-                        if (!minInclusive.Equals(MinimumInclusiveEffectivePartitionKey, StringComparison.Ordinal))
-                        {
-#pragma warning disable 0612
-                            min = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(minInclusive).Components[0]).Value;
-#pragma warning restore 0612
-                        }
-
-                        if (!maxExclusive.Equals(MaximumExclusiveEffectivePartitionKey, StringComparison.Ordinal))
-                        {
-#pragma warning disable 0612
-                            max = (long)((NumberPartitionKeyComponent)FromHexEncodedBinaryString(maxExclusive).Components[0]).Value;
-#pragma warning restore 0612
-                        }
-
-                        return ToHexEncodedBinaryString(new[] { new NumberPartitionKeyComponent((min + max) / 2) });
-                    }
 
                 default:
-                    throw new InternalServerErrorException("Unexpected PartitionKeyDefinitionVersion");
+                    throw new InternalServerErrorException("Unexpected PartitionKey Kind. Can determine middle of range only for hash and multihash partitioning.");
             }
         }
 

@@ -422,6 +422,8 @@ namespace Microsoft.Azure.Documents
 
         internal string ResourceAddress { get; set; }
 
+        internal bool UseArmErrorResponse { get; set; }
+
         /// <summary>
         /// Gets the request uri from the current exception from the Azure Cosmos DB service.
         /// </summary>

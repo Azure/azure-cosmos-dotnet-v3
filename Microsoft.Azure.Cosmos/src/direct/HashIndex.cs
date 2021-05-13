@@ -4,10 +4,10 @@
 
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
     using System;
     using System.Globalization;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents details of the hash index setting in an Azure Cosmos DB service.

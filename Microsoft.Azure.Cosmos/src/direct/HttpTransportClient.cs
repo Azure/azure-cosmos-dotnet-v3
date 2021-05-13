@@ -333,6 +333,8 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpTransportClient.Match, this.GetMatch(request, resourceOperation));
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfModifiedSince, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.A_IM, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ShouldReturnCurrentServerDateTime, request);
+
             if (!request.IsNameBased)
             {
                 HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.ResourceId, request.ResourceId);
@@ -372,6 +374,7 @@ namespace Microsoft.Azure.Documents
             //Query
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsQuery, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.Query, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsQueryPlanRequest, request);
 
             // Upsert
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsUpsert, request);
@@ -393,7 +396,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQuotaInfo, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.DisableRUPerMinuteUsage, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetrics, request);
-            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetricsIndexUtilization, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetrics, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ForceQueryScan, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ResponseContinuationTokenLimitInKB, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.RemoteStorageType, request);
@@ -480,7 +483,17 @@ namespace Microsoft.Azure.Documents
 
                 case OperationType.ReadFeed:
                     httpRequestMessage.RequestUri = HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, physicalAddress, request);
-                    httpRequestMessage.Method = HttpMethod.Get;
+                    if (clonedStream != null)
+                    {
+                        // changefeed request with sql query in request body
+                        httpRequestMessage.Method = HttpMethod.Post;
+                        httpRequestMessage.Content = new StreamContent(clonedStream);
+                        HttpTransportClient.AddHeader(httpRequestMessage.Content.Headers, HttpConstants.HttpHeaders.ContentType, request);
+                    }
+                    else
+                    {
+                        httpRequestMessage.Method = HttpMethod.Get;
+                    }
                     break;
 
                 case OperationType.Replace:
@@ -546,6 +559,7 @@ namespace Microsoft.Azure.Documents
 
                 case OperationType.ServiceReservation:
                 case OperationType.GetFederationConfigurations:
+                case OperationType.GetStorageServiceConfigurations:
                     httpRequestMessage.RequestUri = physicalAddress;
                     httpRequestMessage.Method = HttpMethod.Post;
                     Debug.Assert(clonedStream != null);
@@ -594,6 +608,22 @@ namespace Microsoft.Azure.Documents
             return httpRequestMessage;
         }
 
+        internal static Uri GetSystemResourceUri(ResourceType resourceType, Uri physicalAddress, DocumentServiceRequest request)
+        {
+            switch (resourceType)
+            {
+#if !COSMOSCLIENT
+                case ResourceType.ServiceFabricService:
+                case ResourceType.DatabaseAccount:
+                    return physicalAddress;
+#endif
+
+                default:
+                    Debug.Assert(false, "Unexpected resource type: " + resourceType);
+                    throw new NotFoundException();
+            }
+        }
+
         internal static Uri GetResourceFeedUri(ResourceType resourceType, Uri physicalAddress, DocumentServiceRequest request)
         {
             switch (resourceType)
@@ -632,6 +662,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetRoleDefinitionFeedUri(physicalAddress, request);
                 case ResourceType.RoleAssignment:
                     return HttpTransportClient.GetRoleAssignmentFeedUri(physicalAddress, request);
+                case ResourceType.AuthPolicyElement:
+                    return HttpTransportClient.GetAuthPolicyElementFeedUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
                     return HttpTransportClient.GetSystemDocumentFeedUri(physicalAddress, request);
                 case ResourceType.PartitionedSystemDocument:
@@ -644,8 +676,6 @@ namespace Microsoft.Azure.Documents
                 case ResourceType.Replica:
                     Debug.Assert(false, "Unexpected resource type: " + resourceType);
                     throw new NotFoundException();
-                case ResourceType.ServiceFabricService:
-                    return physicalAddress;
 #endif
 
                 default:
@@ -692,6 +722,8 @@ namespace Microsoft.Azure.Documents
                     return HttpTransportClient.GetRoleDefinitionEntryUri(physicalAddress, request);
                 case ResourceType.RoleAssignment:
                     return HttpTransportClient.GetRoleAssignmentEntryUri(physicalAddress, request);
+                case ResourceType.AuthPolicyElement:
+                    return HttpTransportClient.GetAuthPolicyElementEntryUri(physicalAddress, request);
                 case ResourceType.SystemDocument:
                     return HttpTransportClient.GetSystemDocumentEntryUri(physicalAddress, request);
                 case ResourceType.PartitionedSystemDocument:
@@ -893,6 +925,16 @@ namespace Microsoft.Azure.Documents
         private static Uri GetRoleAssignmentEntryUri(Uri baseAddress, DocumentServiceRequest request)
         {
             return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.RoleAssignment, request, isFeed: false));
+        }
+
+        private static Uri GetAuthPolicyElementFeedUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AuthPolicyElement, request, isFeed: true));
+        }
+
+        private static Uri GetAuthPolicyElementEntryUri(Uri baseAddress, DocumentServiceRequest request)
+        {
+            return new Uri(baseAddress, PathsHelper.GeneratePath(ResourceType.AuthPolicyElement, request, isFeed: false));
         }
 
         private static Uri GetSystemDocumentFeedUri(Uri baseAddress, DocumentServiceRequest request)
