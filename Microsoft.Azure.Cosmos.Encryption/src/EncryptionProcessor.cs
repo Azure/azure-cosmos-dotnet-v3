@@ -61,7 +61,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
                 // possibly a wrong path configured in the Client Encryption Policy, ignore.
-                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                JProperty propertyToEncrypt = itemJObj.Property(propertyName);
+                if (propertyToEncrypt == null)
                 {
                     continue;
                 }
@@ -73,9 +74,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Invalid Encryption Setting for the Property:{propertyName}. ");
                 }
 
-                await EncryptPropertyAsync(
-                    itemJObj,
-                    propertyValue,
+                await EncryptJTokenAsync(
+                    propertyToEncrypt.Value,
                     settingforProperty,
                     cancellationToken);
             }
@@ -148,7 +148,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             JToken propertyValueToEncrypt = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueStream);
 
-            JToken encryptedPropertyValue = await EncryptJTokenAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
+            JToken encryptedPropertyValue = propertyValueToEncrypt;
+            if (propertyValueToEncrypt.Type == JTokenType.Object || propertyValueToEncrypt.Type == JTokenType.Array)
+            {
+                await EncryptJTokenAsync(encryptedPropertyValue, settingsForProperty, cancellationToken);
+            }
+            else
+            {
+                encryptedPropertyValue = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, settingsForProperty, cancellationToken);
+            }
 
             return EncryptionProcessor.BaseSerializer.ToStream(encryptedPropertyValue);
         }
@@ -179,74 +187,41 @@ namespace Microsoft.Azure.Cosmos.Encryption
             };
         }
 
-        private static async Task<JToken> EncryptJTokenAsync(
-           JToken propertyValueToEncrypt,
+        private static async Task EncryptJTokenAsync(
+           JToken jTokenToEncrypt,
            EncryptionSettingForProperty encryptionSettingForProperty,
            CancellationToken cancellationToken)
         {
             // Top Level can be an Object
-            if (propertyValueToEncrypt.Type == JTokenType.Object)
+            if (jTokenToEncrypt.Type == JTokenType.Object)
             {
-                foreach (JProperty jProperty in propertyValueToEncrypt.Children<JProperty>())
+                foreach (JProperty jProperty in jTokenToEncrypt.Children<JProperty>())
                 {
-                    if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
+                    await EncryptJTokenAsync(
+                        jProperty.Value,
+                        encryptionSettingForProperty,
+                        cancellationToken);
+                }
+            }
+            else if (jTokenToEncrypt.Type == JTokenType.Array)
+            {
+                if (jTokenToEncrypt.Children().Any())
+                {
+                    for (int i = 0; i < jTokenToEncrypt.Count(); i++)
                     {
                         await EncryptJTokenAsync(
-                            jProperty.Value,
+                            jTokenToEncrypt[i],
                             encryptionSettingForProperty,
                             cancellationToken);
                     }
-                    else
-                    {
-                        jProperty.Value = await SerializeAndEncryptValueAsync(jProperty.Value, encryptionSettingForProperty, cancellationToken);
-                    }
-                }
-            }
-            else if (propertyValueToEncrypt.Type == JTokenType.Array)
-            {
-                if (propertyValueToEncrypt.Children().Any())
-                {
-                    for (int i = 0; i < propertyValueToEncrypt.Count(); i++)
-                    {
-                        if (propertyValueToEncrypt[i].Type == JTokenType.Object || propertyValueToEncrypt[i].Type == JTokenType.Array)
-                        {
-                            await EncryptJTokenAsync(
-                                propertyValueToEncrypt[i],
-                                encryptionSettingForProperty,
-                                cancellationToken);
-                        }
-                        else
-                        {
-                            propertyValueToEncrypt[i] = await SerializeAndEncryptValueAsync(propertyValueToEncrypt[i], encryptionSettingForProperty, cancellationToken);
-                        }
-                    }
                 }
             }
             else
             {
-                propertyValueToEncrypt = await SerializeAndEncryptValueAsync(propertyValueToEncrypt, encryptionSettingForProperty, cancellationToken);
+                jTokenToEncrypt.Replace(await SerializeAndEncryptValueAsync(jTokenToEncrypt, encryptionSettingForProperty, cancellationToken));
             }
 
-            return propertyValueToEncrypt;
-        }
-
-        private static async Task EncryptPropertyAsync(
-            JObject itemJObj,
-            JToken propertyValue,
-            EncryptionSettingForProperty encryptionSettingForProperty,
-            CancellationToken cancellationToken)
-        {
-            if (propertyValue.Type == JTokenType.Object || propertyValue.Type == JTokenType.Array)
-            {
-                await EncryptJTokenAsync(propertyValue, encryptionSettingForProperty, cancellationToken);
-            }
-            else
-            {
-                itemJObj.Property(propertyValue.Path).Value = await EncryptJTokenAsync(
-                    propertyValue,
-                    encryptionSettingForProperty,
-                    cancellationToken);
-            }
+            return;
         }
 
         private static async Task<JToken> SerializeAndEncryptValueAsync(
@@ -305,66 +280,40 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
 
-        private static async Task DecryptPropertyAsync(
-            JObject itemJObj,
+        private static async Task DecryptJTokenAsync(
+            JToken jTokenToDecrypt,
             EncryptionSettingForProperty encryptionSettingForProperty,
-            string propertyName,
-            JToken propertyValue,
             CancellationToken cancellationToken)
         {
-            if (propertyValue.Type == JTokenType.Object)
+            if (jTokenToDecrypt.Type == JTokenType.Object)
             {
-                foreach (JProperty jProperty in propertyValue.Children<JProperty>())
+                foreach (JProperty jProperty in jTokenToDecrypt.Children<JProperty>())
                 {
-                    if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
-                    {
-                        await DecryptPropertyAsync(
-                            itemJObj,
-                            encryptionSettingForProperty,
-                            jProperty.Name,
-                            jProperty.Value,
-                            cancellationToken);
-                    }
-                    else
-                    {
-                        jProperty.Value = await DecryptAndDeserializeValueAsync(
-                            jProperty.Value,
-                            encryptionSettingForProperty,
-                            cancellationToken);
-                    }
+                    await DecryptJTokenAsync(
+                        jProperty.Value,
+                        encryptionSettingForProperty,
+                        cancellationToken);
                 }
             }
-            else if (propertyValue.Type == JTokenType.Array)
+            else if (jTokenToDecrypt.Type == JTokenType.Array)
             {
-                if (propertyValue.Children().Any())
+                if (jTokenToDecrypt.Children().Any())
                 {
-                    for (int i = 0; i < propertyValue.Count(); i++)
+                    for (int i = 0; i < jTokenToDecrypt.Count(); i++)
                     {
-                        if (propertyValue[i].Type == JTokenType.Object || propertyValue[i].Type == JTokenType.Array)
-                        {
-                            await DecryptPropertyAsync(
-                                   itemJObj,
-                                   encryptionSettingForProperty,
-                                   propertyValue[i].Path,
-                                   propertyValue[i],
-                                   cancellationToken);
-                        }
-                        else
-                        {
-                            propertyValue[i] = await DecryptAndDeserializeValueAsync(
-                                propertyValue[i],
-                                encryptionSettingForProperty,
-                                cancellationToken);
-                        }
+                        await DecryptJTokenAsync(
+                            jTokenToDecrypt[i],
+                            encryptionSettingForProperty,
+                            cancellationToken);
                     }
                 }
             }
             else
             {
-                itemJObj.Property(propertyName).Value = await DecryptAndDeserializeValueAsync(
-                    itemJObj.Property(propertyName).Value,
+                jTokenToDecrypt.Replace(await DecryptAndDeserializeValueAsync(
+                    jTokenToDecrypt,
                     encryptionSettingForProperty,
-                    cancellationToken);
+                    cancellationToken));
             }
         }
 
@@ -378,7 +327,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
-                if (document.TryGetValue(propertyName, out JToken propertyValue))
+                JProperty propertyToDecrypt = document.Property(propertyName);
+                if (propertyToDecrypt != null)
                 {
                     EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(propertyName);
 
@@ -387,11 +337,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         throw new ArgumentException($"Invalid Encryption Setting for Property:{propertyName}. ");
                     }
 
-                    await DecryptPropertyAsync(
-                        document,
+                    await DecryptJTokenAsync(
+                        propertyToDecrypt.Value,
                         settingsForProperty,
-                        propertyName,
-                        propertyValue,
                         cancellationToken);
                 }
             }
