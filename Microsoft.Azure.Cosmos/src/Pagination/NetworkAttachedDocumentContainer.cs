@@ -145,9 +145,14 @@ namespace Microsoft.Azure.Cosmos.Pagination
             {
                 try
                 {
+                    string resourceId = await this.container.GetCachedRIDAsync(
+                        forceRefresh: false,
+                        trace: refreshTrace,
+                        cancellationToken: cancellationToken);
+
                     // We can refresh the cache by just getting all the ranges for this container using the force refresh flag
                     _ = await this.cosmosQueryClient.TryGetOverlappingRangesAsync(
-                        this.container.LinkUri,
+                        resourceId,
                         FeedRangeEpk.FullRange.Range,
                         forceRefresh: true);
 
@@ -166,8 +171,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
 
             ResponseMessage responseMessage = await this.container.ClientContext.ProcessResourceOperationStreamAsync(
@@ -234,8 +237,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             if (sqlQuerySpec == null)
             {
                 throw new ArgumentNullException(nameof(sqlQuerySpec));

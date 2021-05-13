@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Reads a <see cref="PermissionProperties"/> from the Azure Cosmos service as an asynchronous operation. Each read will return a new ResourceToken with its respective expiration. 
         /// </summary>
-        /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 seconds, to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
+        /// <param name="tokenExpiryInSeconds">(Optional) The expiry time for resource token in seconds. This value can range from 10 minutes (or 600 seconds), to 24 hours (or 86,400 seconds). The default value for this is 1 hour (or 3,600 seconds). This does not change the default value for future tokens.</param>
         /// <param name="requestOptions">(Optional) The options for the permission request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>

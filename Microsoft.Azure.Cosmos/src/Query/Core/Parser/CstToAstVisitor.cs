@@ -594,6 +594,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             return SqlInScalarExpression.Create(needle, not, searchList.ToImmutableArray());
         }
 
+        public override SqlObject VisitLike_scalar_expression([NotNull] sqlParser.Like_scalar_expressionContext context)
+        {
+            Contract.Requires(context != null);
+
+            SqlScalarExpression expression = (SqlScalarExpression)this.Visit(context.binary_scalar_expression()[0]);
+            SqlScalarExpression pattern = (SqlScalarExpression)this.Visit(context.binary_scalar_expression()[1]);
+            bool not = context.K_NOT() != null;
+            SqlStringLiteral escapeSequence = (context.escape_expression() != null) 
+                                                ? (SqlStringLiteral)this.Visit(context.escape_expression()) 
+                                                : null;
+            
+            return SqlLikeScalarExpression.Create(expression, pattern, not, escapeSequence); 
+        }
+
+        public override SqlObject VisitEscape_expression([NotNull] sqlParser.Escape_expressionContext context) 
+        {
+            Contract.Requires(context != null);
+
+            return (SqlStringLiteral)this.Visit(context.STRING_LITERAL());
+        }
+
         public override SqlObject VisitLiteralScalarExpression([NotNull] sqlParser.LiteralScalarExpressionContext context)
         {
             Contract.Requires(context != null);
@@ -769,9 +790,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             {
                 sqlObject = this.Visit(context.in_scalar_expression());
             }
+            else if (context.like_scalar_expression() != null)
+            {
+                sqlObject = this.Visit(context.like_scalar_expression());
+            }
             else
             {
-                throw new NotImplementedException();
+                // logical_expression binary_operator logical_expression
+                Contract.Requires(context.ChildCount == 3);
+
+                SqlScalarExpression left = (SqlScalarExpression)this.Visit(context.logical_scalar_expression(0));
+                
+                if (!CstToAstVisitor.binaryOperatorKindLookup.TryGetValue(
+                    context.children[1].GetText(),
+                    out SqlBinaryScalarOperatorKind operatorKind))
+                {
+                    throw new ArgumentOutOfRangeException($"Unknown logical operator: {context.children[1].GetText()}.");
+                }
+
+                SqlScalarExpression right = (SqlScalarExpression)this.Visit(context.logical_scalar_expression(1));
+
+                sqlObject = SqlBinaryScalarExpression.Create(operatorKind, left, right);
             }
 
             return sqlObject;

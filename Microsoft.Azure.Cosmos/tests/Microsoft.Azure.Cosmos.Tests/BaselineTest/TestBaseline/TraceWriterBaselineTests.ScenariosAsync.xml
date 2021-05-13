@@ -127,7 +127,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -135,12 +134,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -148,12 +145,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -161,12 +156,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -174,12 +167,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -187,12 +178,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -200,21 +189,17 @@
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
-                      "data": {},
                       "children": [
                         {
                           "name": "Read Feed Transport",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Transport",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -225,21 +210,17 @@
             {
               "name": "Get Child Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -247,12 +228,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -260,21 +239,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Read Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -287,7 +262,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -295,12 +269,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -308,12 +280,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -321,21 +291,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -346,7 +312,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -354,12 +319,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -367,12 +330,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -380,21 +341,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -405,7 +362,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -413,12 +369,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -426,12 +380,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -439,21 +391,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -464,7 +412,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -472,12 +419,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -485,12 +430,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -498,21 +441,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -523,7 +462,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -531,12 +469,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -544,12 +480,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -557,21 +491,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -582,7 +512,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -590,12 +519,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -603,12 +530,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -616,21 +541,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -641,7 +562,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -649,12 +569,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -662,12 +580,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -675,21 +591,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -700,7 +612,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -708,12 +619,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -721,12 +630,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -734,21 +641,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -759,7 +662,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -767,12 +669,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -780,12 +680,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -793,21 +691,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -818,7 +712,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -826,12 +719,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -839,12 +730,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -852,21 +741,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -877,7 +762,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -885,12 +769,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -898,12 +780,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -911,21 +791,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -936,7 +812,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -944,12 +819,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -957,12 +830,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -970,21 +841,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -995,7 +862,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1003,12 +869,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1016,12 +880,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1029,21 +891,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1054,7 +912,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1062,12 +919,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1075,12 +930,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1088,21 +941,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1113,7 +962,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1121,12 +969,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1134,12 +980,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1147,21 +991,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1172,7 +1012,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1180,12 +1019,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1193,12 +1030,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1206,21 +1041,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1231,7 +1062,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1239,12 +1069,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1252,12 +1080,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1265,21 +1091,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1290,7 +1112,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1298,12 +1119,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1311,12 +1130,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1324,21 +1141,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1349,7 +1162,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1357,12 +1169,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1370,12 +1180,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1383,21 +1191,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1408,7 +1212,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1416,12 +1219,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1429,12 +1230,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1442,21 +1241,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1467,7 +1262,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1475,12 +1269,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1488,12 +1280,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1501,21 +1291,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Read Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1526,7 +1312,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ReadFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1534,21 +1319,17 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         }
       ]
     }
@@ -1653,17 +1434,13 @@
             ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             │   └── [7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            ├── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │   └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            │       └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
             └── MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── [3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── [9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Change Feed Transport(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds 
 ]]></Text>
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -1671,12 +1448,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1684,12 +1459,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1697,12 +1470,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[,FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1710,12 +1481,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Prefetch",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -1723,12 +1492,10 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "[,FF) move next",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Pagination",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
@@ -1736,21 +1503,17 @@
                       },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
-                      "data": {},
                       "children": [
                         {
                           "name": "Change Feed Transport",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "Transport",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
                             "line": 42
                           },
                           "start time": "12:00:00:000",
-                          "duration in milliseconds": 0,
-                          "data": {},
-                          "children": []
+                          "duration in milliseconds": 0
                         }
                       ]
                     }
@@ -1761,21 +1524,17 @@
             {
               "name": "Get Child Ranges",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Routing",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             },
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1783,12 +1542,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -1796,21 +1553,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -1823,7 +1576,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1831,12 +1583,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1844,12 +1594,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1857,21 +1605,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1882,7 +1626,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1890,12 +1633,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1903,12 +1644,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1916,21 +1655,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -1941,7 +1676,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -1949,12 +1683,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -1962,12 +1694,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -1975,21 +1705,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2000,7 +1726,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2008,12 +1733,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2021,12 +1744,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2034,21 +1755,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2059,7 +1776,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2067,12 +1783,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2080,12 +1794,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2093,21 +1805,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2118,7 +1826,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2126,12 +1833,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2139,12 +1844,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2152,21 +1855,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2177,7 +1876,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2185,12 +1883,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2198,12 +1894,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2211,21 +1905,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2236,7 +1926,6 @@
     {
       "name": "ChangeFeed MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "ChangeFeed",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2244,12 +1933,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2257,12 +1944,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2270,21 +1955,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Change Feed Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2293,7 +1974,6 @@
         {
           "name": "Drain NotModified Pages",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "ChangeFeed",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2301,12 +1981,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2314,12 +1992,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2327,21 +2003,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2350,7 +2022,6 @@
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2358,12 +2029,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2371,21 +2040,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2394,7 +2059,6 @@
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2402,12 +2066,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2415,21 +2077,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2438,7 +2096,6 @@
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2446,12 +2103,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2459,21 +2114,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2482,7 +2133,6 @@
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2490,12 +2140,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2503,21 +2151,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2526,7 +2170,6 @@
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2534,12 +2177,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2547,21 +2188,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2570,7 +2207,6 @@
             {
               "name": "MoveNextAsync",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2578,12 +2214,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2591,65 +2225,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Change Feed Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "name": "MoveNextAsync",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": [
-                {
-                  "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
-                  "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
-                  "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": [
-                    {
-                      "name": "Change Feed Transport",
-                      "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
-                      "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2746,7 +2332,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -2754,12 +2339,10 @@
   },
   "start time": "12:00:00:000",
   "duration in milliseconds": 0,
-  "data": {},
   "children": [
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2767,12 +2350,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "Prefetching",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2780,12 +2361,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2793,12 +2372,10 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "[,FF) move next",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Pagination",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
@@ -2806,21 +2383,17 @@
                   },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
                       "name": "Query Transport",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "Transport",
                       "caller info": {
                         "member": "MemberName",
                         "file": "FilePath",
                         "line": 42
                       },
                       "start time": "12:00:00:000",
-                      "duration in milliseconds": 0,
-                      "data": {},
-                      "children": []
+                      "duration in milliseconds": 0
                     }
                   ]
                 }
@@ -2831,7 +2404,6 @@
         {
           "name": "[,FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2839,42 +2411,34 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Prefetch",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         },
         {
           "name": "Get Child Ranges",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Routing",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
-          "duration in milliseconds": 0,
-          "data": {},
-          "children": []
+          "duration in milliseconds": 0
         },
         {
           "name": "MoveNextAsync",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2882,12 +2446,10 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Pagination",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
@@ -2895,21 +2457,17 @@
               },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
                   "name": "Query Transport",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "Transport",
                   "caller info": {
                     "member": "MemberName",
                     "file": "FilePath",
                     "line": 42
                   },
                   "start time": "12:00:00:000",
-                  "duration in milliseconds": 0,
-                  "data": {},
-                  "children": []
+                  "duration in milliseconds": 0
                 }
               ]
             }
@@ -2920,7 +2478,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2928,12 +2485,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2941,21 +2496,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -2964,7 +2515,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -2972,12 +2522,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[,1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -2985,21 +2533,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3008,7 +2552,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3016,12 +2559,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[1F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3029,21 +2570,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3052,7 +2589,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3060,12 +2596,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3073,21 +2607,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3096,7 +2626,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3104,12 +2633,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[3F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3117,21 +2644,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3140,7 +2663,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3148,12 +2670,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[5F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3161,21 +2681,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3184,7 +2700,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3192,12 +2707,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3205,21 +2718,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3228,7 +2737,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3236,12 +2744,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[7F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3249,21 +2755,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3272,7 +2774,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3280,12 +2781,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3293,21 +2792,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3316,7 +2811,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3324,12 +2818,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[9F-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3337,21 +2829,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3360,7 +2848,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3368,12 +2855,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3381,21 +2866,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3404,7 +2885,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3412,12 +2892,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[BF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3425,21 +2903,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3448,7 +2922,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3456,12 +2929,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3469,21 +2940,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3492,7 +2959,6 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
@@ -3500,12 +2966,10 @@
       },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
           "name": "[DF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF,) move next",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "Pagination",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
@@ -3513,21 +2977,17 @@
           },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
               "name": "Query Transport",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Transport",
               "caller info": {
                 "member": "MemberName",
                 "file": "FilePath",
                 "line": 42
               },
               "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
-              "children": []
+              "duration in milliseconds": 0
             }
           ]
         }
@@ -3536,30 +2996,24 @@
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
+      "duration in milliseconds": 0
     },
     {
       "name": "MoveNextAsync",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "Pagination",
       "caller info": {
         "member": "MemberName",
         "file": "FilePath",
         "line": 42
       },
       "start time": "12:00:00:000",
-      "duration in milliseconds": 0,
-      "data": {},
-      "children": []
+      "duration in milliseconds": 0
     }
   ]
 }]]></Json>

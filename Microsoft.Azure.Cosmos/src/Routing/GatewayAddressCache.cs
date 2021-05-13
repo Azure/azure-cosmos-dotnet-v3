@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IReadOnlyList<PartitionKeyRangeIdentity> partitionKeyRangeIdentities,
             CancellationToken cancellationToken)
         {
-            List<Task<FeedResource<Address>>> tasks = new List<Task<FeedResource<Address>>>();
+            List<Task<DocumentServiceResponse>> tasks = new List<Task<DocumentServiceResponse>>();
             int batchSize = GatewayAddressCache.DefaultBatchSize;
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -133,18 +133,25 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            foreach (FeedResource<Address> response in await Task.WhenAll(tasks))
+            foreach (DocumentServiceResponse response in await Task.WhenAll(tasks))
             {
-                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                    response.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                        .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList()));
-
-                foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                using (response)
                 {
-                    this.serverPartitionAddressCache.Set(
-                        new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
-                        addressInfo.Item2);
+                    FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
+
+                    bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                    IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                        addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                            .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                            .Select(group => this.ToPartitionAddressAndRange(collection.ResourceId, @group.ToList(), inNetworkRequest));
+
+                    foreach (Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> addressInfo in addressInfos)
+                    {
+                        this.serverPartitionAddressCache.Set(
+                            new PartitionKeyRangeIdentity(collection.ResourceId, addressInfo.Item1.PartitionKeyRangeId),
+                            addressInfo.Item2);
+                    }
                 }
             }
         }
@@ -322,17 +329,22 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 try
                 {
-                    FeedResource<Address> masterAddresses = await this.GetMasterAddressesViaGatewayAsync(
+                    using (DocumentServiceResponse response = await this.GetMasterAddressesViaGatewayAsync(
                         request,
                         ResourceType.Database,
                         null,
                         entryUrl,
                         forceRefresh,
-                        false);
+                        false))
+                    {
+                        FeedResource<Address> masterAddresses = response.GetResource<FeedResource<Address>>();
 
-                    masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.ToList());
-                    this.masterPartitionAddressCache = masterAddressAndRange;
-                    this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
+                        bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                        masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.ToList(), inNetworkRequest);
+                        this.masterPartitionAddressCache = masterAddressAndRange;
+                        this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
+                    }
                 }
                 catch (Exception)
                 {
@@ -355,33 +367,38 @@ namespace Microsoft.Azure.Cosmos.Routing
             string partitionKeyRangeId,
             bool forceRefresh)
         {
-            FeedResource<Address> response =
-                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh);
-
-            IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                response.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
-                    .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
-                    .Select(group => this.ToPartitionAddressAndRange(collectionRid, @group.ToList()));
-
-            Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> result =
-                addressInfos.SingleOrDefault(
-                    addressInfo => StringComparer.Ordinal.Equals(addressInfo.Item1.PartitionKeyRangeId, partitionKeyRangeId));
-
-            if (result == null)
+            using (DocumentServiceResponse response =
+                await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh))
             {
-                string errorMessage = string.Format(
-                    CultureInfo.InvariantCulture,
-                    RMResources.PartitionKeyRangeNotFound,
-                    partitionKeyRangeId,
-                    collectionRid);
+                FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
 
-                throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
+                bool inNetworkRequest = this.IsInNetworkRequest(response);
+
+                IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
+                    addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                        .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
+                        .Select(group => this.ToPartitionAddressAndRange(collectionRid, @group.ToList(), inNetworkRequest));
+
+                Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> result =
+                    addressInfos.SingleOrDefault(
+                        addressInfo => StringComparer.Ordinal.Equals(addressInfo.Item1.PartitionKeyRangeId, partitionKeyRangeId));
+
+                if (result == null)
+                {
+                    string errorMessage = string.Format(
+                        CultureInfo.InvariantCulture,
+                        RMResources.PartitionKeyRangeNotFound,
+                        partitionKeyRangeId,
+                        collectionRid);
+
+                    throw new PartitionKeyRangeGoneException(errorMessage) { ResourceAddress = collectionRid };
+                }
+
+                return result.Item2;
             }
-
-            return result.Item2;
         }
 
-        private async Task<FeedResource<Address>> GetMasterAddressesViaGatewayAsync(
+        private async Task<DocumentServiceResponse> GetMasterAddressesViaGatewayAsync(
             DocumentServiceRequest request,
             ResourceType resourceType,
             string resourceAddress,
@@ -432,19 +449,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 additionalHeaders: headers,
                 resourceType: resourceType,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                 cancellationToken: default))
             {
-                using (DocumentServiceResponse documentServiceResponse =
-                        await ClientExtensions.ParseResponseAsync(httpResponseMessage))
-                {
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                    return documentServiceResponse.GetResource<FeedResource<Address>>();
-                }
+                DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                return documentServiceResponse;
             }
         }
 
-        private async Task<FeedResource<Address>> GetServerAddressesViaGatewayAsync(
+        private async Task<DocumentServiceResponse> GetServerAddressesViaGatewayAsync(
             DocumentServiceRequest request,
             string collectionRid,
             IEnumerable<string> partitionKeyRangeIds,
@@ -510,20 +524,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 additionalHeaders: headers,
                 resourceType: ResourceType.Document,
                 timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                trace: NoOpTrace.Singleton,
+                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                 cancellationToken: default))
             {
-                using (DocumentServiceResponse documentServiceResponse =
-                        await ClientExtensions.ParseResponseAsync(httpResponseMessage))
-                {
-                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-
-                    return documentServiceResponse.GetResource<FeedResource<Address>>();
-                }
+                DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                return documentServiceResponse; 
             }
         }
 
-        internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses)
+        internal Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> ToPartitionAddressAndRange(string collectionRid, IList<Address> addresses, bool inNetworkRequest)
         {
             Address address = addresses.First();
 
@@ -561,7 +571,19 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return Tuple.Create(
                 partitionKeyRangeIdentity,
-                new PartitionAddressInformation(addressInfos));
+                new PartitionAddressInformation(addressInfos, inNetworkRequest));
+        }
+
+        private bool IsInNetworkRequest(DocumentServiceResponse documentServiceResponse)
+        {
+            bool inNetworkRequest = false;
+            string inNetworkHeader = documentServiceResponse.ResponseHeaders.Get(HttpConstants.HttpHeaders.LocalRegionRequest);
+            if (!string.IsNullOrEmpty(inNetworkHeader))
+            {
+                bool.TryParse(inNetworkHeader, out inNetworkRequest);
+            }
+
+            return inNetworkRequest;
         }
 
         private static string LogAddressResolutionStart(DocumentServiceRequest request, Uri targetEndpoint)

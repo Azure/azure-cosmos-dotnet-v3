@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.IO;
     using System.Net.Http;
     using System.Security;
     using System.Threading;
@@ -26,8 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
-        Mock<GlobalEndpointManager> globalEndpointManager;
-        private Cosmos.ConsistencyLevel accountConsistencyLevel;
+        private readonly Cosmos.ConsistencyLevel accountConsistencyLevel;
 
         public MockDocumentClient()
             : base(new Uri("http://localhost"), MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey)
@@ -65,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             this.Init();
         }
+
+        public Mock<GlobalEndpointManager> MockGlobalEndpointManager { get; private set; }
 
         internal MockDocumentClient(
             Uri serviceEndpoint,
@@ -104,7 +104,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             return Task.FromResult(this.accountConsistencyLevel);
         }
 
-        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
+            this.MockGlobalEndpointManager.Object, 
+            new ConnectionPolicy(),
+            new GlobalPartitionEndpointManagerCore(this.MockGlobalEndpointManager.Object));
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
@@ -187,8 +190,10 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>()
+                        It.IsAny<ITrace>(),
+                        It.IsAny<IClientSideRequestStatistics>(),
+                        It.IsAny<CancellationToken>()
+                        
                     )
                 ).Returns(() => {
                     ContainerProperties containerSettings = ContainerProperties.CreateWithResourceId("test");
@@ -202,8 +207,9 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<bool>(),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>()
+                        It.IsAny<ITrace>(),
+                        It.IsAny<IClientSideRequestStatistics>(),
+                        It.IsAny<CancellationToken>()
                     )
                 ).Returns(() =>
                 {
@@ -252,8 +258,9 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
             ).Returns((string collectionRid, string pkRangeId, ITrace trace, bool forceRefresh) => 
             Task.FromResult<PartitionKeyRange>(this.ResolvePartitionKeyRangeById(collectionRid, pkRangeId, forceRefresh)));
 
-            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
-
+            this.MockGlobalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
+            this.MockGlobalEndpointManager.Setup(gep => gep.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>())).Returns(new Uri("http://localhost"));
+            this.MockGlobalEndpointManager.Setup(gep => gep.InitializeAccountPropertiesAndStartBackgroundRefresh(It.IsAny<AccountProperties>()));
             SessionContainer sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             this.sessionContainer = sessionContainer;
         }

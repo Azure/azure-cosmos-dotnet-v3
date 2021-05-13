@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -95,6 +96,8 @@ namespace Microsoft.Azure.Cosmos
         private const string RntbdReceiveHangDetectionTimeConfig = "CosmosDbTcpReceiveHangDetectionTimeSeconds";
         private const string RntbdSendHangDetectionTimeConfig = "CosmosDbTcpSendHangDetectionTimeSeconds";
         private const string EnableCpuMonitorConfig = "CosmosDbEnableCpuMonitor";
+        // Env variable
+        private const string RntbdMaxConcurrentOpeningConnectionCountConfig = "AZURE_COSMOS_TCP_MAX_CONCURRENT_OPENING_CONNECTION_COUNT";
 
         private const int MaxConcurrentConnectionOpenRequestsPerProcessor = 25;
         private const int DefaultMaxRequestsPerRntbdChannel = 30;
@@ -127,6 +130,7 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
+        private int rntbdMaxConcurrentOpeningConnectionCount = 5;
 
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
@@ -558,6 +562,8 @@ namespace Microsoft.Azure.Cosmos
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
+        
+        internal GlobalPartitionEndpointManager PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
         /// Open the connection to validate that the client initialization is successful in the Azure Cosmos DB service.
@@ -817,8 +823,22 @@ namespace Microsoft.Azure.Cosmos
                 }
 #if NETSTANDARD20
             }
-#endif   
 #endif
+#endif
+
+            string rntbdMaxConcurrentOpeningConnectionCountOverrideString = Environment.GetEnvironmentVariable(RntbdMaxConcurrentOpeningConnectionCountConfig);
+            if (!string.IsNullOrEmpty(rntbdMaxConcurrentOpeningConnectionCountOverrideString))
+            {
+                if (Int32.TryParse(rntbdMaxConcurrentOpeningConnectionCountOverrideString, out int rntbdMaxConcurrentOpeningConnectionCountOverrideInt))
+                {
+                    if (rntbdMaxConcurrentOpeningConnectionCountOverrideInt <= 0)
+                    {
+                        throw new ArgumentException("RntbdMaxConcurrentOpeningConnectionCountConfig should be larger than 0");
+                    }
+
+                    this.rntbdMaxConcurrentOpeningConnectionCount = rntbdMaxConcurrentOpeningConnectionCountOverrideInt;
+                }
+            }
 
             // ConnectionPolicy always overrides appconfig
             if (connectionPolicy != null)
@@ -864,6 +884,9 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
+            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover
+                ? new GlobalPartitionEndpointManagerCore(this.GlobalEndpointManager)
+                : GlobalPartitionEndpointManagerNoOp.Instance;
 
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
@@ -882,7 +905,11 @@ namespace Microsoft.Azure.Cosmos
                 this.sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             }
 
-            this.retryPolicy = new RetryPolicy(this.GlobalEndpointManager, this.ConnectionPolicy);
+            this.retryPolicy = new RetryPolicy(
+                globalEndpointManager: this.GlobalEndpointManager,
+                connectionPolicy: this.ConnectionPolicy,
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
@@ -948,6 +975,8 @@ namespace Microsoft.Azure.Cosmos
             this.collectionCache = new ClientCollectionCache(this.sessionContainer, this.GatewayStoreModel, this, this.retryPolicy);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
+
+            gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
@@ -1357,6 +1386,16 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return builder.ToString();
+        }
+
+        internal RntbdConnectionConfig RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+        {
+            return new RntbdConnectionConfig(this.openConnectionTimeoutInSeconds,
+                                this.idleConnectionTimeoutInSeconds,
+                                this.maxRequestsPerRntbdChannel,
+                                this.maxRntbdChannels,
+                                this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
+                                this.rntbdPortReuseMode);
         }
 
         private void ThrowIfDisposed()
@@ -6308,7 +6347,8 @@ namespace Microsoft.Azure.Cosmos
                     return request;
                 }
 
-                AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage);
+                AccountProperties databaseAccount = await gatewayModel.GetDatabaseAccountAsync(CreateRequestMessage,
+                                                                                               clientSideRequestStatistics: null);
 
                 this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && databaseAccount.EnableMultipleWriteLocations;
                 return databaseAccount;
@@ -6439,6 +6479,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.AddressResolver = new GlobalAddressResolver(
                 this.GlobalEndpointManager,
+                this.PartitionKeyRangeLocation,
                 this.ConnectionPolicy.ConnectionProtocol,
                 this,
                 this.collectionCache,
@@ -6477,7 +6518,8 @@ namespace Microsoft.Azure.Cosmos
                     enableCpuMonitor: this.enableCpuMonitor,
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
-                    addressResolver: this.AddressResolver);
+                    addressResolver: this.AddressResolver,
+                    rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount);
 
                 if (this.transportClientHandlerFactory != null)
                 {
@@ -6538,7 +6580,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
-            await this.GlobalEndpointManager.RefreshLocationAsync(accountProperties);
+            this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

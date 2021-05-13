@@ -37,7 +37,7 @@
             {"sqlAllowSubQuery", true},
             {"sqlAllowScalarSubQuery", false},
             {"allowNewKeywords", true},
-            {"sqlAllowLike", false},
+            {"sqlAllowLike", true},
             {"sqlAllowGroupByClause", false},
             {"maxSpatialQueryCells", 12},
             {"spatialMaxGeometryPointCount", 256},
@@ -481,6 +481,61 @@
                 SELECT c.team, COUNT(1) AS count, c.name, AVG(c.age) AS avg_age, MIN(c.age), MAX(c.age) AS max_age, MAX(c.age)
                 FROM c
                 GROUP BY c.team, c.name")
+            };
+
+            this.ExecuteTestSuite(testVariations);
+        }
+
+        [TestMethod]
+        [Owner("girobins")]
+        public void Like()
+        {
+            List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>
+            {
+                Hash(
+                @"Projection LIKE",
+                @"SELECT VALUE 'a' LIKE '$a'",
+                @"/a"),
+
+                Hash(
+                @"Projection LIKE",
+                @"SELECT VALUE 'a' LIKE '!%a' ESCAPE '!'",
+                @"/a"),
+
+                Hash(
+                @"LIKE SELECT * NonPartitioned",
+                @"SELECT * FROM c WHERE c.a LIKE '%a%'"),
+
+                Hash(
+                @"LIKE SELECT *",
+                @"SELECT * FROM c WHERE c.a LIKE '%a%'",
+                @"/a"),
+
+                Hash(
+                @"Parameterized LIKE",
+                new SqlQuerySpec(
+                    @"SELECT * FROM c WHERE c.a LIKE @LIKEPATTERN",
+                    new SqlParameterCollection(
+                        new SqlParameter[]
+                        {
+                            new SqlParameter("@LIKEPATTERN", "%a"),
+                        })),
+                @"/a"),
+
+                Hash(
+                @"LIKE and non partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a%'",
+                @"/key"),
+
+                Hash(
+                @"LIKE and partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a%'",
+                @"/a"),
+
+                Hash(
+                @"LIKE and partition filter",
+                @"SELECT * FROM c WHERE c.a LIKE 'a!%' ESCAPE '!'",
+                @"/a")
             };
 
             this.ExecuteTestSuite(testVariations);
@@ -1348,7 +1403,8 @@
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
-                hasLogicalPartitionKey: false);
+                hasLogicalPartitionKey: false,
+                allowDCount: true);
 
             if (info.Failed)
             {

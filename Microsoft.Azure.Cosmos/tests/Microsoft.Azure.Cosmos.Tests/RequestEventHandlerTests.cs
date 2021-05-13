@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                 };
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<TransportAddressUri>(),
                     It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(mockStoreResponse);
 

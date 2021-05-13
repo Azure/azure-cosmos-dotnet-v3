@@ -1,0 +1,65 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT c.age LIKE '$a']]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT (c.age LIKE "$a")]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With ESCAPE]]></Description>
+      <Query><![CDATA[SELECT c.age LIKE 'a!%' ESCAPE '!']]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT (c.age LIKE "a!%' ESCAPE '!")]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[With NOT]]></Description>
+      <Query><![CDATA[SELECT c.age NOT LIKE 'a!%' ESCAPE '!']]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT (c.age NOT  LIKE "a!%' ESCAPE '!")]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing LIKE Keyword 1]]></Description>
+      <Query><![CDATA[SELECT c.age ESCAPE '1']]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing LIKE Keyword 2]]></Description>
+      <Query><![CDATA[SELECT c.age NOT 'a']]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Missing ESCAPE Keyword]]></Description>
+      <Query><![CDATA[SELECT c.age LIKE "a!%" "!"]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Double LIKE]]></Description>
+      <Query><![CDATA[SELECT c.age (LIKE 'a') LIKE 'b']]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[can not recover.]]></Exception>
+    </Output>
+  </Result>
+</Results>
