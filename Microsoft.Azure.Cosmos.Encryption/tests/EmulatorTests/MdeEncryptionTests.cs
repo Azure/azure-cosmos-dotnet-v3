@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-
+    using Newtonsoft.Json.Linq;
     using EncryptionKeyWrapMetadata = Cosmos.EncryptionKeyWrapMetadata;
 
     [TestClass]
@@ -150,6 +150,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_IntMultiDimArray",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ObjectArrayType",
                     ClientEncryptionKeyId = "key2",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
@@ -494,6 +502,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             expectedDoc.Sensitive_DateFormat = new DateTime();
             expectedDoc.Sensitive_StringFormat = null;
             expectedDoc.Sensitive_IntArray = null;
+            expectedDoc.Sensitive_ObjectArrayType = null;
 
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
@@ -1305,21 +1314,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // create new container in other client.
             // The test basically validates if the new key created is referenced, Since the other client would have had the old key cached.
             // and here we would not hit the incorrect container rid issue.
-            Collection<ClientEncryptionIncludedPath> newModifiedPath2 = new Collection<ClientEncryptionIncludedPath>()
+            ClientEncryptionIncludedPath newModifiedPath2 = new ClientEncryptionIncludedPath()
             {
-                new ClientEncryptionIncludedPath()
-                {
-                    Path = "/Sensitive_StringFormat",
-                    ClientEncryptionKeyId = "myCek",
-                    EncryptionType = "Deterministic",
-                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                },
+                Path = "/Sensitive_StringFormat",
+                ClientEncryptionKeyId = "myCek",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicy2 = new ClientEncryptionPolicy(newModifiedPath2);
+            Container otherEncryptionContainer2 = await otherDatabase.DefineContainer("otherContainer2", "/PK")
+                .WithClientEncryptionPolicy()
+                .WithIncludedPath(newModifiedPath2)                
+                .Attach()
+                .CreateAsync(throughput: 1000);
 
-            ContainerProperties containerProperties2 = new ContainerProperties("otherContainer2", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy2 };
-            Container otherEncryptionContainer2 = await otherDatabase.CreateContainerAsync(containerProperties2, 400);
 
             // create an item
             TestDoc newdoc = await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer2);
@@ -1950,6 +1958,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
             }
 
+            if(expectedDoc.Sensitive_ObjectArrayType != null)
+            {
+                TestDoc.Sensitive_ArrayData expectedValue = expectedDoc.Sensitive_ObjectArrayType[0] is JObject jObjectValue
+                    ? jObjectValue.ToObject<TestDoc.Sensitive_ArrayData>()
+                    : (TestDoc.Sensitive_ArrayData)expectedDoc.Sensitive_ObjectArrayType[0];
+                jObjectValue = (JObject)verifyDoc.Sensitive_ObjectArrayType[0];
+                TestDoc.Sensitive_ArrayData test = jObjectValue.ToObject<TestDoc.Sensitive_ArrayData>();
+
+                Assert.AreEqual(expectedValue.Sensitive_ArrayDecimalFormat, test.Sensitive_ArrayDecimalFormat);
+                Assert.AreEqual(expectedValue.Sensitive_ArrayIntFormat, test.Sensitive_ArrayIntFormat);
+
+                Assert.AreEqual(expectedDoc.Sensitive_ObjectArrayType[1], verifyDoc.Sensitive_ObjectArrayType[1]);
+            }
+
             if (expectedDoc.Sensitive_ArrayMultiTypes != null)
             {
                 for (int i = 0; i < expectedDoc.Sensitive_ArrayMultiTypes.GetLength(0); i++)
@@ -2063,6 +2085,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public Sensitive_ArrayMultiType[,] Sensitive_ArrayMultiTypes { get; set; }
 
+            public object[] Sensitive_ObjectArrayType { get; set; }
+
             public Sensitive_NestedObjectL1 Sensitive_NestedObjectFormatL1 { get; set; }
 
             public TestDoc()
@@ -2134,6 +2158,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 this.Sensitive_FloatFormat = other.Sensitive_FloatFormat;
                 this.Sensitive_ArrayFormat = other.Sensitive_ArrayFormat;
                 this.Sensitive_IntArray = other.Sensitive_IntArray;
+                this.Sensitive_ObjectArrayType = other.Sensitive_ObjectArrayType;
                 this.Sensitive_NestedObjectFormatL1 = other.Sensitive_NestedObjectFormatL1;
                 this.Sensitive_ArrayMultiTypes = other.Sensitive_ArrayMultiTypes;
             }
@@ -2152,6 +2177,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.Sensitive_BoolFormat == doc.Sensitive_BoolFormat
                        && this.Sensitive_FloatFormat == doc.Sensitive_FloatFormat
                        && this.Sensitive_IntArray == doc.Sensitive_IntArray
+                       && this.Sensitive_ObjectArrayType == doc.Sensitive_ObjectArrayType
                        && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1
                        && this.Sensitive_ArrayMultiTypes != doc.Sensitive_ArrayMultiTypes;
             }
@@ -2174,6 +2200,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime>.Default.GetHashCode(this.Sensitive_DateFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Decimal>.Default.GetHashCode(this.Sensitive_DecimalFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<int>.Default.GetHashCode(this.Sensitive_IntFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<Object>.Default.GetHashCode(this.Sensitive_ObjectArrayType);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Array>.Default.GetHashCode(this.Sensitive_ArrayFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<bool>.Default.GetHashCode(this.Sensitive_BoolFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<float>.Default.GetHashCode(this.Sensitive_FloatFormat);
@@ -2194,6 +2221,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_DecimalFormat = 472.3108m,
                     Sensitive_IntArray = new int[2] { 999, 1000 },
                     Sensitive_IntMultiDimArray = new[,] { { 1, 2 }, { 2, 3 }, { 4, 5 } },
+                    Sensitive_ObjectArrayType = new object[2]
+                    {
+                        (Sensitive_ArrayData)new Sensitive_ArrayData
+                        {
+                            Sensitive_ArrayIntFormat = 18273,
+                            Sensitive_ArrayDecimalFormat = 1234.11m
+                        },
+                        (Int64)9823
+                    },                    
                     Sensitive_IntFormat = 1965,
                     Sensitive_BoolFormat = true,
                     Sensitive_FloatFormat = 8923.124f,

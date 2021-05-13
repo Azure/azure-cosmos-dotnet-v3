@@ -207,59 +207,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (propertyValueToEncrypt.Children().Any())
                 {
-                    // objects as array elements.
-                    if (propertyValueToEncrypt.Children().First().Type == JTokenType.Object)
+                    for (int i = 0; i < propertyValueToEncrypt.Count(); i++)
                     {
-                        foreach (JObject arrayjObject in propertyValueToEncrypt.Children<JObject>())
+                        if (propertyValueToEncrypt[i].Type == JTokenType.Object || propertyValueToEncrypt[i].Type == JTokenType.Array)
                         {
-                            foreach (JProperty jProperty in arrayjObject.Properties())
-                            {
-                                if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
-                                {
-                                    await EncryptJTokenAsync(
-                                        jProperty.Value,
-                                        encryptionSettingForProperty,
-                                        cancellationToken);
-                                }
-
-                                // primitive type
-                                else
-                                {
-                                    jProperty.Value = await SerializeAndEncryptValueAsync(jProperty.Value, encryptionSettingForProperty, cancellationToken);
-                                }
-                            }
+                            await EncryptJTokenAsync(
+                                propertyValueToEncrypt[i],
+                                encryptionSettingForProperty,
+                                cancellationToken);
                         }
-                    }
-
-                    // array as elements.
-                    else if (propertyValueToEncrypt.Children().First().Type == JTokenType.Array)
-                    {
-                        foreach (JArray jArray in propertyValueToEncrypt.Value<JArray>())
-                        {
-                            for (int i = 0; i < jArray.Count(); i++)
-                            {
-                                // iterates over individual elements
-                                if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
-                                {
-                                    await EncryptJTokenAsync(
-                                        jArray[i],
-                                        encryptionSettingForProperty,
-                                        cancellationToken);
-                                }
-
-                                // primitive type
-                                else
-                                {
-                                    jArray[i] = await SerializeAndEncryptValueAsync(jArray[i], encryptionSettingForProperty, cancellationToken);
-                                }
-                            }
-                        }
-                    }
-
-                    // array of primitive types.
-                    else
-                    {
-                        for (int i = 0; i < propertyValueToEncrypt.Count(); i++)
+                        else
                         {
                             propertyValueToEncrypt[i] = await SerializeAndEncryptValueAsync(propertyValueToEncrypt[i], encryptionSettingForProperty, cancellationToken);
                         }
@@ -382,62 +339,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (propertyValue.Children().Any())
                 {
-                    if (propertyValue.Children().First().Type == JTokenType.Object)
+                    for (int i = 0; i < propertyValue.Count(); i++)
                     {
-                        foreach (JObject arrayjObject in propertyValue.Children<JObject>())
+                        if (propertyValue[i].Type == JTokenType.Object || propertyValue[i].Type == JTokenType.Array)
                         {
-                            foreach (JProperty jProperty in arrayjObject.Properties())
-                            {
-                                if (jProperty.Value.Type == JTokenType.Object || jProperty.Value.Type == JTokenType.Array)
-                                {
-                                    await DecryptPropertyAsync(
-                                        itemJObj,
-                                        encryptionSettingForProperty,
-                                        jProperty.Name,
-                                        jProperty.Value,
-                                        cancellationToken);
-                                }
-                                else
-                                {
-                                    jProperty.Value = await DecryptAndDeserializeValueAsync(
-                                        jProperty.Value,
-                                        encryptionSettingForProperty,
-                                        cancellationToken);
-                                }
-                            }
+                            await DecryptPropertyAsync(
+                                   itemJObj,
+                                   encryptionSettingForProperty,
+                                   propertyValue[i].Path,
+                                   propertyValue[i],
+                                   cancellationToken);
                         }
-                    }
-                    else if (propertyValue.Children().First().Type == JTokenType.Array)
-                    {
-                        foreach (JArray jArray in propertyValue.Value<JArray>())
-                        {
-                            for (int i = 0; i < jArray.Count(); i++)
-                            {
-                                // iterates over individual elements
-                                if (jArray[i].Type == JTokenType.Object || jArray[i].Type == JTokenType.Array)
-                                {
-                                    await DecryptPropertyAsync(
-                                        itemJObj,
-                                        encryptionSettingForProperty,
-                                        jArray[i].Path,
-                                        jArray[i],
-                                        cancellationToken);
-                                }
-                                else
-                                {
-                                    jArray[i] = await DecryptAndDeserializeValueAsync(
-                                        jArray[i],
-                                        encryptionSettingForProperty,
-                                        cancellationToken);
-                                }
-                            }
-                        }
-                    }
-
-                    // primitive type
-                    else
-                    {
-                        for (int i = 0; i < propertyValue.Count(); i++)
+                        else
                         {
                             propertyValue[i] = await DecryptAndDeserializeValueAsync(
                                 propertyValue[i],
