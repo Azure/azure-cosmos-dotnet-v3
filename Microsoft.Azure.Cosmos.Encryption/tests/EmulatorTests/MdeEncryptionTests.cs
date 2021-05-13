@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static CosmosClient encryptionCosmosClient;
         private static Database database;
         private static Container encryptionContainer;
+        private static Container encryptionContainerForChangeFeed;
         private static TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider;
 
         [ClassInitialize]
@@ -169,9 +170,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
            
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            ContainerProperties containerPropertiesForChangeFeed = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();           
+            await encryptionContainer.InitializeEncryptionAsync();
+
+            encryptionContainerForChangeFeed = await database.CreateContainerAsync(containerPropertiesForChangeFeed, 400);
+            await encryptionContainerForChangeFeed.InitializeEncryptionAsync();
         }
 
         private static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(string cekId, Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
@@ -700,14 +705,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionChangeFeedDecryptionSuccessful()
         {
-            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
-            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainerForChangeFeed);
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainerForChangeFeed);
 
             // change feed iterator
-            await this.ValidateChangeFeedIteratorResponse(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedIteratorResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
 
             // change feed processor
-            await this.ValidateChangeFeedProcessorResponse(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedProcessorResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor with feed handler
+            await this.ValidateChangeFeedProcessorWithFeedHandlerResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor with manual checkpoint
+            await this.ValidateChangeFeedProcessorWithManualCheckpointResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor with feed stream handler
+            await this.ValidateChangeFeedProcessorWithFeedStreamHandlerResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor manual checkpoint with feed stream handler
+            await this.ValidateChangeFeedProcessorStreamWithManualCheckpointResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
         }
 
         [TestMethod]
@@ -1745,19 +1762,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental);
 
-            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
             {
                 try
                 {
                     FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                    for (int index = 0; index < testDocs.Count; index++)
-                    {
-                        if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
-                        {
-                            changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
-                        }
-                    }
+                    Assert.AreEqual(testDocs.Count, 2);
+
+                    VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
+                    VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
                 }
                 catch (CosmosException ex)
                 {
@@ -1765,12 +1778,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     break;
                 }
             }
-
-            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
-
-            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
-            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
-
         }
 
         private async Task ValidateChangeFeedProcessorResponse(
@@ -1781,6 +1788,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
@@ -1788,21 +1797,237 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (IReadOnlyCollection<TestDoc> changes, CancellationToken cancellationToken) =>
                 {
                     changeFeedReturnedDocs.AddRange(changes);
+                    processedDocCount += changes.Count();
+                    if(processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
                 .WithLeaseContainer(leaseContainer)
-                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
                 .Build();
 
             await cfp.StartAsync();
-            await Task.Delay(2000);
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
             await cfp.StopAsync();
 
-            Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
+            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
 
             VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
             VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorWithFeedHandlerResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
+                "testCFPWithFeedHandler",
+                (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<TestDoc> changes,
+                    CancellationToken cancellationToken) =>
+                {
+                    changeFeedReturnedDocs.AddRange(changes);
+                    processedDocCount += changes.Count();
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
+
+            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
+
+            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
+            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorWithManualCheckpointResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                "testCFPWithManualCheckpoint",
+                (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<TestDoc> changes,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    changeFeedReturnedDocs.AddRange(changes);
+                    processedDocCount += changes.Count();
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
+
+            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
+
+            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
+            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorWithFeedStreamHandlerResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
+                "testCFPWithFeedStreamHandler",
+                (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    CancellationToken cancellationToken) =>
+                {
+                    string changeFeed = string.Empty;
+                    using (StreamReader streamReader = new StreamReader(changes))
+                    {
+                        changeFeed = streamReader.ReadToEnd();
+                    }
+
+                    if (changeFeed.Contains(testDoc1.Id))
+                    {
+                        processedDocCount++;
+                    }
+                    
+                    if (changeFeed.Contains(testDoc2.Id))
+                    { 
+                        processedDocCount++;
+                    }
+
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorStreamWithManualCheckpointResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                "testCFPStreamWithManualCheckpoint",
+                (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    string changeFeed = string.Empty;
+                    using (StreamReader streamReader = new StreamReader(changes))
+                    {
+                        changeFeed = streamReader.ReadToEnd();
+                    }
+
+                    if (changeFeed.Contains(testDoc1.Id))
+                    {
+                        processedDocCount++;
+                    }
+
+                    if (changeFeed.Contains(testDoc2.Id))
+                    {
+                        processedDocCount++;
+                    }
+
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
 
             if (leaseDatabase != null)
             {
