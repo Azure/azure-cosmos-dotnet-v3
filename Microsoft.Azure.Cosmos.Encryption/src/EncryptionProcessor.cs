@@ -114,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<JObject> DecryptAsync(
             JObject document,
             EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
@@ -122,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             await DecryptObjectAsync(
                 document,
                 encryptionSettings,
-                diagnosticsContext,
+                CosmosDiagnosticsContext.Create(null),
                 cancellationToken);
 
             return document;
