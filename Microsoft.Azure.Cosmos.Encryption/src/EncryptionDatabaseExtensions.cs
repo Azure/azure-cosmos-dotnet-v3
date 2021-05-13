@@ -74,6 +74,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
 
+            if (!string.Equals(encryptionKeyWrapMetadata.Type, encryptionKeyStoreProvider.ProviderName))
+            {
+                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyStoreProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 encryptionKeyWrapMetadata.Name,
                 encryptionKeyWrapMetadata.Value,
@@ -155,6 +160,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             EncryptionKeyStoreProvider encryptionKeyStoreProvider = encryptionCosmosClient.EncryptionKeyStoreProvider;
+
+            if (!string.Equals(newEncryptionKeyWrapMetadata.Type, encryptionKeyStoreProvider.ProviderName))
+            {
+                throw new ArgumentException("The EncryptionKeyWrapMetadata Type value does not match with the ProviderName of EncryptionKeyStoreProvider configured on the Client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
 
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await clientEncryptionKey.ReadAsync(cancellationToken: cancellationToken);
 
