@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
@@ -28,6 +29,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey("asdf"));
             batch.ReadItem("Test");
 
+            FeedIterator<dynamic> feedIterator1 = container.GetItemQueryIterator<dynamic>();
+            FeedIterator<dynamic> feedIterator2 = container.GetItemQueryIterator<dynamic>(queryText: "select * from T");
+            FeedIterator<dynamic> feedIterator3 = database.GetContainerQueryIterator<dynamic>(queryText: "select * from T");
+
+            string userAgent = cosmosClient.ClientContext.UserAgent;
             // Dispose should be idempotent 
             cosmosClient.Dispose();
             cosmosClient.Dispose();
@@ -42,18 +48,26 @@ namespace Microsoft.Azure.Cosmos.Tests
                 () => container.Scripts.ReadTriggerAsync("asdf"),
                 () => container.Scripts.ReadUserDefinedFunctionAsync("asdf"),
                 () => batch.ExecuteAsync(),
-                () => container.GetItemQueryIterator<dynamic>(queryText: "select * from T").ReadNextAsync(),
-                () => container.GetItemQueryIterator<dynamic>().ReadNextAsync(),
+                () => feedIterator1.ReadNextAsync(),
+                () => feedIterator2.ReadNextAsync(),
+                () => feedIterator3.ReadNextAsync(),
             };
 
             foreach (Func<Task> asyncFunc in validateAsync)
             {
                 try
                 {
-                   await asyncFunc();
+                    await asyncFunc();
                     Assert.Fail("Should throw ObjectDisposedException");
                 }
-                catch (ObjectDisposedException) { }
+                catch (CosmosObjectDisposedException e) 
+                { 
+                    Assert.IsTrue(e.Message.Contains($"CosmosClient Endpoint: https://localtestcosmos.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)};  Disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};"));
+                    string diagnostics = e.Diagnostics.ToString();
+                    Assert.IsNotNull(diagnostics);
+                    Assert.IsFalse(diagnostics.Contains("NoOp"));
+                    Assert.IsTrue(diagnostics.Contains("Client Configuration"));
+                }
             }
         }
 
