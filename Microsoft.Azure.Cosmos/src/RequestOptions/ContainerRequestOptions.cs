@@ -22,6 +22,21 @@ namespace Microsoft.Azure.Cosmos
         public bool PopulateQuotaInfo { get; set; }
 
         /// <summary>
+        ///  Gets or sets the <see cref="PopulateAnalyticalMigrationProgress"/> for document collection read requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// PopulateAnalyticalMigrationProgress is used to enable/disable getting analytical migration progress for document collection read requests.
+        /// </para>
+        /// </remarks>
+        #if PREVIEW
+            public
+        #else
+            internal
+        #endif
+            bool PopulateAnalyticalMigrationProgress { get; set; }
+
+        /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
         /// </summary>
         /// <param name="request">The <see cref="RequestMessage"/></param>
@@ -30,6 +45,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.PopulateQuotaInfo)
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.PopulateQuotaInfo, bool.TrueString);
+            }
+
+            if (this.PopulateAnalyticalMigrationProgress)
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, bool.TrueString);
             }
 
             base.PopulateRequestOptions(request);

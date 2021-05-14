@@ -6825,6 +6825,11 @@ namespace Microsoft.Azure.Cosmos
                 headers.Set(HttpConstants.HttpHeaders.PopulateQuotaInfo, bool.TrueString);
             }
 
+            //if (options.PopulateAnalyticalMigrationProgress)
+            //{
+            //    headers.Set(HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, bool.TrueString);
+            //}
+
             if (options.PopulateRestoreStatus)
             {
                 headers.Set(HttpConstants.HttpHeaders.PopulateRestoreStatus, bool.TrueString);
