@@ -29,12 +29,12 @@ namespace Microsoft.Azure.Cosmos
         /// PopulateAnalyticalMigrationProgress is used to enable/disable getting analytical migration progress for document collection read requests.
         /// </para>
         /// </remarks>
-        #if PREVIEW
-            public
-        #else
-            internal
+#if PREVIEW
+        public
+#else
+        internal
         #endif
-            bool PopulateAnalyticalMigrationProgress { get; set; }
+        bool PopulateAnalyticalMigrationProgress { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
