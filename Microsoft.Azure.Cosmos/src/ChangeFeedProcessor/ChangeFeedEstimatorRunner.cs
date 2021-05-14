@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private ChangeFeedLeaseOptions changeFeedLeaseOptions;
         private DocumentServiceLeaseContainer documentServiceLeaseContainer;
         private bool initialized = false;
+        private bool running = false;
 
         private Task runAsync;
 
@@ -84,7 +85,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.feedEstimatorRunner = this.BuildFeedEstimatorRunner();
                 this.initialized = true;
             }
-            else
+            
+            if (this.running)
             {
                 throw new InvalidOperationException("Change Feed Estimator already started.");
             }
@@ -92,28 +94,26 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.shutdownCts = new CancellationTokenSource();
             DefaultTrace.TraceInformation("Starting estimator...");
             this.runAsync = this.feedEstimatorRunner.RunAsync(this.shutdownCts.Token);
+            this.running = true;
         }
 
         public override async Task StopAsync()
         {
             DefaultTrace.TraceInformation("Stopping estimator...");
-            if (this.initialized)
+            if (this.running)
             {
                 this.shutdownCts.Cancel();
                 try
                 {
                     await this.runAsync.ConfigureAwait(false);
                 }
-                catch (TaskCanceledException ex)
-                {
-                    // Expected during shutdown
-                    Cosmos.Extensions.TraceException(ex);
-                }
                 catch (OperationCanceledException ex)
                 {
                     // Expected during shutdown
-                    Cosmos.Extensions.TraceException(ex);
+                    Extensions.TraceException(ex);
                 }
+
+                this.running = false;
             }
         }
 
