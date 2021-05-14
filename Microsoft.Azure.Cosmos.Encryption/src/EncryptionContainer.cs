@@ -629,6 +629,22 @@ namespace Microsoft.Azure.Cosmos.Encryption
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
             EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
                 obsoleteEncryptionSettings: null,
                 cancellationToken: cancellationToken);
@@ -637,8 +653,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             using (diagnosticsContext.CreateScope("PatchItem"))
             {
                 List<PatchOperation> encryptedPatchOperations = await this.PatchItemHelperAsync(
-                    id,
-                    partitionKey,
                     patchOperations,
                     encryptionSettings,
                     cancellationToken);
@@ -661,28 +675,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         private async Task<List<PatchOperation>> PatchItemHelperAsync(
-            string id,
-            PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(id))
-            {
-                throw new ArgumentNullException(nameof(id));
-            }
-
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
-            }
-
-            if (patchOperations == null ||
-                !patchOperations.Any())
-            {
-                throw new ArgumentNullException(nameof(patchOperations));
-            }
-
             List<PatchOperation> encryptedPatchOperations = new List<PatchOperation>(patchOperations.Count);
 
             foreach (PatchOperation patchOperation in patchOperations)
@@ -718,25 +714,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     throw new ArgumentException($"Cannot serialize value parameter for operation: {patchOperation.OperationType}, path: {patchOperation.Path}.");
                 }
 
-                AeadAes256CbcHmac256EncryptionAlgorithm aeadAes256CbcHmac256EncryptionAlgorithm = await settingforProperty.BuildEncryptionAlgorithmForSettingAsync(cancellationToken);
-
-                JToken propertyValue = EncryptionProcessor.BaseSerializer.FromStream<JToken>(valueParam);
-                JToken encryptedPropertyValue = EncryptionProcessor.EncryptProperty(
-                    propertyValue,
-                    aeadAes256CbcHmac256EncryptionAlgorithm);
+                Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
+                    valueParam,
+                    settingforProperty,
+                    cancellationToken);
 
                 switch (patchOperation.OperationType)
                 {
                     case PatchOperationType.Add:
-                        encryptedPatchOperations.Add(PatchOperation.Add(patchOperation.Path, this.CosmosSerializer.ToStream(encryptedPropertyValue)));
+                        encryptedPatchOperations.Add(PatchOperation.Add(patchOperation.Path, encryptedPropertyValue));
                         break;
 
                     case PatchOperationType.Replace:
-                        encryptedPatchOperations.Add(PatchOperation.Replace(patchOperation.Path, this.CosmosSerializer.ToStream(encryptedPropertyValue)));
+                        encryptedPatchOperations.Add(PatchOperation.Replace(patchOperation.Path, encryptedPropertyValue));
                         break;
 
                     case PatchOperationType.Set:
-                        encryptedPatchOperations.Add(PatchOperation.Set(patchOperation.Path, this.CosmosSerializer.ToStream(encryptedPropertyValue)));
+                        encryptedPatchOperations.Add(PatchOperation.Set(patchOperation.Path, encryptedPropertyValue));
                         break;
 
                     default:
