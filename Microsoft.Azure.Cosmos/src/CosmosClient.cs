@@ -508,7 +508,7 @@ namespace Microsoft.Azure.Cosmos
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
             return this.ClientContext.OperationHelperAsync(
-                nameof(CreateDatabaseAsync),
+                nameof(ReadAccountAsync),
                 null,
                 (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
