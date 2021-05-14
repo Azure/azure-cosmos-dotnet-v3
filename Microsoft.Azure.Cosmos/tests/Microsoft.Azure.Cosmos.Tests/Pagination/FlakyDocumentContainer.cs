@@ -202,6 +202,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             state: feedRangeState.State)));
             }
 
+            if (this.ShouldThrowException(out Exception exception))
+            {
+                //throw exception;
+                return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(exception));
+            }
+
             return this.documentContainer.MonadicChangeFeedAsync(
                 feedRangeState,
                 changeFeedPaginationOptions,
@@ -253,17 +259,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             && this.failureConfigs.InjectEmptyPages
             && ((this.random.Next() % 2) == 0);
 
+        private bool ShouldThrowException(out Exception exception)
+        {
+            exception = this.failureConfigs.ThrowException;
+            return this.failureConfigs != null && this.failureConfigs.ThrowException != null;
+}
+
         public sealed class FailureConfigs
         {
-            public FailureConfigs(bool inject429s, bool injectEmptyPages)
+            public FailureConfigs(
+                bool inject429s, 
+                bool injectEmptyPages,
+                Exception throwException = null)
             {
                 this.Inject429s = inject429s;
                 this.InjectEmptyPages = injectEmptyPages;
+                this.ThrowException = throwException;
             }
 
             public bool Inject429s { get; }
 
             public bool InjectEmptyPages { get; }
+
+            public Exception ThrowException { get; }
         }
     }
 }

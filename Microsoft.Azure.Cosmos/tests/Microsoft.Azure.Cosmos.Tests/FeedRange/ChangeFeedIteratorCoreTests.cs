@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -206,6 +207,70 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             }
 
             Assert.AreEqual(numItems, count, seed);
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnCosmosException_NoMoreResults()
+        {
+            CosmosException exception = CosmosExceptionFactory.CreateInternalServerErrorException("something's broken", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems:0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false, 
+                    injectEmptyPages: false,
+                    throwException: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            while (changeFeedIteratorCore.HasMoreResults)
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
+                Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnException_NoMoreResults()
+        {
+            Exception exception = new TaskCanceledException();
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    throwException: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            while (changeFeedIteratorCore.HasMoreResults)
+            {
+                try
+                {
+                    ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                    Assert.Fail("Should have thrown");
+                }
+                catch (Exception ex)
+                {
+                    Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
+                    Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+                }
+                
+            }
         }
 
         private static CosmosArray GetChanges(Stream stream)
