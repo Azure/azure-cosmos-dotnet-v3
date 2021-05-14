@@ -84,6 +84,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 this.feedEstimatorRunner = this.BuildFeedEstimatorRunner();
                 this.initialized = true;
             }
+            else
+            {
+                throw new InvalidOperationException("Change Feed Estimator already started.");
+            }
 
             this.shutdownCts = new CancellationTokenSource();
             DefaultTrace.TraceInformation("Starting estimator...");
