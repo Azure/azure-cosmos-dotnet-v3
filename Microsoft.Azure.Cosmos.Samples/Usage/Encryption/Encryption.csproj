@@ -6,38 +6,21 @@
     <AssemblyName>Cosmos.Samples.Encryption</AssemblyName>
     <RootNamespace>Cosmos.Samples.Encryption</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <IsPreview>true</IsPreview>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="1.0.0-previewV14" />
+    <PackageReference Include="Microsoft.Data.Encryption.AzureKeyVaultProvider" Version="0.2.0-pre" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-</ItemGroup>
+  </ItemGroup>	
   <ItemGroup>
     <None Include="AppSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Microsoft.Azure.Cosmos.Encryption\src\Microsoft.Azure.Cosmos.Encryption.csproj" />
     <ProjectReference Include="..\Shared\Shared.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
-  </ItemGroup>
-	
-  <PropertyGroup>
-    <DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>
-  </PropertyGroup>  
-   
+  </ItemGroup>	
 </Project>

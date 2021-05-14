@@ -31,6 +31,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             IList<AccountRegion> writeRegions,
             IList<AccountRegion> readRegions)
         {
+            HttpResponseMessage httpResponseMessage = MockSetupsHelper.CreateStrongAccount(
+                accountName,
+                writeRegions,
+                readRegions);
+
+            Uri endpointUri = new Uri(endpoint);
+            mockHttpClientHandler.Setup(x => x.SendAsync(
+                It.Is<HttpRequestMessage>(x => x.RequestUri == endpointUri),
+                It.IsAny<CancellationToken>()))
+                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) => Task.FromResult(httpResponseMessage));
+        }
+
+        public static HttpResponseMessage CreateStrongAccount(
+            string accountName,
+            IList<AccountRegion> writeRegions,
+            IList<AccountRegion> readRegions)
+        {
             AccountProperties accountProperties = new AccountProperties()
             {
                 Id = accountName,
@@ -59,23 +76,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             };
 
-            Uri endpointUri = new Uri(endpoint);
-            mockHttpClientHandler.Setup(x => x.SendAsync(
-                It.Is<HttpRequestMessage>(x => x.RequestUri == endpointUri),
-                It.IsAny<CancellationToken>()))
-                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
-                {
-                    if (endpointUri == request.RequestUri)
-                    {
-                        Console.WriteLine("Itworks");
-                    }
-
-                    return Task.FromResult(new HttpResponseMessage()
-                    {
-                        StatusCode = HttpStatusCode.OK,
-                        Content = new StringContent(JsonConvert.SerializeObject(accountProperties))
-                    });
-                });
+            return new HttpResponseMessage()
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(JsonConvert.SerializeObject(accountProperties))
+            };
         }
 
         public static void SetupContainerProperties(
@@ -261,8 +266,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         internal static void SetupRequestTimeoutException(
-            Mock<TransportClient> mockTransportClient,
-            TransportAddressUri physicalUri)
+           Mock<TransportClient> mockTransportClient,
+           TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
                 .Returns(() =>
