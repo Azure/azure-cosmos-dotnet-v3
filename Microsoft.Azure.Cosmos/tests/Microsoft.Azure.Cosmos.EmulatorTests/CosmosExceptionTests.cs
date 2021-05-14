@@ -41,12 +41,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 customizeClientBuilder: builder => builder.AddCustomHandlers(requestHandlerHelper));
             Container containerWithFailure = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
 
-            requestHandlerHelper.UpdateRequestMessage = (request) => throw new NullReferenceException("Mock NullReferenceException");
-            await this.CheckForTracesAsync<NullReferenceException>(containerWithFailure, messageContainsDiagnostics: true);
-
-            requestHandlerHelper.UpdateRequestMessage = (request) => throw new InvalidOperationException("Mock InvalidOperationException");
-            await this.CheckForTracesAsync<InvalidOperationException>(containerWithFailure, messageContainsDiagnostics: true);
-
             requestHandlerHelper.UpdateRequestMessage = (request) => throw new ObjectDisposedException("Mock ObjectDisposedException");
             await this.CheckForTracesAsync<ObjectDisposedException>(containerWithFailure, messageContainsDiagnostics: false);
         }

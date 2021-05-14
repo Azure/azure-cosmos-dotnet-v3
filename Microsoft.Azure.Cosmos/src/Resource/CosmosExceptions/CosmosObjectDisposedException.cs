@@ -32,12 +32,12 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosClient = cosmosClient ?? throw new ArgumentNullException(nameof(CosmosClient));
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
 
-            string disposedMessage = this.cosmosClient.DisposedDateTimeUtc.HasValue
-                ? $" Disposed at: {this.cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}"
-                : " NOT disposed";
-
-            this.Message = $"{originalException.Message} CosmosClient Endpoint: {this.cosmosClient.Endpoint}; Created at: {this.cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; " +
-                $"{disposedMessage}; UserAgent: {this.cosmosClient.ClientConfigurationTraceDatum.UserAgentContainer.UserAgent};";
+            string additionalInfo = $"CosmosClient Endpoint: {this.cosmosClient.Endpoint}; Created at: {this.cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; " +
+                $" UserAgent: {this.cosmosClient.ClientConfigurationTraceDatum.UserAgentContainer.UserAgent};";
+            this.Message = this.cosmosClient.DisposedDateTimeUtc.HasValue
+                ? $"Object name: 'CosmosClient'. CosmosClient can not be used after it has been disposed. Please make sure to follow best practices and use the CosmosClient as a singleton. " +
+                    $" CosmosClient was disposed at: {this.cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; {additionalInfo}"
+                : $"{originalException.Message} The CosmosClient is still active and NOT disposed of. {additionalInfo}";
 
             if (trace == null)
             {

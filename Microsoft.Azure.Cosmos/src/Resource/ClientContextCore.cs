@@ -440,18 +440,6 @@ namespace Microsoft.Azure.Cosmos
                         this.client, 
                         trace);
                 }
-                catch (NullReferenceException nre) when (!(nre is CosmosNullReferenceException))
-                {
-                    throw new CosmosNullReferenceException(
-                        nre,
-                        trace);
-                }
-                catch (InvalidOperationException ioe) when (!(ioe is CosmosInvalidOperationException))
-                {
-                    throw new CosmosInvalidOperationException(
-                        ioe,
-                        trace);
-                }
             }
         }
 
