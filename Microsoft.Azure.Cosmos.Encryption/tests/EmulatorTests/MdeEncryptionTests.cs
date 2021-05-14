@@ -19,19 +19,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.Data.Encryption.Cryptography;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-
+    using Newtonsoft.Json.Linq;
     using EncryptionKeyWrapMetadata = Cosmos.EncryptionKeyWrapMetadata;
 
     [TestClass]
     public class MdeEncryptionTests
     {
-        private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "key1", "tempmetadata1");
-        private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "key2", "tempmetadata2");
+        private static EncryptionKeyWrapMetadata metadata1;
+        private static EncryptionKeyWrapMetadata metadata2;
 
         private static CosmosClient client;
         private static CosmosClient encryptionCosmosClient;
         private static Database database;
         private static Container encryptionContainer;
+        private static Container encryptionContainerForChangeFeed;
         private static TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider;
 
         [ClassInitialize]
@@ -43,6 +44,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 DataEncryptionKeyCacheTimeToLive = null
             };
+
+            metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, "key1", "tempmetadata1");
+            metadata2 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, "key2", "tempmetadata2");
+
             MdeEncryptionTests.encryptionCosmosClient = MdeEncryptionTests.client.WithEncryption(testEncryptionKeyStoreProvider);
             MdeEncryptionTests.database = await MdeEncryptionTests.encryptionCosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
@@ -53,6 +58,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 "key2",
                 metadata2);
+
+
+            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, "revokedKek", "revokedKek-metadata");
+            await database.CreateClientEncryptionKeyAsync(
+                "keywithRevokedKek",
+                DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
+                revokedKekmetadata);
 
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
             {
@@ -67,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 new ClientEncryptionIncludedPath()
                 {
                     Path = "/Sensitive_ArrayFormat",
-                    ClientEncryptionKeyId = "key2",
+                    ClientEncryptionKeyId = "keywithRevokedKek",
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
@@ -143,6 +155,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     EncryptionType = "Deterministic",
                     EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
                 },
+
+                new ClientEncryptionIncludedPath()
+                {
+                    Path = "/Sensitive_ObjectArrayType",
+                    ClientEncryptionKeyId = "key2",
+                    EncryptionType = "Deterministic",
+                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                },
             };
 
 
@@ -150,9 +170,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
            
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
+            ContainerProperties containerPropertiesForChangeFeed = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy };
 
             encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();           
+            await encryptionContainer.InitializeEncryptionAsync();
+
+            encryptionContainerForChangeFeed = await database.CreateContainerAsync(containerPropertiesForChangeFeed, 400);
+            await encryptionContainerForChangeFeed.InitializeEncryptionAsync();
         }
 
         private static async Task<ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(string cekId, Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
@@ -233,17 +257,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateClientEncryptionKey()
         {
             string cekId = "anotherCek";
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1");
+			
+            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, cekId, "testmetadata1");
+			
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", name: cekId, value: metadata1.Value),
+                new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
             // creating another key with same id should fail
-            metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata2");
+            metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, cekId, "testmetadata2");
 
             try
             {
@@ -264,22 +290,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionRewrapClientEncryptionKey()
         {
             string cekId = "rewrapkeytest";
-            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1");
+            EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, cekId, "testmetadata1");
             ClientEncryptionKeyProperties clientEncryptionKeyProperties = await MdeEncryptionTests.CreateClientEncryptionKeyAsync(
                 cekId,
                 metadata1);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", name: cekId, value: metadata1.Value),
+                new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, name: cekId, value: metadata1.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
-            EncryptionKeyWrapMetadata updatedMetaData = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, metadata1 + "updatedmetadata");
+            EncryptionKeyWrapMetadata updatedMetaData = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, cekId, metadata1 + "updatedmetadata");
             clientEncryptionKeyProperties = await MdeEncryptionTests.RewarpClientEncryptionKeyAsync(
                 cekId,
                 updatedMetaData);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", name: cekId, value: updatedMetaData.Value),
+                new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, name: cekId, value: updatedMetaData.Value),
                 clientEncryptionKeyProperties.EncryptionKeyWrapMetadata);
 
         }
@@ -304,16 +330,48 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionCreateItemWithNullProperty()
         {
+            CosmosClient clientWithNoCaching = TestCommon.CreateCosmosClient(builder => builder
+                .Build());
+
+            TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
+            {
+                DataEncryptionKeyCacheTimeToLive = TimeSpan.Zero
+            };
+
+            CosmosClient encryptionCosmosClient = clientWithNoCaching.WithEncryption(testEncryptionKeyStoreProvider);
+            Database database = encryptionCosmosClient.GetDatabase(MdeEncryptionTests.database.Id);
+
+            Container encryptionContainer = database.GetContainer(MdeEncryptionTests.encryptionContainer.Id);
+
             TestDoc testDoc = TestDoc.Create();
 
             testDoc.Sensitive_ArrayFormat = null;
             testDoc.Sensitive_StringFormat = null;
-            ItemResponse<TestDoc> createResponse = await MdeEncryptionTests.encryptionContainer.CreateItemAsync(
+
+            ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
+                   testDoc,
+                   new PartitionKey(testDoc.PK));
+
+            Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+            VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // no access to key.
+            testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+
+            testDoc = TestDoc.Create();
+
+            testDoc.Sensitive_ArrayFormat = null;
+            testDoc.Sensitive_StringFormat = null;
+
+            createResponse = await encryptionContainer.CreateItemAsync(
                     testDoc,
                     new PartitionKey(testDoc.PK));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            testEncryptionKeyStoreProvider.RevokeAccessSet = false;
         }
 
 
@@ -339,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1");
+                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, cekId, "testmetadata1");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.CreateClientEncryptionKeyAsync(
                        cekId,
@@ -354,7 +412,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 string cekId = "testingcekID";
-                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", cekId, "testmetadata1" + "updated");
+                EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, cekId, "testmetadata1" + "updated");
 
                 ClientEncryptionKeyResponse clientEncrytionKeyResponse = await databaseForRestrictedUser.RewrapClientEncryptionKeyAsync(
                        cekId,
@@ -449,6 +507,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             expectedDoc.Sensitive_DateFormat = new DateTime();
             expectedDoc.Sensitive_StringFormat = null;
             expectedDoc.Sensitive_IntArray = null;
+            expectedDoc.Sensitive_ObjectArrayType = null;
 
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
@@ -462,18 +521,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             // string/int
+            string[] arrayofStringValues = new string[] { testDoc1.Sensitive_StringFormat, "randomValue" };
+
             QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
-                    "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_IntFormat = @Sensitive_IntFormat");
+                    "SELECT * FROM c where array_contains(@Sensitive_StringFormat, c.Sensitive_StringFormat) " +
+                    "AND c.Sensitive_IntArray = @Sensitive_IntArray " +
+                    "AND c.Sensitive_NestedObjectFormatL1 = @Sensitive_NestedObjectFormatL1");
 
             await withEncryptedParameter.AddParameterAsync(
                     "@Sensitive_StringFormat",
-                    testDoc1.Sensitive_StringFormat,
+                    arrayofStringValues,
                     "/Sensitive_StringFormat");
-            
+
             await withEncryptedParameter.AddParameterAsync(
-                    "@Sensitive_IntFormat",
-                    testDoc1.Sensitive_IntFormat,
-                    "/Sensitive_IntFormat");
+                    "@Sensitive_IntArray",
+                    testDoc1.Sensitive_IntArray,
+                    "/Sensitive_IntArray");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_NestedObjectFormatL1",
+                    testDoc1.Sensitive_NestedObjectFormatL1,
+                    "/Sensitive_NestedObjectFormatL1");
 
             TestDoc expectedDoc = new TestDoc(testDoc1);
             await MdeEncryptionTests.ValidateQueryResultsAsync(
@@ -637,14 +705,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionChangeFeedDecryptionSuccessful()
         {
-            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
-            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainerForChangeFeed);
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainerForChangeFeed);
 
             // change feed iterator
-            await this.ValidateChangeFeedIteratorResponse(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedIteratorResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
 
             // change feed processor
-            await this.ValidateChangeFeedProcessorResponse(MdeEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedProcessorResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor with feed handler
+            await this.ValidateChangeFeedProcessorWithFeedHandlerResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor with manual checkpoint
+            await this.ValidateChangeFeedProcessorWithManualCheckpointResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor with feed stream handler
+            await this.ValidateChangeFeedProcessorWithFeedStreamHandlerResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            // change feed processor manual checkpoint with feed stream handler
+            await this.ValidateChangeFeedProcessorStreamWithManualCheckpointResponse(MdeEncryptionTests.encryptionContainerForChangeFeed, testDoc1, testDoc2);
         }
 
         [TestMethod]
@@ -1130,13 +1210,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             CosmosClient mainClient = TestCommon.CreateCosmosClient(builder => builder
                 .Build());
 
-            EncryptionKeyWrapMetadata keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "myCek", "mymetadata1");
-
             TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new TestEncryptionKeyStoreProvider
             {
                 DataEncryptionKeyCacheTimeToLive = TimeSpan.FromMinutes(30),
             };
 
+            EncryptionKeyWrapMetadata keyWrapMetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider.ProviderName, "myCek", "mymetadata1");
             CosmosClient encryptionCosmosClient = mainClient.WithEncryption(testEncryptionKeyStoreProvider);
             Database mainDatabase = await encryptionCosmosClient.CreateDatabaseAsync("databaseToBeDeleted");
 
@@ -1202,7 +1281,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             mainDatabase = await encryptionCosmosClient.CreateDatabaseAsync("databaseToBeDeleted");
 
-            keyWrapMetadata = new EncryptionKeyWrapMetadata("custom", "myCek", "mymetadata2");
+            keyWrapMetadata = new EncryptionKeyWrapMetadata(testEncryptionKeyStoreProvider2.ProviderName, "myCek", "mymetadata2");
             clientEncrytionKeyResponse = await mainDatabase.CreateClientEncryptionKeyAsync(
                    keyWrapMetadata.Name,
                    DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
@@ -1252,21 +1331,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // create new container in other client.
             // The test basically validates if the new key created is referenced, Since the other client would have had the old key cached.
             // and here we would not hit the incorrect container rid issue.
-            Collection<ClientEncryptionIncludedPath> newModifiedPath2 = new Collection<ClientEncryptionIncludedPath>()
+            ClientEncryptionIncludedPath newModifiedPath2 = new ClientEncryptionIncludedPath()
             {
-                new ClientEncryptionIncludedPath()
-                {
-                    Path = "/Sensitive_StringFormat",
-                    ClientEncryptionKeyId = "myCek",
-                    EncryptionType = "Deterministic",
-                    EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
-                },
+                Path = "/Sensitive_StringFormat",
+                ClientEncryptionKeyId = "myCek",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
 
-            ClientEncryptionPolicy clientEncryptionPolicy2 = new ClientEncryptionPolicy(newModifiedPath2);
+            Container otherEncryptionContainer2 = await otherDatabase.DefineContainer("otherContainer2", "/PK")
+                .WithClientEncryptionPolicy()
+                .WithIncludedPath(newModifiedPath2)                
+                .Attach()
+                .CreateAsync(throughput: 1000);
 
-            ContainerProperties containerProperties2 = new ContainerProperties("otherContainer2", "/PK") { ClientEncryptionPolicy = clientEncryptionPolicy2 };
-            Container otherEncryptionContainer2 = await otherDatabase.CreateContainerAsync(containerProperties2, 400);
 
             // create an item
             TestDoc newdoc = await MdeEncryptionTests.MdeCreateItemAsync(otherEncryptionContainer2);
@@ -1343,13 +1421,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // Once a Dek gets cached and the Kek is revoked, calls to unwrap/wrap keys would fail since KEK is revoked.
             // The Dek should be rewrapped if the KEK is revoked.
             // When an access to KeyVault fails, the Dek is fetched from the backend(force refresh to update the stale DEK) and cache is updated.
-            EncryptionKeyWrapMetadata revokedKekmetadata = new EncryptionKeyWrapMetadata("TEST_KEYSTORE_PROVIDER", "revokedKek", "revokedKek-metadata");         
-
-           await database.CreateClientEncryptionKeyAsync(
-                   "keywithRevokedKek",
-                   DataEncryptionKeyAlgorithm.AEAD_AES_256_CBC_HMAC_SHA256,
-                   revokedKekmetadata);
-
             ClientEncryptionIncludedPath pathwithRevokedKek = new ClientEncryptionIncludedPath()
             {
                 Path = "/Sensitive_NestedObjectFormatL1",
@@ -1807,19 +1878,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental);
 
-            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             while (changeIterator.HasMoreResults)
             {
                 try
                 {
                     FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                    for (int index = 0; index < testDocs.Count; index++)
-                    {
-                        if (testDocs.Resource.ElementAt(index).Id.Equals(testDoc1.Id) || testDocs.Resource.ElementAt(index).Id.Equals(testDoc2.Id))
-                        {
-                            changeFeedReturnedDocs.Add(testDocs.Resource.ElementAt(index));
-                        }
-                    }
+                    Assert.AreEqual(testDocs.Count, 2);
+
+                    VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
+                    VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
                 }
                 catch (CosmosException ex)
                 {
@@ -1827,12 +1894,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     break;
                 }
             }
-
-            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
-
-            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
-            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
-
         }
 
         private async Task ValidateChangeFeedProcessorResponse(
@@ -1843,6 +1904,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
 
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
@@ -1850,21 +1913,237 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (IReadOnlyCollection<TestDoc> changes, CancellationToken cancellationToken) =>
                 {
                     changeFeedReturnedDocs.AddRange(changes);
+                    processedDocCount += changes.Count();
+                    if(processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
                     return Task.CompletedTask;
                 })
                 .WithInstanceName("random")
                 .WithLeaseContainer(leaseContainer)
-                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
                 .Build();
 
             await cfp.StartAsync();
-            await Task.Delay(2000);
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
             await cfp.StopAsync();
 
-            Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
+            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
 
             VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
             VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorWithFeedHandlerResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
+                "testCFPWithFeedHandler",
+                (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<TestDoc> changes,
+                    CancellationToken cancellationToken) =>
+                {
+                    changeFeedReturnedDocs.AddRange(changes);
+                    processedDocCount += changes.Count();
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
+
+            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
+
+            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
+            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorWithManualCheckpointResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                "testCFPWithManualCheckpoint",
+                (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<TestDoc> changes,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    changeFeedReturnedDocs.AddRange(changes);
+                    processedDocCount += changes.Count();
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
+
+            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
+
+            VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
+            VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorWithFeedStreamHandlerResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
+                "testCFPWithFeedStreamHandler",
+                (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    CancellationToken cancellationToken) =>
+                {
+                    string changeFeed = string.Empty;
+                    using (StreamReader streamReader = new StreamReader(changes))
+                    {
+                        changeFeed = streamReader.ReadToEnd();
+                    }
+
+                    if (changeFeed.Contains(testDoc1.Id))
+                    {
+                        processedDocCount++;
+                    }
+                    
+                    if (changeFeed.Contains(testDoc2.Id))
+                    { 
+                        processedDocCount++;
+                    }
+
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
+
+            if (leaseDatabase != null)
+            {
+                using (await leaseDatabase.DeleteStreamAsync()) { }
+            }
+        }
+
+        private async Task ValidateChangeFeedProcessorStreamWithManualCheckpointResponse(
+            Container container,
+            TestDoc testDoc1,
+            TestDoc testDoc2)
+        {
+            Database leaseDatabase = await MdeEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container leaseContainer = await leaseDatabase.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+            ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
+            int processedDocCount = 0;
+
+            ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                "testCFPStreamWithManualCheckpoint",
+                (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    string changeFeed = string.Empty;
+                    using (StreamReader streamReader = new StreamReader(changes))
+                    {
+                        changeFeed = streamReader.ReadToEnd();
+                    }
+
+                    if (changeFeed.Contains(testDoc1.Id))
+                    {
+                        processedDocCount++;
+                    }
+
+                    if (changeFeed.Contains(testDoc2.Id))
+                    {
+                        processedDocCount++;
+                    }
+
+                    if (processedDocCount == 2)
+                    {
+                        allDocsProcessed.Set();
+                    }
+
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.MinValue.ToUniversalTime())
+                .Build();
+
+            await cfp.StartAsync();
+            bool isStartOk = allDocsProcessed.WaitOne(60000);
+            await cfp.StopAsync();
 
             if (leaseDatabase != null)
             {
@@ -2037,6 +2316,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
             }
 
+            if(expectedDoc.Sensitive_ObjectArrayType != null)
+            {
+                TestDoc.Sensitive_ArrayData expectedValue = expectedDoc.Sensitive_ObjectArrayType[0] is JObject jObjectValue
+                    ? jObjectValue.ToObject<TestDoc.Sensitive_ArrayData>()
+                    : (TestDoc.Sensitive_ArrayData)expectedDoc.Sensitive_ObjectArrayType[0];
+                jObjectValue = (JObject)verifyDoc.Sensitive_ObjectArrayType[0];
+                TestDoc.Sensitive_ArrayData test = jObjectValue.ToObject<TestDoc.Sensitive_ArrayData>();
+
+                Assert.AreEqual(expectedValue.Sensitive_ArrayDecimalFormat, test.Sensitive_ArrayDecimalFormat);
+                Assert.AreEqual(expectedValue.Sensitive_ArrayIntFormat, test.Sensitive_ArrayIntFormat);
+
+                Assert.AreEqual(expectedDoc.Sensitive_ObjectArrayType[1], verifyDoc.Sensitive_ObjectArrayType[1]);
+            }
+
             if (expectedDoc.Sensitive_ArrayMultiTypes != null)
             {
                 for (int i = 0; i < expectedDoc.Sensitive_ArrayMultiTypes.GetLength(0); i++)
@@ -2161,6 +2454,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public Sensitive_ArrayMultiType[,] Sensitive_ArrayMultiTypes { get; set; }
 
+            public object[] Sensitive_ObjectArrayType { get; set; }
+
             public Sensitive_NestedObjectL1 Sensitive_NestedObjectFormatL1 { get; set; }
 
             public TestDoc()
@@ -2233,6 +2528,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 this.Sensitive_FloatFormat = other.Sensitive_FloatFormat;
                 this.Sensitive_ArrayFormat = other.Sensitive_ArrayFormat;
                 this.Sensitive_IntArray = other.Sensitive_IntArray;
+                this.Sensitive_ObjectArrayType = other.Sensitive_ObjectArrayType;
                 this.Sensitive_NestedObjectFormatL1 = other.Sensitive_NestedObjectFormatL1;
                 this.Sensitive_ArrayMultiTypes = other.Sensitive_ArrayMultiTypes;
             }
@@ -2252,6 +2548,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.Sensitive_BoolFormat == doc.Sensitive_BoolFormat
                        && this.Sensitive_FloatFormat == doc.Sensitive_FloatFormat
                        && this.Sensitive_IntArray == doc.Sensitive_IntArray
+                       && this.Sensitive_ObjectArrayType == doc.Sensitive_ObjectArrayType
                        && this.Sensitive_NestedObjectFormatL1 != doc.Sensitive_NestedObjectFormatL1
                        && this.Sensitive_ArrayMultiTypes != doc.Sensitive_ArrayMultiTypes;
             }
@@ -2276,6 +2573,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime>.Default.GetHashCode(this.Sensitive_DateFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Decimal>.Default.GetHashCode(this.Sensitive_DecimalFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<int>.Default.GetHashCode(this.Sensitive_IntFormat);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<Object>.Default.GetHashCode(this.Sensitive_ObjectArrayType);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Array>.Default.GetHashCode(this.Sensitive_ArrayFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<bool>.Default.GetHashCode(this.Sensitive_BoolFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<float>.Default.GetHashCode(this.Sensitive_FloatFormat);
@@ -2297,6 +2595,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_DecimalFormat = 472.3108m,
                     Sensitive_IntArray = new int[2] { 999, 1000 },
                     Sensitive_IntMultiDimArray = new[,] { { 1, 2 }, { 2, 3 }, { 4, 5 } },
+                    Sensitive_ObjectArrayType = new object[2]
+                    {
+                        (Sensitive_ArrayData)new Sensitive_ArrayData
+                        {
+                            Sensitive_ArrayIntFormat = 18273,
+                            Sensitive_ArrayDecimalFormat = 1234.11m
+                        },
+                        (Int64)9823
+                    },                    
                     Sensitive_IntFormat = 1965,
                     Sensitive_BoolFormat = true,
                     Sensitive_FloatFormat = 8923.124f,
