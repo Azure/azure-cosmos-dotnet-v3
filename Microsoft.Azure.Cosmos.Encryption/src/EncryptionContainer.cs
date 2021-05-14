@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Data.Encryption.Cryptography;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
@@ -604,24 +605,140 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.ResponseFactory);
         }
 
-        public override Task<ItemResponse<T>> PatchItemAsync<T>(
+        public async override Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
+
+            return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
         }
 
-        public override Task<ResponseMessage> PatchItemStreamAsync(
+        public async override Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: cancellationToken);
+
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("PatchItem"))
+            {
+                List<PatchOperation> encryptedPatchOperations = await this.PatchItemHelperAsync(
+                    patchOperations,
+                    encryptionSettings,
+                    cancellationToken);
+
+                ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
+                    id,
+                    partitionKey,
+                    encryptedPatchOperations,
+                    requestOptions,
+                    cancellationToken);
+
+                responseMessage.Content = await EncryptionProcessor.DecryptAsync(
+                    responseMessage.Content,
+                    encryptionSettings,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                return responseMessage;
+            }
+        }
+
+        private async Task<List<PatchOperation>> PatchItemHelperAsync(
+            IReadOnlyList<PatchOperation> patchOperations,
+            EncryptionSettings encryptionSettings,
+            CancellationToken cancellationToken = default)
+        {
+            List<PatchOperation> encryptedPatchOperations = new List<PatchOperation>(patchOperations.Count);
+
+            foreach (PatchOperation patchOperation in patchOperations)
+            {
+                if (patchOperation.OperationType == PatchOperationType.Remove)
+                {
+                    encryptedPatchOperations.Add(patchOperation);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(patchOperation.Path) || patchOperation.Path[0] != '/')
+                {
+                    throw new ArgumentException($"Invalid path '{patchOperation.Path}'.");
+                }
+
+                // get the top level path's encryption setting.
+                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                    patchOperation.Path.Split('/')[1]);
+
+                // non-encrypted path
+                if (settingforProperty == null)
+                {
+                    encryptedPatchOperations.Add(patchOperation);
+                    continue;
+                }
+                else if (patchOperation.OperationType == PatchOperationType.Increment)
+                {
+                    throw new InvalidOperationException($"Increment patch operation is not allowed for encrypted path '{patchOperation.Path}'.");
+                }
+
+                if (!patchOperation.TrySerializeValueParameter(this.CosmosSerializer, out Stream valueParam))
+                {
+                    throw new ArgumentException($"Cannot serialize value parameter for operation: {patchOperation.OperationType}, path: {patchOperation.Path}.");
+                }
+
+                Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
+                    valueParam,
+                    settingforProperty,
+                    cancellationToken);
+
+                switch (patchOperation.OperationType)
+                {
+                    case PatchOperationType.Add:
+                        encryptedPatchOperations.Add(PatchOperation.Add(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    case PatchOperationType.Replace:
+                        encryptedPatchOperations.Add(PatchOperation.Replace(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    case PatchOperationType.Set:
+                        encryptedPatchOperations.Add(PatchOperation.Set(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    default:
+                        throw new NotSupportedException(nameof(patchOperation.OperationType));
+                }
+            }
+
+            return encryptedPatchOperations;
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
