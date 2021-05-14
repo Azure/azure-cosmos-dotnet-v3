@@ -93,6 +93,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task PopulateAnalyticalMigrationTest()
+        {
+            ContainerProperties cp = new ContainerProperties()
+            {
+                Id = "NonMigrationContainer",
+                PartitionKeyPath = "/pk",
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    Automatic = false,
+                },
+                AnalyticalStoreTimeToLiveInSeconds = 10
+            };
+
+            ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cp);
+            Container container = response;
+
+            // Progress should be -1, as there is no migration involved.
+            ContainerRequestOptions requestOptions = new ContainerRequestOptions
+            {
+                PopulateAnalyticalMigrationProgress = true
+            };
+
+            ContainerResponse readResponse = await container.ReadContainerAsync(requestOptions);
+            string analyticalMigrationProgress = readResponse.Headers["x-ms-cosmos-analytical-migration-progress"];
+            Assert.IsNotNull(analyticalMigrationProgress);
+            Assert.AreEqual(-1, int.Parse(analyticalMigrationProgress));
+        }
+
+        [TestMethod]
         public async Task ContainerContractTest()
         {
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");

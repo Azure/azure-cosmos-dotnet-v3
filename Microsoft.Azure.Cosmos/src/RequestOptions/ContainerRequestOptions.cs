@@ -12,28 +12,30 @@ namespace Microsoft.Azure.Cosmos
     public class ContainerRequestOptions : RequestOptions
     {
         /// <summary>
-        ///  Gets or sets the <see cref="PopulateQuotaInfo"/> for document collection read requests in the Azure Cosmos DB service.
+        ///  Gets or sets the <see cref="PopulateQuotaInfo"/> for container read requests in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// PopulateQuotaInfo is used to enable/disable getting document collection quota related stats for document collection read requests.
+        /// PopulateQuotaInfo is used to enable/disable getting container quota related stats for container read requests.
         /// </para>
         /// </remarks>
         public bool PopulateQuotaInfo { get; set; }
 
         /// <summary>
-        ///  Gets or sets the <see cref="PopulateAnalyticalMigrationProgress"/> for document collection read requests in the Azure Cosmos DB service.
+        ///  Gets or sets the <see cref="PopulateAnalyticalMigrationProgress"/> for container read requests in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
         /// <para>
-        /// PopulateAnalyticalMigrationProgress is used to enable/disable getting analytical migration progress for document collection read requests.
+        /// PopulateAnalyticalMigrationProgress is used to enable/disable getting analytical migration progress for container read requests.
+        /// The response header "x-ms-cosmos-analytical-migration-progress" will contain an integer representing the percentage progress of analytical migration. 
+        /// The response header will be between 0 and 99 for containers that are undergoing analytical migration, 100 for containers that have finished migration, and -1 otherwise.
         /// </para>
         /// </remarks>
 #if PREVIEW
         public
 #else
         internal
-        #endif
+#endif
         bool PopulateAnalyticalMigrationProgress { get; set; }
 
         /// <summary>
