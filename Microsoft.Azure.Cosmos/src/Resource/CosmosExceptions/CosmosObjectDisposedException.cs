@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
     /// adds a way to access the CosmosDiagnostics and appends additional information
     /// to the message for easier troubleshooting.
     /// </summary>
-    public class CosmosObjectDisposedException : ObjectDisposedException
+    internal class CosmosObjectDisposedException : ObjectDisposedException
     {
         private readonly ObjectDisposedException originalException;
         private readonly CosmosClient cosmosClient;
