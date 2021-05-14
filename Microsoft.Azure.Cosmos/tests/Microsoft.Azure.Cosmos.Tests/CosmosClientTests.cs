@@ -67,6 +67,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.IsNotNull(diagnostics);
                     Assert.IsFalse(diagnostics.Contains("NoOp"));
                     Assert.IsTrue(diagnostics.Contains("Client Configuration"));
+                    string exceptionString = e.ToString();
+                    Assert.IsTrue(exceptionString.Contains(diagnostics));
+                    Assert.IsTrue(exceptionString.Contains(e.Message));
+                    Assert.IsTrue(exceptionString.Contains(e.StackTrace));
                 }
             }
         }
