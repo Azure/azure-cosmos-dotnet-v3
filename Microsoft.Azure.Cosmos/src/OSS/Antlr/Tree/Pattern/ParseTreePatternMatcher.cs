@@ -503,8 +503,9 @@ namespace Antlr4.Runtime.Tree.Pattern
         /// </summary>
         protected internal virtual RuleTagToken GetRuleTagToken(IParseTree t)
         {
-            if (t is IRuleNode r)
+            if (t is IRuleNode)
             {
+                IRuleNode r = (IRuleNode)t;
                 if (r.ChildCount == 1 && r.GetChild(0) is ITerminalNode)
                 {
                     ITerminalNode c = (ITerminalNode)r.GetChild(0);
@@ -526,8 +527,9 @@ namespace Antlr4.Runtime.Tree.Pattern
             IList<IToken> tokens = new List<IToken>();
             foreach (Chunk chunk in chunks)
             {
-                if (chunk is TagChunk tagChunk)
+                if (chunk is TagChunk)
                 {
+                    TagChunk tagChunk = (TagChunk)chunk;
                     // add special rule token or conjure up new token from name
                     if (System.Char.IsUpper(tagChunk.Tag[0]))
                     {
@@ -688,8 +690,9 @@ namespace Antlr4.Runtime.Tree.Pattern
             for (int i_2 = 0; i_2 < chunks.Count; i_2++)
             {
                 Chunk c = chunks[i_2];
-                if (c is TextChunk tc)
+                if (c is TextChunk)
                 {
+                    TextChunk tc = (TextChunk)c;
                     string unescaped = tc.Text.Replace(escape, string.Empty);
                     if (unescaped.Length < tc.Text.Length)
                     {

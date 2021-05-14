@@ -223,9 +223,9 @@ namespace Antlr4.Runtime.Atn
                 foreach (ILexerAction lexerAction in lexerActions)
                 {
                     ILexerAction action = lexerAction;
-                    if (action is LexerIndexedCustomAction lexerIndexedCustomAction)
+                    if (action is LexerIndexedCustomAction)
                     {
-                        int offset = lexerIndexedCustomAction.Offset;
+                        int offset = ((LexerIndexedCustomAction)action).Offset;
                         input.Seek(startIndex + offset);
                         action = ((LexerIndexedCustomAction)action).Action;
                         requiresSeek = (startIndex + offset) != stopIndex;

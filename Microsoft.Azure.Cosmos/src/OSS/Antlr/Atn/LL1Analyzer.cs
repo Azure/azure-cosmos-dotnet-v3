@@ -314,8 +314,9 @@ namespace Antlr4.Runtime.Atn
             for (int i_1 = 0; i_1 < n; i_1++)
             {
                 Transition t = s.Transition(i_1);
-                if (t is RuleTransition ruleTransition)
+                if (t is RuleTransition)
                 {
+                    RuleTransition ruleTransition = (RuleTransition)t;
                     if (calledRuleStack.Get(ruleTransition.ruleIndex))
                     {
                         continue;

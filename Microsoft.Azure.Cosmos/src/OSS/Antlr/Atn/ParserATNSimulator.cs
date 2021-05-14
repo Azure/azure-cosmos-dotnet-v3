@@ -2124,12 +2124,14 @@ namespace Antlr4.Runtime.Atn
 				if (c.state.NumberOfTransitions > 0)
 				{
 					Transition t = c.state.Transition(0);
-					if (t is AtomTransition at)
+					if (t is AtomTransition)
 					{
+						AtomTransition at = (AtomTransition)t;
 						trans = "Atom " + GetTokenName(at.token);
 					}
-					else if (t is SetTransition st)
+					else if (t is SetTransition)
 					{
+						SetTransition st = (SetTransition)t;
 						bool not = st is NotSetTransition;
 						trans = (not ? "~" : "") + "Set " + st.set.ToString();
 					}

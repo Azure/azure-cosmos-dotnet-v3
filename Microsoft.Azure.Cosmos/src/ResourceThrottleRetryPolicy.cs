@@ -48,8 +48,9 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            if (exception is DocumentClientException dce)
+            if (exception is DocumentClientException)
             {
+                DocumentClientException dce = (DocumentClientException)exception;
                 if (!this.IsValidThrottleStatusCode(dce.StatusCode))
                 {
                     DefaultTrace.TraceError(

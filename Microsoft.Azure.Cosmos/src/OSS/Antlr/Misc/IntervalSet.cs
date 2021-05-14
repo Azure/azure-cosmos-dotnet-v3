@@ -206,8 +206,9 @@ namespace Antlr4.Runtime.Misc
             {
                 return this;
             }
-            if (set is Antlr4.Runtime.Misc.IntervalSet other)
+            if (set is Antlr4.Runtime.Misc.IntervalSet)
             {
+                Antlr4.Runtime.Misc.IntervalSet other = (Antlr4.Runtime.Misc.IntervalSet)set;
                 // walk set and add each interval
                 int n = other.intervals.Count;
                 for (int i = 0; i < n; i++)
