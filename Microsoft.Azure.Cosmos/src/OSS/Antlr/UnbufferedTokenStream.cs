@@ -265,9 +265,9 @@ namespace Antlr4.Runtime
             {
                 tokens = Arrays.CopyOf(tokens, tokens.Length * 2);
             }
-            if (t is IWritableToken)
+            if (t is IWritableToken iWritableToken)
             {
-                ((IWritableToken)t).TokenIndex = GetBufferStartIndex() + n;
+                iWritableToken.TokenIndex = GetBufferStartIndex() + n;
             }
             tokens[n++] = t;
         }

@@ -265,9 +265,8 @@ namespace Antlr4.Runtime
             // what token with ttype have we found?
             foreach (IParseTree o in children)
             {
-                if (o is ITerminalNode)
+                if (o is ITerminalNode tnode)
                 {
-                    ITerminalNode tnode = (ITerminalNode)o;
                     IToken symbol = tnode.Symbol;
                     if (symbol.Type == ttype)
                     {
@@ -295,9 +294,8 @@ namespace Antlr4.Runtime
             List<ITerminalNode> tokens = null;
             foreach (IParseTree o in children)
             {
-                if (o is ITerminalNode)
+                if (o is ITerminalNode tnode)
                 {
-                    ITerminalNode tnode = (ITerminalNode)o;
                     IToken symbol = tnode.Symbol;
                     if (symbol.Type == ttype)
                     {

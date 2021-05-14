@@ -241,9 +241,9 @@ namespace Antlr4.Runtime
             for (int i = 0; i < n; i++)
             {
                 IToken t = _tokenSource.NextToken();
-                if (t is IWritableToken)
+                if (t is IWritableToken iWritableToken)
                 {
-                    ((IWritableToken)t).TokenIndex = tokens.Count;
+                    iWritableToken.TokenIndex = tokens.Count;
                 }
                 tokens.Add(t);
                 if (t.Type == TokenConstants.EOF)

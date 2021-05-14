@@ -87,9 +87,9 @@ namespace Antlr4.Runtime.Tree
         {
             if (ruleNames != null)
             {
-                if (t is RuleContext)
+                if (t is RuleContext ruleContext)
                 {
-                    int ruleIndex = ((RuleContext)t).RuleIndex;
+                    int ruleIndex = ruleContext.RuleIndex;
                     string ruleName = ruleNames[ruleIndex];
 					int altNumber = ((RuleContext)t).getAltNumber();
 					if ( altNumber!=Atn.ATN.INVALID_ALT_NUMBER ) {
@@ -105,9 +105,9 @@ namespace Antlr4.Runtime.Tree
                     }
                     else
                     {
-                        if (t is ITerminalNode)
+                        if (t is ITerminalNode iTerminalNode)
                         {
-                            IToken symbol = ((ITerminalNode)t).Symbol;
+                            IToken symbol = iTerminalNode.Symbol;
                             if (symbol != null)
                             {
                                 string s = symbol.Text;
@@ -119,9 +119,9 @@ namespace Antlr4.Runtime.Tree
             }
             // no recog for rule names
             object payload = t.Payload;
-            if (payload is IToken)
+            if (payload is IToken iToken)
             {
-                return ((IToken)payload).Text;
+                return iToken.Text;
             }
             return t.Payload.ToString();
         }

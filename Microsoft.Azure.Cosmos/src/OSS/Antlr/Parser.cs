@@ -604,9 +604,8 @@ namespace Antlr4.Runtime
             if (((ITokenStream)InputStream) != null)
             {
                 ITokenSource tokenSource = ((ITokenStream)InputStream).TokenSource;
-                if (tokenSource is Lexer)
+                if (tokenSource is Lexer lexer)
                 {
-                    Lexer lexer = (Lexer)tokenSource;
                     return CompileParseTreePattern(pattern, patternRuleIndex, lexer);
                 }
             }
