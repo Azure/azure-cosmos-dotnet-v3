@@ -62,7 +62,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 catch (CosmosObjectDisposedException e) 
                 { 
-                    Assert.IsTrue(e.Message.Contains($"CosmosClient Endpoint: https://localtestcosmos.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)};  Disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};"));
+                    string expectedMessage = $"Cannot access a disposed 'CosmosClient'. Follow best practices and use the CosmosClient as a singleton." +
+                        $" CosmosClient was disposed at: {cosmosClient.DisposedDateTimeUtc.Value.ToString("o", CultureInfo.InvariantCulture)}; CosmosClient Endpoint: https://localtestcosmos.documents.azure.com/; Created at: {cosmosClient.ClientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}; UserAgent: {userAgent};";
+                    Assert.IsTrue(e.Message.Contains(expectedMessage));
                     string diagnostics = e.Diagnostics.ToString();
                     Assert.IsNotNull(diagnostics);
                     Assert.IsFalse(diagnostics.Contains("NoOp"));

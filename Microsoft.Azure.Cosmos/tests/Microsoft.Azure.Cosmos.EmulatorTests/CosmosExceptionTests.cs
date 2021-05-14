@@ -42,13 +42,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Container containerWithFailure = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
 
             requestHandlerHelper.UpdateRequestMessage = (request) => throw new ObjectDisposedException("Mock ObjectDisposedException");
-            await this.CheckForTracesAsync<ObjectDisposedException>(containerWithFailure, messageContainsDiagnostics: false);
+            await this.CheckForTracesAsync<ObjectDisposedException>(containerWithFailure, isClientDisposed: false);
+
+            cosmosClient.Dispose();
+            requestHandlerHelper.UpdateRequestMessage = (request) => throw new ObjectDisposedException("Mock ObjectDisposedException");
+            await this.CheckForTracesAsync<ObjectDisposedException>(containerWithFailure, isClientDisposed: true);
         }
 
 
         private async Task CheckForTracesAsync<ExceptionType>(
             Container container,
-            bool messageContainsDiagnostics) where ExceptionType : Exception
+            bool isClientDisposed) where ExceptionType : Exception
         {
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
 
@@ -62,15 +66,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ExceptionType e)
             {
-                if (messageContainsDiagnostics)
+                if (isClientDisposed)
                 {
-                    Assert.IsTrue(e.Message.Contains("Client Configuration"));
+                    Assert.IsTrue(e.Message.Contains("Cannot access a disposed 'CosmosClient'. Please make sure to follow best practices and use the CosmosClient as a singleton."));
                 }
                 else
                 {
-                    Assert.IsFalse(e.Message.Contains("CosmosDiagnostics"));
+                    Assert.IsTrue(e.Message.Contains("The CosmosClient is still active and NOT disposed of. CosmosClient Endpoint:"));
                 }
 
+                Assert.IsFalse(e.Message.Contains("CosmosDiagnostics"));
                 Assert.IsTrue(e.ToString().Contains("Client Configuration"));
             }
         }
