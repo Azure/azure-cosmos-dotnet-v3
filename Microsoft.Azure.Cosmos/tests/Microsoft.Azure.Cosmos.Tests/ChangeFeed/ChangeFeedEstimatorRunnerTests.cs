@@ -160,6 +160,54 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
+        [TestMethod]
+        public async Task StartAsync_ThrowsIfStartedTwice()
+        {
+            static Task estimationDelegate(long estimation, CancellationToken token)
+            {
+                return Task.CompletedTask;
+            }
+
+            Mock<DocumentServiceLeaseStoreManager> leaseStoreManager = new Mock<DocumentServiceLeaseStoreManager>();
+            leaseStoreManager.Setup(l => l.LeaseContainer).Returns(Mock.Of<DocumentServiceLeaseContainer>);
+            leaseStoreManager.Setup(l => l.LeaseManager).Returns(Mock.Of<DocumentServiceLeaseManager>);
+            leaseStoreManager.Setup(l => l.LeaseStore).Returns(Mock.Of<DocumentServiceLeaseStore>);
+            leaseStoreManager.Setup(l => l.LeaseCheckpointer).Returns(Mock.Of<DocumentServiceLeaseCheckpointer>);
+
+            ChangeFeedEstimatorRunner estimator = null;
+            try
+            {
+                estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
+                estimator.ApplyBuildConfiguration(
+                    leaseStoreManager.Object,
+                    null,
+                    "instanceName",
+                    new ChangeFeedLeaseOptions(),
+                    new ChangeFeedProcessorOptions(),
+                    ChangeFeedEstimatorRunnerTests.GetMockedContainer("monitored"));
+
+                Mock<FeedResponse<ChangeFeedProcessorState>> mockedResponse = new Mock<FeedResponse<ChangeFeedProcessorState>>();
+                mockedResponse.Setup(r => r.Count).Returns(1);
+                mockedResponse.Setup(r => r.GetEnumerator()).Returns(new List<ChangeFeedProcessorState>() { new ChangeFeedProcessorState(string.Empty, 0, string.Empty) }.GetEnumerator());
+
+                Mock<FeedIterator<ChangeFeedProcessorState>> mockedIterator = new Mock<FeedIterator<ChangeFeedProcessorState>>();
+                mockedIterator.Setup(i => i.ReadNextAsync(It.IsAny<CancellationToken>())).ReturnsAsync(mockedResponse.Object);
+
+                remainingWorkEstimator.Setup(e => e.GetCurrentStateIterator(It.IsAny<ChangeFeedEstimatorRequestOptions>())).Returns(mockedIterator.Object);
+
+                await estimator.StartAsync();
+
+                await Assert.ThrowsExceptionAsync<InvalidOperationException>(() => estimator.StartAsync());
+            }
+            finally
+            {
+                if (estimator != null)
+                {
+                    await estimator.StopAsync();
+                }
+            }
+        }
+
         private static ChangeFeedEstimatorRunner CreateEstimator(ChangesEstimationHandler estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator)
         {
             remainingWorkEstimator = new Mock<ChangeFeedEstimator>();
