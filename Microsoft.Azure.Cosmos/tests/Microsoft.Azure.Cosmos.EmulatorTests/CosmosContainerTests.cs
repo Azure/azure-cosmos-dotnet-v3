@@ -98,12 +98,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerProperties cp = new ContainerProperties()
             {
                 Id = "NonMigrationContainer",
-                PartitionKeyPath = "/pk",
-                IndexingPolicy = new Cosmos.IndexingPolicy()
-                {
-                    Automatic = false,
-                },
-                AnalyticalStoreTimeToLiveInSeconds = 10
+                PartitionKeyPath = "/pk"
             };
 
             ContainerResponse response = await this.cosmosDatabase.CreateContainerAsync(cp);
