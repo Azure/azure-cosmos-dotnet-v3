@@ -245,16 +245,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Simulate a race condition which results in a 409
                     return CosmosExceptionFactory.Create(
                         statusCode: HttpStatusCode.Conflict,
-                        subStatusCode: default,
                         message: "Fake 409 conflict",
                         stackTrace: string.Empty,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: response.Headers.RequestCharge,
-                        retryAfter: default,
                         headers: response.Headers,
                         error: default,
                         innerException: default,
-                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
+                        trace: request.Trace).ToCosmosResponseMessage(request);
                 }
 
                 return response;
@@ -420,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cekProperties.ResourceId);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata("metadataName", "metadataValue"),
+                new EncryptionKeyWrapMetadata("custom", "metadataName", "metadataValue"),
                 cekProperties.EncryptionKeyWrapMetadata);
 
             // Use a different client instance to avoid (unintentional) cache impact
@@ -437,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cekProperties.ResourceId);
 
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata("metadataName", "updatedMetadataValue"),
+                new EncryptionKeyWrapMetadata("custom", "metadataName", "updatedMetadataValue"),
                 cekProperties.EncryptionKeyWrapMetadata);
 
             // Use a different client instance to avoid (unintentional) cache impact
@@ -458,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 rngCsp.GetBytes(rawCek);
             }
 
-            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("metadataName", "metadataValue"));
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("custom", "metadataName", "metadataValue"));
 
             ClientEncryptionKeyResponse cekResponse = await databaseCore.CreateClientEncryptionKeyAsync(cekProperties);
 
@@ -486,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 rngCsp.GetBytes(rawCek);
             }
 
-            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("metadataName", "updatedMetadataValue"));
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek, new EncryptionKeyWrapMetadata("custom", "metadataName", "updatedMetadataValue"));
 
             ClientEncryptionKeyResponse cekResponse = await cek.ReplaceAsync(cekProperties);
             Assert.AreEqual(HttpStatusCode.OK, cekResponse.StatusCode);
@@ -517,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 rngCsp.GetBytes(rawCek1);
             }
 
-            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek1, new EncryptionKeyWrapMetadata("metadataName", "metadataValue"));
+            ClientEncryptionKeyProperties cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek1, new EncryptionKeyWrapMetadata("custom", "metadataName", "metadataValue"));
 
             ClientEncryptionKeyResponse cekResponse = await databaseCore.CreateClientEncryptionKeyAsync(cekProperties);
 
@@ -532,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 rngCsp.GetBytes(rawCek2);
             }
 
-            cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek2, new EncryptionKeyWrapMetadata("metadataName", "metadataValue"));
+            cekProperties = new ClientEncryptionKeyProperties(cekId, "AEAD_AES_256_CBC_HMAC_SHA256", rawCek2, new EncryptionKeyWrapMetadata("custom", "metadataName", "metadataValue"));
 
             cekResponse = await databaseCore.CreateClientEncryptionKeyAsync(cekProperties);
 
@@ -556,6 +552,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 readDekIds.Add(clientEncryptionKeyProperties.Id);
                 Assert.AreEqual("AEAD_AES_256_CBC_HMAC_SHA256", clientEncryptionKeyProperties.EncryptionAlgorithm);
+                Assert.AreEqual(cekProperties.EncryptionKeyWrapMetadata.Type, clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Type);
                 Assert.AreEqual(cekProperties.EncryptionKeyWrapMetadata.Name, clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Name);
                 Assert.AreEqual(cekProperties.EncryptionKeyWrapMetadata.Value, clientEncryptionKeyProperties.EncryptionKeyWrapMetadata.Value);
             }

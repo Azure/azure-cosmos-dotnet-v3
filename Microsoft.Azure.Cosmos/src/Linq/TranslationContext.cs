@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System;
     using System.Collections.Generic;
     using System.Linq.Expressions;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using static Microsoft.Azure.Cosmos.Linq.ExpressionToSql;
     using static Microsoft.Azure.Cosmos.Linq.FromParameterBindings;
@@ -63,14 +64,14 @@ namespace Microsoft.Azure.Cosmos.Linq
             this.subqueryBindingStack = new Stack<SubqueryBinding>();
         }
 
-        public TranslationContext(CosmosSerializationOptions serializationOptions, IDictionary<object, string> parameters = null)
+        public TranslationContext(CosmosLinqSerializerOptions linqSerializerOptions, IDictionary<object, string> parameters = null)
             : this()
         {
-            this.serializationOptions = serializationOptions;
+            this.linqSerializerOptions = linqSerializerOptions;
             this.parameters = parameters;
         }
 
-        public CosmosSerializationOptions serializationOptions;
+        public CosmosLinqSerializerOptions linqSerializerOptions;
 
         public Expression LookupSubstitution(ParameterExpression parameter)
         {

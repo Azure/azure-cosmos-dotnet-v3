@@ -24,12 +24,18 @@
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 
+	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
+		<PackageReference Include="Microsoft.Azure.Cosmos" Version="3.19.0-preview" />
+	</ItemGroup>
+
+	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+		<ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+	</ItemGroup>
+	
   <ItemGroup>
-     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.0.3" />
-     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.17.0-preview" />
      <PackageReference Include="Azure.Core" Version="1.3.0" />
      <PackageReference Include="Azure.Identity" Version="1.1.1" />
-     <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="0.1.0-pre" />
+     <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="0.2.0-pre" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
   </ItemGroup>
 

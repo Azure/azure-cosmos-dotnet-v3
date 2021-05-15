@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken);
 
         public abstract Task<IReadOnlyList<IReadOnlyList<string>>> GetPartitionKeyPathTokensAsync(
+            ITrace trace,
             CancellationToken cancellationToken = default);
 
         public abstract Task<Documents.Routing.PartitionKeyInternal> GetNonePartitionKeyValueAsync(
@@ -125,6 +126,13 @@ namespace Microsoft.Azure.Cosmos
         }
 
 #if !INTERNAL
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
+#if !PREVIEW
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
@@ -139,13 +147,6 @@ namespace Microsoft.Azure.Cosmos
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
-
-#if !PREVIEW
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
         public abstract FeedIterator GetChangeFeedStreamIterator(
@@ -173,6 +174,44 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+
+        public delegate Task ChangeFeedHandler<T>(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> changes,
+            CancellationToken cancellationToken);
+
+        public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<T> changes,
+            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            CancellationToken cancellationToken);
+
+        public delegate Task ChangeFeedStreamHandler(
+            ChangeFeedProcessorContext context,
+            Stream changes,
+            CancellationToken cancellationToken);
+
+        public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
+            ChangeFeedProcessorContext context,
+            Stream changes,
+            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            CancellationToken cancellationToken);
+
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangeFeedHandler<T> onChangesDelegate);
+
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
+            string processorName,
+            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
+
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
+            string processorName,
+            ChangeFeedStreamHandler onChangesDelegate);
+
+        public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
+            string processorName,
+            ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
 #endif
 
         public abstract class TryExecuteQueryResult

@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -146,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 else if (PhysicalPartitionKeyRangeIdProvided(this))
                 {
                     CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                    ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                    ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
 
                     request.RouteTo(new PartitionKeyRangeIdentity(collection.ResourceId, base.PartitionKeyRangeId));
                     feedRespose = await this.ExecuteRequestAsync(request, retryPolicyInstance, cancellationToken);
@@ -159,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Query
                     {
                         // Get the routing map provider
                         CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
-                        ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                        ContainerProperties collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
                         QueryPartitionProvider queryPartitionProvider = await this.Client.GetQueryPartitionProviderAsync();
                         IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
@@ -182,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query
                         if (request.IsNameBased && queryRoutingInfo == null)
                         {
                             request.ForceNameCacheRefresh = true;
-                            collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                            collection = await collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
                             queryRoutingInfo = await this.TryGetTargetPartitionKeyRangeAsync(
                                 request,
                                 collection,
@@ -209,7 +210,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             providedPartitionKeyRanges: queryRoutingInfo.Item2,
                             routingMapProvider: routingMapProvider,
                             collectionRid: collection.ResourceId,
-                            resolvedRangeInfo: queryRoutingInfo.Item1))
+                            resolvedRangeInfo: queryRoutingInfo.Item1,
+                            trace: NoOpTrace.Singleton))
                         {
                             // Collection to which this request was resolved doesn't exist.
                             // Retry policy will refresh the cache and return NotFound.
@@ -306,15 +308,16 @@ namespace Microsoft.Azure.Cosmos.Query
                     }
 
                     providedRanges = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
-                        this.QuerySpec,
-                        enableCrossPartitionQuery,
-                        false,
-                        this.isContinuationExpected,
-                        false, //haslogicalpartitionkey
-                        partitionKeyDefinition,
-                        queryPartitionProvider,
-                        version,
-                        out QueryInfo queryInfo);
+                        querySpec: this.QuerySpec,
+                        enableCrossPartitionQuery: enableCrossPartitionQuery,
+                        parallelizeCrossPartitionQuery: false,
+                        isContinuationExpected: this.isContinuationExpected,
+                        hasLogicalPartitionKey: false,
+                        allowDCount: false,
+                        partitionKeyDefinition: partitionKeyDefinition,
+                        queryPartitionProvider: queryPartitionProvider,
+                        clientApiVersion: version,
+                        out QueryInfo _);
                 }
                 else if (request.Properties != null && request.Properties.TryGetValue(
                     WFConstants.BackendHeaders.EffectivePartitionKeyString,
@@ -354,7 +357,8 @@ namespace Microsoft.Azure.Cosmos.Query
                     routingMapProvider,
                     collection.ResourceId,
                     rangeFromContinuationToken,
-                    suppliedTokens);
+                    suppliedTokens,
+                    NoOpTrace.Singleton);
 
             if (resolvedRangeInfo.ResolvedRange == null)
             {

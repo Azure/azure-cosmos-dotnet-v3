@@ -19,8 +19,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Encryption.KeyVaultAccessClientTests;
     using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
+
+#pragma warning disable CS0618 // Type or member is obsolete
 
     [TestClass]
     public class LegacyEncryptionTests
@@ -40,12 +41,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static CosmosDataEncryptionKeyProvider dekProvider;
         private static TestEncryptor encryptor;
 
-        private static byte[] rawDekForKeyVault;
-        private static Uri keyVaultKeyUri;
-        private static AzureKeyVaultKeyWrapMetadata azureKeyVaultKeyWrapMetadata;
-        private static AzureKeyVaultKeyWrapProvider azureKeyVaultKeyWrapProvider;
-        private static EncryptionTestsTokenCredentialFactory encryptionTestsTokenCredentialFactory;
-
         [ClassInitialize]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
         public static async Task ClassInitialize(TestContext context)
@@ -64,12 +59,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             LegacyEncryptionTests.itemContainer = await LegacyEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
             LegacyEncryptionTests.encryptionContainer = LegacyEncryptionTests.itemContainer.WithEncryptor(encryptor);
             LegacyEncryptionTests.dekProperties = await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, LegacyEncryptionTests.dekId);
-
-            LegacyEncryptionTests.rawDekForKeyVault = DataEncryptionKey.Generate(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
-            LegacyEncryptionTests.encryptionTestsTokenCredentialFactory = new EncryptionTestsTokenCredentialFactory();
-            LegacyEncryptionTests.azureKeyVaultKeyWrapProvider = new AzureKeyVaultKeyWrapProvider(encryptionTestsTokenCredentialFactory, new KeyClientTestFactory(), new CryptographyClientFactoryTestFactory());
-            keyVaultKeyUri = new Uri("https://testdemo1.vault.azure.net/keys/testkey1/47d306aeaae74baab294672354603ca3");
-            LegacyEncryptionTests.azureKeyVaultKeyWrapMetadata = new AzureKeyVaultKeyWrapMetadata(keyVaultKeyUri);
         }
 
         [ClassCleanup]
@@ -115,267 +104,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             {
                 Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
             }
-        }
-
-        /// <summary>
-        /// Validates UnWrapKey via KeyVault Wrap Provider.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        public async Task UnWrapKeyUsingKeyVault()
-        {
-            CancellationToken cancellationToken = default;
-            EncryptionKeyWrapResult wrappedKey = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, azureKeyVaultKeyWrapMetadata, cancellationToken);
-            byte[] wrappedDek = wrappedKey.WrappedDataEncryptionKey;
-            EncryptionKeyWrapMetadata wrappedKeyVaultMetaData = wrappedKey.EncryptionKeyWrapMetadata;
-            
-            EncryptionKeyUnwrapResult keyUnwrapResponse = await LegacyEncryptionTests.UnwrapDekKeyVaultAsync(wrappedDek, wrappedKeyVaultMetaData, cancellationToken);
-
-            Assert.IsNotNull(keyUnwrapResponse);
-            Assert.IsNotNull(keyUnwrapResponse.ClientCacheTimeToLive);
-            Assert.IsNotNull(keyUnwrapResponse.DataEncryptionKey);
-
-            CollectionAssert.AreEqual(rawDekForKeyVault, keyUnwrapResponse.DataEncryptionKey);
-        }
-
-        /// <summary>
-        /// Validates handling of PurgeProtection Settings.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]        
-        public async Task SetKeyVaultValidatePurgeProtectionAndSoftDeleteSettingsAsync()
-        {
-            CancellationToken cancellationToken = default;
-
-            KeyVaultAccessClient keyVaultAccessClient = new KeyVaultAccessClient(encryptionTestsTokenCredentialFactory, new KeyClientTestFactory(), new CryptographyClientFactoryTestFactory());
-
-            keyVaultKeyUri = new Uri("https://testdemo3.vault.azure.net/keys/testkey1/47d306aeaae74baab294672354603ca3");
-            AzureKeyVaultKeyWrapMetadata wrapKeyVaultMetaData = new AzureKeyVaultKeyWrapMetadata(keyVaultKeyUri);
-
-            KeyVaultKeyUriProperties.TryParse(new Uri(wrapKeyVaultMetaData.Value), out KeyVaultKeyUriProperties keyVaultUriProperties);
-            bool validatepurgeprotection = await keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken);
-
-            Assert.AreEqual(validatepurgeprotection, true);
-        }
-
-        /// <summary>
-        /// Validates handling of PurgeProtection Settings.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        public async Task NotSetKeyVaultValidatePurgeProtectionAndSoftDeleteSettingsAsync()
-        {
-            CancellationToken cancellationToken = default;
-
-            KeyVaultAccessClient keyVaultAccessClient = new KeyVaultAccessClient(encryptionTestsTokenCredentialFactory, new KeyClientTestFactory(), new CryptographyClientFactoryTestFactory());
-
-            Uri keyVaultKeyUriPurgeTest = new Uri("https://testdemo2.vault.azure.net/keys/testkey2/ad47829797dc46489223cc5da3cba3ca");
-            AzureKeyVaultKeyWrapMetadata wrapKeyVaultMetaData = new AzureKeyVaultKeyWrapMetadata(keyVaultKeyUriPurgeTest);
-            KeyVaultKeyUriProperties.TryParse(new Uri(wrapKeyVaultMetaData.Value), out KeyVaultKeyUriProperties keyVaultUriProperties);
-
-            bool validatepurgeprotection = await keyVaultAccessClient.ValidatePurgeProtectionAndSoftDeleteSettingsAsync(keyVaultUriProperties, cancellationToken);
-
-            Assert.AreEqual(validatepurgeprotection, false);
-        }
-
-        /// <summary>
-        /// Validates handling of Null Wrapped Key Returned from Key Vault
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException),
-        "ArgumentNullException when provided with null key.")]
-        public async Task ValidateNullWrappedKeyResult()
-        {
-            CancellationToken cancellationToken = default;
-            Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/testkey1/" + KeyVaultTestConstants.ValidateNullWrappedKey);
-            EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);           
-
-            await azureKeyVaultKeyWrapProvider.WrapKeyAsync(
-                rawDekForKeyVault,
-                invalidWrapMetadata,
-                cancellationToken);         
-        }
-
-        /// <summary>
-        /// Validates handling of Null Unwrapped Key from Key Vault
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException),
-        "ArgumentNullException when provided with null key.")]
-        public async Task ValidateNullUnwrappedKeyResult()
-        {
-            CancellationToken cancellationToken = default;
-            Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/testkey1/" + KeyVaultTestConstants.ValidateNullUnwrappedKey);
-            EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata("akv", keyUri.AbsoluteUri, algorithm: KeyVaultConstants.RsaOaep256);
-
-            EncryptionKeyWrapResult wrappedKey = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, azureKeyVaultKeyWrapMetadata, cancellationToken);
-            byte[] wrappedDek = wrappedKey.WrappedDataEncryptionKey;            
-
-            await azureKeyVaultKeyWrapProvider.UnwrapKeyAsync(
-               wrappedDek,
-               invalidWrapMetadata,
-               cancellationToken);            
-        }
-
-        /// <summary>
-        /// Validates Null Response from KeyVault
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException),
-        "ArgumentException Caught if KeyVault Responds with a Null Key")]
-        public async Task ValidateKeyClientReturnsNullKeyVaultResponse()
-        {
-            CancellationToken cancellationToken = default;
-            Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/" + KeyVaultTestConstants.ValidateNullKeyVaultKey + "/47d306aeaae74baab294672354603ca3");
-
-            EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);
-            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
-        }
-
-        /// <summary>
-        /// Validates handling of Wrapping of Dek.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        public async Task WrapKeyUsingKeyVault()
-        {
-            CancellationToken cancellationToken = default;
-            EncryptionKeyWrapResult keyWrapResponse = await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, azureKeyVaultKeyWrapMetadata, cancellationToken);
-
-            Assert.IsNotNull(keyWrapResponse);
-            Assert.IsNotNull(keyWrapResponse.EncryptionKeyWrapMetadata);
-            Assert.IsNotNull(keyWrapResponse.WrappedDataEncryptionKey);
-        }
-
-        /// <summary>
-        /// Validates handling of KeyClient returning a Request Failed.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(KeyVaultAccessException),
-        "ArgumentNullException Method catches and returns RequestFailed Exception KeyVaultAccess Client to throw inner exception")]
-        public async Task ValidateKeyClientReturnRequestFailed()
-        {
-            CancellationToken cancellationToken = default;
-            Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/" + KeyVaultTestConstants.ValidateRequestFailedEx + "/47d306aeaae74baab294672354603ca3");
-
-            EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);
-            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
-
-        }
-
-        /// <summary>
-        /// Integration validation of DEK Provider with KeyVault Wrap Provider.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        public async Task EncryptionCreateDekKeyVaultWrapProvider()
-        {
-            string dekId = "DekWithKeyVault";
-            DataEncryptionKeyProperties dekProperties = await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
-
-            Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix),
-                dekProperties.EncryptionKeyWrapMetadata);
-
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(azureKeyVaultKeyWrapProvider);
-            await dekProvider.InitializeAsync(LegacyEncryptionTests.database, LegacyEncryptionTests.keyContainer.Id);
-            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
-            Assert.AreEqual(dekProperties, readProperties);
-        }
-
-        /// <summary>
-        /// Validates handling of Null Key Passed to Wrap Provider.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException),
-        "ArgumentNullException when provided with null key.")]
-        public async Task WrapNullKeyUsingKeyVault()
-        {
-            CancellationToken cancellationToken = default;
-
-            await LegacyEncryptionTests.WrapDekKeyVaultAsync(null, azureKeyVaultKeyWrapMetadata, cancellationToken);
-        }
-
-        /// <summary>
-        /// Integration testing for Rewrapping Dek with KeyVault Wrap Provider.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        public async Task EncryptionRewrapDekWithKeyVaultWrapProvider()
-        {
-            string dekId = "randomDekKeyVault";
-            DataEncryptionKeyProperties dekProperties = await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
-            Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix),
-                dekProperties.EncryptionKeyWrapMetadata);
-
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await LegacyEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
-                dekId,
-                LegacyEncryptionTests.metadata2);
-
-            Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
-            dekProperties = LegacyEncryptionTests.VerifyDekResponse(
-                dekResponse,
-                dekId);
-            Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata2.Value + LegacyEncryptionTests.metadataUpdateSuffix),
-                dekProperties.EncryptionKeyWrapMetadata);
-
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(azureKeyVaultKeyWrapProvider);
-            await dekProvider.InitializeAsync(LegacyEncryptionTests.database, LegacyEncryptionTests.keyContainer.Id);
-            DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
-            Assert.AreEqual(dekProperties, readProperties);
-        }
-
-        /// <summary>
-        /// Validates handling of Incorrect Wrap Meta to Wrap Provider.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException),
-        "ArgumentException when provided with incorrect WrapMetaData TypeConstants")]
-        public async Task WrapKeyUsingKeyVaultInValidTypeConstants()
-        {
-            CancellationToken cancellationToken = default;
-            Uri keyUri = new Uri("https://testdemo.vault.azure.net/keys/testkey1/47d306aeaae74baab294672354603ca3");
-            EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "incorrectConstant", value: keyUri.AbsoluteUri);
-            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
-        }
-
-        /// <summary>
-        /// Simulates a KeyClient Constructor returning an ArgumentNullException.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentNullException),
-        "ArgumentNullException Method catches and returns NullException")]
-        public async Task ValidateKeyClientReturnNullArgument()
-        {
-            CancellationToken cancellationToken = default;
-			EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: null);
-            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
-        }
-
-        /// <summary>
-        /// Validate Azure Key Wrap Provider handling of Incorrect KeyVault Uris.
-        /// </summary>
-        /// <returns></returns>
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException),
-        "ArgumentException when provided with incorrect WrapMetaData Value")]
-        public async Task WrapKeyUsingKeyVaultInValidValue()
-        {
-            CancellationToken cancellationToken = default;
-            Uri keyUri = new Uri("https://testdemo.vault.azure.net/key/testkey1/47d306aeaae74baab294672354603ca3");			
-            EncryptionKeyWrapMetadata invalidWrapMetadata = new EncryptionKeyWrapMetadata(type: "akv", value: keyUri.AbsoluteUri);
-            await LegacyEncryptionTests.WrapDekKeyVaultAsync(rawDekForKeyVault, invalidWrapMetadata, cancellationToken);
-
-        }
+       }
 
         [TestMethod]
         public async Task EncryptionRewrapDek()
@@ -679,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await this.ValidateChangeFeedIteratorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
 
             // change feed processor
-            // await this.ValidateChangeFeedProcessorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await this.ValidateChangeFeedProcessorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
         }
 
         [TestMethod]
@@ -702,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             FeedIterator<DecryptableItem> queryResponseIterator = LegacyEncryptionTests.encryptionContainer.GetItemQueryIterator<DecryptableItem>(query);
             FeedResponse<DecryptableItem> readDocsLazily = await queryResponseIterator.ReadNextAsync();
-            await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+            await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
 
             // validate changeFeed handling
             FeedIterator<DecryptableItem> changeIterator = LegacyEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
@@ -716,7 +445,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     readDocsLazily = await changeIterator.ReadNextAsync();
                     if (readDocsLazily.Resource != null)
                     {
-                        await this.ValidateLazyDecryptionResponse(readDocsLazily, dek2);
+                        await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
                     }
                 }
                 catch (CosmosException ex)
@@ -726,7 +455,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 }
             }
 
-            // await this.ValidateChangeFeedProcessorResponse(LegacyEncryptionTests.itemContainerCore, testDoc1, testDoc2, false);
+            // validate changeFeedProcessor handling
+            Container leaseContainer = await LegacyEncryptionTests.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leasesContainer", partitionKeyPath: "/id"));
+
+            List<DecryptableItem> changeFeedReturnedDocs = new List<DecryptableItem>();
+            ChangeFeedProcessor cfp = LegacyEncryptionTests.encryptionContainer.GetChangeFeedProcessorBuilder(
+                "testCFPFailure",
+                (IReadOnlyCollection<DecryptableItem> changes, CancellationToken cancellationToken) =>
+                {
+                    changeFeedReturnedDocs.AddRange(changes);
+                    return Task.CompletedTask;
+                })
+                .WithInstanceName("dummy")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
+                .Build();
+
+            await cfp.StartAsync();
+            await Task.Delay(2000);
+            await cfp.StopAsync();
+
+            Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
+            await this.ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
+
             LegacyEncryptionTests.encryptor.FailDecryption = false;
         }
 
@@ -1171,6 +923,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToReplace);
         }
 
+        [TestMethod]
+        public async Task EncryptionTransactionalBatchConflictResponse()
+        {
+            string partitionKey = "thePK";
+            string dek1 = LegacyEncryptionTests.dekId;
+
+            ItemResponse<TestDoc> doc1CreatedResponse = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToCreateAgain = doc1CreatedResponse.Resource;
+            doc1ToCreateAgain.NonSensitive = Guid.NewGuid().ToString();
+            doc1ToCreateAgain.Sensitive = Guid.NewGuid().ToString();
+
+            TransactionalBatchResponse batchResponse = await LegacyEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreateAgain, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .ExecuteAsync();
+
+            Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
+            Assert.AreEqual(1, batchResponse.Count);
+        }
+        
         private static async Task ValidateSprocResultsAsync(Container container, TestDoc expectedDoc)
         {
             string sprocId = Guid.NewGuid().ToString();
@@ -1374,6 +1145,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc1,
             TestDoc testDoc2)
         {
+            Container leaseContainer = await LegacyEncryptionTests.database.CreateContainerIfNotExistsAsync(
+                new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
+
             List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
             ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
                 "testCFP",
@@ -1383,8 +1157,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     changeFeedReturnedDocs.AddRange(changes);
                     return Task.CompletedTask;
                 })
-                //.WithInMemoryLeaseContainer()
-                //.WithStartFromBeginning()
+                .WithInstanceName("random")
+                .WithLeaseContainer(leaseContainer)
+                .WithStartTime(DateTime.UtcNow.AddMinutes(-5))
                 .Build();
 
             await cfp.StartAsync();
@@ -1407,17 +1182,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         private async Task ValidateLazyDecryptionResponse(
-            FeedResponse<DecryptableItem> readDocsLazily,
+            IEnumerator<DecryptableItem> readDocsLazily,
             string failureDek)
         {
             int decryptedDoc = 0;
             int failedDoc = 0;
 
-            foreach (DecryptableItem doc in readDocsLazily)
+            while (readDocsLazily.MoveNext())
             {
                 try
                 {
-                    (_, _) = await doc.GetItemAsync<dynamic>();
+                    (_, _) = await readDocsLazily.Current.GetItemAsync<dynamic>();
                     decryptedDoc++;
                 }
                 catch (EncryptionException encryptionException)
@@ -1688,26 +1463,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 dekId);
         }
 
-        private static async Task<EncryptionKeyWrapResult> WrapDekKeyVaultAsync(byte[] rawDek, EncryptionKeyWrapMetadata wrapMetaData, CancellationToken cancellationToken)
-        {            
-            EncryptionKeyWrapResult keyWrapResponse = await azureKeyVaultKeyWrapProvider.WrapKeyAsync(                
-                rawDek,
-                wrapMetaData,
-                cancellationToken);
-
-            return keyWrapResponse;
-        }
-
-        private static async Task<EncryptionKeyUnwrapResult> UnwrapDekKeyVaultAsync(byte[] wrappedDek, EncryptionKeyWrapMetadata unwrapMetaData, CancellationToken cancellationToken)
-        {
-            EncryptionKeyUnwrapResult keyUnwrapResponse = await azureKeyVaultKeyWrapProvider.UnwrapKeyAsync(
-                wrappedDek,
-                unwrapMetaData,
-                cancellationToken);
-
-            return keyUnwrapResponse;
-        }
-
         private static DataEncryptionKeyProperties VerifyDekResponse(
             ItemResponse<DataEncryptionKeyProperties> dekResponse,
             string dekId)
@@ -1895,14 +1650,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }        
 
-        internal class EncryptionTestsTokenCredentialFactory : KeyVaultTokenCredentialFactory
-        {
-            public override async ValueTask<TokenCredential> GetTokenCredentialAsync(Uri keyVaultKeyUri, CancellationToken cancellationToken)
-            {
-                return await Task.FromResult(new DefaultAzureCredential());
-            }        
-        }
-
         internal class CustomSerializer : CosmosSerializer
         {
             private readonly JsonSerializer serializer = new JsonSerializer();
@@ -1938,4 +1685,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
     }
+
+#pragma warning restore CS0618 // Type or member is obsolete
 }

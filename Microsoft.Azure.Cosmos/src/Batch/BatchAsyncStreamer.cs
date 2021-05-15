@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly SemaphoreSlim limiter;
         private readonly BatchPartitionMetric oldPartitionMetric;
         private readonly BatchPartitionMetric partitionMetric;
+        private readonly CosmosClientContext clientContext;
 
         private volatile BatchAsyncBatcher currentBatcher;
         private TimerWheelTimer currentTimer;
@@ -57,7 +58,8 @@ namespace Microsoft.Azure.Cosmos
             int maxDegreeOfConcurrency,
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
-            BatchAsyncBatcherRetryDelegate retrier)
+            BatchAsyncBatcherRetryDelegate retrier,
+            CosmosClientContext clientContext)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -100,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
             this.retrier = retrier;
             this.timerWheel = timerWheel;
             this.serializerCore = serializerCore;
+            this.clientContext = clientContext;
             this.currentBatcher = this.CreateBatchAsyncBatcher();
             this.ResetTimer();
 
@@ -150,13 +153,16 @@ namespace Microsoft.Azure.Cosmos
         private void ResetTimer()
         {
             this.currentTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.batchTimeout);
-            this.timerTask = this.currentTimer.StartTimerAsync().ContinueWith((task) =>
+            this.timerTask = this.GetTimerTaskAsync();
+        }
+
+        private async Task GetTimerTaskAsync()
+        {
+            await this.currentTimer.StartTimerAsync();
+            if (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                if (task.IsCompleted)
-                {
-                    this.DispatchTimer();
-                }
-            }, this.cancellationTokenSource.Token);
+                this.DispatchTimer();
+            }
         }
 
         private void StartCongestionControlTimer()
@@ -204,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
 
         private BatchAsyncBatcher CreateBatchAsyncBatcher()
         {
-            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.serializerCore, this.executor, this.retrier);
+            return new BatchAsyncBatcher(this.maxBatchOperationCount, this.maxBatchByteSize, this.serializerCore, this.executor, this.retrier, this.clientContext);
         }
 
         private async Task RunCongestionControlAsync()

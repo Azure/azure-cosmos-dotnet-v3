@@ -29,11 +29,13 @@ namespace Microsoft.Azure.Cosmos
         internal override async Task<List<Documents.Routing.Range<string>>> GetEffectiveRangesAsync(
             IRoutingMapProvider routingMapProvider,
             string containerRid,
-            Documents.PartitionKeyDefinition partitionKeyDefinition)
+            Documents.PartitionKeyDefinition partitionKeyDefinition,
+            ITrace trace)
         {
             Documents.PartitionKeyRange pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                 collectionResourceId: containerRid,
                 partitionKeyRangeId: this.PartitionKeyRangeId,
+                trace: trace,
                 forceRefresh: false);
 
             if (pkRange == null)
@@ -42,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
                 pkRange = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(
                     collectionResourceId: containerRid,
                     partitionKeyRangeId: this.PartitionKeyRangeId,
+                    trace: trace,
                     forceRefresh: true);
             }
 
@@ -49,13 +52,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 throw CosmosExceptionFactory.Create(
                     statusCode: HttpStatusCode.Gone,
-                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
                     message: $"The PartitionKeyRangeId: \"{this.PartitionKeyRangeId}\" is not valid for the current container {containerRid} .",
                     stackTrace: string.Empty,
-                    activityId: string.Empty,
-                    requestCharge: 0,
-                    retryAfter: null,
-                    headers: null,
+                    headers: new Headers()
+                    {
+                        SubStatusCode = SubStatusCodes.PartitionKeyRangeGone,
+                    },
                     error: null,
                     innerException: null,
                     trace: NoOpTrace.Singleton);
@@ -68,7 +70,8 @@ namespace Microsoft.Azure.Cosmos
             IRoutingMapProvider routingMapProvider,
             string containerRid,
             Documents.PartitionKeyDefinition partitionKeyDefinition,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace trace)
         {
             IEnumerable<string> partitionKeyRanges = new List<string>() { this.PartitionKeyRangeId };
             return Task.FromResult(partitionKeyRanges);

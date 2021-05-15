@@ -612,16 +612,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // Simulate a race condition which results in a 409
                     return CosmosExceptionFactory.Create(
                         statusCode: HttpStatusCode.Conflict,
-                        subStatusCode: default,
                         message: "Fake 409 conflict",
                         stackTrace: string.Empty,
-                        activityId: Guid.NewGuid().ToString(),
-                        requestCharge: response.Headers.RequestCharge,
-                        retryAfter: default,
                         headers: response.Headers,
                         error: default,
                         innerException: default,
-                        trace: NoOpTrace.Singleton).ToCosmosResponseMessage(request);
+                        trace: request.Trace).ToCosmosResponseMessage(request);
                 }
 
                 return response;
@@ -1325,8 +1321,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ContainerCreationFailsWithUnknownClientEncryptionKey()
+        {
+            ClientEncryptionIncludedPath unknownKeyConfigured = new ClientEncryptionIncludedPath()
+            {
+                Path = "/",
+                ClientEncryptionKeyId = "unknownKey",
+                EncryptionType = "Deterministic",
+                EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+            };
+
+            Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath> { unknownKeyConfigured };
+            ClientEncryptionPolicy clientEncryptionPolicyId = new ClientEncryptionPolicy(paths);
+
+            ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyId };
+
+            try
+            {
+                await this.cosmosDatabase.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("Expected container creation should fail since client encryption policy is configured with unknown key.");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("ClientEncryptionKey with id '[unknownKey]' does not exist."));
+            }
+        }
+
+        [TestMethod]
         public async Task ClientEncryptionPolicyTest()
         {
+            DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.cosmosDatabase;
+            await TestCommon.CreateClientEncryptionKey("dekId1", databaseInlineCore);
+            await TestCommon.CreateClientEncryptionKey("dekId2", databaseInlineCore);
+
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
             Collection<ClientEncryptionIncludedPath> paths = new Collection<ClientEncryptionIncludedPath>()
@@ -1375,10 +1403,36 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+
+            // replace without updating CEP should be successful
+            readResponse.Resource.IndexingPolicy = new Cosmos.IndexingPolicy()
+            {
+                IndexingMode = Cosmos.IndexingMode.None,
+                Automatic = false
+            };
+
+            containerResponse = await container.ReplaceContainerAsync(readResponse.Resource);
+            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
+            Assert.AreEqual(Cosmos.IndexingMode.None, containerResponse.Resource.IndexingPolicy.IndexingMode);
+            Assert.IsFalse(containerResponse.Resource.IndexingPolicy.Automatic);
+
+            // update CEP and attempt replace
+            readResponse.Resource.ClientEncryptionPolicy = null;
+            try
+            {
+                await container.ReplaceContainerAsync(readResponse.Resource);
+
+                Assert.Fail("ReplaceCollection with update to ClientEncryptionPolicy should have failed.");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("'clientEncryptionPolicy' cannot be changed as part of collection replace operation."));
+            }
         }
 
         [TestMethod]
-        public void ClientEncryptionPolicyFailureTest()
+        public async Task ClientEncryptionPolicyFailureTest()
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
@@ -1443,6 +1497,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("Duplicate Path found."));
+            }
+
+            try
+            {
+                Collection<ClientEncryptionIncludedPath> pathsToEncryptWithPartitionKey = new Collection<ClientEncryptionIncludedPath>()
+                {
+                    new ClientEncryptionIncludedPath()
+                    {
+                        Path = partitionKeyPath,
+                        ClientEncryptionKeyId = "dekId1",
+                        EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                        EncryptionType = "Randomized"
+                    },
+                };
+
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey)
+                };
+
+                await this.cosmosDatabase.CreateContainerAsync(setting);
+                Assert.Fail("Creating container should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Paths which are part of the partition key may not be included in the ClientEncryptionPolicy."));
             }
         }
 

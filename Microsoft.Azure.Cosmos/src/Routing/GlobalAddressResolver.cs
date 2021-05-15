@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Rntbd;
@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private const int MaxBackupReadRegions = 3;
 
         private readonly GlobalEndpointManager endpointManager;
+        private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly Protocol protocol;
         private readonly IAuthorizationTokenProvider tokenProvider;
         private readonly CollectionCache collectionCache;
@@ -37,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             Protocol protocol,
             IAuthorizationTokenProvider tokenProvider,
             CollectionCache collectionCache,
@@ -46,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CosmosHttpClient httpClient)
         {
             this.endpointManager = endpointManager;
+            this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
             this.collectionCache = collectionCache;
@@ -80,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             CancellationToken cancellationToken)
         {
             CollectionRoutingMap routingMap =
-                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken);
+                await this.routingMapProvider.TryLookupAsync(collection.ResourceId, null, null, cancellationToken, NoOpTrace.Singleton);
 
             if (routingMap == null)
             {
@@ -100,13 +103,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             await Task.WhenAll(tasks);
         }
 
-        public Task<PartitionAddressInformation> ResolveAsync(
+        public async Task<PartitionAddressInformation> ResolveAsync(
             DocumentServiceRequest request,
             bool forceRefresh,
             CancellationToken cancellationToken)
         {
             IAddressResolver resolver = this.GetAddressResolver(request);
-            return resolver.ResolveAsync(request, forceRefresh, cancellationToken);
+            PartitionAddressInformation partitionAddressInformation = await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
+
+            if (!this.partitionKeyRangeLocationCache.TryAddPartitionLevelLocationOverride(request))
+            {
+                return partitionAddressInformation;
+            }
+
+            resolver = this.GetAddressResolver(request);
+            return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
         public async Task UpdateAsync(
@@ -117,8 +128,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (AddressCacheToken cacheToken in addressCacheTokens)
             {
-                EndpointCache endpointCache;
-                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out endpointCache))
+                if (this.addressCacheByEndpoint.TryGetValue(cacheToken.ServiceEndpoint, out EndpointCache endpointCache))
                 {
                     tasks.Add(endpointCache.AddressCache.UpdateAsync(cacheToken.PartitionKeyRangeIdentity, cancellationToken));
                 }
@@ -196,8 +206,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (endpoints.Count > 0)
                     {
-                        EndpointCache removedEntry;
-                        this.addressCacheByEndpoint.TryRemove(endpoints.Dequeue(), out removedEntry);
+                        this.addressCacheByEndpoint.TryRemove(endpoints.Dequeue(), out EndpointCache removedEntry);
                     }
                     else
                     {

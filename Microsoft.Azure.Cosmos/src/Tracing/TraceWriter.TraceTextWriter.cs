@@ -176,14 +176,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 writer.Write("Component");
                 writer.Write(space);
 
-#if INTERNAL
                 writer.Write(trace.CallerInfo.MemberName);
+
                 writer.Write('@');
-                writer.Write(trace.CallerInfo.FilePath.Split('\\').Last());
+                writer.Write(GetFileNameFromPath(trace.CallerInfo.FilePath));
                 writer.Write(':');
                 writer.Write(trace.CallerInfo.LineNumber);
                 writer.Write(space);
-#endif
 
                 writer.Write(trace.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture));
                 writer.Write(space);
@@ -322,12 +321,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 public void Visit(PointOperationStatisticsTraceDatum pointOperationStatisticsTraceDatum)
                 {
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine($"Activity ID: {pointOperationStatisticsTraceDatum.ActivityId}");
+                    stringBuilder.AppendLine($"Activity ID: {pointOperationStatisticsTraceDatum.ActivityId ?? "<null>"}");
                     stringBuilder.AppendLine($"Status Code: {pointOperationStatisticsTraceDatum.StatusCode}/{pointOperationStatisticsTraceDatum.SubStatusCode}");
                     stringBuilder.AppendLine($"Response Time: {pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture)}");
                     stringBuilder.AppendLine($"Request Charge: {pointOperationStatisticsTraceDatum.RequestCharge}");
-                    stringBuilder.AppendLine($"Request URI: {pointOperationStatisticsTraceDatum.RequestUri}");
-                    stringBuilder.AppendLine($"Session Tokens: {pointOperationStatisticsTraceDatum.RequestSessionToken} / {pointOperationStatisticsTraceDatum.ResponseSessionToken}");
+                    stringBuilder.AppendLine($"Request URI: {pointOperationStatisticsTraceDatum.RequestUri ?? "<null>"}");
+                    stringBuilder.AppendLine($"Session Tokens: {pointOperationStatisticsTraceDatum.RequestSessionToken ?? "<null>"} / {pointOperationStatisticsTraceDatum.ResponseSessionToken ?? "<null>"}");
                     if (pointOperationStatisticsTraceDatum.ErrorMessage != null)
                     {
                         stringBuilder.AppendLine($"Error Message: {pointOperationStatisticsTraceDatum.ErrorMessage}");
@@ -349,6 +348,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     Dictionary<Uri, int> uriAndCounts = new Dictionary<Uri, int>();
                     foreach (Uri uri in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
+                        if (uri == null)
+                        {
+                            continue;
+                        }
+
                         if (!uriAndCounts.TryGetValue(uri, out int count))
                         {
                             count = 0;
@@ -359,19 +363,19 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     foreach (KeyValuePair<Uri, int> uriAndCount in uriAndCounts)
                     {
-                        stringBuilder.AppendLine($"{space}{uriAndCount.Key}: {uriAndCount.Value}");
+                        stringBuilder.AppendLine($"{space}{uriAndCount.Key?.ToString() ?? "<null>"}: {uriAndCount.Value}");
                     }
 
                     stringBuilder.AppendLine("Failed to Contact Replicas");
                     foreach (Uri failedToContactReplica in clientSideRequestStatisticsTraceDatum.FailedReplicas)
                     {
-                        stringBuilder.AppendLine($"{space}{failedToContactReplica}");
+                        stringBuilder.AppendLine($"{space}{failedToContactReplica?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Regions Contacted");
                     foreach (Uri regionContacted in clientSideRequestStatisticsTraceDatum.ContactedReplicas)
                     {
-                        stringBuilder.AppendLine($"{space}{regionContacted}");
+                        stringBuilder.AppendLine($"{space}{regionContacted?.ToString() ?? "<null>"}");
                     }
 
                     stringBuilder.AppendLine("Address Resolution Statistics");
@@ -409,8 +413,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         if (stat.StoreResult != null)
                         {
                             stringBuilder.AppendLine($"{space}Store Result");
-                            stringBuilder.AppendLine($"{space}{space}Activity Id: {stat.StoreResult.ActivityId}");
-                            stringBuilder.AppendLine($"{space}{space}Store Physical Address: {stat.StoreResult.StorePhysicalAddress}");
+                            stringBuilder.AppendLine($"{space}{space}Activity Id: {stat.StoreResult.ActivityId ?? "<null>"}");
+                            stringBuilder.AppendLine($"{space}{space}Store Physical Address: {stat.StoreResult.StorePhysicalAddress?.ToString() ?? "<null>"}");
                             stringBuilder.AppendLine($"{space}{space}Status Code: {stat.StoreResult.StatusCode}/{stat.StoreResult.SubStatusCode}");
                             stringBuilder.AppendLine($"{space}{space}Is Valid: {stat.StoreResult.IsValid}");
                             stringBuilder.AppendLine($"{space}{space}LSN Info");
@@ -419,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             stringBuilder.AppendLine($"{space}{space}{space}Global LSN: {stat.StoreResult.GlobalCommittedLSN}");
                             stringBuilder.AppendLine($"{space}{space}{space}Quorum Acked LSN: {stat.StoreResult.QuorumAckedLSN}");
                             stringBuilder.AppendLine($"{space}{space}{space}Using LSN: {stat.StoreResult.UsingLocalLSN}");
-                            stringBuilder.AppendLine($"{space}{space}Session Token: {stat.StoreResult.SessionToken.ConvertToString()}");
+                            stringBuilder.AppendLine($"{space}{space}Session Token: {stat.StoreResult.SessionToken?.ConvertToString() ?? "<null>"}");
                             stringBuilder.AppendLine($"{space}{space}Quorum Info");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Replica Set Size: {stat.StoreResult.CurrentReplicaSetSize}");
                             stringBuilder.AppendLine($"{space}{space}{space}Current Write Quorum: {stat.StoreResult.CurrentWriteQuorum}");
@@ -436,6 +440,35 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         }
                     }
 
+                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                    {
+                        stringBuilder.AppendLine("Http Response Statistics");
+                        foreach (HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
+                        {
+                            stringBuilder.AppendLine($"{space}HttpResponse");
+                            stringBuilder.AppendLine($"{space}{space}RequestStartTime: {stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}RequestEndTime: {stat.RequestEndTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}RequestUri: {stat.RequestUri}");
+                            stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
+                            stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
+
+                            if (stat.Exception != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}ExceptionType: {stat.Exception.GetType()}");
+                                stringBuilder.AppendLine($"{space}{space}ExceptionMessage: {stat.Exception.Message}");
+                            }
+
+                            if (stat.HttpResponseMessage != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}StatusCode: {stat.HttpResponseMessage.StatusCode}");
+                                if (!stat.HttpResponseMessage.IsSuccessStatusCode)
+                                {
+                                    stringBuilder.AppendLine($"{space}{space}ReasonPhrase: {stat.HttpResponseMessage.ReasonPhrase}");
+                                }
+                            }
+                        }
+                    }
+
                     this.toStringValue = stringBuilder.ToString();
                 }
 
@@ -445,6 +478,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine(cpuHistoryTraceDatum.Value.ToString());
 
                     // TODO: Expose the raw data so we can custom format the string.
+
+                    this.toStringValue = stringBuilder.ToString();
+                }
+
+                public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine("Client Configuration");
+                    stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
+                    stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");
+                    stringBuilder.AppendLine("Connection Config:");
+                    stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'rntbd': {clientConfigurationTraceDatum.RntbdConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'other': {clientConfigurationTraceDatum.OtherConnectionConfig}");
+                    stringBuilder.AppendLine($"Consistency Config: {clientConfigurationTraceDatum.ConsistencyConfig}");
 
                     this.toStringValue = stringBuilder.ToString();
                 }

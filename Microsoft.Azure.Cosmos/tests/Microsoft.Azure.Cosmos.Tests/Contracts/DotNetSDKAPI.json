@@ -815,10 +815,10 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.TransactionalBatch CreateTransactionalBatch(Microsoft.Azure.Cosmos.PartitionKey);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Linq.IOrderedQueryable`1[T] GetItemLinqQueryable[T](Boolean, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions)": {
+        "System.Linq.IOrderedQueryable`1[T] GetItemLinqQueryable[T](Boolean, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions, Microsoft.Azure.Cosmos.CosmosLinqSerializerOptions)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Linq.IOrderedQueryable`1[T] GetItemLinqQueryable[T](Boolean, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Linq.IOrderedQueryable`1[T] GetItemLinqQueryable[T](Boolean, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions, Microsoft.Azure.Cosmos.CosmosLinqSerializerOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_Id()": {
           "Type": "Method",
@@ -844,6 +844,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] ReplaceContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedResponse`1[T]] ReadManyItemsAsync[T](System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,Microsoft.Azure.Cosmos.PartitionKey]], Microsoft.Azure.Cosmos.ReadManyRequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.FeedResponse`1[T]] ReadManyItemsAsync[T](System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,Microsoft.Azure.Cosmos.PartitionKey]], Microsoft.Azure.Cosmos.ReadManyRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ItemResponse`1[T]] CreateItemAsync[T](T, System.Nullable`1[Microsoft.Azure.Cosmos.PartitionKey], Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -894,6 +899,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadItemStreamAsync(System.String, Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadManyItemsStreamAsync(System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,Microsoft.Azure.Cosmos.PartitionKey]], Microsoft.Azure.Cosmos.ReadManyRequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadManyItemsStreamAsync(System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,Microsoft.Azure.Cosmos.PartitionKey]], Microsoft.Azure.Cosmos.ReadManyRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReplaceContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties, Microsoft.Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -1936,6 +1946,11 @@
     "Microsoft.Azure.Cosmos.CosmosDiagnostics;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Uri]] GetContactedRegions();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String ToString()": {
           "Type": "Method",
           "Attributes": [],
@@ -1957,11 +1972,9 @@
           "Attributes": [],
           "MethodInfo": "Boolean TryGetHeader(System.String, System.String ByRef);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Double get_RequestCharge()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Double get_RequestCharge()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Double RequestCharge": {
@@ -1969,11 +1982,9 @@
           "Attributes": [],
           "MethodInfo": "Double RequestCharge;CanRead:True;CanWrite:False;Double get_RequestCharge();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Int32 get_SubStatusCode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Int32 get_SubStatusCode()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "Int32 get_SubStatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 SubStatusCode": {
@@ -2015,11 +2026,9 @@
           "Attributes": [],
           "MethodInfo": "System.Net.HttpStatusCode StatusCode;CanRead:True;CanWrite:False;System.Net.HttpStatusCode get_StatusCode();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Nullable`1[System.TimeSpan] get_RetryAfter()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.Nullable`1[System.TimeSpan] get_RetryAfter()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] get_RetryAfter();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.TimeSpan] RetryAfter": {
@@ -2032,11 +2041,9 @@
           "Attributes": [],
           "MethodInfo": "System.String ActivityId;CanRead:True;CanWrite:False;System.String get_ActivityId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_ActivityId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "System.String get_ActivityId()": {
           "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
+          "Attributes": [],
           "MethodInfo": "System.String get_ActivityId();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String get_ResponseBody()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -2070,6 +2077,36 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(System.String, System.Net.HttpStatusCode, Int32, System.String, Double), Void .ctor(System.String, System.Net.HttpStatusCode, Int32, System.String, Double)]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.CosmosLinqSerializerOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy PropertyNamingPolicy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy PropertyNamingPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy get_PropertyNamingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_PropertyNamingPolicy(Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -2883,6 +2920,11 @@
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateIfNotExistsAsync(System.Nullable`1[System.Int32], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Database, System.String, System.String)": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Database, System.String, System.String), Void .ctor(Microsoft.Azure.Cosmos.Database, System.String, System.String)]"
         }
       },
       "NestedTypes": {}
@@ -4440,6 +4482,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition WithParameter(System.String, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.QueryDefinition WithParameterStream(System.String, System.IO.Stream)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition WithParameterStream(System.String, System.IO.Stream);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.Object]] GetQueryParameters()": {
           "Type": "Method",
           "Attributes": [],
@@ -4634,6 +4681,51 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.ReadManyRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String SessionToken": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String SessionToken;CanRead:True;CanWrite:True;System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -5391,6 +5483,51 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.ReadManyRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel()": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] get_ConsistencyLevel();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String get_SessionToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String SessionToken": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "System.String SessionToken;CanRead:True;CanWrite:True;System.String get_SessionToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(), Void .ctor()]"
+            },
+            "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel])": {
+              "Type": "Method",
+              "Attributes": [],
+              "MethodInfo": "Void set_ConsistencyLevel(System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_SessionToken(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",

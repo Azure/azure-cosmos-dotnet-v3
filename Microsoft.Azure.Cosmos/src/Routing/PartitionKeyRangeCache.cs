@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
@@ -30,7 +31,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
 
-        public PartitionKeyRangeCache(IAuthorizationTokenProvider authorizationTokenProvider, IStoreModel storeModel, CollectionCache collectionCache)
+        public PartitionKeyRangeCache(
+            IAuthorizationTokenProvider authorizationTokenProvider,
+            IStoreModel storeModel,
+            CollectionCache collectionCache)
         {
             this.routingMapCache = new AsyncCache<string, CollectionRoutingMap>(
                     EqualityComparer<CollectionRoutingMap>.Default,
@@ -51,11 +55,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Debug.Assert(ResourceId.TryParse(collectionRid, out ResourceId collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
                 CollectionRoutingMap routingMap =
-                    await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None);
+                    await this.TryLookupAsync(collectionRid, null, null, CancellationToken.None, childTrace);
 
                 if (forceRefresh && routingMap != null)
                 {
-                    routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, CancellationToken.None);
+                    routingMap = await this.TryLookupAsync(collectionRid, routingMap, null, CancellationToken.None, childTrace);
                 }
 
                 if (routingMap == null)
@@ -71,17 +75,18 @@ namespace Microsoft.Azure.Cosmos.Routing
         public virtual async Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
             string collectionResourceId,
             string partitionKeyRangeId,
+            ITrace trace,
             bool forceRefresh = false)
         {
             ResourceId collectionRidParsed;
             Debug.Assert(ResourceId.TryParse(collectionResourceId, out collectionRidParsed), "Could not parse CollectionRid from ResourceId.");
 
             CollectionRoutingMap routingMap =
-                await this.TryLookupAsync(collectionResourceId, null, null, CancellationToken.None);
+                await this.TryLookupAsync(collectionResourceId, null, null, CancellationToken.None, trace);
 
             if (forceRefresh && routingMap != null)
             {
-                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, null, CancellationToken.None);
+                routingMap = await this.TryLookupAsync(collectionResourceId, routingMap, null, CancellationToken.None, trace);
             }
 
             if (routingMap == null)
@@ -97,14 +102,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ITrace trace)
         {
             try
             {
                 return await this.routingMapCache.GetAsync(
                     collectionRid,
                     previousValue,
-                    () => this.GetRoutingMapForCollectionAsync(collectionRid, previousValue, cancellationToken),
+                    () => this.GetRoutingMapForCollectionAsync(collectionRid, 
+                                            previousValue, 
+                                            trace,
+                                            request?.RequestContext?.ClientRequestStatistics,
+                                            cancellationToken),
                     CancellationToken.None);
             }
             catch (DocumentClientException ex)
@@ -129,14 +139,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, string partitionKeyRangeId)
+        public async Task<PartitionKeyRange> TryGetRangeByPartitionKeyRangeIdAsync(string collectionRid, 
+                            string partitionKeyRangeId, 
+                            ITrace trace,
+                            IClientSideRequestStatistics clientSideRequestStatistics)
         {
             try
             {
                 CollectionRoutingMap routingMap = await this.routingMapCache.GetAsync(
                     collectionRid,
                     null,
-                    () => this.GetRoutingMapForCollectionAsync(collectionRid, null, CancellationToken.None),
+                    () => this.GetRoutingMapForCollectionAsync(collectionRid, null, trace, clientSideRequestStatistics, CancellationToken.None),
                     CancellationToken.None);
 
                 return routingMap.TryGetRangeByPartitionKeyRangeId(partitionKeyRangeId);
@@ -155,6 +168,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         private async Task<CollectionRoutingMap> GetRoutingMapForCollectionAsync(
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
+            ITrace trace,
+            IClientSideRequestStatistics clientSideRequestStatistics,
             CancellationToken cancellationToken)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
@@ -174,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 RetryOptions retryOptions = new RetryOptions();
                 using (DocumentServiceResponse response = await BackoffRetryUtility<DocumentServiceResponse>.ExecuteAsync(
-                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers),
+                    () => this.ExecutePartitionKeyRangeReadChangeFeedAsync(collectionRid, headers, trace, clientSideRequestStatistics),
                     new ResourceThrottleRetryPolicy(retryOptions.MaxRetryAttemptsOnThrottledRequests, retryOptions.MaxRetryWaitTimeInSeconds),
                     cancellationToken))
                 {
@@ -216,49 +231,68 @@ namespace Microsoft.Azure.Cosmos.Routing
             return routingMap;
         }
 
-        private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFeedAsync(string collectionRid, INameValueCollection headers)
+        private async Task<DocumentServiceResponse> ExecutePartitionKeyRangeReadChangeFeedAsync(string collectionRid, 
+                                                                                INameValueCollection headers, 
+                                                                                ITrace trace,
+                                                                                IClientSideRequestStatistics clientSideRequestStatistics)
         {
-            using (DocumentServiceRequest request = DocumentServiceRequest.Create(
-                OperationType.ReadFeed,
-                collectionRid,
-                ResourceType.PartitionKeyRange,
-                AuthorizationTokenType.PrimaryMasterKey,
-                headers))
+            using (ITrace childTrace = trace.StartChild("Read PartitionKeyRange Change Feed", TraceComponent.Transport, Tracing.TraceLevel.Info))
             {
-                string authorizationToken = null;
-                try
+                using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                    OperationType.ReadFeed,
+                    collectionRid,
+                    ResourceType.PartitionKeyRange,
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    headers))
                 {
-                    authorizationToken = (await this.authorizationTokenProvider.GetUserAuthorizationAsync(
-                        request.ResourceAddress,
-                        PathsHelper.GetResourcePath(request.ResourceType),
-                        HttpConstants.HttpMethods.Get,
-                        request.Headers,
-                        AuthorizationTokenType.PrimaryMasterKey)).token;
-                }
-                catch (UnauthorizedException)
-                {
-                }
+                    string authorizationToken = null;
+                    try
+                    {
+                        authorizationToken = (await this.authorizationTokenProvider.GetUserAuthorizationAsync(
+                            request.ResourceAddress,
+                            PathsHelper.GetResourcePath(request.ResourceType),
+                            HttpConstants.HttpMethods.Get,
+                            request.Headers,
+                            AuthorizationTokenType.PrimaryMasterKey)).token;
+                    }
+                    catch (UnauthorizedException)
+                    {
+                    }
 
-                if (authorizationToken == null)
-                {
-                    // User doesn't have rid based resource token. Maybe he has name based.
-                    throw new NotSupportedException("Resource tokens are not supported");
+                    if (authorizationToken == null)
+                    {
+                        // User doesn't have rid based resource token. Maybe he has name based.
+                        throw new NotSupportedException("Resource tokens are not supported");
 
-                    ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
-                    ////authorizationToken =
-                    ////    this.authorizationTokenProvider.GetUserAuthorizationTokenAsync(
-                    ////        collection.AltLink,
-                    ////        PathsHelper.GetResourcePath(request.ResourceType),
-                    ////        HttpConstants.HttpMethods.Get,
-                    ////        request.Headers,
-                    ////        AuthorizationTokenType.PrimaryMasterKey);
-                }
+                        ////CosmosContainerSettings collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None);
+                        ////authorizationToken =
+                        ////    this.authorizationTokenProvider.GetUserAuthorizationTokenAsync(
+                        ////        collection.AltLink,
+                        ////        PathsHelper.GetResourcePath(request.ResourceType),
+                        ////        HttpConstants.HttpMethods.Get,
+                        ////        request.Headers,
+                        ////        AuthorizationTokenType.PrimaryMasterKey);
+                    }
 
-                request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                    request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
+                    request.RequestContext.ClientRequestStatistics = clientSideRequestStatistics ?? new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+                    if (clientSideRequestStatistics == null)
+                    {
+                        childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
+                    }
 
-                using (new ActivityScope(Guid.NewGuid()))
-                {
-                    return await this.storeModel.ProcessMessageAsync(request);
+                    using (new ActivityScope(Guid.NewGuid()))
+                    {
+                        try
+                        {
+                            return await this.storeModel.ProcessMessageAsync(request);
+                        }
+                        catch (DocumentClientException ex)
+                        {
+                            childTrace.AddDatum("Exception Message", ex.Message);
+                            throw;
+                        }
+                    }
                 }
             }
         }

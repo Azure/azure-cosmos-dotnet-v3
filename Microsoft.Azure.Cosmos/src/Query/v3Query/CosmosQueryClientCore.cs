@@ -84,15 +84,17 @@ namespace Microsoft.Azure.Cosmos
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
             bool hasLogicalPartitionKey,
+            bool allowDCount,
             CancellationToken cancellationToken)
         {
             return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
-                sqlQuerySpec,
-                partitionKeyDefinition,
-                requireFormattableOrderByQuery,
-                isContinuationExpected,
-                allowNonValueAggregateQuery,
-                hasLogicalPartitionKey);
+                querySpec: sqlQuerySpec,
+                partitionKeyDefinition: partitionKeyDefinition,
+                requireFormattableOrderByQuery: requireFormattableOrderByQuery,
+                isContinuationExpected: isContinuationExpected,
+                allowNonValueAggregateQuery: allowNonValueAggregateQuery,
+                hasLogicalPartitionKey: hasLogicalPartitionKey,
+                allowDCount: allowDCount);
         }
 
         public override async Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
@@ -207,7 +209,7 @@ namespace Microsoft.Azure.Cosmos
             using (ITrace childTrace = trace.StartChild("Get Overlapping Feed Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
-                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition);
+                List<Range<string>> ranges = await feedRangeInternal.GetEffectiveRangesAsync(routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
 
                 return await this.GetTargetPartitionKeyRangesAsync(
                     resourceLink,
@@ -241,7 +243,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges);
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace);
                 if (ranges == null && PathsHelper.IsNameBased(resourceLink))
                 {
                     // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -395,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
                Documents.AuthorizationTokenType.Invalid)) //this request doesn't actually go to server
             {
                 request.ForceNameCacheRefresh = true;
-                await collectionCache.ResolveCollectionAsync(request, cancellationToken);
+                await collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
             }
         }
 
@@ -414,7 +416,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()
         {
-            return this.documentClient.GetPartitionKeyRangeCacheAsync();
+            return this.documentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
         }
 
         /// <summary>

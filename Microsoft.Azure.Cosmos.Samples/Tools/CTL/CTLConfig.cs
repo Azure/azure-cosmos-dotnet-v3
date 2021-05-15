@@ -47,7 +47,10 @@ namespace CosmosCTL
         [Option("ctl_read_write_query_pct", Required = false, HelpText = "Distribution of read, writes, and queries")]
         public string ReadWriteQueryPercentage { get; set; } = "90,9,1";
 
-        [Option("ctl_number_of_operations", Required = false, HelpText = "Number of documents to insert")]
+        [Option("ctl_precreated_documents", Required = false, HelpText = "Number of documents to pre-create for read workloads")]
+        public long PreCreatedDocuments { get; set; } = 1000;
+
+        [Option("ctl_number_of_operations", Required = false, HelpText = "Number of operations to perform")]
         public long Operations { get; set; } = -1;
 
         [Option("ctl_max_running_time_duration", Required = false, HelpText = "Running time in PT format, for example, PT10H.")]
@@ -74,6 +77,9 @@ namespace CosmosCTL
 
         [Option("ctl_output_event_traces", Required = false, HelpText = "Outputs TraceSource to console")]
         public bool OutputEventTraces { get; set; } = false;
+
+        [Option("ctl_gateway_mode", Required = false, HelpText = "Uses gateway mode")]
+        public bool UseGatewayMode { get; set; } = false;
 
         [Option("ctl_reporting_interval", Required = false, HelpText = "Reporting interval")]
         public int ReportingIntervalInSeconds { get; set; } = 10;
@@ -110,9 +116,13 @@ namespace CosmosCTL
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ApplicationName = CTLConfig.UserAgentSuffix,
-                MaxRetryAttemptsOnRateLimitedRequests = 0
+                ApplicationName = CTLConfig.UserAgentSuffix
             };
+
+            if (this.UseGatewayMode)
+            {
+                clientOptions.ConnectionMode = ConnectionMode.Gateway;
+            }
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
             {

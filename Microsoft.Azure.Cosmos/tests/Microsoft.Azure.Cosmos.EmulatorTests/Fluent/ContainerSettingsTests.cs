@@ -34,6 +34,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task ContainerContractTest()
         {
+            DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.database;
+            await TestCommon.CreateClientEncryptionKey("dekId", databaseInlineCore); 
+            
             ClientEncryptionIncludedPath clientEncryptionIncludedPath1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/path",
@@ -134,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(4, spatialPath.SpatialTypes.Count); // All SpatialTypes are returned
 
             Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.IncludedPaths.Count());
-            Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.PolicyFormatVersion);
+            Assert.IsTrue(responseProperties.ClientEncryptionPolicy.PolicyFormatVersion <= 1);
             ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseProperties.ClientEncryptionPolicy.IncludedPaths.First();
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(clientEncryptionIncludedPath1, clientEncryptionIncludedPath));
         }
@@ -558,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
                     .WithTimeToLivePropertyPath("/creationDate")
                     .CreateAsync();
-                Assert.Fail("CreateColleciton with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
+                Assert.Fail("CreateCollection with TtlPropertyPath and with no DefaultTimeToLive should have failed.");
             }
             catch (CosmosException exeption)
             {
@@ -593,12 +596,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task WithClientEncryptionPolicyTest()
         {
+            // create ClientEncryptionKeys
+            DatabaseInlineCore databaseInlineCore = (DatabaseInlineCore)this.database;
+            await TestCommon.CreateClientEncryptionKey("dekId1", databaseInlineCore);
+            await TestCommon.CreateClientEncryptionKey("dekId2", databaseInlineCore);
+
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
             ClientEncryptionIncludedPath path1 = new ClientEncryptionIncludedPath()
             {
                 Path = "/path1",
-                ClientEncryptionKeyId = "key1",
+                ClientEncryptionKeyId = "dekId1",
                 EncryptionType = "Randomized",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256"
             };
@@ -606,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ClientEncryptionIncludedPath path2 = new ClientEncryptionIncludedPath()
             {
                 Path = "/path2",
-                ClientEncryptionKeyId = "key2",
+                ClientEncryptionKeyId = "dekId2",
                 EncryptionType = "Randomized",
                 EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
             };
@@ -632,6 +640,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ContainerResponse readResponse = await container.ReadContainerAsync();
             Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
             Assert.IsNotNull(readResponse.Resource.ClientEncryptionPolicy);
+
+            // update CEP and replace container
+            readResponse.Resource.ClientEncryptionPolicy = null;
+            try
+            {
+                await container.ReplaceContainerAsync(readResponse.Resource);
+
+                Assert.Fail("ReplaceCollection with update to ClientEncryptionPolicy should have failed.");
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
+                Assert.IsTrue(ex.Message.Contains("'clientEncryptionPolicy' cannot be changed as part of collection replace operation."));
+            }
         }
 
         [TestMethod]
@@ -655,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Attach()
                     .CreateAsync();
 
-                Assert.Fail("CreateColleciton with invalid ClientEncryptionPolicy should have failed.");
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
             }
             catch (ArgumentNullException ex)
             {
@@ -673,11 +695,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Attach()
                     .CreateAsync();
 
-                Assert.Fail("CreateColleciton with invalid ClientEncryptionPolicy should have failed.");
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'."));
+                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'. "));
+            }
+
+            path1.EncryptionType = "Plaintext";
+
+            // Invalid EncryptionType
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'. "));
             }
 
             path1.EncryptionType = "Deterministic";
@@ -691,11 +731,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Attach()
                     .CreateAsync();
 
-                Assert.Fail("CreateColleciton with invalid ClientEncryptionPolicy should have failed.");
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."));
+                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'. "));
             }
         }
 

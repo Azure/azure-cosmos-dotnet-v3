@@ -5,12 +5,13 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.IO;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Details of Patch operation that is to be applied to the referred Cosmos item.
     /// </summary>
-#if INTERNAL
+#if PREVIEW
     public
 #else
     internal
@@ -29,9 +30,16 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = PatchConstants.PropertyNames.Path)]
         public abstract string Path { get; }
 
-        internal virtual bool TrySerializeValueParameter(
+        /// <summary>
+        /// Serializes the value parameter, if specified for the PatchOperation.
+        /// </summary>
+        /// <param name="cosmosSerializer">Serializer to be used.</param>
+        /// <param name="valueParam">Outputs the serialized stream if value parameter is specified, null otherwise.</param>
+        /// <returns>True if value is serialized, false otherwise.</returns>
+        /// <remarks>Output stream should be disposed after use.</remarks>
+        public virtual bool TrySerializeValueParameter(
             CosmosSerializer cosmosSerializer,
-            out string valueParam)
+            out Stream valueParam)
         {
             valueParam = null;
             return false;

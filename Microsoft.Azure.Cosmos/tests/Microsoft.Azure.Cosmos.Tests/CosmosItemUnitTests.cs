@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<ContainerInternal> containerMock = new Mock<ContainerInternal>();
             ContainerInternal container = containerMock.Object;
 
-            containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+            containerMock.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> { new List<string> { "pk" } }));
             containerMock
                 .Setup(
@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: partitionKey,
                     streamPayload: itemStream))
                 {
-                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
                 }
             }
         }
@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: partitionKey,
                     streamPayload: itemStream))
                 {
-                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
                 }
             }
         }
@@ -250,7 +250,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     id: testItem.id,
                     streamPayload: itemStream))
                 {
-                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
                 }
             }
         }
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: partitionKey,
                     id: testItem.id))
                 {
-                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                    mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
                 }
             }
         }
@@ -296,7 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: partitionKey,
                 id: testItem.id))
             {
-                mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
             }
         }
 
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 id: testItem.id,
                 patchOperations: patch))
             {
-                mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+                mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
             }
         }
 
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(
                 testItem,
                 partitionKey: partitionKey);
-            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemResponse<dynamic> response = await container.UpsertItemAsync<dynamic>(
                 testItem,
                 partitionKey: partitionKey);
-            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemResponse<dynamic> response = await container.ReplaceItemAsync<dynamic>(
                 testItem,
                 testItem.id);
-            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
                 id: testItem.id,
                 partitionKey: partitionKey);
-            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey: partitionKey,
                 id: testItem.id);
 
-            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 partitionKey,
                 patch);
 
-            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
+            mockedExecutor.Verify(c => c.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CallBase = true
             };
 
-            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>)new List<IReadOnlyList<string>> {new List<string> { "a", "b", "c" }}));
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
@@ -554,7 +554,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CallBase = true
             };
 
-            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<CancellationToken>()))
+            mockedContainer.Setup(e => e.GetPartitionKeyPathTokensAsync(It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult((IReadOnlyList<IReadOnlyList<string>>) new List<IReadOnlyList<string>> { new List<string> { "a", "b", "c" }, new List<string> { "a","e","f" } }));
 
             ContainerInternal containerWithMockPartitionKeyPath = mockedContainer.Object;
@@ -670,16 +670,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContext.Setup(x => x.OperationHelperAsync<ResponseMessage>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ResponseMessage>>>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>>(
-                (operationName, requestOptions, func) => func(NoOpTrace.Singleton));
+                It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
+                It.IsAny<TraceComponent>(),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<ResponseMessage>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.OperationHelperAsync<ItemResponse<dynamic>>(
                 It.IsAny<string>(),
                 It.IsAny<RequestOptions>(),
-                It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>()))
-               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>>(
-                (operationName, requestOptions, func) => func(NoOpTrace.Singleton));
+                It.IsAny<Func<ITrace, Task<ItemResponse<dynamic>>>>(),
+                It.IsAny<TraceComponent>(),
+                It.IsAny<TraceLevel>()))
+               .Returns<string, RequestOptions, Func<ITrace, Task<ItemResponse<dynamic>>>, TraceComponent, TraceLevel>(
+                (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.ProcessResourceOperationStreamAsync(
                 It.IsAny<string>(),
@@ -924,7 +928,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<BatchAsyncContainerExecutor> mockedExecutor = new Mock<BatchAsyncContainerExecutor>();
 
             mockedExecutor
-                .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+                .Setup(e => e.AddAsync(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
                 });

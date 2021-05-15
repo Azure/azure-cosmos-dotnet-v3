@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Documents;
@@ -86,14 +87,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="inputExpression">An Expression representing a Query on a IDocumentQuery object.</param>
         /// <param name="parameters">Optional dictionary for parameter name and value</param>
-        /// <param name="serializationOptions">Optional serializer options.</param>
+        /// <param name="linqSerializerOptions">Optional serializer options.</param>
         /// <returns>The corresponding SQL query.</returns>
         public static SqlQuery TranslateQuery(
             Expression inputExpression,
             IDictionary<object, string> parameters,
-            CosmosSerializationOptions serializationOptions)
+            CosmosLinqSerializerOptions linqSerializerOptions)
         {
-            TranslationContext context = new TranslationContext(serializationOptions, parameters);
+            TranslationContext context = new TranslationContext(linqSerializerOptions, parameters);
             ExpressionToSql.Translate(inputExpression, context); // ignore result here
 
             QueryUnderConstruction query = context.currentQuery;
@@ -737,7 +738,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlScalarExpression VisitMemberAccess(MemberExpression inputExpression, TranslationContext context)
         {
             SqlScalarExpression memberExpression = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
-            string memberName = inputExpression.Member.GetMemberName(context?.serializationOptions);
+            string memberName = inputExpression.Member.GetMemberName(context?.linqSerializerOptions);
 
             // if expression is nullable
             if (inputExpression.Expression.Type.IsNullable())
@@ -784,7 +785,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private static SqlObjectProperty VisitMemberAssignment(MemberAssignment inputExpression, TranslationContext context)
         {
             SqlScalarExpression assign = ExpressionToSql.VisitScalarExpression(inputExpression.Expression, context);
-            string memberName = inputExpression.Member.GetMemberName(context?.serializationOptions);
+            string memberName = inputExpression.Member.GetMemberName(context?.linqSerializerOptions);
             SqlPropertyName propName = SqlPropertyName.Create(memberName);
             SqlObjectProperty prop = SqlObjectProperty.Create(propName, assign);
             return prop;
@@ -826,7 +827,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 MemberInfo member = members[i];
                 SqlScalarExpression value = ExpressionToSql.VisitScalarExpression(arg, context);
 
-                string memberName = member.GetMemberName(context?.serializationOptions);
+                string memberName = member.GetMemberName(context?.linqSerializerOptions);
                 SqlPropertyName propName = SqlPropertyName.Create(memberName);
                 SqlObjectProperty prop = SqlObjectProperty.Create(propName, value);
                 result[i] = prop;

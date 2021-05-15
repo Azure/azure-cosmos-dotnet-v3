@@ -116,6 +116,14 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
 
+#if INTERNAL
+        /// <summary>
+        /// Indexing policy annotation.
+        /// </summary>
+        [JsonProperty(PropertyName = "annotation", NullValueHandling = NullValueHandling.Ignore)]
+        public string Annotation { get; set; }
+#endif
+
         #region EqualityComparers
         internal sealed class CompositePathEqualityComparer : IEqualityComparer<CompositePath>
         {

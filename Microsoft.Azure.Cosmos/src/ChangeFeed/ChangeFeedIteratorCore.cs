@@ -21,13 +21,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly IDocumentContainer documentContainer;
         private readonly ChangeFeedRequestOptions changeFeedRequestOptions;
         private readonly AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>> lazyMonadicEnumerator;
+        private readonly CosmosClientContext clientContext;
         private bool hasMoreResults;
 
         public ChangeFeedIteratorCore(
             IDocumentContainer documentContainer,
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions,
-            ChangeFeedStartFrom changeFeedStartFrom)
+            ChangeFeedStartFrom changeFeedStartFrom,
+            CosmosClientContext clientContext)
         {
             if (changeFeedStartFrom == null)
             {
@@ -39,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 throw new ArgumentNullException(nameof(changeFeedMode));
             }
 
+            this.clientContext = clientContext;
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedRequestOptions = changeFeedRequestOptions ?? new ChangeFeedRequestOptions();
             this.lazyMonadicEnumerator = new AsyncLazy<TryCatch<CrossPartitionChangeFeedAsyncEnumerator>>(
@@ -197,29 +200,44 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            using (ITrace trace = Trace.GetRootTrace("Change Feed Iterator Read Next Async", TraceComponent.ChangeFeed, TraceLevel.Info))
-            {
-                ResponseMessage responseMessage = await this.ReadNextAsync(trace, cancellationToken);
-                responseMessage.Trace = trace;
-
-                return responseMessage;
-            } 
+            return await this.clientContext.OperationHelperAsync("Change Feed Iterator Read Next Async",
+                                requestOptions: this.changeFeedRequestOptions,
+                                task: (trace) => this.ReadNextInternalAsync(trace, cancellationToken),
+                                traceComponent: TraceComponent.ChangeFeed,
+                                traceLevel: TraceLevel.Info);
         }
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await this.ReadNextInternalAsync(trace, cancellationToken);
+            }
+            catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
+            {
+                throw new CosmosOperationCanceledException(ex, trace);
+            }
+        }
+
+        private async Task<ResponseMessage> ReadNextInternalAsync(ITrace trace, CancellationToken cancellationToken = default)
         {
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-
             TryCatch<CrossPartitionChangeFeedAsyncEnumerator> monadicEnumerator = await this.lazyMonadicEnumerator.GetValueAsync(trace, cancellationToken);
             if (monadicEnumerator.Failed)
             {
                 Exception createException = monadicEnumerator.Exception;
-                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(createException);
+                if (!ExceptionToCosmosException.TryCreateFromException(
+                    createException, 
+                    trace,
+                    out CosmosException cosmosException))
+                {
+                    throw createException;
+                }
+
                 return new ResponseMessage(
                     cosmosException.StatusCode,
                     requestMessage: null,
@@ -236,7 +254,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             if (enumerator.Current.Failed)
             {
-                CosmosException cosmosException = ExceptionToCosmosException.CreateFromException(enumerator.Current.Exception);
+                if (!ExceptionToCosmosException.TryCreateFromException(
+                    enumerator.Current.Exception,
+                    trace,
+                    out CosmosException cosmosException))
+                {
+                    throw enumerator.Current.Exception;
+                }
+
                 if (!IsRetriableException(cosmosException))
                 {
                     this.hasMoreResults = false;

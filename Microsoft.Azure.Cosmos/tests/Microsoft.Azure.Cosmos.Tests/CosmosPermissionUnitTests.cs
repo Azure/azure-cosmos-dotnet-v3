@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using System;
     using System.Net;
     using System.Threading.Tasks;
 
@@ -44,6 +46,18 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             //create,read, and replace
             Assert.AreEqual(3, testHandlerHitCount);
+        }
+
+        [TestMethod]
+        public void MockContainerPermissionTest()
+        {
+            Mock<Database> database = new Mock<Database>();
+            database.Setup(d => d.Id).Returns("MockDatabase");
+            Mock<Container> container = new Mock<Container>();
+            container.Setup(c => c.Id).Returns("MockContainer");
+            container.Setup(c => c.Database).Returns(database.Object);
+            PermissionProperties properties = new PermissionProperties("permissionId", PermissionMode.All, container.Object);
+            Assert.AreEqual(properties.ResourceUri, $"dbs/{database.Object.Id}/colls/{container.Object.Id}");
         }
     }
 }

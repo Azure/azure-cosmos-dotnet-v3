@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         private static readonly string UpdateMessage = $"Please update the Microsoft.Azure.Cosmos.Performance.Tests\\Contracts\\{PerformanceValidation.BaselineBenchmarkResultsFileName} " +
             $" file by using the following results found at {PerformanceValidation.DirectoryPath}\\{PerformanceValidation.CurrentBenchmarkResultsFileName} or by using: ";
 
-        public static bool TryUpdateAllocatedMemoryAverage(IEnumerable<Summary> summaries, Dictionary<string, double> operationToMemoryAllocated)
+        public static bool TryUpdateAllocatedMemoryAverage(IEnumerable<Summary> summaries, SortedDictionary<string, double> operationToMemoryAllocated)
         {
             // If any of the operations have NA then something failed. Returning -1 will cause the gates to fail.
             foreach (Summary summary in summaries)
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return true;
         }
 
-        public static int ValidateSummaryResultsAgainstBaseline(Dictionary<string, double> operationToMemoryAllocated)
+        public static int ValidateSummaryResultsAgainstBaseline(SortedDictionary<string, double> operationToMemoryAllocated)
         {
             // Using dotnet run in the gates puts the current directory at the root of the github project rather than the execute folder.
             string currentDirectory = Directory.GetCurrentDirectory();
@@ -72,39 +72,59 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             currentDirectory += PerformanceValidation.DirectoryPath;
 
-            // Always write the updated version. This will change with each run.
-            string currentBenchmarkResults = JsonConvert.SerializeObject(operationToMemoryAllocated, Formatting.Indented);
-            File.WriteAllText(currentDirectory + PerformanceValidation.CurrentBenchmarkResultsFileName, currentBenchmarkResults);
-
             string baselineJson = File.ReadAllText(currentDirectory + PerformanceValidation.BaselineBenchmarkResultsFileName);
             Dictionary<string, double> baselineBenchmarkResults = JsonConvert.DeserializeObject<Dictionary<string, double>>(baselineJson);
 
-            if (baselineBenchmarkResults.Count != operationToMemoryAllocated.Count)
+            List<string> failures = new List<string>();
+            SortedDictionary<string, double> updatedBaseline = new SortedDictionary<string, double>();
+            foreach (KeyValuePair<string, double> currentResult in operationToMemoryAllocated)
             {
-                Console.WriteLine(PerformanceValidation.UpdateMessage + currentBenchmarkResults);
-                return 1;
-            }
-
-            foreach(KeyValuePair<string, double> currentResult in operationToMemoryAllocated)
-            {
-                double baselineResult = baselineBenchmarkResults[currentResult.Key];
+                if(!baselineBenchmarkResults.TryGetValue(
+                    currentResult.Key, 
+                    out double baselineResult))
+                {
+                    updatedBaseline.Add(currentResult.Key, currentResult.Value);
+                    continue;
+                }
 
                 // Add 5% buffer to avoid minor variation between test runs
-                double diff = currentResult.Value - baselineResult;
+                double diff = Math.Abs(currentResult.Value - baselineResult);
                 double maxAllowedDiff = baselineResult * .05;
+                double minDiffToUpdatebaseLine = baselineResult * .02;
                 if (diff > maxAllowedDiff)
                 {
-                    Console.WriteLine(PerformanceValidation.UpdateMessage + currentBenchmarkResults);
-                    return 1;
+                    updatedBaseline.Add(currentResult.Key, currentResult.Value);
+                    failures.Add($"{currentResult.Key}: {currentResult.Value}");
                 }
-                else if (-diff > maxAllowedDiff)
+                else if(diff > minDiffToUpdatebaseLine)
                 {
-                    Console.WriteLine(PerformanceValidation.UpdateMessage + currentBenchmarkResults);
-                    return 1;
+                    // Update the value if it is greater than 2% difference.
+                    // This reduces the noise and make it easier to see which values actually changed
+                    updatedBaseline.Add(currentResult.Key, currentResult.Value);
+                }
+                else
+                {
+                    // Use the baseline if the value didn't change by more than 2% to avoid updating values unnecessarily
+                    // This makes it easier to see which values actually need to be updated.
+                    updatedBaseline.Add(currentResult.Key, baselineResult);
                 }
             }
 
+            // Always write the updated version. This will change with each run.
+            string currentBenchmarkResults = JsonConvert.SerializeObject(updatedBaseline, Formatting.Indented);
+            File.WriteAllText(currentDirectory + PerformanceValidation.CurrentBenchmarkResultsFileName, currentBenchmarkResults);
             Console.WriteLine("Current benchmark results: " + currentBenchmarkResults);
+
+            if (failures.Any())
+            {
+                Console.WriteLine(PerformanceValidation.UpdateMessage);
+                foreach(string failure in failures)
+                {
+                    Console.WriteLine(failure);
+                }
+                
+                return 1;
+            }
 
             return 0;
         }
