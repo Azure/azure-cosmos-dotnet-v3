@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 if (isClientDisposed)
                 {
-                    Assert.IsTrue(e.Message.Contains("Cannot access a disposed 'CosmosClient'. Please make sure to follow best practices and use the CosmosClient as a singleton."));
+                    Assert.IsTrue(e.Message.Contains("Cannot access a disposed 'CosmosClient'. Follow best practices and use the CosmosClient as a singleton."));
                 }
                 else
                 {
