@@ -1353,10 +1353,7 @@ namespace Microsoft.Azure.Cosmos
         {
             await this.EnsureValidClientAsync(NoOpTrace.Singleton);
 
-            if (retryPolicyInstance != null)
-            {
-                retryPolicyInstance.OnBeforeSendRequest(request);
-            }
+            retryPolicyInstance?.OnBeforeSendRequest(request);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -5487,10 +5484,7 @@ namespace Microsoft.Azure.Cosmos
                                 options);
                         }
 
-                        if (retryPolicyInstance != null)
-                        {
-                            retryPolicyInstance.OnBeforeSendRequest(request);
-                        }
+                        retryPolicyInstance?.OnBeforeSendRequest(request);
 
                         request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
                         return new StoredProcedureResponse<TValue>(await this.ExecuteProcedureAsync(
