@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2398) Patch : Adds TrySerializeValueParameter method for PatchOperation
 - [#2440](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2440) Performance: Adds Bulk optimizations to reduce allocations and improves async task handling
 - [#2447](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2447) Availability: Adds account refresh logic on gateway outage instead of waiting on 5min background refresh
+- [#2449](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2449) Client encryption: Adds PolicyFormatVersion and validation that partition key paths are not encrypted
 
 #### Fixed
 
