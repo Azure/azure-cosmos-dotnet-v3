@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos.Common
         {
             // if request is targeted at specific partition using x-ms-documentd-partitionkeyrangeid header,
             // which contains value "<collectionrid>,<partitionkeyrangeid>", then resolve to collection rid in this header.
-            if (partitionKeyRangeIdentity != null && partitionKeyRangeIdentity.CollectionRid != null)
+            if (partitionKeyRangeIdentity?.CollectionRid != null)
             {
                 try
                 {
