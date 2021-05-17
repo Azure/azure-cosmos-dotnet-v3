@@ -132,6 +132,25 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             Assert.IsNotNull(container.BatchExecutor);
         }
 
+        [TestMethod]
+        public void ValidateSetContainerRequestOptions()
+        {
+            ContainerRequestOptions options = new ContainerRequestOptions
+            {
+                PopulateAnalyticalMigrationProgress = true,
+                PopulateQuotaInfo = true
+            };
+
+            RequestMessage httpRequest = new RequestMessage(
+                HttpMethod.Post,
+                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
+
+            options.PopulateRequestOptions(httpRequest);
+
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, out string populateAnalyticalMigrationProgress));
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PopulateQuotaInfo, out string populateQuotaInfo));
+        }
+
         private CosmosClientContext CreateMockClientContext(bool allowBulkExecution = false)
         {
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
