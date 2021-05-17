@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed = false;
 
         internal static int numberOfClientsCreated;
+        internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
         {
@@ -506,7 +507,10 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint);
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadAccountAsync),
+                null,
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
 
         /// <summary>
@@ -1262,20 +1266,14 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.isDisposed)
             {
+                this.DisposedDateTimeUtc = DateTime.UtcNow;
+
                 if (disposing)
                 {
                     this.ClientContext.Dispose();
                 }
 
                 this.isDisposed = true;
-            }
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }
         }
     }
