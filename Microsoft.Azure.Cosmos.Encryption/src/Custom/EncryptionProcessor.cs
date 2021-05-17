@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
             JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
             {
                 encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
             }
