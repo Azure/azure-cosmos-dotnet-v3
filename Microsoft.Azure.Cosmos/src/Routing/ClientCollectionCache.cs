@@ -100,10 +100,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     using (new ActivityScope(Guid.NewGuid()))
                     {
-                        if (retryPolicyInstance != null)
-                        {
-                            retryPolicyInstance.OnBeforeSendRequest(request);
-                        }
+                        retryPolicyInstance?.OnBeforeSendRequest(request);
 
                         try
                         {
