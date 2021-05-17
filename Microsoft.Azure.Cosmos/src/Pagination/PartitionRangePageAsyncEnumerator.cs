@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Tracing;
 
@@ -53,11 +54,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     return false;
                 }
 
-                this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken: this.cancellationToken);
-                if (this.Current.Succeeded)
+                try
                 {
-                    this.FeedRangeState = new FeedRangeState<TState>(this.FeedRangeState.FeedRange, this.Current.Result.State);
-                    this.HasStarted = true;
+                    this.Current = await this.GetNextPageAsync(trace: childTrace, cancellationToken: this.cancellationToken);
+                    if (this.Current.Succeeded)
+                    {
+                        this.FeedRangeState = new FeedRangeState<TState>(this.FeedRangeState.FeedRange, this.Current.Result.State);
+                        this.HasStarted = true;
+                    }
+                }
+                catch (Exception unhandledException)
+                {
+                    DefaultTrace.TraceWarning("DocumentContainer failed with unhandled exception {0}", unhandledException);
+                    this.Current = TryCatch<TPage>.FromException(unhandledException);
                 }
 
                 return true;
