@@ -378,6 +378,37 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        [DataTestMethod]
+        public async Task ShouldReturnTryCatchOnException()
+        {
+            ReadOnlyMemory<FeedRangeState<ChangeFeedState>> rangeStates = new FeedRangeState<ChangeFeedState>[]{
+                    new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
+                };
+
+            CrossFeedRangeState<ChangeFeedState> state = new CrossFeedRangeState<ChangeFeedState>(rangeStates);
+            Mock<IDocumentContainer> documentContainer = new Mock<IDocumentContainer>();
+
+            Exception exception = new Exception("oh no");
+
+            // Returns a 304 with 1RU charge
+            documentContainer.Setup(c => c.MonadicChangeFeedAsync(
+                It.IsAny<FeedRangeState<ChangeFeedState>>(),
+                It.IsAny<ChangeFeedPaginationOptions>(),
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                documentContainer.Object,
+                state,
+                ChangeFeedPaginationOptions.Default,
+                cancellationToken: default);
+
+            await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+
+            Assert.IsTrue(enumerator.Current.Failed);
+            //TryCatch generates an ungodly amount of nesting
+            Assert.AreEqual(exception, enumerator.Current.Exception.InnerException.InnerException.InnerException);
+        }
+
         private static async Task<(int, double)> DrainUntilNotModifedAsync(CrossPartitionChangeFeedAsyncEnumerator enumerator)
         {
             int globalCount = 0;
