@@ -204,8 +204,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             if (this.ShouldThrowException(out Exception exception))
             {
-                //throw exception;
-                return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(exception));
+                throw exception;
+            }
+
+            if (this.ShouldReturnFailure(out Exception failure))
+            {
+                return Task.FromResult(TryCatch<ChangeFeedPage>.FromException(failure));
             }
 
             return this.documentContainer.MonadicChangeFeedAsync(
@@ -263,18 +267,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             exception = this.failureConfigs.ThrowException;
             return this.failureConfigs != null && this.failureConfigs.ThrowException != null;
-}
+        }
+
+        private bool ShouldReturnFailure(out Exception exception)
+        {
+            exception = this.failureConfigs.ReturnFailure;
+            return this.failureConfigs != null && this.failureConfigs.ReturnFailure != null;
+        }
 
         public sealed class FailureConfigs
         {
             public FailureConfigs(
                 bool inject429s, 
                 bool injectEmptyPages,
-                Exception throwException = null)
+                Exception throwException = null,
+                Exception returnFailure = null)
             {
                 this.Inject429s = inject429s;
                 this.InjectEmptyPages = injectEmptyPages;
                 this.ThrowException = throwException;
+                this.ReturnFailure = returnFailure;
             }
 
             public bool Inject429s { get; }
@@ -282,6 +294,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public bool InjectEmptyPages { get; }
 
             public Exception ThrowException { get; }
+
+            public Exception ReturnFailure { get; }
         }
     }
 }

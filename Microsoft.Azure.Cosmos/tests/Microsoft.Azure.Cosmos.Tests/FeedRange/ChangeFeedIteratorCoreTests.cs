@@ -218,7 +218,33 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
                     inject429s: false, 
                     injectEmptyPages: false,
-                    throwException: exception));
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Now(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
+            Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+            await changeFeedIteratorCore.ReadNextAsync();
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnRetriableCosmosException_NoMoreResults()
+        {
+            CosmosException exception = CosmosExceptionFactory.CreateThrottledException("retry", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
 
             ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
                 documentContainer,
@@ -229,18 +255,52 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
-            while (changeFeedIteratorCore.HasMoreResults)
+            ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+            Assert.AreEqual(HttpStatusCode.TooManyRequests, responseMessage.StatusCode);
+            Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
+        }
+
+        // If there is a failure but it's not retriable and does not qualify as CosmosException
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnNonCosmosExceptions_NoMoreResults()
+        {
+            Exception exception = new TaskCanceledException();
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            try
             {
                 ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
-                Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                // TryCatch wraps any exception
+                Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
                 Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
             }
         }
 
+        /// <summary>
+        /// If an unhandled exception occurs within the NetworkAttachedDocumentContainer, the exception is transmitted but it does not break the enumerators
+        /// </summary>
         [TestMethod]
-        public async Task ChangeFeedIteratorCore_OnException_NoMoreResults()
+        public async Task ChangeFeedIteratorCore_OnUnhandledException_NoMoreResults()
         {
-            Exception exception = new TaskCanceledException();
+            Exception exception = new Exception("oh no");
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
                 numItems: 0,
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
@@ -257,19 +317,29 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 
             CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
             cancellationTokenSource.Cancel();
-            while (changeFeedIteratorCore.HasMoreResults)
+            try
             {
-                try
-                {
-                    ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
-                    Assert.Fail("Should have thrown");
-                }
-                catch (Exception ex)
-                {
-                    Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
-                    Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
-                }
-                
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                // TryCatch wraps any exception
+                Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
+                Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+            }
+
+            // If read a second time, it should not throw any missing page errors related to enumerators
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception ex)
+            {
+                // TryCatch wraps any exception
+                Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
+                Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
             }
         }
 
