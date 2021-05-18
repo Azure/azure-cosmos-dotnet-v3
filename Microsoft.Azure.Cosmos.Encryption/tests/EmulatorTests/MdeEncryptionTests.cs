@@ -835,15 +835,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyPk };
 
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
-
             try
             {
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                Assert.Fail("Expected item creation with PK specified to be encrypted to fail.");
+                Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("CreateContainerAsync operation with PK specified to be encrypted should have failed. ");
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            catch (ArgumentException)
             {
             }
 
