@@ -402,11 +402,26 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 ChangeFeedPaginationOptions.Default,
                 cancellationToken: default);
 
-            await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+            try
+            {
+                await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception caughtException)
+            {
+                Assert.AreEqual(exception, caughtException);
+            }
 
-            Assert.IsTrue(enumerator.Current.Failed);
-            //TryCatch generates an ungodly amount of nesting
-            Assert.AreEqual(exception, enumerator.Current.Exception.InnerException.InnerException);
+            // Should be able to read MoveNextAsync again
+            try
+            {
+                await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception caughtException)
+            {
+                Assert.AreEqual(exception, caughtException);
+            }
         }
 
         private static async Task<(int, double)> DrainUntilNotModifedAsync(CrossPartitionChangeFeedAsyncEnumerator enumerator)
