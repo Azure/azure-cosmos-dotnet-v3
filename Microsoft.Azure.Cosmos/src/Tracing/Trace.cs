@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
     internal sealed class Trace : ITrace
     {
+        private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly Lazy<Dictionary<string, object>> data;
         private readonly object mutex = new object();
 
@@ -70,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
         }
 
-        public IReadOnlyDictionary<string, object> Data => this.data.Value;
+        public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
 
         public void Dispose()
         {
