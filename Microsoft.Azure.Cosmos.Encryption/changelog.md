@@ -11,7 +11,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2452](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2452) Adds the implementation for new ChangeFeed APIs.
 - [#2448](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2448) Adds client encryption support for patch.
 - [#2453](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2453) Removes Plaintext encryption type support.
-- [#2372](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2372) Adds decryption support for ChangeFeed Processor.
 
 #### Fixes 
 - [#2445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2445) Fixes query support on encrypted parameters and fixes samples.
@@ -21,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added 
 - [#2433](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2433) Adds integration with latest CosmosDb Preview Package - 3.19.0-preview.
+- [#2372](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2372) Adds decryption support for ChangeFeed Processor.
 
 ### <a name="1.0.0-previewV13"/> [1.0.0-previewV13](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV13) - 2021-03-26
 
