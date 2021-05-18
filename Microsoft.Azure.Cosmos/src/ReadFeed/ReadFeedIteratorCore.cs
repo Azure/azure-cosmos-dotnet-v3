@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
 
                 if (!ExceptionToCosmosException.TryCreateFromException(this.monadicEnumerator.Exception, trace, out CosmosException cosmosException))
                 {
-                    throw ExceptionWithStackTraceException.UnWrapMonadExcepion(this.monadicEnumerator.Exception, trace);
+                    throw this.monadicEnumerator.Exception;
                 }
 
                 return new ResponseMessage(
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             {
                 if (!ExceptionToCosmosException.TryCreateFromException(monadicPage.Exception, trace, out CosmosException cosmosException))
                 {
-                    throw ExceptionWithStackTraceException.UnWrapMonadExcepion(monadicPage.Exception, trace);
+                    throw monadicPage.Exception;
                 }
 
                 if (!IsRetriableException(cosmosException))

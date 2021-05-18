@@ -125,7 +125,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                 PartitionRangePageAsyncEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
                 currentPaginator.SetCancellationToken(this.cancellationToken);
-                if (!await currentPaginator.MoveNextAsync(childTrace))
+                bool moveNextResult = false;
+                try
+                {
+                    moveNextResult = await currentPaginator.MoveNextAsync(childTrace);
+                }
+                catch
+                {
+                    // Re-queue the enumerator to avoid emptying the queue
+                    enumerators.Enqueue(currentPaginator);
+                    throw;
+                }
+
+                if (!moveNextResult)
                 {
                     // Current enumerator is empty,
                     // so recursively retry on the next enumerator.
@@ -184,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     // Just enqueue the paginator and the user can decide if they want to retry.
                     enumerators.Enqueue(currentPaginator);
 
-                    this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(exception);
+                    this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
                     this.CurrentRange = currentPaginator.FeedRangeState.FeedRange;
                     this.nextState = CrossPartitionRangePageAsyncEnumerator<TPage, TState>.GetNextRange(enumerators);
                     return true;

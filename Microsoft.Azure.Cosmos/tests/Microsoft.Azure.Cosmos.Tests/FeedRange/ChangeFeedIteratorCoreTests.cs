@@ -227,8 +227,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 ChangeFeedStartFrom.Now(),
                 this.MockClientContext());
 
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
             ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
             Assert.AreEqual(HttpStatusCode.InternalServerError, responseMessage.StatusCode);
             Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);

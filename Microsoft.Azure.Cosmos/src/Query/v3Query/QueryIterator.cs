@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 trace,
                 out CosmosException cosmosException))
             {
-                throw ExceptionWithStackTraceException.UnWrapMonadExcepion(tryGetQueryPage.Exception, trace);
+                throw tryGetQueryPage.Exception;
             }
 
             if (!IsRetriableException(cosmosException))
