@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (clientEncryptionPolicy.PolicyFormatVersion > 1)
                 {
-                    throw new InvalidOperationException("This version of the Encryption library cannot be used with this container." +
+                    throw new InvalidOperationException("This version of Microsoft.Azure.Cosmos.Encryption cannot be used with this container." +
                         " Please upgrade to the latest version of the same. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
                 }
 
