@@ -220,7 +220,6 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(2, slowPrimaryRegionHelper.SlowEndpointCount);
                 Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
                 Assert.IsTrue(stopwatch.Elapsed > TimeSpan.FromSeconds(1));
-                Assert.IsTrue(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
             }
 
             // All but the last URI succeeds
