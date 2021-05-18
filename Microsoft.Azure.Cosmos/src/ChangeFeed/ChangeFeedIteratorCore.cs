@@ -235,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
+                    // Initialization issue, there are no enumerators to invoke
                     this.hasMoreResults = false;
                     throw ExceptionWithStackTraceException.UnWrapMonadExcepion(createException, trace);
                 }
