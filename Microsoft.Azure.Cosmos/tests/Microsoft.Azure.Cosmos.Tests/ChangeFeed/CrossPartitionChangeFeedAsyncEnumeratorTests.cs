@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<CancellationToken>()), Times.Never);
         }
 
-        [DataTestMethod]
+        [TestMethod]
         public async Task ShouldReturnTryCatchOnException()
         {
             ReadOnlyMemory<FeedRangeState<ChangeFeedState>> rangeStates = new FeedRangeState<ChangeFeedState>[]{
