@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly Lazy<Dictionary<string, object>> data;
-        private readonly object mutex = new object();
 
         // singlechild to avoid List creation for trace objects with only 1 child
         private List<ITrace> children;
@@ -115,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddChild(ITrace child)
         {
-            lock (this.mutex)
+            lock (this)
             {
                 if (this.singleChild == null)
                 {
