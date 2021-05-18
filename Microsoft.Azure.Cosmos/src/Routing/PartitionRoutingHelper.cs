@@ -66,8 +66,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             PartitionedQueryExecutionInfo queryExecutionInfo = tryGetPartitionQueryExecutionInfo.Result;
-            if (queryExecutionInfo == null ||
-                queryExecutionInfo.QueryRanges == null ||
+            if (queryExecutionInfo?.QueryRanges == null ||
                 queryExecutionInfo.QueryInfo == null ||
                 queryExecutionInfo.QueryRanges.Any(range => range.Min == null || range.Max == null))
             {
@@ -435,7 +434,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
 
-                    if (initialContinuationToken != null && initialContinuationToken.Range != null)
+                    if (initialContinuationToken?.Range != null)
                     {
                         range = initialContinuationToken.Range;
                     }
