@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
                 simpleEmulatorTokenCredential,
                 new Uri("https://127.0.0.1:8081"),
-                requestTimeout: TimeSpan.FromSeconds(30),
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));
 
             {
@@ -145,7 +144,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: toLarge);
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -159,7 +157,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.MinValue);
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -173,7 +170,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.Zero);
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -187,7 +183,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(-1));
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -201,7 +196,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.MinValue,
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -215,7 +209,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.Zero,
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -228,13 +221,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             using TokenCredentialCache token = new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(Int32.MaxValue));
 
             using TokenCredentialCache disableBackgroundTask = new TokenCredentialCache(
                    new Mock<TokenCredential>().Object,
                    CosmosAuthorizationTests.AccountEndpoint,
-                   requestTimeout: TimeSpan.FromSeconds(15),
                    backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue);
         }
 
@@ -246,35 +237,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
                 await this.GetAndVerifyTokenAsync(tokenCredentialCache);
-            }
-        }
-
-        [TestMethod]
-        public async Task TestTokenCredentialTimeoutAsync()
-        {
-            TestTokenCredential testTokenCredential = new TestTokenCredential(async () =>
-            {
-                await Task.Delay(-1);
-
-                return new AccessToken("AccessToken", DateTimeOffset.MaxValue);
-            });
-
-            TimeSpan timeout = TimeSpan.FromSeconds(1);
-            using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(
-                tokenCredential: testTokenCredential,
-                requestTimeout: timeout))
-            {
-                try
-                {
-                    await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                    Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
-                }
-                catch (CosmosException cosmosException)
-                {
-                    Assert.AreEqual(HttpStatusCode.RequestTimeout, cosmosException.StatusCode);
-                    Assert.AreEqual((int)Azure.Documents.SubStatusCodes.FailedToGetAadToken, cosmosException.SubStatusCode);
-                    Assert.AreEqual($"TokenCredential.GetTokenAsync request timed out after {timeout}", cosmosException.InnerException.Message);
-                }
             }
         }
 
@@ -441,13 +403,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private TokenCredentialCache CreateTokenCredentialCache(
-            TokenCredential tokenCredential,
-            TimeSpan? requestTimeout = null)
+            TokenCredential tokenCredential)
         {
             return new TokenCredentialCache(
                 tokenCredential,
                 CosmosAuthorizationTests.AccountEndpoint,
-                requestTimeout: requestTimeout ?? TimeSpan.FromSeconds(15),
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(5));
         }
 
