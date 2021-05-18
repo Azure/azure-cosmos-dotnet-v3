@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             catch (Exception ex)
             {
                 // TryCatch wraps any exception
-                Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
+                Assert.AreEqual(exception, ex.InnerException.InnerException);
                 Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
             }
         }
@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             catch (Exception ex)
             {
                 // TryCatch wraps any exception
-                Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
+                Assert.AreEqual(exception, ex.InnerException.InnerException);
                 Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
             }
 
@@ -337,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             catch (Exception ex)
             {
                 // TryCatch wraps any exception
-                Assert.AreEqual(exception, ex.InnerException.InnerException.InnerException);
+                Assert.AreEqual(exception, ex.InnerException.InnerException);
                 Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
             }
         }

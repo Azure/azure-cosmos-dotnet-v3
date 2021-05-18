@@ -406,7 +406,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             Assert.IsTrue(enumerator.Current.Failed);
             //TryCatch generates an ungodly amount of nesting
-            Assert.AreEqual(exception, enumerator.Current.Exception.InnerException.InnerException.InnerException);
+            Assert.AreEqual(exception, enumerator.Current.Exception.InnerException.InnerException);
         }
 
         private static async Task<(int, double)> DrainUntilNotModifedAsync(CrossPartitionChangeFeedAsyncEnumerator enumerator)

@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     // Just enqueue the paginator and the user can decide if they want to retry.
                     enumerators.Enqueue(currentPaginator);
 
-                    this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(currentPaginator.Current.Exception);
+                    this.Current = TryCatch<CrossFeedRangePage<TPage, TState>>.FromException(exception);
                     this.CurrentRange = currentPaginator.FeedRangeState.FeedRange;
                     this.nextState = CrossPartitionRangePageAsyncEnumerator<TPage, TState>.GetNextRange(enumerators);
                     return true;
