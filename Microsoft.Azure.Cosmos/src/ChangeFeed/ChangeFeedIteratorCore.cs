@@ -235,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
+                    this.hasMoreResults = false;
                     throw createException;
                 }
 
