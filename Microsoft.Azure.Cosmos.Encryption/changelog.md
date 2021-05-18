@@ -3,6 +3,11 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="1.0.0-previewV15"/> [1.0.0-previewV15](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV15) - 2021-05-18
+
+#### Added 
+- [#2475](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2475) Adds integration with latest CosmosDb Preview Package - 3.19.0-preview1 and check for Client Encryption Policy format version.
+
 ### <a name="1.0.0-previewV14"/> [1.0.0-previewV14](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV14) - 2021-04-28
 
 #### Added 
