@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 
             Exception exception = new Exception("oh no");
 
-            // Returns a 304 with 1RU charge
+            // Throws unhandled exception
             documentContainer.Setup(c => c.MonadicChangeFeedAsync(
                 It.IsAny<FeedRangeState<ChangeFeedState>>(),
                 It.IsAny<ChangeFeedPaginationOptions>(),
