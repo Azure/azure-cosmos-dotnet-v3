@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -41,6 +42,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             ContainerProperties response = MockCosmosUtil.Serializer.FromStream<ContainerProperties>(basic);
             Assert.AreEqual(containerSettings.Id, response.Id);
             Assert.AreEqual(containerSettings.PartitionKeyPath, response.PartitionKeyPath);
+        }
+
+        [TestMethod]
+        public void ValidateClientEncryptionPolicyDeserialization()
+        {
+            ClientEncryptionPolicy policy = MockCosmosUtil.Serializer.FromStream<ClientEncryptionPolicy>(new MemoryStream(
+                Encoding.UTF8.GetBytes("{ 'policyFormatVersion': 2, 'newproperty': 'value'  }")));
+            Assert.AreEqual(2, policy.PolicyFormatVersion);
         }
 
         [TestMethod]

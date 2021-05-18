@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
             ItemBatchOperation operation,
+            ITrace trace,
             ItemRequestOptions itemRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
@@ -82,11 +83,15 @@ namespace Microsoft.Azure.Cosmos
 
             await this.ValidateOperationAsync(operation, itemRequestOptions, cancellationToken);
 
-            string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, NoOpTrace.Singleton, cancellationToken).ConfigureAwait(false);
+            string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(
+                operation, 
+                trace, 
+                cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
 
             ItemBatchOperationContext context = new ItemBatchOperationContext(
                 resolvedPartitionKeyRangeId,
+                trace,
                 BatchAsyncContainerExecutor.GetRetryPolicy(this.cosmosContainer, operation.OperationType, this.retryOptions));
 
             if (itemRequestOptions != null)
@@ -108,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
-
+			
             operation.AttachContext(context);
             streamer.Add(operation);
             return await context.OperationTask;
@@ -209,13 +214,12 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task ReBatchAsync(
             ItemBatchOperation operation,
-            ITrace trace,
             CancellationToken cancellationToken)
         {
-            using (ITrace retryTrace = trace.StartChild("Batch Retry Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Retry Async", TraceComponent.Batch, Tracing.TraceLevel.Verbose))
             {
-                string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, retryTrace, cancellationToken).ConfigureAwait(false);
-                operation.Context.ReRouteOperation(resolvedPartitionKeyRangeId);
+                string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(operation, trace, cancellationToken).ConfigureAwait(false);
+                operation.Context.ReRouteOperation(resolvedPartitionKeyRangeId, trace);
                 BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
                 streamer.Add(operation);
             }

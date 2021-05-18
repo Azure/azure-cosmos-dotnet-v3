@@ -10,11 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     internal static class CosmosEncryptionType
     {
         /// <summary>
-        ///  Plaintext, unencrypted data.
-        /// </summary>
-        public const string Plaintext = "Plaintext";
-
-        /// <summary>
         /// Deterministic encryption always generates the same encrypted value for any given plain text value.
         /// </summary>
         public const string Deterministic = "Deterministic";

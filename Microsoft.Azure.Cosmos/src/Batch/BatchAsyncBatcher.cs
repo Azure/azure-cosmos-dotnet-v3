@@ -113,11 +113,10 @@ namespace Microsoft.Azure.Cosmos
             BatchPartitionMetric partitionMetric,
             CancellationToken cancellationToken = default)
         {
-            await this.clientContext.OperationHelperAsync("Batch Dispatch Async",
-                        requestOptions: null,
-                        task: (trace) => this.DispatchHelperAsync(trace, partitionMetric, cancellationToken),
-                        traceComponent: TraceComponent.Batch,
-                        traceLevel: Tracing.TraceLevel.Info);
+            using (ITrace trace = Tracing.Trace.GetRootTrace("Batch Dispatch Async", TraceComponent.Batch, Tracing.TraceLevel.Info))
+            {
+                await this.DispatchHelperAsync(trace, partitionMetric, cancellationToken);
+            }
         }
 
         private async Task<object> DispatchHelperAsync(
@@ -141,7 +140,7 @@ namespace Microsoft.Azure.Cosmos
                     // Any overflow goes to a new batch
                     foreach (ItemBatchOperation operation in pendingOperations)
                     {
-                        await this.retrier(operation, trace, cancellationToken);
+                        await this.retrier(operation, cancellationToken);
                     }
                 }
                 catch (Exception ex)
@@ -178,10 +177,10 @@ namespace Microsoft.Azure.Cosmos
 
                             if (!response.IsSuccessStatusCode)
                             {
-                                Documents.ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
+                                ShouldRetryResult shouldRetry = await itemBatchOperation.Context.ShouldRetryAsync(response, cancellationToken);
                                 if (shouldRetry.ShouldRetry)
                                 {
-                                    await this.retrier(itemBatchOperation, trace, cancellationToken);
+                                    await this.retrier(itemBatchOperation, cancellationToken);
                                     continue;
                                 }
                             }
@@ -252,6 +251,5 @@ namespace Microsoft.Azure.Cosmos
     /// <returns>An instance of <see cref="PartitionKeyRangeBatchResponse"/>.</returns>
     internal delegate Task BatchAsyncBatcherRetryDelegate(
         ItemBatchOperation operation,
-        ITrace trace,
         CancellationToken cancellationToken);
 }

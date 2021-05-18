@@ -822,7 +822,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private sealed class TraceForBaselineTesting : ITrace
         {
             private readonly Dictionary<string, object> data;
-            private readonly List<TraceForBaselineTesting> children;
+            private readonly List<ITrace> children;
 
             public TraceForBaselineTesting(
                 string name,
@@ -834,7 +834,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
-                this.children = new List<TraceForBaselineTesting>();
+                this.children = new List<ITrace>();
                 this.data = new Dictionary<string, object>();
             }
 
@@ -880,8 +880,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
-                this.children.Add(child);
+                this.AddChild(child);
                 return child;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                this.children.Add(trace);
             }
 
             public static TraceForBaselineTesting GetRootTrace()
