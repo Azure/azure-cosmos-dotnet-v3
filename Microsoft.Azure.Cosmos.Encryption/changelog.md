@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added 
 - [#2475](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2475) Adds integration with latest CosmosDb Preview Package - 3.19.0-preview1 and check for Client Encryption Policy format version.
+- [#2449](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2449) Client encryption: Adds validation that partition key paths are not encrypted.
+- [#2452](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2452) Client Encryption : Adds the implementation for new ChangeFeed APIs.
+- [#2448](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2448) Adds client encryption support for patch.
+- [#2445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2445) Fixes query support on encrypted parameters and fixes samples.
+- [#2453](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2453) Removes Plaintext encryption type support.
 
 ### <a name="1.0.0-previewV14"/> [1.0.0-previewV14](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV14) - 2021-04-28
 

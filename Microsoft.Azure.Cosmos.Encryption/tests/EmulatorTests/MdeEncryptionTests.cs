@@ -838,9 +838,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             try
             {
                 Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("CreateContainerAsync operation with PK specified to be encrypted should have failed. ");
             }
             catch (ArgumentException)
-            {                
+            {
             }
 
             // duplicate paths in policy.
