@@ -219,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
                 Assert.AreEqual(2, slowPrimaryRegionHelper.SlowEndpointCount);
                 Assert.IsTrue(slowPrimaryRegionHelper.ReturnedSuccess);
-                Assert.IsTrue(stopwatch.Elapsed > TimeSpan.FromSeconds(5));
+                Assert.IsTrue(stopwatch.Elapsed > TimeSpan.FromSeconds(1));
                 Assert.IsTrue(stopwatch.Elapsed < TimeSpan.FromSeconds(10));
             }
 
