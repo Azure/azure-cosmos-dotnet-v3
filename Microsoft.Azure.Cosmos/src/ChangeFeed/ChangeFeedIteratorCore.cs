@@ -236,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     out CosmosException cosmosException))
                 {
                     this.hasMoreResults = false;
-                    throw createException;
+                    throw ExceptionWithStackTraceException.UnWrapMonadExcepion(createException, trace);
                 }
 
                 return new ResponseMessage(
@@ -260,8 +260,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
-                    this.hasMoreResults = false;
-                    throw enumerator.Current.Exception;
+                    // If it was a cancellation, iterator might still be usable
+                    Exception unwrappedException = ExceptionWithStackTraceException.UnWrapMonadExcepion(enumerator.Current.Exception, trace);
+                    this.hasMoreResults = unwrappedException is OperationCanceledException;
+                    throw unwrappedException;
                 }
 
                 if (!IsRetriableException(cosmosException))

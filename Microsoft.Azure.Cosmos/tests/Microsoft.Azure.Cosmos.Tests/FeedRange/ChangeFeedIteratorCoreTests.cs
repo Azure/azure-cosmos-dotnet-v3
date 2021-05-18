@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         [TestMethod]
         public async Task ChangeFeedIteratorCore_OnNonCosmosExceptions_NoMoreResults()
         {
-            Exception exception = new TaskCanceledException();
+            Exception exception = new NotImplementedException();
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
                 numItems: 0,
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
@@ -278,8 +278,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 ChangeFeedStartFrom.Beginning(),
                 this.MockClientContext());
 
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
             try
             {
                 ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
@@ -287,9 +285,39 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             }
             catch (Exception ex)
             {
-                // TryCatch wraps any exception
-                Assert.AreEqual(exception, ex.InnerException.InnerException);
+                Assert.AreEqual(exception, ex);
                 Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+            }
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_OnTaskCanceledException_NoMoreResultsAndDiagnostics()
+        {
+            Exception exception = new TaskCanceledException();
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    throwException: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            try
+            {
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.Fail("Should have thrown");
+            }
+            catch (OperationCanceledException ex)
+            {
+                Assert.IsTrue(ex is CosmosOperationCanceledException);
+                Assert.IsNotNull(((CosmosOperationCanceledException)ex).Diagnostics);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
             }
         }
 
@@ -323,8 +351,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             }
             catch (Exception ex)
             {
-                // TryCatch wraps any exception
-                Assert.AreEqual(exception, ex.InnerException.InnerException);
+                Assert.AreEqual(exception, ex);
                 Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
             }
 
@@ -337,7 +364,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             catch (Exception ex)
             {
                 // TryCatch wraps any exception
-                Assert.AreEqual(exception, ex.InnerException.InnerException);
+                Assert.AreEqual(exception, ex);
                 Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
             }
         }

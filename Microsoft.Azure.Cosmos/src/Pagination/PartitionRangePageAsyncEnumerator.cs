@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 }
                 catch (Exception unhandledException)
                 {
-                    DefaultTrace.TraceWarning("DocumentContainer failed with unhandled exception {0}", unhandledException);
+                    DefaultTrace.TraceWarning("DocumentContainer failed with exception {0}", unhandledException);
                     this.Current = TryCatch<TPage>.FromException(unhandledException);
                 }
 
