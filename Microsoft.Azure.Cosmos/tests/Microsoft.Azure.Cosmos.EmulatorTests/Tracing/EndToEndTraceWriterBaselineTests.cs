@@ -1148,7 +1148,7 @@
                 return; // skip test for read many as the queries are done in parallel
             }
 
-            if (trace.Children.Count == 0)
+            if (trace.Children.Count() == 0)
             {
                 // Base case
                 return;
@@ -1281,7 +1281,7 @@
 
             public ITrace Parent { get; }
 
-            public IReadOnlyList<ITrace> Children => this.children;
+            public IEnumerable<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 

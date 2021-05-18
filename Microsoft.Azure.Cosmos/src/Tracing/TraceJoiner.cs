@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             public ITrace Parent => null;
 
-            public IReadOnlyList<ITrace> Children => this.children;
+            public IEnumerable<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;
 

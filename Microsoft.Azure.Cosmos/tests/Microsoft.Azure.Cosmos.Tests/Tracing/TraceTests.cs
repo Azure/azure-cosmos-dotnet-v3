@@ -24,7 +24,7 @@
             {
                 Assert.IsNotNull(rootTrace);
                 Assert.IsNotNull(rootTrace.Children);
-                Assert.AreEqual(0, rootTrace.Children.Count);
+                Assert.AreEqual(0, rootTrace.Children.Count());
                 Assert.AreEqual(rootTrace.Component, TraceComponent.Unknown);
                 Assert.AreNotEqual(rootTrace.Id, Guid.Empty);
                 Assert.IsNotNull(rootTrace.Data);
@@ -49,9 +49,10 @@
                 rootTrace.AddChild(twoChild);
             }
 
-            Assert.AreEqual(2, rootTrace.Children.Count);
-            Assert.AreEqual(oneChild, rootTrace.Children[0]);
-            Assert.AreEqual(twoChild, rootTrace.Children[1]);
+            ITrace[] traceArray = rootTrace.Children.ToArray();
+            Assert.AreEqual(2, traceArray.Length);
+            Assert.AreEqual(oneChild, traceArray[0]);
+            Assert.AreEqual(twoChild, traceArray[1]);
         }
 
         [TestMethod]
@@ -59,17 +60,21 @@
         {
             using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace", component: TraceComponent.Query, level: TraceLevel.Info))
             {
-                using (ITrace childTrace1 = rootTrace.StartChild("Child1" /*inherits parent's component*/))
+                ITrace childTrace1;
+                using (childTrace1 = rootTrace.StartChild("Child1" /*inherits parent's component*/))
                 {
                 }
+                Assert.AreEqual(rootTrace.Children.Count(), 1);
+                Assert.AreEqual(rootTrace.Children.First(), childTrace1);
 
                 using (ITrace childTrace2 = rootTrace.StartChild("Child2", component: TraceComponent.Transport, TraceLevel.Info))
                 {
                 }
 
-                Assert.AreEqual(rootTrace.Children.Count, 2);
-                Assert.AreEqual(rootTrace.Children[0].Component, TraceComponent.Query);
-                Assert.AreEqual(rootTrace.Children[1].Component, TraceComponent.Transport);
+                ITrace[] traceArray = rootTrace.Children.ToArray();
+                Assert.AreEqual(traceArray.Length, 2);
+                Assert.AreEqual(traceArray[0].Component, TraceComponent.Query);
+                Assert.AreEqual(traceArray[1].Component, TraceComponent.Transport);
             }
         }
 
@@ -86,7 +91,7 @@
                 {
                 }
 
-                Assert.AreEqual(rootTrace.Children.Count, 0);
+                Assert.AreEqual(rootTrace.Children.Count(), 0);
             }
         }
 

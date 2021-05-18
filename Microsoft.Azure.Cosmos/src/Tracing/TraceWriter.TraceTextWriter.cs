@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 if (trace.Data.Count > 0)
                 {
-                    bool isLeaf = trace.Children.Count == 0;
+                    bool isLeaf = trace.Children.Count() == 0;
 
                     WriteInfoIndents(writer, indentStack, asciiTreeIndents, isLastChild: isLastChild, isLeaf: isLeaf);
                     writer.WriteLine('(');
@@ -240,15 +240,16 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     writer.WriteLine(')');
                 }
 
-                for (int i = 0; i < trace.Children.Count - 1; i++)
+                ITrace[] traceArray = trace.Children.ToArray();
+                for (int i = 0; i < traceArray.Length - 1; i++)
                 {
-                    ITrace child = trace.Children[i];
+                    ITrace child = traceArray[i];
                     WriteTraceRecursive(writer, child, level, asciiTreeIndents, isLastChild: false);
                 }
 
-                if (trace.Children.Count != 0)
+                if (traceArray.Length != 0)
                 {
-                    ITrace child = trace.Children[trace.Children.Count - 1];
+                    ITrace child = traceArray[traceArray.Length - 1];
                     WriteTraceRecursive(writer, child, level, asciiTreeIndents, isLastChild: true);
                 }
             }

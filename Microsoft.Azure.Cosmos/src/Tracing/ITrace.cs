@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// <summary>
         /// Gets the children of this trace.
         /// </summary>
-        IReadOnlyList<ITrace> Children { get; }
+        IEnumerable<ITrace> Children { get; }
 
         /// <summary>
         /// Gets additional datum associated with this trace.

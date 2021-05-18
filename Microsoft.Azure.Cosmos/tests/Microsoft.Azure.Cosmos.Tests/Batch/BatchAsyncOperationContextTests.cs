@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -52,11 +53,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Complete(null, result);
 
+            ITrace[] traceArray = result.Trace.Children.ToArray();
             Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
-            Assert.AreEqual(2, result.Trace.Children.Count, "The final trace should have the initial trace, plus the retries, plus the final trace");
+            Assert.AreEqual(2, traceArray.Length, "The final trace should have the initial trace, plus the retries, plus the final trace");
             Assert.AreEqual(rootTrace, result.Trace, "The first trace child should be the initial root");
-            Assert.AreEqual(retryTrace, result.Trace.Children[0], "The second trace child should be the one from the retry");
-            Assert.AreEqual(transportTrace, result.Trace.Children[1], "The third trace child should be the one from the final result");
+            Assert.AreEqual(retryTrace, traceArray[0], "The second trace child should be the one from the retry");
+            Assert.AreEqual(transportTrace, traceArray[1], "The third trace child should be the one from the final result");
         }
 
         [TestMethod]
@@ -93,10 +95,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             batchAsyncOperationContext.Complete(null, result);
 
+            ITrace[] traceArray = result.Trace.Children.ToArray();
             Assert.AreEqual(result, await batchAsyncOperationContext.OperationTask);
-            Assert.AreEqual(1, result.Trace.Children.Count, "The final trace should have the initial trace, plus the final trace, since the result is not retried, it should not capture it");
+            Assert.AreEqual(1, traceArray.Length, "The final trace should have the initial trace, plus the final trace, since the result is not retried, it should not capture it");
             Assert.AreEqual(rootTrace, result.Trace, "The first trace child should be the initial root");
-            Assert.AreEqual(transportTrace, result.Trace.Children[0], "The second trace child should be the one from the final result");
+            Assert.AreEqual(transportTrace, traceArray[0], "The second trace child should be the one from the final result");
         }
 
         [TestMethod]

@@ -6,12 +6,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     internal sealed class NoOpTrace : ITrace
     {
         public static readonly NoOpTrace Singleton = new NoOpTrace();
 
-        private static readonly IReadOnlyList<ITrace> NoOpChildren = new List<ITrace>();
+        private static readonly IEnumerable<ITrace> NoOpChildren = Enumerable.Empty<ITrace>();
         private static readonly IReadOnlyDictionary<string, object> NoOpData = new Dictionary<string, object>();
         private static readonly CallerInfo NoOpCallerInfo = new CallerInfo(memberName: "NoOp", filePath: "NoOp", lineNumber: 9001);
 
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public ITrace Parent => null;
 
-        public IReadOnlyList<ITrace> Children => NoOpChildren;
+        public IEnumerable<ITrace> Children => NoOpChildren;
 
         public IReadOnlyDictionary<string, object> Data => NoOpData;
 

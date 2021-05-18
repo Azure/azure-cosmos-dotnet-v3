@@ -542,7 +542,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             Console.WriteLine(trace);
 
-            Assert.AreEqual(childCount, rootTrace.Children.Count);
+            Assert.AreEqual(childCount, rootTrace.Children.Count());
         }
 
         private static Stream GenerateStreamFromString(string s)
