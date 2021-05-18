@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
-        public async Task ChangeFeedIteratorCore_OnCosmosException_NoMoreResults()
+        public async Task ChangeFeedIteratorCore_OnCosmosException_HasMoreResults()
         {
             CosmosException exception = CosmosExceptionFactory.CreateInternalServerErrorException("something's broken", new Headers());
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         }
 
         [TestMethod]
-        public async Task ChangeFeedIteratorCore_OnRetriableCosmosException_NoMoreResults()
+        public async Task ChangeFeedIteratorCore_OnRetriableCosmosException_HasMoreResults()
         {
             CosmosException exception = CosmosExceptionFactory.CreateThrottledException("retry", new Headers());
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
@@ -259,9 +259,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
         }
 
-        // If there is a failure but it's not retriable and does not qualify as CosmosException
         [TestMethod]
-        public async Task ChangeFeedIteratorCore_OnNonCosmosExceptions_NoMoreResults()
+        public async Task ChangeFeedIteratorCore_OnNonCosmosExceptions_HasMoreResults()
         {
             Exception exception = new NotImplementedException();
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
@@ -286,12 +285,12 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             catch (Exception ex)
             {
                 Assert.AreEqual(exception, ex);
-                Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
             }
         }
 
         [TestMethod]
-        public async Task ChangeFeedIteratorCore_OnTaskCanceledException_NoMoreResultsAndDiagnostics()
+        public async Task ChangeFeedIteratorCore_OnTaskCanceledException_HasMoreResultsAndDiagnostics()
         {
             Exception exception = new TaskCanceledException();
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
@@ -325,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         /// If an unhandled exception occurs within the NetworkAttachedDocumentContainer, the exception is transmitted but it does not break the enumerators
         /// </summary>
         [TestMethod]
-        public async Task ChangeFeedIteratorCore_OnUnhandledException_NoMoreResults()
+        public async Task ChangeFeedIteratorCore_OnUnhandledException_HasMoreResults()
         {
             Exception exception = new Exception("oh no");
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
@@ -352,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             catch (Exception ex)
             {
                 Assert.AreEqual(exception, ex);
-                Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
             }
 
             // If read a second time, it should not throw any missing page errors related to enumerators
@@ -365,7 +364,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             {
                 // TryCatch wraps any exception
                 Assert.AreEqual(exception, ex);
-                Assert.IsFalse(changeFeedIteratorCore.HasMoreResults);
+                Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
             }
         }
 

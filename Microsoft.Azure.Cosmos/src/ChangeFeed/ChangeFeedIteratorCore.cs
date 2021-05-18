@@ -261,10 +261,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
-                    // If it was a cancellation, iterator might still be usable
-                    Exception unwrappedException = ExceptionWithStackTraceException.UnWrapMonadExcepion(enumerator.Current.Exception, trace);
-                    this.hasMoreResults = unwrappedException is OperationCanceledException;
-                    throw unwrappedException;
+                    throw ExceptionWithStackTraceException.UnWrapMonadExcepion(enumerator.Current.Exception, trace);
                 }
 
                 if (!IsRetriableException(cosmosException))
