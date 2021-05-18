@@ -1432,7 +1432,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public void ClientEncryptionPolicyFailureTest()
+        public async Task ClientEncryptionPolicyFailureTest()
         {
             string containerName = Guid.NewGuid().ToString();
             string partitionKeyPath = "/users";
@@ -1497,6 +1497,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (ArgumentException ex)
             {
                 Assert.IsTrue(ex.Message.Contains("Duplicate Path found."));
+            }
+
+            try
+            {
+                Collection<ClientEncryptionIncludedPath> pathsToEncryptWithPartitionKey = new Collection<ClientEncryptionIncludedPath>()
+                {
+                    new ClientEncryptionIncludedPath()
+                    {
+                        Path = partitionKeyPath,
+                        ClientEncryptionKeyId = "dekId1",
+                        EncryptionAlgorithm = "AEAD_AES_256_CBC_HMAC_SHA256",
+                        EncryptionType = "Randomized"
+                    },
+                };
+
+                ContainerProperties setting = new ContainerProperties()
+                {
+                    Id = containerName,
+                    PartitionKey = new PartitionKeyDefinition() { Paths = new Collection<string> { partitionKeyPath }, Kind = PartitionKind.Hash },
+                    ClientEncryptionPolicy = new ClientEncryptionPolicy(pathsToEncryptWithPartitionKey)
+                };
+
+                await this.cosmosDatabase.CreateContainerAsync(setting);
+                Assert.Fail("Creating container should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("Paths which are part of the partition key may not be included in the ClientEncryptionPolicy."));
             }
         }
 

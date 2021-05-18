@@ -60,7 +60,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 CosmosEncryptionType.Deterministic => EncryptionType.Deterministic,
                 CosmosEncryptionType.Randomized => EncryptionType.Randomized,
-                CosmosEncryptionType.Plaintext => EncryptionType.Plaintext,
                 _ => throw new ArgumentException($"Invalid encryption type {clientEncryptionIncludedPath.EncryptionType}. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
         }
