@@ -86,6 +86,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (clientEncryptionPolicy != null)
             {
+                if (clientEncryptionPolicy.PolicyFormatVersion > 1)
+                {
+                    throw new InvalidOperationException("This version of the Encryption library cannot be used with this container." +
+                        " Please upgrade to the latest version of the same. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                }
+
                 // for each of the unique keys in the policy Add it in /Update the cache.
                 foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(x => x.ClientEncryptionKeyId).Distinct())
                 {
