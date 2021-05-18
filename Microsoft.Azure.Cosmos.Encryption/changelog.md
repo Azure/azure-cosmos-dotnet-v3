@@ -10,8 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2449](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2449) Adds validation that partition key paths are not encrypted.
 - [#2452](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2452) Adds the implementation for new ChangeFeed APIs.
 - [#2448](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2448) Adds client encryption support for patch.
-- [#2445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2445) Fixes query support on encrypted parameters and fixes samples.
 - [#2453](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2453) Removes Plaintext encryption type support.
+- [#2372](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2372) Adds decryption support for ChangeFeed Processor.
+
+#### Fixes 
+- [#2445](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2445) Fixes query support on encrypted parameters and fixes samples.
+- [#2403](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2403) Fixes issue with clients using incorrect/stale Encryption Policy or Encryption Keys from the cache.
 
 ### <a name="1.0.0-previewV14"/> [1.0.0-previewV14](https://www.nuget.org/packages/Microsoft.Azure.Cosmos.Encryption/1.0.0-previewV14) - 2021-04-28
 
