@@ -14,16 +14,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
-    [MemoryDiagnoser]
+    [Config(typeof(SdkBenchmarkConfiguration))]
     public class ITraceBenchmark
     {
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public void OptimizedITrace()
         {
             this.CreateITraceTree("optimized");
         }
 
         [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
         public void OldITrace()
         {
             this.CreateITraceTree("unoptimized");
