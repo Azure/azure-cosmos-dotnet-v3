@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             if (traceType == "optimized")
             {
-                return Trace.GetRootTrace("RootTrace");
+                return Tracing.Trace.GetRootTrace("RootTrace");
             }
             else
             {
@@ -75,14 +76,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             public readonly Dictionary<string, object> data;
             public readonly List<ITrace> children;
+            private readonly Stopwatch stopwatch;
 
             public UnoptimizedITrace(
                 string name,
-                TraceLevel level,
+                Tracing.TraceLevel level,
                 TraceComponent component,
                 UnoptimizedITrace parent)
             {
                 this.Name = name ?? throw new ArgumentNullException(nameof(name));
+                this.Id = Guid.NewGuid();
+                this.CallerInfo = new CallerInfo("MemberName", "FilePath", 42);
+                this.StartTime = DateTime.UtcNow;
+                this.stopwatch = Stopwatch.StartNew();
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
@@ -92,15 +98,15 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             public string Name { get; }
 
-            public Guid Id => Guid.Empty;
+            public Guid Id { get; }
 
-            public CallerInfo CallerInfo => new CallerInfo("MemberName", "FilePath", 42);
+            public CallerInfo CallerInfo { get; }
 
-            public DateTime StartTime => DateTime.MinValue;
+            public DateTime StartTime { get;}
 
             public TimeSpan Duration => TimeSpan.Zero;
 
-            public TraceLevel Level { get; }
+            public Tracing.TraceLevel Level { get; }
 
             public TraceComponent Component { get; }
 
@@ -132,10 +138,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             public ITrace StartChild(string name, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
-                return this.StartChild(name, TraceComponent.Unknown, TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
+                return this.StartChild(name, TraceComponent.Unknown, Tracing.TraceLevel.Info, memberName, sourceFilePath, sourceLineNumber);
             }
 
-            public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
+            public ITrace StartChild(string name, TraceComponent component, Tracing.TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 UnoptimizedITrace child = new UnoptimizedITrace(name, level, component, parent: this);
                 this.AddChild(child);
@@ -149,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             public static UnoptimizedITrace GetRootTrace()
             {
-                return new UnoptimizedITrace("Trace For Perf Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
+                return new UnoptimizedITrace("Trace For Perf Testing", Tracing.TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
         }
     }
