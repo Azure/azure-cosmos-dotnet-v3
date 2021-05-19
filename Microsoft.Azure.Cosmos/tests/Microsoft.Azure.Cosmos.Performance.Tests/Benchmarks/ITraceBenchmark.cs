@@ -38,19 +38,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 using (ITrace firstlevel = root.StartChild("first"))
                 {
-                    using (ITrace secondLevel = root.StartChild("second"))
+                    using (ITrace secondLevel = firstlevel.StartChild("second"))
                     {
-                        using (ITrace thirdLevel = root.StartChild("third"))
+                        using (ITrace thirdLevel = secondLevel.StartChild("third"))
                         {
-                            using (ITrace fourthLevel = root.StartChild("fourth"))
+                            using (ITrace fourthLevel = thirdLevel.StartChild("fourth"))
                             {
 
                             }
-                            using (ITrace fourthLevel = root.StartChild("fourth"))
+                            using (ITrace fourthLevel = thirdLevel.StartChild("fourth"))
                             {
 
                             }
-                            using (ITrace fourthLevel = root.StartChild("fourth"))
+                            using (ITrace fourthLevel = thirdLevel.StartChild("fourth"))
                             {
 
                             }
