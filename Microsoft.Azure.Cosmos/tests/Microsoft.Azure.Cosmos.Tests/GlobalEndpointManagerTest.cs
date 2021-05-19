@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             connectionPolicy.PreferredLocations.Add("ReadLocation1");
             connectionPolicy.PreferredLocations.Add("ReadLocation2");
 
-            GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            using GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
             globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
@@ -393,7 +393,7 @@ namespace Microsoft.Azure.Cosmos
             connectionPolicy.PreferredLocations.Add("ReadLocation1");
             connectionPolicy.PreferredLocations.Add("ReadLocation2");
 
-            GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            using GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
 
             globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
