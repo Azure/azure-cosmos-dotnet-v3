@@ -152,7 +152,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             public void AddChild(ITrace trace)
             {
-                this.children.Add(trace);
+                lock (this.children)
+                {
+                    this.children.Add(trace);
+                }
             }
 
             public static UnoptimizedITrace GetRootTrace()
