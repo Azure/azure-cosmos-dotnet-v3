@@ -161,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         /// This avoids latency issues because the old token is used until the new token is retrieved.
         /// </summary>
         /// <remarks>
-        /// The recommended minimum value is 5 minutes. The default value is 25% of the token expire time.
+        /// The recommended minimum value is 5 minutes. The default value is 50% of the token expire time.
         /// </remarks>
 #if PREVIEW
         public
