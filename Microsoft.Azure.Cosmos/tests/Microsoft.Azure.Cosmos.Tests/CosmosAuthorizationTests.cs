@@ -191,32 +191,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(ae.ToString().Contains("backgroundTokenCredentialRefreshInterval"));
             }
 
-            try
-            {
-                new TokenCredentialCache(
-                    new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
-                Assert.Fail("Should throw ArgumentException");
-            }
-            catch (ArgumentException ae)
-            {
-                Assert.IsTrue(ae.ToString().Contains("backgroundTokenCredentialRefreshInterval"));
-            }
-
-            try
-            {
-                new TokenCredentialCache(
-                    new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpoint,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
-                Assert.Fail("Should throw ArgumentException");
-            }
-            catch (ArgumentException ae)
-            {
-                Assert.IsTrue(ae.ToString().Contains("backgroundTokenCredentialRefreshInterval"));
-            }
-
             // Which is roughly 24 days
             using TokenCredentialCache token = new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
@@ -243,9 +217,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public async Task TestTokenCredentialErrorAsync()
         {
-            Exception exception = new Exception();
+            Exception exceptionToBeThrown = new Exception("Test Error Message");
 
-            TestTokenCredential testTokenCredential = new TestTokenCredential(() => throw exception);
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() => throw exceptionToBeThrown);
 
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
@@ -254,18 +228,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                     await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
                     Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
                 }
-                catch (CosmosException cosmosException)
+                catch (Exception exception)
                 {
-                    Assert.AreEqual(HttpStatusCode.Unauthorized, cosmosException.StatusCode);
-                    Assert.AreEqual((int)Azure.Documents.SubStatusCodes.FailedToGetAadToken, cosmosException.SubStatusCode);
-
+                    // It should just throw the original exception and not be wrapped in a CosmosException.
+                    // This avoids any confusion on where the error was thrown from.
                     Assert.IsTrue(object.ReferenceEquals(
                         exception,
-                        cosmosException.InnerException));
+                        exceptionToBeThrown));
                 }
 
                 // TokenCredential.GetTokenAsync() is retried for 3 times, so it should have been invoked for 4 times.
-                Assert.AreEqual(3, testTokenCredential.NumTimesInvoked);
+                Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
             }
         }
 
@@ -361,14 +334,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     await tokenCredentialCache.GetTokenAsync(trace);
                     Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
                 }
-                catch (CosmosException cosmosException)
+                catch (Exception thrownException)
                 {
-                    Assert.AreEqual(HttpStatusCode.Unauthorized, cosmosException.StatusCode);
-                    Assert.AreEqual((int)Azure.Documents.SubStatusCodes.FailedToGetAadToken, cosmosException.SubStatusCode);
-
+                    // It should just throw the original exception and not be wrapped in a CosmosException
+                    // This avoids any confusion on where the error was thrown from.
                     Assert.IsTrue(object.ReferenceEquals(
                         exception,
-                        cosmosException.InnerException));
+                        thrownException));
                 }
             }
         }

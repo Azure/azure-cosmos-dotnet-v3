@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Use the cached token if it is still valid
             if (this.cachedAccessToken.HasValue &&
-                DateTime.UtcNow >= this.cachedAccessToken.Value.ExpiresOn)
+                DateTime.UtcNow < this.cachedAccessToken.Value.ExpiresOn)
             {
                 return this.cachedAccessToken.Value.Token;
             }
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace)
         {
             Exception? lastException = null;
-            const int totalRetryCount = 3;
+            const int totalRetryCount = 2;
             for (int retry = 0; retry < totalRetryCount; retry++)
             {
                 if (this.cancellationToken.IsCancellationRequested)

@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions))
             {
-                Assert.AreEqual(3, getAadTokenCount);
+                Assert.AreEqual(2, getAadTokenCount);
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 ResponseMessage responseMessage = await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
                 Assert.IsNotNull(responseMessage);
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions))
             {
-                Assert.AreEqual(3, getAadTokenCount);
+                Assert.AreEqual(2, getAadTokenCount);
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 try
                 {
