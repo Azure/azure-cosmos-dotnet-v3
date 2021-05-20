@@ -789,7 +789,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 async (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<JObject> documents,
+#if SdkProjectRef
+                    Func<Task> tryCheckpointAsync,
+#else
+                    // Remove on next release
                     Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+#endif
                     CancellationToken cancellationToken) =>
                 {
                     List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(

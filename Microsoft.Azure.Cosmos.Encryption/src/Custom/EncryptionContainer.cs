@@ -931,7 +931,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 async (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<JObject> documents,
+#if SdkProjectRef
+                    Func<Task> tryCheckpointAsync,
+#else
+                    // Remove on next release
                     Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+#endif
                     CancellationToken cancellationToken) =>
                 {
                     List<T> decryptItems = await this.DecryptChangeFeedDocumentsAsync<T>(
@@ -973,7 +978,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 async (
                     ChangeFeedProcessorContext context,
                     Stream changes,
+#if SdkProjectRef
+                    Func<Task> tryCheckpointAsync,
+#else
+                    // Remove on next release
                     Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+#endif
                     CancellationToken cancellationToken) =>
                 {
                     Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
