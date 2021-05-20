@@ -931,7 +931,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 async (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<JObject> documents,
-#if SdkProjectRef
+#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
 #else
                     // Remove on next release
@@ -978,7 +978,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 async (
                     ChangeFeedProcessorContext context,
                     Stream changes,
-#if SdkProjectRef
+#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
 #else
                     // Remove on next release

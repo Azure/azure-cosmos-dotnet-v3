@@ -789,7 +789,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 async (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<JObject> documents,
-#if SdkProjectRef
+#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
 #else
                     // Remove on next release
@@ -840,7 +840,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 async (
                     ChangeFeedProcessorContext context,
                     Stream changes,
+#if SDKPROJECTREF
+                    Func<Task> tryCheckpointAsync,
+#else
+                    // Remove on next release
                     Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+#endif
                     CancellationToken cancellationToken) =>
                 {
                     EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
