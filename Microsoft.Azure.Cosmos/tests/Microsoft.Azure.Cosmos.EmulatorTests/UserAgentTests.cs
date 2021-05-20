@@ -115,10 +115,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             {
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-                cosmosClientOptions.LimitToEndpoint = true;
-                // L - Limit endpoint, N - None. The user did not configure anything
-                string userAgentContentToValidate = "|LN|";
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+                {
+                    LimitToEndpoint = true
+                };
+                // D - Disabled endpoint discovery, N - None. The user did not configure anything
+                string userAgentContentToValidate = "|DN|";
                 await this.ValidateUserAgentStringAsync(
                     cosmosClientOptions,
                     userAgentContentToValidate,
@@ -127,9 +129,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             {
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-                cosmosClientOptions.LimitToEndpoint = false;
-                cosmosClientOptions.ApplicationRegion = Regions.EastUS;
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+                {
+                    ApplicationRegion = Regions.EastUS
+                };
 
                 // S - Single application region is set
                 string userAgentContentToValidate = "|S|";
@@ -141,13 +144,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             {
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
-                cosmosClientOptions.LimitToEndpoint = false;
-                cosmosClientOptions.ApplicationRegion = null;
-                cosmosClientOptions.ApplicationPreferredRegions = new List<string>()
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
                 {
-                    Regions.EastUS,
-                    Regions.WestUS
+                    LimitToEndpoint = false,
+                    ApplicationRegion = null,
+                    ApplicationPreferredRegions = new List<string>()
+                    {
+                        Regions.EastUS,
+                        Regions.WestUS
+                    }
                 };
 
                 // L - List of region is set

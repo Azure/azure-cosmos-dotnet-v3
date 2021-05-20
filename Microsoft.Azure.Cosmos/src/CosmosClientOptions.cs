@@ -847,10 +847,10 @@ namespace Microsoft.Azure.Cosmos
         /// This generates a key that added to the user agent to make it 
         /// possible to determine if the SDK has region failover enabled.
         /// </summary>
-        /// <returns>Format Reg-{L (Limit to single region)}-S(application region)|L(List of regions)|N(None, user did not configure it)</returns>
+        /// <returns>Format Reg-{D (Disabled discovery)}-S(application region)|L(List of preferred regions)|N(None, user did not configure it)</returns>
         private string GetRegionConfiguration()
         {
-            string regionConfig = this.LimitToEndpoint ? "L" : string.Empty;
+            string regionConfig = this.LimitToEndpoint ? "D" : string.Empty;
             if (!string.IsNullOrEmpty(this.ApplicationRegion))
             {
                 return regionConfig + "S";
