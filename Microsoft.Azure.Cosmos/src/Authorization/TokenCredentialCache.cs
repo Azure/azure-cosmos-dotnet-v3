@@ -186,18 +186,13 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (Exception exception)
                     {
+                        lastException = exception;
                         getTokenTrace.AddDatum(
                             $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                             exception);
 
                         DefaultTrace.TraceError(
                             $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
-
-                        // if it is the last retry then throw the exception
-                        if (retry == totalRetryCount - 1)
-                        {
-                            throw;
-                        }
                     }
                 }
 
@@ -205,15 +200,13 @@ namespace Microsoft.Azure.Cosmos
                     $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
             }
 
+            if (lastException == null)
+            {
+                throw new ArgumentException("Last exception is null.");
+            }
+
             // The code should never get here, but need it to make compiler happy.
-            throw CosmosExceptionFactory.CreateUnauthorizedException(
-                   message: ClientResources.FailedToGetAadToken,
-                   headers: new Headers()
-                   {
-                       SubStatusCode = SubStatusCodes.FailedToGetAadToken,
-                   },
-                   innerException: null,
-                   trace: trace);
+            throw lastException;
         }
 
         /// <summary>
@@ -245,10 +238,19 @@ namespace Microsoft.Azure.Cosmos
                     throw new ArgumentNullException("TokenCredential.GetTokenAsync returned a null token.");
                 }
 
+                if (this.cachedAccessToken.Value.ExpiresOn < DateTimeOffset.UtcNow)
+                {
+                    throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{this.cachedAccessToken.Value.ExpiresOn:O}");
+                }
+
                 if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
                 {
-                    double totalSecondUntilExpire = (this.cachedAccessToken.Value.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
-                    this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
+                    double refreshIntervalInSeconds = (this.cachedAccessToken.Value.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
+                    
+                    // Ensure the background refresh interval is a valid range.
+                    refreshIntervalInSeconds = Math.Max(refreshIntervalInSeconds, TokenCredentialCache.MinimumTimeBetweenBackgroundRefreshInterval.TotalSeconds);
+                    refreshIntervalInSeconds = Math.Min(refreshIntervalInSeconds, TokenCredentialCache.MaxBackgroundRefreshInterval.TotalSeconds);
+                    this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(refreshIntervalInSeconds);
                 }
 
                 return this.cachedAccessToken.Value;
@@ -321,10 +323,16 @@ namespace Microsoft.Azure.Cosmos
                         double totalSecondUntilExpire = (this.cachedAccessToken.Value.ExpiresOn - DateTimeOffset.UtcNow).TotalSeconds * DefaultBackgroundTokenCredentialRefreshIntervalPercentage;
                         this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromSeconds(totalSecondUntilExpire);
 
-                        // Refresh interval is less than the minimum. Reset to the default
+                        // Refresh interval is less than the minimum. Stop the background refresh.
+                        // The background refresh will start again on the next successful token refresh.
                         if (this.systemBackgroundTokenCredentialRefreshInterval < TokenCredentialCache.MinimumTimeBetweenBackgroundRefreshInterval)
                         {
-                            this.systemBackgroundTokenCredentialRefreshInterval = TimeSpan.FromMinutes(30);
+                            lock (this.backgroundRefreshLock)
+                            {
+                                this.isBackgroundTaskRunning = false;
+                            }
+
+                            return;
                         }
                     }
                 }
