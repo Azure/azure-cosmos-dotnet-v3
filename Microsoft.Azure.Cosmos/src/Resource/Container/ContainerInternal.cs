@@ -183,7 +183,7 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<T> changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            Func<Task> checkpointAsync,
             CancellationToken cancellationToken);
 
         public delegate Task ChangeFeedStreamHandler(
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
             ChangeFeedProcessorContext context,
             Stream changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            Func<Task> checkpointAsync,
             CancellationToken cancellationToken);
 
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
