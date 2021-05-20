@@ -440,6 +440,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Invoking refresh");
 
+                if (this.cancellationTokenSource.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 await this.RefreshDatabaseAccountInternalAsync(forceRefresh: false);
             }
             catch (Exception ex)
@@ -472,6 +477,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         private async Task RefreshDatabaseAccountInternalAsync(bool forceRefresh)
         {
+            if (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                return;
+            }
+
             if (this.SkipRefresh(forceRefresh))
             {
                 return;

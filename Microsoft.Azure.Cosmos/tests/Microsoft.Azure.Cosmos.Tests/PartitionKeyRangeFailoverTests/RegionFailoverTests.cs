@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // testhost.dll.config sets it to 2 seconds which causes it to always expire before retrying. Remove the override.
             System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"] = "500";
 
-            string accountName = "testAccount";
+            string accountName = nameof(TestHttpRequestExceptionScenarioAsync);
             string primaryRegionNameForUri = "eastus";
             string secondaryRegionNameForUri = "westus";
             string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
@@ -206,6 +206,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Reset it back to the override to avoid impacting other tests.
                 System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"] = "2";
             }
+
+            await Task.Delay(TimeSpan.FromMinutes(2));
         }
     }
 }
