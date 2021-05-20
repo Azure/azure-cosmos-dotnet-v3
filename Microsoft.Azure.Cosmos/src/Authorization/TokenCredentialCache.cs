@@ -195,9 +195,6 @@ namespace Microsoft.Azure.Cosmos
                             $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
                     }
                 }
-
-                DefaultTrace.TraceError(
-                    $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
             }
 
             if (lastException == null)
