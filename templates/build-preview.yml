@@ -43,7 +43,7 @@ jobs:
       configuration: $(parameters.BuildConfiguration)
       nugetConfigPath: NuGet.config
       projects: Microsoft.Azure.Cosmos.sln 
-      arguments: -p:Optimize=true -p:IsPreview=true;SdkProjectRef=true
+      arguments: -p:Optimize=true -p:IsPreview=true -p:SdkProjectRef=true
       versioningScheme: OFF
 
 - job:
