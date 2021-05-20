@@ -737,20 +737,20 @@
         "Microsoft.Azure.Cosmos.Container+ChangeFeedHandlerWithManualCheckpoint`1;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:True;IsSerializable:True": {
           "Subclasses": {},
           "Members": {
-            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void .ctor(System.Object, IntPtr)": {
               "Type": "Constructor",
@@ -789,20 +789,20 @@
         "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandlerWithManualCheckpoint;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:True": {
           "Subclasses": {},
           "Members": {
-            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+            "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
               "Type": "Method",
               "Attributes": [],
               "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+            "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken)": {
               "Type": "Method",
               "Attributes": [],
-              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void .ctor(System.Object, IntPtr)": {
               "Type": "Constructor",
@@ -843,20 +843,20 @@
     "Microsoft.Azure.Cosmos.Container+ChangeFeedHandlerWithManualCheckpoint`1;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:True;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
-        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.Collections.Generic.IReadOnlyCollection`1[T], System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(System.Object, IntPtr)": {
           "Type": "Constructor",
@@ -895,20 +895,20 @@
     "Microsoft.Azure.Cosmos.Container+ChangeFeedStreamHandlerWithManualCheckpoint;System.MulticastDelegate;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
-        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
+        "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.IAsyncResult BeginInvoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken, System.AsyncCallback, System.Object);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult)": {
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task EndInvoke(System.IAsyncResult);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken)": {
+        "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task`1[System.ValueTuple`2[System.Boolean,System.Exception]]], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Threading.Tasks.Task Invoke(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext, System.IO.Stream, System.Func`1[System.Threading.Tasks.Task], System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor(System.Object, IntPtr)": {
           "Type": "Constructor",
