@@ -440,7 +440,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Invoking refresh");
 
-                Console.WriteLine($"{DateTime.UtcNow:O} - GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer");
                 await this.RefreshDatabaseAccountInternalAsync(forceRefresh: false);
             }
             catch (Exception ex)
