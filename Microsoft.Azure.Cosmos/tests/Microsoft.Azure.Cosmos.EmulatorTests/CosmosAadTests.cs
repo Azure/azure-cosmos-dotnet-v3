@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
                     Assert.Fail("Should throw auth error.");
                 }
-                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.Unauthorized)
+                catch (RequestFailedException ce) when (ce.Status == (int)HttpStatusCode.RequestTimeout)
                 {
                     Assert.IsNotNull(ce.Message);
                     Assert.IsTrue(ce.ToString().Contains(errorMessage));

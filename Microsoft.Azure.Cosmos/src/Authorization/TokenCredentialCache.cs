@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("Last exception is null.");
             }
 
-            // The code should never get here, but need it to make compiler happy.
+            // The retries have been exhausted. Throw the last exception.
             throw lastException;
         }
 
