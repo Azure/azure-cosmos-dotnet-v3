@@ -27,8 +27,10 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task EndpointFailureMockTest()
         {
+            Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "100");
+
             // Setup dummpy read locations for the database account
-            Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
+            Collection <AccountRegion> readableLocations = new Collection<AccountRegion>();
 
             AccountRegion writeLocation = new AccountRegion();
             writeLocation.Name = "WriteLocation";
@@ -52,31 +54,72 @@ namespace Microsoft.Azure.Cosmos
             //Setup mock owner "document client"
             Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
             mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
-            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(databaseAccount);
+
+            int getAccountInfoCount = 0;
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .Callback(() => getAccountInfoCount++)
+                .ReturnsAsync(databaseAccount);
 
             //Create connection policy and populate preferred locations
             ConnectionPolicy connectionPolicy = new ConnectionPolicy();
             connectionPolicy.PreferredLocations.Add("ReadLocation1");
             connectionPolicy.PreferredLocations.Add("ReadLocation2");
 
-            using GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            using (GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+            {
+                globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
-            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
-            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+                //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
+                globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
+                await globalEndpointManager.RefreshLocationAsync();
+                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
 
-            //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
-            globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
-            globalEndpointManager.RefreshLocationAsync().Wait();
-            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
+                globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
+                await globalEndpointManager.RefreshLocationAsync();
+                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
 
-            globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
-            await globalEndpointManager.RefreshLocationAsync();
-            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
+                getAccountInfoCount = 0;
+                //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
+                await Task.Delay(TimeSpan.FromSeconds(3));
+                Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
 
-            //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
-            Thread.Sleep(3000);
-            await globalEndpointManager.RefreshLocationAsync();
-            Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+                await globalEndpointManager.RefreshLocationAsync();
+                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+            }
+
+            Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
+            getAccountInfoCount = 0;
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+            Assert.AreEqual(0, getAccountInfoCount, "There should be no more account calls after the GlobalEndpointManager is disposed");
+            Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", null);
+        }
+
+        [TestMethod]
+        public async Task ValidateCancellationTokenLogicForGetDatabaseAccountFromAnyLocationAsync()
+        {
+            Uri defaultEndpoint = new Uri("https://testfailover.documents-test.windows-int.net/");
+            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+
+            try
+            {
+                await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                   defaultEndpoint,
+                   locations: new List<string>(){
+                           "westus",
+                           "southeastasia",
+                           "northcentralus"
+                       },
+                       getDatabaseAccountFn: (uri) => throw new Exception("The operation should be canceled and never make the network call."),
+                       cancellationTokenSource.Token);
+
+                Assert.Fail("Previous call should have failed");
+            }
+            catch(OperationCanceledException op)
+            {
+                Assert.IsTrue(op.Message.Contains("GlobalEndpointManager"));
+            }
         }
 
         /// <summary>
@@ -106,7 +149,8 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         throw new Exception("This should never be hit since it should stop after the global endpoint hit the nonretriable exception");
-                    });
+                    },
+                    cancellationToken: default);
 
                 Assert.Fail("Should throw the UnauthorizedException");
             }
@@ -136,7 +180,8 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         throw new Microsoft.Azure.Documents.UnauthorizedException("Mock failed exception");
-                    });
+                    },
+                    cancellationToken: default);
 
                 Assert.Fail("Should throw the UnauthorizedException");
             }
@@ -192,7 +237,8 @@ namespace Microsoft.Azure.Cosmos
                    "southeastasia",
                    "northcentralus"
                 },
-                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+                getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
+                cancellationToken: default);
 
             Assert.AreEqual(globalEndpointResult, databaseAccount);
             Assert.AreEqual(0, slowPrimaryRegionHelper.FailedEndpointCount);
@@ -213,7 +259,8 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
-                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
+                    cancellationToken: default);
                 stopwatch.Stop();
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
@@ -235,7 +282,8 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
-                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
+                    cancellationToken: default);
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
                 Assert.AreEqual(3, slowPrimaryRegionHelper.FailedEndpointCount);
@@ -255,7 +303,8 @@ namespace Microsoft.Azure.Cosmos
                        "southeastasia",
                        "northcentralus"
                     },
-                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
+                    cancellationToken: default);
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
                 Assert.AreEqual(0, slowPrimaryRegionHelper.FailedEndpointCount);
@@ -279,7 +328,8 @@ namespace Microsoft.Azure.Cosmos
                        "westus6",
                        "westus7",
                     },
-                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri));
+                    getDatabaseAccountFn: (uri) => slowPrimaryRegionHelper.RequestHelper(uri),
+                    cancellationToken: default);
 
                 Assert.AreEqual(globalEndpointResult, databaseAccount);
                 Assert.AreEqual(5, slowPrimaryRegionHelper.FailedEndpointCount);
