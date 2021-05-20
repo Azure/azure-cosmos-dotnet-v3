@@ -97,6 +97,100 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task VerifyUserAgentWithRegionConfiguration()
+        {
+            string databaseName = Guid.NewGuid().ToString();
+            string containerName = Guid.NewGuid().ToString();
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+
+                // N - None. The user did not configure anything
+                string userAgentContentToValidate = "|N|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+                cosmosClientOptions.LimitToEndpoint = true;
+                // L - Limit endpoint, N - None. The user did not configure anything
+                string userAgentContentToValidate = "|LN|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+                cosmosClientOptions.LimitToEndpoint = false;
+                cosmosClientOptions.ApplicationRegion = Regions.EastUS;
+
+                // S - Single application region is set
+                string userAgentContentToValidate = "|S|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+                cosmosClientOptions.LimitToEndpoint = false;
+                cosmosClientOptions.ApplicationRegion = null;
+                cosmosClientOptions.ApplicationPreferredRegions = new List<string>()
+                {
+                    Regions.EastUS,
+                    Regions.WestUS
+                };
+
+                // L - List of region is set
+                string userAgentContentToValidate = "|L|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient())
+            {
+                await client.GetDatabase(databaseName).DeleteStreamAsync();
+            }
+        }
+
+        private async Task ValidateUserAgentStringAsync(
+            CosmosClientOptions cosmosClientOptions,
+            string userAgentContentToValidate,
+            string databaseName,
+            string containerName)
+        {
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    string userAgent = request.Headers.UserAgent.ToString();
+                    Assert.IsTrue(userAgent.Contains(userAgentContentToValidate));
+                    return null;
+                }
+            };
+
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient(httpClientHandlerHelper);
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(cosmosClientOptions))
+            {
+                Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+                await db.CreateContainerIfNotExistsAsync(containerName, "/pk");
+            }
+        }
+
+        [TestMethod]
         [DataRow(true, true)]
         [DataRow(true, false)]
         [DataRow(false, true)]
@@ -174,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ConnectionPolicy connectionPolicy = base.GetConnectionPolicy();
                 MacOsUserAgentContainer userAgent = new MacOsUserAgentContainer();
-                
+
                 this.SetUserAgentFeatures(userAgent);
 
                 connectionPolicy.UserAgentContainer = userAgent;
