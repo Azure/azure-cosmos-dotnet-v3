@@ -28,71 +28,76 @@ namespace Microsoft.Azure.Cosmos
         public async Task EndpointFailureMockTest()
         {
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "100");
-
-            // Setup dummpy read locations for the database account
-            Collection <AccountRegion> readableLocations = new Collection<AccountRegion>();
-
-            AccountRegion writeLocation = new AccountRegion();
-            writeLocation.Name = "WriteLocation";
-            writeLocation.Endpoint = "https://writeendpoint.net/";
-
-            AccountRegion readLocation1 = new AccountRegion();
-            readLocation1.Name = "ReadLocation1";
-            readLocation1.Endpoint = "https://readendpoint1.net/";
-
-            AccountRegion readLocation2 = new AccountRegion();
-            readLocation2.Name = "ReadLocation2";
-            readLocation2.Endpoint = "https://readendpoint2.net/";
-
-            readableLocations.Add(writeLocation);
-            readableLocations.Add(readLocation1);
-            readableLocations.Add(readLocation2);
-
-            AccountProperties databaseAccount = new AccountProperties();
-            databaseAccount.ReadLocationsInternal = readableLocations;
-
-            //Setup mock owner "document client"
-            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
-            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
-
-            int getAccountInfoCount = 0;
-            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
-                .Callback(() => getAccountInfoCount++)
-                .ReturnsAsync(databaseAccount);
-
-            //Create connection policy and populate preferred locations
-            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
-            connectionPolicy.PreferredLocations.Add("ReadLocation1");
-            connectionPolicy.PreferredLocations.Add("ReadLocation2");
-
-            using (GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+            try
             {
-                globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
-                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+                // Setup dummpy read locations for the database account
+                Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-                //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
-                globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
-                await globalEndpointManager.RefreshLocationAsync();
-                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
+                AccountRegion writeLocation = new AccountRegion();
+                writeLocation.Name = "WriteLocation";
+                writeLocation.Endpoint = "https://writeendpoint.net/";
 
-                globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
-                await globalEndpointManager.RefreshLocationAsync();
-                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
+                AccountRegion readLocation1 = new AccountRegion();
+                readLocation1.Name = "ReadLocation1";
+                readLocation1.Endpoint = "https://readendpoint1.net/";
 
-                getAccountInfoCount = 0;
-                //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                AccountRegion readLocation2 = new AccountRegion();
+                readLocation2.Name = "ReadLocation2";
+                readLocation2.Endpoint = "https://readendpoint2.net/";
+
+                readableLocations.Add(writeLocation);
+                readableLocations.Add(readLocation1);
+                readableLocations.Add(readLocation2);
+
+                AccountProperties databaseAccount = new AccountProperties();
+                databaseAccount.ReadLocationsInternal = readableLocations;
+
+                //Setup mock owner "document client"
+                Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+                mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+
+                int getAccountInfoCount = 0;
+                mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                    .Callback(() => getAccountInfoCount++)
+                    .ReturnsAsync(databaseAccount);
+
+                //Create connection policy and populate preferred locations
+                ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+                connectionPolicy.PreferredLocations.Add("ReadLocation1");
+                connectionPolicy.PreferredLocations.Add("ReadLocation2");
+
+                using (GlobalEndpointManager globalEndpointManager = new GlobalEndpointManager(mockOwner.Object, connectionPolicy))
+                {
+                    globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+                    Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+
+                    //Mark each of the read locations as unavailable and validate that the read endpoint switches to the next preferred region / default endpoint.
+                    globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
+                    await globalEndpointManager.RefreshLocationAsync();
+                    Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation2.Endpoint));
+
+                    globalEndpointManager.MarkEndpointUnavailableForRead(globalEndpointManager.ReadEndpoints[0]);
+                    await globalEndpointManager.RefreshLocationAsync();
+                    Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], globalEndpointManager.WriteEndpoints[0]);
+
+                    getAccountInfoCount = 0;
+                    //Sleep a second for the unavailable endpoint entry to expire and background refresh timer to kick in
+                    await Task.Delay(TimeSpan.FromSeconds(3));
+                    Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
+
+                    await globalEndpointManager.RefreshLocationAsync();
+                    Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+                }
+
                 Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
-
-                await globalEndpointManager.RefreshLocationAsync();
-                Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
+                getAccountInfoCount = 0;
+                Thread.Sleep(TimeSpan.FromSeconds(3));
+                Assert.AreEqual(0, getAccountInfoCount, "There should be no more account calls after the GlobalEndpointManager is disposed");
             }
-
-            Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
-            getAccountInfoCount = 0;
-            Thread.Sleep(TimeSpan.FromSeconds(3));
-            Assert.AreEqual(0, getAccountInfoCount, "There should be no more account calls after the GlobalEndpointManager is disposed");
-            Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", null);
+            finally
+            {
+                Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", null);
+            }
         }
 
         [TestMethod]
@@ -116,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Assert.Fail("Previous call should have failed");
             }
-            catch(OperationCanceledException op)
+            catch (OperationCanceledException op)
             {
                 Assert.IsTrue(op.Message.Contains("GlobalEndpointManager"));
             }
