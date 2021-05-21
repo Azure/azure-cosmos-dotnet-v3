@@ -20,6 +20,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     [JsonConverter(typeof(DocumentServiceLeaseConverter))]
     internal abstract class DocumentServiceLease
     {
+        public const string IdPropertyName = "id";
+        public const string LeasePartitionKeyPropertyName = "partitionKey";
+
         /// <summary>
         /// Gets the processing distribution unit identifier.
         /// </summary>
@@ -52,6 +55,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// Gets the lease Id.
         /// </summary>
         public abstract string Id { get; }
+
+        /// <summary>
+        /// Gets the lease PartitionKey.
+        /// </summary>
+        public abstract string PartitionKey { get; set;  }
 
         /// <summary>
         /// Gets the Concurrency Token.
