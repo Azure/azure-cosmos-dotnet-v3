@@ -133,6 +133,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             }
         }
 
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            this.crossPartitionEnumerator.SetCancellationToken(cancellationToken);
+        }
+
         public static CrossPartitionChangeFeedAsyncEnumerator Create(
             IDocumentContainer documentContainer,
             CrossFeedRangeState<ChangeFeedState> state,
