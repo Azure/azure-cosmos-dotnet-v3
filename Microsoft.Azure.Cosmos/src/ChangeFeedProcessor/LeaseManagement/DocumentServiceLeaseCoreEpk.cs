@@ -23,11 +23,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         [JsonProperty(IdPropertyName)]
         public string LeaseId { get; set; }
 
-        /// <summary>
-        /// Gets or sets property to be used as partition key path for lease collections.
-        /// This is clone of existing Id property to maintain backward compat.
-        /// This property name is compatible to both GremlinAccounts and SqlAccounts
-        /// </summary>
         [JsonProperty(LeasePartitionKeyPropertyName, NullValueHandling = NullValueHandling.Ignore)]
         public override string PartitionKey { get; set; }
 
