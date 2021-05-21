@@ -163,12 +163,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// The recommended minimum value is 5 minutes. The default value is 50% of the token expire time.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
+        public TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
