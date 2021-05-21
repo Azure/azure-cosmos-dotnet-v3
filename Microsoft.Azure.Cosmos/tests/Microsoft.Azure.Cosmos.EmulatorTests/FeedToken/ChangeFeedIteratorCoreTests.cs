@@ -734,6 +734,63 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             Assert.IsTrue(hasDeletes, "No metadata for delete operationType found");
         }
 
+        [TestMethod]
+        public async Task TestCancellationTokenAsync()
+        {
+            ContainerInternal itemsCore = await this.InitializeContainerAsync();
+            await this.CreateRandomItems(itemsCore, 100, randomPartitionKey: true);
+
+            // See if cancellation token is honored for first request
+            try
+            {
+                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.Cancel();
+                ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.Beginning(),
+                    ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
+                await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                Assert.Fail("Expected exception.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            // See if cancellation token is honored for second request
+            try
+            {
+                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                cancellationTokenSource.Cancel();
+                ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.Beginning(),
+                    ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
+                await feedIterator.ReadNextAsync();
+                await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                Assert.Fail("Expected exception.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            // See if cancellation token is honored mid draining
+            try
+            {
+                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.Beginning(),
+                    ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
+                await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+                cancellationTokenSource.Cancel();
+                await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+
+                Assert.Fail("Expected exception.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
         private async Task<IList<ToDoActivity>> CreateRandomItems(ContainerInternal container, int pkCount, int perPKItemCount = 1, bool randomPartitionKey = true)
         {
             Assert.IsFalse(!randomPartitionKey && perPKItemCount > 1);
