@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode));
             }
 
-            GatewayStoreModel storeModel = MockGatewayStoreModel(sendFunc);
+            using GatewayStoreModel storeModel = MockGatewayStoreModel(sendFunc);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
