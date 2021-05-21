@@ -2003,7 +2003,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<TestDoc> changes,
+#if SDKPROJECTREF
+                    Func<Task> tryCheckpointAsync,
+#else
+                    // Remove on next release
                     Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+#endif
                     CancellationToken cancellationToken) =>
                 {
                     changeFeedReturnedDocs.AddRange(changes);
@@ -2107,7 +2112,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     Stream changes,
+#if SDKPROJECTREF
+                    Func<Task> tryCheckpointAsync,
+#else
+                    // Remove on next release
                     Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+#endif
                     CancellationToken cancellationToken) =>
                 {
                     string changeFeed = string.Empty;
