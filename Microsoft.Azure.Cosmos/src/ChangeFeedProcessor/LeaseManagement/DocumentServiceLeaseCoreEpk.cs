@@ -24,7 +24,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         public string LeaseId { get; set; }
 
         [JsonProperty(LeasePartitionKeyPropertyName, NullValueHandling = NullValueHandling.Ignore)]
-        public override string PartitionKey { get; set; }
+        public string LeasePartitionKey { get; set; }
+
+        [JsonIgnore]
+        public override string PartitionKey => this.LeasePartitionKey;
 
         [JsonProperty("version")]
         public DocumentServiceLeaseVersion Version => DocumentServiceLeaseVersion.EPKRangeBasedLease;

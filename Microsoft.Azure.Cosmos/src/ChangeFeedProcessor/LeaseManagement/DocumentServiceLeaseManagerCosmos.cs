@@ -115,6 +115,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
             };
 
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
+
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
@@ -136,6 +138,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 ContinuationToken = continuationToken,
                 FeedRange = feedRange
             };
+
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
 
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
@@ -237,8 +241,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private async Task<DocumentServiceLease> TryCreateDocumentServiceLeaseAsync(DocumentServiceLease documentServiceLease)
         {
-            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.PartitionKey = pk, Guid.NewGuid().ToString());
-
             bool created = await this.leaseContainer.TryCreateItemAsync<DocumentServiceLease>(
                 this.requestOptionsFactory.GetPartitionKey(documentServiceLease.Id, documentServiceLease.PartitionKey),
                 documentServiceLease).ConfigureAwait(false) != null;

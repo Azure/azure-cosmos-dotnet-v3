@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         /// <summary>
         /// Gets the lease PartitionKey.
         /// </summary>
-        public abstract string PartitionKey { get; set;  }
+        public abstract string PartitionKey { get; }
 
         /// <summary>
         /// Gets the Concurrency Token.

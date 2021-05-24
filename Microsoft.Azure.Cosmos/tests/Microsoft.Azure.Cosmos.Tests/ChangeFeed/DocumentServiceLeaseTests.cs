@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 LeaseToken = "0",
                 Owner = "owner",
                 ContinuationToken = "continuation",
-                PartitionKey = "pk",
+                LeasePartitionKey = "pk",
                 Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
                 Properties = new Dictionary<string, string> { { "key", "value" } }
             };
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Owner = "owner",
                 ContinuationToken = "continuation",
                 Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
-                PartitionKey = "partitionKey",
+                LeasePartitionKey = "partitionKey",
                 Properties = new Dictionary<string, string> { { "key", "value" } },
                 FeedRange = new FeedRangePartitionKeyRange("0")
             };
@@ -154,7 +154,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 Owner = "owner",
                 ContinuationToken = "continuation",
                 Timestamp = DateTime.Now - TimeSpan.FromSeconds(5),
-                PartitionKey = "partitionKey",
+                LeasePartitionKey = "partitionKey",
                 Properties = new Dictionary<string, string> { { "key", "value" } },
                 FeedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false))
             };
