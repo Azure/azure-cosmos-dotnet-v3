@@ -737,8 +737,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         [TestMethod]
         public async Task TestCancellationTokenAsync()
         {
+            CancellationTokenRequestHandler cancellationTokenHandler = new CancellationTokenRequestHandler();
+
             ContainerInternal itemsCore = await this.InitializeContainerAsync();
             await this.CreateRandomItems(itemsCore, 100, randomPartitionKey: true);
+
+            // Inject validating handler
+            RequestHandler currentInnerHandler = this.cosmosClient.RequestHandler.InnerHandler;
+            this.cosmosClient.RequestHandler.InnerHandler = cancellationTokenHandler;
+            cancellationTokenHandler.InnerHandler = currentInnerHandler;
 
             // See if cancellation token is honored for first request
             try
@@ -766,7 +773,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
                 await feedIterator.ReadNextAsync();
                 await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
-
+                Assert.AreEqual(cancellationTokenSource.Token, cancellationTokenHandler.LastUsedToken, "The token passed did not reach the pipeline");
                 Assert.Fail("Expected exception.");
             }
             catch (OperationCanceledException)
@@ -783,7 +790,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
                 cancellationTokenSource.Cancel();
                 await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
-
+                Assert.AreEqual(cancellationTokenSource.Token, cancellationTokenHandler.LastUsedToken, "The token passed did not reach the pipeline");
                 Assert.Fail("Expected exception.");
             }
             catch (OperationCanceledException)
@@ -827,6 +834,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         {
             [JsonProperty("operationType")]
             public string operationType { get; set; }
+        }
+
+        private class CancellationTokenRequestHandler : RequestHandler
+        {
+            public CancellationToken LastUsedToken { get; private set;  }
+            public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
+            {
+                this.LastUsedToken = cancellationToken;
+                return base.SendAsync(request, cancellationToken);
+            }
         }
     }
 }
