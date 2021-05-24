@@ -89,6 +89,8 @@ logical_scalar_expression
 	: binary_scalar_expression
 	| in_scalar_expression
 	| like_scalar_expression
+	| logical_scalar_expression K_AND logical_scalar_expression
+	| logical_scalar_expression K_OR logical_scalar_expression
 	;
 
 in_scalar_expression
@@ -112,8 +114,6 @@ binary_scalar_expression
 	| binary_scalar_expression bitwise_and_operator binary_scalar_expression
 	| binary_scalar_expression bitwise_exclusive_or_operator binary_scalar_expression
 	| binary_scalar_expression bitwise_inclusive_or_operator binary_scalar_expression
-	| binary_scalar_expression K_AND binary_scalar_expression
-	| binary_scalar_expression K_OR binary_scalar_expression
 	| binary_scalar_expression string_concat_operator binary_scalar_expression
 	;
 

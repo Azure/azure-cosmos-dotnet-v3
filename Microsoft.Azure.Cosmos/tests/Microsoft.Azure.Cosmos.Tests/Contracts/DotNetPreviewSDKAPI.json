@@ -587,6 +587,20 @@
     "Microsoft.Azure.Cosmos.ClientEncryptionPolicy;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Int32 get_PolicyFormatVersion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int32 get_PolicyFormatVersion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 PolicyFormatVersion[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"policyFormatVersion\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Int32 PolicyFormatVersion;CanRead:True;CanWrite:True;Int32 get_PolicyFormatVersion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.Generic.IEnumerable`1[Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath] get_IncludedPaths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -985,36 +999,6 @@
             "AsyncStateMachineAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.CosmosClient] CreateAndInitializeAsync(System.String, Azure.Core.TokenCredential, System.Collections.Generic.IReadOnlyList`1[System.ValueTuple`2[System.String,System.String]], Microsoft.Azure.Cosmos.CosmosClientOptions, System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions), Void .ctor(System.String, Azure.Core.TokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions)]"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.CosmosClientOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Nullable`1[System.TimeSpan] TokenCredentialBackgroundRefreshInterval": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.Nullable`1[System.TimeSpan] TokenCredentialBackgroundRefreshInterval;CanRead:True;CanWrite:True;System.Nullable`1[System.TimeSpan] get_TokenCredentialBackgroundRefreshInterval();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -1369,27 +1353,13 @@
       "NestedTypes": {}
     },
     "Microsoft.Azure.Cosmos.PatchOperation;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {
-        "Microsoft.Azure.Cosmos.PatchOperation`1;Microsoft.Azure.Cosmos.PatchOperation;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
-          "Subclasses": {},
-          "Members": {
-            "T get_Value()": {
-              "Type": "Method",
-              "Attributes": [],
-              "MethodInfo": "T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "T Value[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"value\")]": {
-              "Type": "Property",
-              "Attributes": [
-                "JsonPropertyAttribute"
-              ],
-              "MethodInfo": "T Value;CanRead:True;CanWrite:False;T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            }
-          },
-          "NestedTypes": {}
-        }
-      },
+      "Subclasses": {},
       "Members": {
+        "Boolean TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer, System.IO.Stream ByRef)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer, System.IO.Stream ByRef);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.PatchOperation Add[T](System.String, T)": {
           "Type": "Method",
           "Attributes": [],
@@ -1443,24 +1413,6 @@
             "JsonPropertyAttribute"
           ],
           "MethodInfo": "System.String Path;CanRead:True;CanWrite:False;System.String get_Path();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
-    "Microsoft.Azure.Cosmos.PatchOperation`1;Microsoft.Azure.Cosmos.PatchOperation;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "T get_Value()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "T Value[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"value\")]": {
-          "Type": "Property",
-          "Attributes": [
-            "JsonPropertyAttribute"
-          ],
-          "MethodInfo": "T Value;CanRead:True;CanWrite:False;T get_Value();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

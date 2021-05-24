@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.EncryptionCosmosClient = encryptionCosmosClient ?? throw new ArgumentNullException(nameof(encryptionCosmosClient));
         }
 
-        internal EncryptionCosmosClient EncryptionCosmosClient { get; }
+        public EncryptionCosmosClient EncryptionCosmosClient { get; }
 
         public override string Id => this.database.Id;
 
@@ -198,8 +198,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override ContainerBuilder DefineContainer(string name, string partitionKeyPath)
         {
-            ContainerBuilder containerBuilder = this.database.DefineContainer(name, partitionKeyPath);
-            return containerBuilder;
+            return new ContainerBuilder(
+                this,
+                name,
+                partitionKeyPath);
         }
 
         public override async Task<DatabaseResponse> DeleteAsync(

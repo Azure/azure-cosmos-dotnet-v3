@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceStream: new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true));
             if (withContext)
             {
-                operation.AttachContext(new ItemBatchOperationContext(string.Empty));
+                operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton));
             }
 
             return operation;
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure
             = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) => throw expectedException;
 
-        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, ITrace trace, CancellationToken cancellation) => Task.CompletedTask;
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -434,9 +434,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(2, 1000, MockCosmosUtil.Serializer, this.ExecutorWithFailure, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
-            ItemBatchOperationContext context1 = new ItemBatchOperationContext(string.Empty);
+            ItemBatchOperationContext context1 = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
             operation1.AttachContext(context1);
-            ItemBatchOperationContext context2 = new ItemBatchOperationContext(string.Empty);
+            ItemBatchOperationContext context2 = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
             operation2.AttachContext(context2);
             batchAsyncBatcher.TryAdd(operation1);
             batchAsyncBatcher.TryAdd(operation2);
@@ -461,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     partitionKey: new Cosmos.PartitionKey(i.ToString()),
                     id: i.ToString());
 
-                ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
+                ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
                 operation.AttachContext(context);
                 operations.Add(operation);
                 Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
@@ -487,7 +487,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             for (int i = 0; i < 10; i++)
             {
                 ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, i, Cosmos.PartitionKey.Null, i.ToString());
-                ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
+                ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
                 operation.AttachContext(context);
                 operations.Add(operation);
                 Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
@@ -552,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             BatchAsyncBatcher batchAsyncBatcher = new BatchAsyncBatcher(1, 1000, MockCosmosUtil.Serializer, this.Executor, this.Retrier, BatchAsyncBatcherTests.MockClientContext());
             ItemBatchOperation operation = this.CreateItemBatchOperation();
-            operation.AttachContext(new ItemBatchOperationContext(string.Empty));
+            operation.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation));
             await batchAsyncBatcher.DispatchAsync(metric);
             Assert.IsFalse(batchAsyncBatcher.TryAdd(this.CreateItemBatchOperation()));
@@ -573,8 +573,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
-            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
-            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy2));
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
@@ -582,9 +582,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -602,8 +602,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
-            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
-            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy2));
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
@@ -611,9 +611,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -631,8 +631,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
-            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
-            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy2));
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
@@ -640,9 +640,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -650,8 +650,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
-            operation1.AttachContext(new ItemBatchOperationContext(string.Empty));
-            operation2.AttachContext(new ItemBatchOperationContext(string.Empty));
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton));
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
             Mock<BatchAsyncBatcherExecuteDelegate> executeDelegate = new Mock<BatchAsyncBatcherExecuteDelegate>();
@@ -660,9 +660,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation1));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [TestMethod]
@@ -686,9 +686,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
             ItemBatchOperation operation3 = this.CreateItemBatchOperation();
-            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
-            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
-            operation3.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy3));
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy2));
+            operation3.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy3));
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 
@@ -724,9 +724,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             ItemBatchOperation operation1 = this.CreateItemBatchOperation();
             ItemBatchOperation operation2 = this.CreateItemBatchOperation();
             ItemBatchOperation operation3 = this.CreateItemBatchOperation();
-            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy1));
-            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy2));
-            operation3.AttachContext(new ItemBatchOperationContext(string.Empty, retryPolicy3));
+            operation1.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy1));
+            operation2.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy2));
+            operation3.AttachContext(new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton, retryPolicy3));
 
             Mock<BatchAsyncBatcherRetryDelegate> retryDelegate = new Mock<BatchAsyncBatcherRetryDelegate>();
 

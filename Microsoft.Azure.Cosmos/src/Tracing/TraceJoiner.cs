@@ -89,8 +89,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 ITrace child = Trace.GetRootTrace(name, component, level, memberName, sourceFilePath, sourceLineNumber);
-                this.children.Add(child);
+                this.AddChild(child);
                 return child;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                this.children.Add(trace);
             }
         }
     }
