@@ -697,10 +697,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation3));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Once);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Once);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
         }
 
         [TestMethod]
@@ -735,10 +735,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation2));
             Assert.IsTrue(batchAsyncBatcher.TryAdd(operation3));
             await batchAsyncBatcher.DispatchAsync(metric);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation3), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
-            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation1), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation2), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.Is<ItemBatchOperation>(o => o == operation3), It.IsAny<CancellationToken>()), Times.Never);
+            retryDelegate.Verify(a => a(It.IsAny<ItemBatchOperation>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         private static ContainerInternal GetSplitEnabledContainer()
