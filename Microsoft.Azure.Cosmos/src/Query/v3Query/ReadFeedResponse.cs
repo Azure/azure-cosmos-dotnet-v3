@@ -45,7 +45,11 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
-                responseMessage.EnsureSuccessStatusCode();
+                // ReadFeed can return 304 on some scenarios (Change Feed for example)
+                if (responseMessage.StatusCode != HttpStatusCode.NotModified)
+                {
+                    responseMessage.EnsureSuccessStatusCode();
+                }
 
                 IReadOnlyCollection<TInput> resources = CosmosFeedResponseSerializer.FromFeedResponseStream<TInput>(
                         serializerCore,
