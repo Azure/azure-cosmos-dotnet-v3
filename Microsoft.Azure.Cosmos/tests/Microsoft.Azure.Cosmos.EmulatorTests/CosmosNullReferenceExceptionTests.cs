@@ -63,6 +63,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(cosmosToString.Contains(errorMessage));
                 Assert.IsTrue(cosmosToString.Contains("CreateItemAsync"));
             }
+
+            try
+            {
+                FeedIterator<ToDoActivity> iterator = containerWithNullRef.GetItemQueryIterator<ToDoActivity>("select * from T");
+                await iterator.ReadNextAsync();
+                Assert.Fail("Create should throw a null reference exception");
+            }
+            catch (NullReferenceException nre)
+            {
+                Assert.AreEqual(typeof(CosmosNullReferenceException), nre.GetType());
+                Assert.IsTrue(nre.Message.Contains("Typed FeedIterator ReadNextAsync"));
+                string cosmosToString = nre.ToString();
+                Assert.IsFalse(cosmosToString.Contains("Microsoft.Azure.Cosmos.CosmosNullReferenceException"), $"The internal wrapper exception should not be exposed to users. {cosmosToString}");
+                Assert.IsTrue(cosmosToString.Contains(errorMessage));
+                Assert.IsTrue(cosmosToString.Contains("Typed FeedIterator ReadNextAsync"));
+            }
         }
     }
 }
