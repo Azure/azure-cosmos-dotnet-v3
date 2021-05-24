@@ -747,6 +747,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             this.cosmosClient.RequestHandler.InnerHandler = cancellationTokenHandler;
             cancellationTokenHandler.InnerHandler = currentInnerHandler;
 
+            {
+                // Test to see if the token flows to the pipeline
+                CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+                ChangeFeedIteratorCore feedIterator = itemsCore.GetChangeFeedStreamIterator(
+                    ChangeFeedStartFrom.Beginning(),
+                    ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
+                await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
+                Assert.AreEqual(cancellationTokenSource.Token, cancellationTokenHandler.LastUsedToken, "The token passed did not reach the pipeline");
+            }
+
             // See if cancellation token is honored for first request
             try
             {
@@ -773,9 +783,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                     ChangeFeedMode.Incremental) as ChangeFeedIteratorCore;
                 await feedIterator.ReadNextAsync();
                 await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
-                Assert.AreEqual(cancellationTokenSource.Token, cancellationTokenHandler.LastUsedToken, "The token passed did not reach the pipeline");
                 Assert.Fail("Expected exception.");
-                cancellationTokenHandler.ResetToken();
             }
             catch (OperationCanceledException)
             {
@@ -791,7 +799,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
                 cancellationTokenSource.Cancel();
                 await feedIterator.ReadNextAsync(cancellationTokenSource.Token);
-                Assert.AreEqual(cancellationTokenSource.Token, cancellationTokenHandler.LastUsedToken, "The token passed did not reach the pipeline");
                 Assert.Fail("Expected exception.");
             }
             catch (OperationCanceledException)
@@ -840,11 +847,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         private class CancellationTokenRequestHandler : RequestHandler
         {
             public CancellationToken LastUsedToken { get; private set;  }
-
-            public void ResetToken()
-            {
-                this.LastUsedToken = default;
-            }
 
             public override Task<ResponseMessage> SendAsync(RequestMessage request, CancellationToken cancellationToken)
             {
