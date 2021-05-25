@@ -246,11 +246,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
-                .Returns(() =>
-                {
-                    Console.WriteLine($"WriteForbiddenThrown: {physicalUri}");
-                    throw new ForbiddenException($"Mock write forbidden exception on URI:{physicalUri}", SubStatusCodes.WriteForbidden);
-                });
+                .Returns(() => throw new ForbiddenException($"Mock write forbidden exception on URI:{physicalUri}", SubStatusCodes.WriteForbidden));
         }
 
         internal static void SetupServiceUnavailableException(
@@ -258,11 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
-                .Returns(() =>
-                {
-                    Console.WriteLine($"WriteForbiddenThrown: {physicalUri}");
-                    throw new ServiceUnavailableException($"Mock write forbidden exception on URI:{physicalUri}", physicalUri.Uri);
-                });
+                .Returns(() => throw new ServiceUnavailableException($"Mock write forbidden exception on URI:{physicalUri}", physicalUri.Uri));
         }
 
         internal static void SetupRequestTimeoutException(
@@ -270,11 +262,7 @@ namespace Microsoft.Azure.Cosmos.Tests
            TransportAddressUri physicalUri)
         {
             mockTransportClient.Setup(x => x.InvokeResourceOperationAsync(physicalUri, It.IsAny<DocumentServiceRequest>()))
-                .Returns(() =>
-                {
-                    Console.WriteLine($"RequestTimeoutThrown: {physicalUri}");
-                    throw new RequestTimeoutException($"Mock request timeout exception on URI:{physicalUri}", physicalUri.Uri);
-                });
+                .Returns(() => throw new RequestTimeoutException($"Mock request timeout exception on URI:{physicalUri}", physicalUri.Uri));
         }
 
         internal static void SetupCreateItemResponse(

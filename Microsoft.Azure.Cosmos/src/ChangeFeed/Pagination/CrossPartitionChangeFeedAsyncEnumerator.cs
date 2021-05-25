@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
     internal sealed class CrossPartitionChangeFeedAsyncEnumerator : IAsyncEnumerator<TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>>
     {
         private readonly CrossPartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> crossPartitionEnumerator;
-        private readonly CancellationToken cancellationToken;
+        private CancellationToken cancellationToken;
         private TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>? bufferedException;
 
         private CrossPartitionChangeFeedAsyncEnumerator(
@@ -131,6 +131,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
                 this.Current = TryCatch<CrossFeedRangePage<ChangeFeedPage, ChangeFeedState>>.FromResult(crossFeedRangePage);
                 return true;
             }
+        }
+
+        public void SetCancellationToken(CancellationToken cancellationToken)
+        {
+            this.cancellationToken = cancellationToken;
+            this.crossPartitionEnumerator.SetCancellationToken(cancellationToken);
         }
 
         public static CrossPartitionChangeFeedAsyncEnumerator Create(

@@ -235,6 +235,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
+                    // Initialization issue, there are no enumerators to invoke
+                    this.hasMoreResults = false;
                     throw createException;
                 }
 
@@ -247,9 +249,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
-            if (!await enumerator.MoveNextAsync(trace))
+            enumerator.SetCancellationToken(cancellationToken);
+
+            try
             {
-                throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
+                if (!await enumerator.MoveNextAsync(trace))
+                {
+                    throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
+                }
+            }
+            catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
+            {
+                throw new CosmosOperationCanceledException(ex, trace);
             }
 
             if (enumerator.Current.Failed)
@@ -259,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
-                    throw enumerator.Current.Exception;
+                    throw ExceptionWithStackTraceException.UnWrapMonadExcepion(enumerator.Current.Exception, trace);
                 }
 
                 if (!IsRetriableException(cosmosException))

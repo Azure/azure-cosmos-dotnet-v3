@@ -125,7 +125,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                 PartitionRangePageAsyncEnumerator<TPage, TState> currentPaginator = enumerators.Dequeue();
                 currentPaginator.SetCancellationToken(this.cancellationToken);
-                if (!await currentPaginator.MoveNextAsync(childTrace))
+                bool moveNextResult = false;
+                try
+                {
+                    moveNextResult = await currentPaginator.MoveNextAsync(childTrace);
+                }
+                catch
+                {
+                    // Re-queue the enumerator to avoid emptying the queue
+                    enumerators.Enqueue(currentPaginator);
+                    throw;
+                }
+
+                if (!moveNextResult)
                 {
                     // Current enumerator is empty,
                     // so recursively retry on the next enumerator.
