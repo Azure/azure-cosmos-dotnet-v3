@@ -178,6 +178,11 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                ApplicationPreferredRegions = new List<string>()
+                {
+                    Regions.EastUS2,
+                    Regions.CentralUS
+                }
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))
