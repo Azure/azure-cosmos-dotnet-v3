@@ -380,12 +380,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         TokenCredential tokenCredential,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
