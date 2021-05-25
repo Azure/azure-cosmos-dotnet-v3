@@ -31,10 +31,14 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void SetFeatures(string features)
+        internal void SetFeatures(
+            string features,
+            string regionConfiguration)
         {
             // Regenerate base user agent to account for features
-            this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(features);
+            this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(
+                features: features,
+                regionConfiguration: regionConfiguration);
             this.Suffix = string.Empty;
         }
 
@@ -55,7 +59,9 @@ namespace Microsoft.Azure.Cosmos
             runtimeFramework = environmentInformation.RuntimeFramework;
         }
 
-        private string CreateBaseUserAgentString(string features = null)
+        private string CreateBaseUserAgentString(
+            string features = null,
+            string regionConfiguration = null)
         {
             this.GetEnvironmentInformation(
                 out string clientVersion,
@@ -73,6 +79,11 @@ namespace Microsoft.Azure.Cosmos
             // Regex replaces all special characters with empty space except . - | since they do not cause format exception for the user agent string.
             // Do not change the cosmos-netstandard-sdk as it is required for reporting
             string baseUserAgent = $"cosmos-netstandard-sdk/{clientVersion}" + Regex.Replace($"|{directVersion}|{clientId}|{processArchitecture}|{operatingSystem}|{runtimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
+
+            if (!string.IsNullOrEmpty(regionConfiguration))
+            {
+                baseUserAgent += $"{regionConfiguration}|";
+            }
 
             if (!string.IsNullOrEmpty(features))
             {
