@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -250,8 +249,6 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 ChangeFeedStartFrom.Beginning(),
                 this.MockClientContext());
 
-            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.Cancel();
             ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
             Assert.AreEqual(HttpStatusCode.TooManyRequests, responseMessage.StatusCode);
             Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
@@ -364,6 +361,44 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 Assert.AreEqual(exception, ex);
                 Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
             }
+        }
+
+        [TestMethod]
+        public async Task ChangeFeedIteratorCore_CancellationToken_FlowsThrough()
+        {
+            // Generate constant 429
+            CosmosException exception = CosmosExceptionFactory.CreateThrottledException("retry", new Headers());
+            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
+                numItems: 0,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    returnFailure: exception));
+
+            ChangeFeedIteratorCore changeFeedIteratorCore = new ChangeFeedIteratorCore(
+                documentContainer,
+                ChangeFeedMode.Incremental,
+                new ChangeFeedRequestOptions(),
+                ChangeFeedStartFrom.Beginning(),
+                this.MockClientContext());
+
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            try
+            {
+                // First request triggers initialization, we don't cancel it
+                ResponseMessage responseMessage = await changeFeedIteratorCore.ReadNextAsync();
+                Assert.AreEqual(HttpStatusCode.TooManyRequests, responseMessage.StatusCode);
+
+                // Should be initialized, let's see if cancellation flows through
+                await changeFeedIteratorCore.ReadNextAsync(cancellationTokenSource.Token);
+                Assert.Fail("Should have thrown");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+
+            Assert.IsTrue(changeFeedIteratorCore.HasMoreResults);
         }
 
         private static CosmosArray GetChanges(Stream stream)

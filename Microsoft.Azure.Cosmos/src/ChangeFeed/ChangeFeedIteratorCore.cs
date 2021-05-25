@@ -249,6 +249,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
+            enumerator.SetCancellationToken(cancellationToken);
+
             try
             {
                 if (!await enumerator.MoveNextAsync(trace))
