@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // Client Encryption key Id is unique within a Database.
             string cacheKey = databaseRid + "|" + clientEncryptionKeyId;
 
-            // this allows us to read from the Gateway Cache. If a IfNoneMatchEtag is passed the logic around the gateway cache allows us to fetch the latest ClientEncryptionKeyProperties
+            // this allows us to read from the Gateway Cache. If an IfNoneMatchEtag is passed the logic around the gateway cache allows us to fetch the latest ClientEncryptionKeyProperties
             // from the servers if the gateway cache has a stale value. This can happen if a client connected via different Gateway has rewrapped the key.
             RequestOptions requestOptions = new RequestOptions
             {
