@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
             }
-			
+            
             operation.AttachContext(context);
             streamer.Add(operation);
             return await context.OperationTask;
