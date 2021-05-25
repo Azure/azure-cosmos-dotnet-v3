@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         {
             using (responseMessage)
             {
-                // ReadFeed can return 304 on some scenarios (Change Feed for example)
+                // ReadFeed can return 304 on Change Feed responses
                 if (responseMessage.StatusCode != HttpStatusCode.NotModified)
                 {
                     responseMessage.EnsureSuccessStatusCode();
