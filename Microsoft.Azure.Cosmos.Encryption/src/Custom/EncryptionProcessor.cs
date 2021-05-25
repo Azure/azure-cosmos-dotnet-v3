@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
             JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
             {
                 encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
             }
@@ -564,6 +564,56 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Boolean = 5,
             Array = 6,
             Object = 7,
+        }
+
+        internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
+            Stream content,
+            Encryptor encryptor,
+            CancellationToken cancellationToken)
+        {
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+            JArray result = new JArray();
+
+            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents");
+            }
+
+            foreach (JToken value in documents)
+            {
+                if (!(value is JObject document))
+                {
+                    result.Add(value);
+                    continue;
+                }
+
+                CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
+                using (diagnosticsContext.CreateScope("EncryptionProcessor.DeserializeAndDecryptResponseAsync"))
+                {
+                    (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptor,
+                        diagnosticsContext,
+                        cancellationToken);
+
+                    result.Add(decryptedDocument);
+                }
+            }
+
+            JObject decryptedResponse = new JObject();
+            foreach (JProperty property in contentJObj.Properties())
+            {
+                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
+                {
+                    decryptedResponse.Add(property.Name, (JToken)result);
+                }
+                else
+                {
+                    decryptedResponse.Add(property.Name, property.Value);
+                }
+            }
+
+            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
         }
     }
 }

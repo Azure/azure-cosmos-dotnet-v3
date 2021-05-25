@@ -463,7 +463,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
             if (filterBuffer.Length > 0)
                 this.query += " WHERE " + filterBuffer.ToString();
 
-            if (comparer != null && comparer.field != null && comparer.order != 0)
+            if (comparer?.field != null && comparer.order != 0)
             {
                 this.query += " ORDER BY r." + comparer.field.Name + (comparer.order > 0 ? " ASC" : " DESC");
                 this.Comparer = comparer;
