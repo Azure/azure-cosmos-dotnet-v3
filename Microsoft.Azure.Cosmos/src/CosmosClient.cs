@@ -100,6 +100,7 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed = false;
 
         internal static int numberOfClientsCreated;
+        internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
         {
@@ -234,12 +235,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="clientOptions">(Optional) client options</param>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClient(
+        public CosmosClient(
             string accountEndpoint,
             TokenCredential tokenCredential,
             CosmosClientOptions clientOptions = null)
@@ -260,7 +256,6 @@ namespace Microsoft.Azure.Cosmos
             this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(
                 tokenCredential,
                 this.Endpoint,
-                clientOptions.RequestTimeout,
                 clientOptions.TokenCredentialBackgroundRefreshInterval);
 
             this.ClientContext = ClientContextCore.Create(
@@ -385,12 +380,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         TokenCredential tokenCredential,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
@@ -506,7 +496,10 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint);
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadAccountAsync),
+                null,
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
 
         /// <summary>
@@ -1262,20 +1255,14 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.isDisposed)
             {
+                this.DisposedDateTimeUtc = DateTime.UtcNow;
+
                 if (disposing)
                 {
                     this.ClientContext.Dispose();
                 }
 
                 this.isDisposed = true;
-            }
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }
         }
     }

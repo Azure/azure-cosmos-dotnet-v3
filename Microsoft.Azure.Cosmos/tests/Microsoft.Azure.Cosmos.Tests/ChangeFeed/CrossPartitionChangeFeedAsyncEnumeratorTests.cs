@@ -378,6 +378,52 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<CancellationToken>()), Times.Never);
         }
 
+        [TestMethod]
+        public async Task ShouldReturnTryCatchOnException()
+        {
+            ReadOnlyMemory<FeedRangeState<ChangeFeedState>> rangeStates = new FeedRangeState<ChangeFeedState>[]{
+                    new FeedRangeState<ChangeFeedState>(FeedRangeEpk.FullRange, ChangeFeedState.Now())
+                };
+
+            CrossFeedRangeState<ChangeFeedState> state = new CrossFeedRangeState<ChangeFeedState>(rangeStates);
+            Mock<IDocumentContainer> documentContainer = new Mock<IDocumentContainer>();
+
+            Exception exception = new Exception("oh no");
+
+            // Throws unhandled exception
+            documentContainer.Setup(c => c.MonadicChangeFeedAsync(
+                It.IsAny<FeedRangeState<ChangeFeedState>>(),
+                It.IsAny<ChangeFeedPaginationOptions>(),
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>())).ThrowsAsync(exception);
+            CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
+                documentContainer.Object,
+                state,
+                ChangeFeedPaginationOptions.Default,
+                cancellationToken: default);
+
+            try
+            {
+                await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception caughtException)
+            {
+                Assert.AreEqual(exception, caughtException);
+            }
+
+            // Should be able to read MoveNextAsync again
+            try
+            {
+                await enumerator.MoveNextAsync(NoOpTrace.Singleton);
+                Assert.Fail("Should have thrown");
+            }
+            catch (Exception caughtException)
+            {
+                Assert.AreEqual(exception, caughtException);
+            }
+        }
+
         private static async Task<(int, double)> DrainUntilNotModifedAsync(CrossPartitionChangeFeedAsyncEnumerator enumerator)
         {
             int globalCount = 0;

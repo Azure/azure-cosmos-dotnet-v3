@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly GlobalEndpointManager endpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly Protocol protocol;
-        private readonly IAuthorizationTokenProvider tokenProvider;
+        private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly CollectionCache collectionCache;
         private readonly PartitionKeyRangeCache routingMapProvider;
         private readonly int maxEndpoints;
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             GlobalEndpointManager endpointManager,
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             Protocol protocol,
-            IAuthorizationTokenProvider tokenProvider,
+            ICosmosAuthorizationTokenProvider tokenProvider,
             CollectionCache collectionCache,
             PartitionKeyRangeCache routingMapProvider,
             IServiceConfigurationReader serviceConfigReader,

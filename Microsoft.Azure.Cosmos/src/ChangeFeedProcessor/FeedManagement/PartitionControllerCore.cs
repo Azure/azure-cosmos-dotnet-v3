@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
 
         public override async Task AddOrUpdateLeaseAsync(DocumentServiceLease lease)
         {
-            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
+            TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             if (!this.currentlyOwnedPartitions.TryAdd(lease.CurrentLeaseToken, tcs))
             {

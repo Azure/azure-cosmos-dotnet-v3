@@ -14,16 +14,16 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             ConsistencyLevel? consistencyLevel,
             IReadOnlyList<string> preferredRegions)
         {
-            this.ConsistencyLevel = consistencyLevel.GetValueOrDefault();
+            this.ConsistencyLevel = consistencyLevel;
             this.PreferredRegions = preferredRegions;
             this.lazyString = new Lazy<string>(() => string.Format(CultureInfo.InvariantCulture,
                                 "(consistency: {0}, prgns:[{1}])",
-                                consistencyLevel.GetValueOrDefault(),
+                                consistencyLevel?.ToString() ?? "NotSet",
                                 ConsistencyConfig.PreferredRegionsInternal(preferredRegions)));
             this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
         }
 
-        public ConsistencyLevel ConsistencyLevel { get; }
+        public ConsistencyLevel? ConsistencyLevel { get; }
         public IReadOnlyList<string> PreferredRegions { get; }
 
         private readonly Lazy<string> lazyString;

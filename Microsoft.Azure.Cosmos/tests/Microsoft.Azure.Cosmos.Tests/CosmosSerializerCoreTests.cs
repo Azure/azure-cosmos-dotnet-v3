@@ -118,6 +118,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             // custom serializer is used since there is Add operation type also
             using (Stream stream = serializerCore.ToStream(new PatchSpec(patch, patchRequestOptions))) { }
             Assert.AreEqual(1, toCount);
+
+            patch.Clear();
+            toCount = 0;
+            patch.Add(PatchOperation.Add("/addPath", new CosmosJsonDotNetSerializer().ToStream("addValue")));
+            // custom serializer is not used since the input value is of type stream
+            using (Stream stream = serializerCore.ToStream(new PatchSpec(patch, patchRequestOptions))) { }
+            Assert.AreEqual(0, toCount);
         }
 
         [TestMethod]
