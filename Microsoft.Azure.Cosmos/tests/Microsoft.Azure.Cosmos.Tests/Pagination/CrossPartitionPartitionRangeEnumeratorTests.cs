@@ -62,19 +62,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         private sealed class Implementation : PartitionRangeEnumeratorTests<CrossFeedRangePage<ReadFeedPage, ReadFeedState>, CrossFeedRangeState<ReadFeedState>>
         {
+            enum TriState { NotReady, Ready, Done };
+
             public Implementation(bool singlePartition)
                 : base(singlePartition)
             {
-                this.ShouldMerge = false;
+                this.ShouldMerge = TriState.NotReady;
             }
 
-            private bool ShouldMerge { get; set;}
+            private TriState ShouldMerge { get; set; }
 
             private IDocumentContainer DocumentContainer { get; set; }
 
             private async Task<Exception> ShouldReturnFailure()
             {
-                if (this.ShouldMerge)
+                if (this.ShouldMerge == TriState.Ready)
                 {
                     await this.DocumentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                     List<FeedRangeEpk> ranges = await this.DocumentContainer.GetFeedRangesAsync(
@@ -82,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         cancellationToken: default);
 
                     await this.DocumentContainer.MergeAsync(ranges[0], ranges[1], default);
+                    this.ShouldMerge = TriState.Done;
 
                     return new CosmosException(
                         message: "PKRange was split/merged",
@@ -127,7 +130,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     }
 
                     ++iteration;
-                    this.ShouldMerge = iteration == 1;
+                    if (iteration == 1)
+                    {
+                        this.ShouldMerge = TriState.Ready;
+                    }
                 }
 
                 Assert.AreEqual(numItems, identifiers.Count);

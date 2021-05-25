@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 this.cancellationToken);
                         }
 
-                        if (childRanges.Count() <= 1)
+                        if (childRanges.Count() < 1)
                         {
                             throw new InvalidOperationException("Expected more than 1 child");
                         }
