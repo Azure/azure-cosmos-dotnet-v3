@@ -15,7 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2487](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2487) UserAgent: Adds flag to user agent to show if region failover is configured
 
 #### Fixed
-
 - [#2451](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2451) Query: Fixes native c# parser not recognizing query with multiple IN statements. Introduced in 3.13.0 PR [#1743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1743)
 - [#2451](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2455) Bulk: Fixes diagnostic traces by removing redundant info and adding correct retry context. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
 - [#2460](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2460) Permission: Fixes documentation on resource token range limit. (Thanks to arorainms)
@@ -23,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2483](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2483) Availability: Fixes the get account information to stop the background refresh after CosmosClient is disposed. Introduced in 3.18.0 PR [#2355](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2355)
 - [#2481](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2481) Azure Active Directory: Fixes token refresh interval, exception handling, and retry logic
 - [#2474](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2474) Change Feed: Fixes exceptions generating "Change Feed should always have a next page". Introduced in 3.15.0 PR [#1933](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1933)
+- [#2498](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2498) Diagnostics: Fixes default setting in Consistency Config Serialization. Introduced in 3.18.0 PR [#2250](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2250)
 
 ### <a name="3.19.0-preview1"/> [3.19.0-preview1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.19.0-preview1) - 2021-05-17
 
@@ -33,7 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2449](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2449) Client encryption: Adds PolicyFormatVersion and validation that partition key paths are not encrypted
 
 #### Fixed
-
 - [#2451](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2451) Query: Fixes native c# parser not recognizing query with multiple IN statements. Introduced in 3.13.0 PR [#1743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1743)
 - [#2451](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2455) Bulk: Fixes diagnostic traces by removing redundant info and adding correct retry context. Introduced in 3.17.0 PR [#2097](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2097)
 - [#2460](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2460) Permission: Fixes documentation on resource token range limit. (Thanks to arorainms)
