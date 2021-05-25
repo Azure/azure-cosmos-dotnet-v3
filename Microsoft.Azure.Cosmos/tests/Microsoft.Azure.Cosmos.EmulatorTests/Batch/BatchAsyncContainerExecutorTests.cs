@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
             for (int i = 0; i < 100; i++)
             {
-                tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default(CancellationToken)));
+                tasks.Add(executor.AddAsync(CreateItem(i.ToString()), NoOpTrace.Singleton));
             }
 
             await Task.WhenAll(tasks);

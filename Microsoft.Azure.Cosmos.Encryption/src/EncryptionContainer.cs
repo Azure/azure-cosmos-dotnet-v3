@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Data.Encryption.Cryptography;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
@@ -495,59 +496,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions);
         }
 
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-            string processorName,
-            ChangesHandler<T> onChangesDelegate)
-        {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-            using (diagnosticsContext.CreateScope("GetChangeFeedProcessorBuilder"))
-            {
-                return this.container.GetChangeFeedProcessorBuilder(
-                    processorName,
-                    async (IReadOnlyCollection<JObject> documents, CancellationToken cancellationToken) =>
-                    {
-                        List<T> decryptedItems = new List<T>(documents.Count);
-
-                        foreach (JObject document in documents)
-                        {
-                            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
-                            try
-                            {
-                                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                                    document,
-                                    encryptionSettings,
-                                    diagnosticsContext,
-                                    cancellationToken);
-
-                                decryptedItems.Add(decryptedDocument.ToObject<T>());
-                            }
-
-                            // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
-                            // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
-                            // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
-                            catch (Exception)
-                            {
-                                // most likely the encryption policy has changed.
-                                encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                                    obsoleteEncryptionSettings: encryptionSettings,
-                                    cancellationToken: cancellationToken);
-
-                                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                                       document,
-                                       encryptionSettings,
-                                       diagnosticsContext,
-                                       cancellationToken);
-
-                                decryptedItems.Add(decryptedDocument.ToObject<T>());
-                            }
-                        }
-
-                        // Call the original passed in delegate
-                        await onChangesDelegate(decryptedItems, cancellationToken);
-                    });
-            }
-        }
-
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
@@ -657,52 +605,251 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 this.ResponseFactory);
         }
 
-        public override Task<ItemResponse<T>> PatchItemAsync<T>(
+        public async override Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            ResponseMessage responseMessage = await this.PatchItemStreamAsync(
+                id,
+                partitionKey,
+                patchOperations,
+                requestOptions,
+                cancellationToken);
+
+            return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
         }
 
-        public override Task<ResponseMessage> PatchItemStreamAsync(
+        public async override Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (partitionKey == null)
+            {
+                throw new ArgumentNullException(nameof(partitionKey));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: cancellationToken);
+
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("PatchItem"))
+            {
+                List<PatchOperation> encryptedPatchOperations = await this.PatchItemHelperAsync(
+                    patchOperations,
+                    encryptionSettings,
+                    cancellationToken);
+
+                ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
+                    id,
+                    partitionKey,
+                    encryptedPatchOperations,
+                    requestOptions,
+                    cancellationToken);
+
+                responseMessage.Content = await EncryptionProcessor.DecryptAsync(
+                    responseMessage.Content,
+                    encryptionSettings,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                return responseMessage;
+            }
+        }
+
+        private async Task<List<PatchOperation>> PatchItemHelperAsync(
+            IReadOnlyList<PatchOperation> patchOperations,
+            EncryptionSettings encryptionSettings,
+            CancellationToken cancellationToken = default)
+        {
+            List<PatchOperation> encryptedPatchOperations = new List<PatchOperation>(patchOperations.Count);
+
+            foreach (PatchOperation patchOperation in patchOperations)
+            {
+                if (patchOperation.OperationType == PatchOperationType.Remove)
+                {
+                    encryptedPatchOperations.Add(patchOperation);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(patchOperation.Path) || patchOperation.Path[0] != '/')
+                {
+                    throw new ArgumentException($"Invalid path '{patchOperation.Path}'.");
+                }
+
+                // get the top level path's encryption setting.
+                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                    patchOperation.Path.Split('/')[1]);
+
+                // non-encrypted path
+                if (settingforProperty == null)
+                {
+                    encryptedPatchOperations.Add(patchOperation);
+                    continue;
+                }
+                else if (patchOperation.OperationType == PatchOperationType.Increment)
+                {
+                    throw new InvalidOperationException($"Increment patch operation is not allowed for encrypted path '{patchOperation.Path}'.");
+                }
+
+                if (!patchOperation.TrySerializeValueParameter(this.CosmosSerializer, out Stream valueParam))
+                {
+                    throw new ArgumentException($"Cannot serialize value parameter for operation: {patchOperation.OperationType}, path: {patchOperation.Path}.");
+                }
+
+                Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
+                    valueParam,
+                    settingforProperty,
+                    cancellationToken);
+
+                switch (patchOperation.OperationType)
+                {
+                    case PatchOperationType.Add:
+                        encryptedPatchOperations.Add(PatchOperation.Add(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    case PatchOperationType.Replace:
+                        encryptedPatchOperations.Add(PatchOperation.Replace(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    case PatchOperationType.Set:
+                        encryptedPatchOperations.Add(PatchOperation.Set(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    default:
+                        throw new NotSupportedException(nameof(patchOperation.OperationType));
+                }
+            }
+
+            return encryptedPatchOperations;
+        }
+
+        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
+            string processorName,
+            ChangesHandler<T> onChangesDelegate)
+        {
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    IReadOnlyCollection<JObject> documents,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(decryptedItems, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<T> onChangesDelegate)
         {
-            throw new NotImplementedException();
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<JObject> documents,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedItems, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
         {
-            throw new NotImplementedException();
+            return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    IReadOnlyCollection<JObject> documents,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
+                        documents,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedItems, tryCheckpointAsync, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
             ChangeFeedStreamHandler onChangesDelegate)
         {
-            throw new NotImplementedException();
+            return this.container.GetChangeFeedProcessorBuilder(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    CancellationToken cancellationToken) =>
+                {
+                    EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: null,
+                        cancellationToken: cancellationToken);
+
+                    Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
+                        changes,
+                        encryptionSettings,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedChanges, cancellationToken);
+                });
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate)
         {
-            throw new NotImplementedException();
+            return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
+                processorName,
+                async (
+                    ChangeFeedProcessorContext context,
+                    Stream changes,
+                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    CancellationToken cancellationToken) =>
+                {
+                    EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: null,
+                        cancellationToken: cancellationToken);
+
+                    Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
+                        changes,
+                        encryptionSettings,
+                        cancellationToken);
+
+                    // Call the original passed in delegate
+                    await onChangesDelegate(context, decryptedChanges, tryCheckpointAsync, cancellationToken);
+                });
         }
 
         public override Task<ResponseMessage> ReadManyItemsStreamAsync(
@@ -1076,6 +1223,121 @@ namespace Microsoft.Azure.Cosmos.Encryption
                cancellationToken: cancellationToken);
 
             return streamPayload;
+        }
+
+        private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(
+            IReadOnlyCollection<JObject> documents,
+            CancellationToken cancellationToken)
+        {
+            List<T> decryptedItems = new List<T>(documents.Count);
+
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: cancellationToken);
+
+            foreach (JObject document in documents)
+            {
+                try
+                {
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptionSettings,
+                        cancellationToken);
+
+                    decryptedItems.Add(decryptedDocument.ToObject<T>());
+                }
+
+                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
+                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
+                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
+                catch (Exception)
+                {
+                    // most likely the encryption policy has changed.
+                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: encryptionSettings,
+                        cancellationToken: cancellationToken);
+
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                           document,
+                           encryptionSettings,
+                           cancellationToken);
+
+                    decryptedItems.Add(decryptedDocument.ToObject<T>());
+                }
+            }
+
+            return decryptedItems;
+        }
+
+        internal async Task<Stream> DeserializeAndDecryptResponseAsync(
+            Stream content,
+            EncryptionSettings encryptionSettings,
+            CancellationToken cancellationToken)
+        {
+            if (!encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                return content;
+            }
+
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+            JArray results = new JArray();
+
+            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
+            }
+
+            foreach (JToken value in documents)
+            {
+                if (value is not JObject document)
+                {
+                    results.Add(value);
+                    continue;
+                }
+
+                try
+                {
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptionSettings,
+                        cancellationToken);
+
+                    results.Add(decryptedDocument);
+                }
+
+                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
+                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
+                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
+                catch (Exception)
+                {
+                    // most likely the encryption policy has changed.
+                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: encryptionSettings,
+                        cancellationToken: cancellationToken);
+
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptionSettings,
+                        cancellationToken);
+
+                    results.Add(decryptedDocument);
+                }
+            }
+
+            JObject decryptedResponse = new JObject();
+            foreach (JProperty property in contentJObj.Properties())
+            {
+                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
+                {
+                    decryptedResponse.Add(property.Name, (JToken)results);
+                }
+                else
+                {
+                    decryptedResponse.Add(property.Name, property.Value);
+                }
+            }
+
+            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
         }
     }
 }

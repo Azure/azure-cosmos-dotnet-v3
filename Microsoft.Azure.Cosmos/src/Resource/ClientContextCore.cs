@@ -286,6 +286,7 @@ namespace Microsoft.Azure.Cosmos
                     partitionKey: partitionKey.Value,
                     itemId: itemId,
                     streamPayload: streamPayload,
+                    trace: trace,
                     cancellationToken: cancellationToken);
             }
 
@@ -432,6 +433,19 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new CosmosOperationCanceledException(oe, trace);
                 }
+                catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
+                {
+                    throw new CosmosObjectDisposedException(
+                        objectDisposed, 
+                        this.client, 
+                        trace);
+                }
+                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                {
+                    throw new CosmosNullReferenceException(
+                        nullRefException,
+                        trace);
+                }
             }
         }
 
@@ -442,6 +456,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey partitionKey,
             string itemId,
             Stream streamPayload,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             this.ThrowIfDisposed();
@@ -458,6 +473,7 @@ namespace Microsoft.Azure.Cosmos
 
             TransactionalBatchOperationResult batchOperationResult = await cosmosContainerCore.BatchExecutor.AddAsync(
                 itemBatchOperation,
+                trace,
                 itemRequestOptions,
                 cancellationToken);
 

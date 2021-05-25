@@ -55,7 +55,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 CosmosEncryptionType.Deterministic => EncryptionType.Deterministic,
                 CosmosEncryptionType.Randomized => EncryptionType.Randomized,
-                CosmosEncryptionType.Plaintext => EncryptionType.Plaintext,
                 _ => throw new ArgumentException($"Invalid encryption type {clientEncryptionIncludedPath.EncryptionType}. Please refer to https://aka.ms/CosmosClientEncryption for more details. "),
             };
         }
@@ -82,6 +81,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (clientEncryptionPolicy != null)
             {
+                if (clientEncryptionPolicy.PolicyFormatVersion > Constants.SupportedClientEncryptionPolicyFormatVersion)
+                {
+                    throw new InvalidOperationException("This version of Microsoft.Azure.Cosmos.Encryption cannot be used with this container." +
+                        " Please upgrade to the latest version of the same. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+                }
+
                 // for each of the unique keys in the policy Add it in /Update the cache.
                 foreach (string clientEncryptionKeyId in clientEncryptionPolicy.IncludedPaths.Select(x => x.ClientEncryptionKeyId).Distinct())
                 {
