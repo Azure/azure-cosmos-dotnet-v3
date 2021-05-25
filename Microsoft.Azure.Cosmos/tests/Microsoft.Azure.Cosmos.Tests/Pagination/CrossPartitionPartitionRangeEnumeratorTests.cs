@@ -20,22 +20,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [TestMethod]
         public async Task Test429sAsync()
         {
-            Implementation implementation = new Implementation();
+            Implementation implementation = new Implementation(false);
             await implementation.Test429sAsync();
         }
 
         [TestMethod]
         public async Task Test429sWithContinuationsAsync()
         {
-            Implementation implementation = new Implementation();
+            Implementation implementation = new Implementation(false);
             await implementation.Test429sWithContinuationsAsync();
         }
 
         [TestMethod]
         public async Task TestEmptyPages()
         {
-            Implementation implementation = new Implementation();
+            Implementation implementation = new Implementation(false);
             await implementation.TestEmptyPages();
+        }
+
+        [TestMethod]
+        public async Task TestMergeToSinglePartition()
+        {
+            Implementation implementation = new Implementation(true);
+            await implementation.TestMergeToSinglePartition();
         }
 
         [TestMethod]
@@ -49,18 +56,83 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         [DataRow(true, true, true, DisplayName = "Use State: true, Allow Splits: true, Allow Merges: true")]
         public async Task TestSplitAndMergeAsync(bool useState, bool allowSplits, bool allowMerges)
         {
-            Implementation implementation = new Implementation();
+            Implementation implementation = new Implementation(singlePartition: false);
             await implementation.TestSplitAndMergeImplementationAsync(useState, allowSplits, allowMerges);
         }
 
         private sealed class Implementation : PartitionRangeEnumeratorTests<CrossFeedRangePage<ReadFeedPage, ReadFeedState>, CrossFeedRangeState<ReadFeedState>>
         {
-            public Implementation()
-                : base(singlePartition: false)
+            public Implementation(bool singlePartition)
+                : base(singlePartition)
             {
+                this.ShouldMerge = false;
             }
 
-            [TestMethod]
+            private bool ShouldMerge { get; set;}
+
+            private IDocumentContainer DocumentContainer { get; set; }
+
+            private async Task<Exception> ShouldReturnFailure()
+            {
+                if (this.ShouldMerge)
+                {
+                    await this.DocumentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                    List<FeedRangeEpk> ranges = await this.DocumentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+
+                    await this.DocumentContainer.MergeAsync(ranges[0], ranges[1], default);
+
+                    return new CosmosException(
+                        message: "PKRange was split/merged",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)Documents.SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: "BC0CCDA5-D378-4922-B8B0-D51D745B9139",
+                        requestCharge: 0.0);
+                }
+                else
+                {
+                    return null;
+                }
+            }
+
+            public async Task TestMergeToSinglePartition()
+            {
+                int numItems = 1000;
+                FlakyDocumentContainer.FailureConfigs config = new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    shouldReturnFailure: this.ShouldReturnFailure);
+
+                this.DocumentContainer = await this.CreateDocumentContainerAsync(numItems: numItems, failureConfigs: config);
+
+                await this.DocumentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                List<FeedRangeEpk> ranges = await this.DocumentContainer.GetFeedRangesAsync(
+                    trace: NoOpTrace.Singleton,
+                    cancellationToken: default);
+                await this.DocumentContainer.SplitAsync(ranges.First(), cancellationToken: default);
+
+                IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerator = this.CreateEnumerator(this.DocumentContainer);
+                HashSet<string> identifiers = new HashSet<string>();
+                int iteration = 0;
+                while (await enumerator.MoveNextAsync())
+                {
+                    TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>> tryGetPage = enumerator.Current;
+                    tryGetPage.ThrowIfFailed();
+
+                    IReadOnlyList<Record> records = this.GetRecordsFromPage(tryGetPage.Result);
+                    foreach (Record record in records)
+                    {
+                        identifiers.Add(record.Payload["pk"].ToString());
+                    }
+
+                    ++iteration;
+                    this.ShouldMerge = iteration == 1;
+                }
+
+                Assert.AreEqual(numItems, identifiers.Count);
+            }
+
             public async Task TestSplitAndMergeImplementationAsync(bool useState, bool allowSplits, bool allowMerges)
             {
                 int numItems = 1000;
