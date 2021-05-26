@@ -235,12 +235,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="clientOptions">(Optional) client options</param>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClient(
+        public CosmosClient(
             string accountEndpoint,
             TokenCredential tokenCredential,
             CosmosClientOptions clientOptions = null)
@@ -261,7 +256,6 @@ namespace Microsoft.Azure.Cosmos
             this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(
                 tokenCredential,
                 this.Endpoint,
-                clientOptions.RequestTimeout,
                 clientOptions.TokenCredentialBackgroundRefreshInterval);
 
             this.ClientContext = ClientContextCore.Create(
@@ -386,12 +380,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         TokenCredential tokenCredential,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,

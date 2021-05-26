@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.18.0</ClientOfficialVersion>
+		<ClientOfficialVersion>3.19.0</ClientOfficialVersion>
 		<ClientPreviewVersion>3.19.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview1</ClientPreviewSuffixVersion>
 		<DirectVersion>3.19.3</DirectVersion>
