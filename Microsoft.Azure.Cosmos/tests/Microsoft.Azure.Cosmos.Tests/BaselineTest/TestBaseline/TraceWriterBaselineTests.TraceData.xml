@@ -370,31 +370,31 @@
               {
                 "EventName": "Created",
                 "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "ChannelAcquisitionStarted",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.06Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Pipelined",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.061Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Transit Time",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.062Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Received",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.063Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Completed",
-                "StartTime": "2021-12-31T23:59:59.059Z",
+                "StartTime": "2021-12-31T23:59:59.064Z",
                 "DurationInMicroSec": "0"
               }
             ],
@@ -563,31 +563,31 @@
               {
                 "EventName": "Created",
                 "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "ChannelAcquisitionStarted",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.06Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Pipelined",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.061Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Transit Time",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.062Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Received",
-                "StartTime": "2021-12-31T23:59:59.059Z",
-                "DurationInMicroSec": "0"
+                "StartTime": "2021-12-31T23:59:59.063Z",
+                "DurationInMicroSec": "1000"
               },
               {
                 "EventName": "Completed",
-                "StartTime": "2021-12-31T23:59:59.059Z",
+                "StartTime": "2021-12-31T23:59:59.064Z",
                 "DurationInMicroSec": "0"
               }
             ],
