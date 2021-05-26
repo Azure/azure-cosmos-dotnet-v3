@@ -116,7 +116,8 @@
                 sessionToken: new SimpleSessionToken(42),
                 usingLocalLSN: true,
                 activityId: Guid.Empty.ToString(),
-                backendRequestDurationInMs: "4.2");
+                backendRequestDurationInMs: "4.2",
+                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,

@@ -400,7 +400,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 sessionToken: new SimpleSessionToken(42),
                                 usingLocalLSN: true,
                                 activityId: Guid.Empty.ToString(),
-                                backendRequestDurationInMs: "4.2"),
+                                backendRequestDurationInMs: "4.2",
+                                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             ResourceType.Document,
                             OperationType.Query,
                             uri1);
@@ -453,7 +454,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 sessionToken: default,
                                 usingLocalLSN: default,
                                 activityId: default,
-                                backendRequestDurationInMs: default),
+                                backendRequestDurationInMs: default,
+                                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             resourceType: default,
                             operationType: default,
                             locationEndpoint: default); ;
@@ -706,6 +708,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             }
 
             return documentContainer;
+        }
+
+        internal static TransportRequestStats CreateTransportRequestStats()
+        {
+            TransportRequestStats transportRequestStats = new TransportRequestStats();
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Created);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.ChannelAcquisitionStarted);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Pipelined);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
+            return transportRequestStats;
         }
 
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
