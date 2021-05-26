@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using System.IO;
     using System.Linq;
     using System.Net.Http;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
@@ -712,13 +713,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         internal static TransportRequestStats CreateTransportRequestStats()
         {
+            DateTime defaultDateTime = new DateTime(
+                year: 2021,
+                month: 12,
+                day: 31,
+                hour: 23,
+                minute: 59,
+                second: 59,
+                millisecond: 59,
+                kind: DateTimeKind.Utc);
+
             TransportRequestStats transportRequestStats = new TransportRequestStats();
-            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Created);
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.ChannelAcquisitionStarted);
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.Pipelined);
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
+
+            FieldInfo field = transportRequestStats.GetType().GetField("requestCreatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(0.01);
+            field = transportRequestStats.GetType().GetField("channelAcquisitionStartedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(0.01);
+            field = transportRequestStats.GetType().GetField("requestPipelinedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(0.01);
+            field = transportRequestStats.GetType().GetField("requestSentTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(0.01);
+            field = transportRequestStats.GetType().GetField("requestReceivedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(0.01);
+            field = transportRequestStats.GetType().GetField("requestCompletedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
             return transportRequestStats;
         }
 

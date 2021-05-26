@@ -139,6 +139,8 @@
             storeResultProperties.Remove(nameof(storeResult.BackendRequestDurationInMs));
             storeResultProperties.Add("TransportException");
             storeResultProperties.Remove(nameof(storeResult.Exception));
+            storeResultProperties.Add("RntbdRequestStats");
+            storeResultProperties.Remove(nameof(storeResult.TransportRequestStats));
 
             foreach (string key in jsonPropertyNames)
             {
