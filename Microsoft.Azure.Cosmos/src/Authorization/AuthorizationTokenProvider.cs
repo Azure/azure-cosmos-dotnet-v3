@@ -57,6 +57,11 @@ namespace Microsoft.Azure.Cosmos
 
         public static AuthorizationTokenProvider CreateWithResourceTokenOrAuthKey(string authKeyOrResourceToken)
         {
+            if (string.IsNullOrEmpty(authKeyOrResourceToken))
+            {
+                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
+            }
+
             if (AuthorizationHelper.IsResourceToken(authKeyOrResourceToken))
             {
                 return new AuthorizationTokenProviderResourceToken(authKeyOrResourceToken);
