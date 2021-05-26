@@ -440,6 +440,12 @@ namespace Microsoft.Azure.Cosmos
                         this.client, 
                         trace);
                 }
+                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                {
+                    throw new CosmosNullReferenceException(
+                        nullRefException,
+                        trace);
+                }
             }
         }
 
