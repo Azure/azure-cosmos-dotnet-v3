@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions))
             {
-                Assert.AreEqual(3, getAadTokenCount);
+                Assert.AreEqual(2, getAadTokenCount);
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 ResponseMessage responseMessage = await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
                 Assert.IsNotNull(responseMessage);
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 simpleEmulatorTokenCredential,
                 clientOptions))
             {
-                Assert.AreEqual(3, getAadTokenCount);
+                Assert.AreEqual(2, getAadTokenCount);
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 try
                 {
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await aadClient.GetDatabase(Guid.NewGuid().ToString()).ReadStreamAsync();
                     Assert.Fail("Should throw auth error.");
                 }
-                catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.Unauthorized)
+                catch (RequestFailedException ce) when (ce.Status == (int)HttpStatusCode.RequestTimeout)
                 {
                     Assert.IsNotNull(ce.Message);
                     Assert.IsTrue(ce.ToString().Contains(errorMessage));
