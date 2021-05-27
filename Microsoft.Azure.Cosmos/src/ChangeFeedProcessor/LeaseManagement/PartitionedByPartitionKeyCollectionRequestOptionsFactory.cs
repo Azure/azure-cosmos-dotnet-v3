@@ -8,14 +8,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
-    /// Used to create request options for non-partitioned lease collections.
+    /// Used to create request options for partitioned lease collections, when partition key is defined as /partitionKey.
     /// </summary>
-    internal sealed class SinglePartitionRequestOptionsFactory : RequestOptionsFactory
+    internal sealed class PartitionedByPartitionKeyCollectionRequestOptionsFactory : RequestOptionsFactory
     {
+        public override PartitionKey GetPartitionKey(string itemId, string partitionKey) => new PartitionKey(partitionKey);
+
         public override void AddPartitionKeyIfNeeded(Action<string> partitionKeySetter, string partitionKey)
         {
+            partitionKeySetter(partitionKey);
         }
-
-        public override PartitionKey GetPartitionKey(string itemId, string partitionKey) => PartitionKey.None;
     }
 }
