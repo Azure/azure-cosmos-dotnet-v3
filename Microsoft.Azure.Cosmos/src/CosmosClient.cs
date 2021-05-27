@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
              AuthorizationTokenProvider authorizationTokenProvider,
              CosmosClientOptions clientOptions)
         {
-            if (accountEndpoint == null)
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
