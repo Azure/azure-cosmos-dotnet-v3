@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = cosmosClient.GetDatabase("myDatabaseId");
         /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
