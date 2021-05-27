@@ -20,8 +20,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         {
         }
 
-        [JsonProperty("id")]
+        [JsonProperty(IdPropertyName)]
         public string LeaseId { get; set; }
+
+        [JsonProperty(LeasePartitionKeyPropertyName, NullValueHandling = NullValueHandling.Ignore)]
+        public string LeasePartitionKey { get; set; }
+
+        [JsonIgnore]
+        public override string PartitionKey => this.LeasePartitionKey;
 
         [JsonProperty("version")]
         public DocumentServiceLeaseVersion Version => DocumentServiceLeaseVersion.EPKRangeBasedLease;
