@@ -56,10 +56,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     innerException: leaseLostException);
                 throw cosmosException;
             }
-            catch
-            {
-                throw;
-            }
         }
 
         public static implicit operator ChangeFeedProcessorContext(ChangeFeedObserverContextCore contextCore)

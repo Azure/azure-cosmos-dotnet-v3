@@ -1493,15 +1493,7 @@ namespace Microsoft.Azure.Cosmos
         ///     // consume changes
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     try
-        ///     {
-        ///         await checkpointAsync();
-        ///     }
-        ///     catch (Exception exception)
-        ///     {
-        ///         // error occurred
-        ///         throw;
-        ///     }
+        ///     await checkpointAsync();
         /// }
         /// ]]>
         /// </code>
@@ -1540,16 +1532,8 @@ namespace Microsoft.Azure.Cosmos
         ///     // consume stream
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     try
-        ///     {
-        ///         await checkpointAsync();
-        ///     }
-        ///     catch (Exception exception)
-        ///     {
-        ///         // error occurred
-        ///         throw;
-        ///     }
-        /// }/// }
+        ///     await checkpointAsync();
+        /// }
         /// ]]>
         /// </code>
         /// </example>
