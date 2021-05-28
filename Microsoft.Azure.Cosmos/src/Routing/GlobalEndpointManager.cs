@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (this.TransientExceptions.Count == 1)
                 {
-                    throw this.TransientExceptions.First();
+                    throw this.TransientExceptions[0];
                 }
 
                 throw new AggregateException(this.TransientExceptions);
@@ -222,14 +222,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     throw this.NonRetriableException;
                 }
 
-                if (!this.TransientExceptions.Any())
+                if (this.TransientExceptions.Count == 0)
                 {
                     throw new ArgumentException("Account properties and NonRetriableException are null and there is no LastTransientException.");
                 }
 
                 if (this.TransientExceptions.Count == 1)
                 {
-                    throw this.TransientExceptions.First();
+                    throw this.TransientExceptions[0];
                 }
 
                 throw new AggregateException(this.TransientExceptions);
