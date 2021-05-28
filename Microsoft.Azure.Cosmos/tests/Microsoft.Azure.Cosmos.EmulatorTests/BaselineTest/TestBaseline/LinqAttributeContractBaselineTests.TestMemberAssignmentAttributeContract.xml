@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE {"dataMember": root["dataMember"], "Default": root["Default"], "jsonProperty": root["jsonProperty"], "jsonPropertyHasHigherPriority": root["jsonPropertyHasHigherPriority"]} 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
 </Results>
