@@ -52,11 +52,11 @@ namespace Microsoft.Azure.Cosmos
                 Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
                 mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-                GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+                using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
                 ISessionContainer sessionContainer = new SessionContainer(string.Empty);
                 DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
                 HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-                GatewayStoreModel storeModel = new GatewayStoreModel(
+                using GatewayStoreModel storeModel = new GatewayStoreModel(
                     endpointManager,
                     sessionContainer,
                     ConsistencyLevel.Eventual,
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos
                     "Should have surfaced OperationCanceledException because the token was canceled.");
 
                 ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.MarkEndpointUnavailableForRead(It.IsAny<Uri>()), Times.Once, "Should had marked the endpoint unavailable");
-                ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.RefreshLocationAsync(It.IsAny<AccountProperties>(), It.Is<bool>(refresh => refresh == false)), Times.Once, "Should had refreshed the account information");
+                ((MockDocumentClient)client.DocumentClient).MockGlobalEndpointManager.Verify(gep => gep.RefreshLocationAsync(false), Times.Once, "Should had refreshed the account information");
             }
         }
 

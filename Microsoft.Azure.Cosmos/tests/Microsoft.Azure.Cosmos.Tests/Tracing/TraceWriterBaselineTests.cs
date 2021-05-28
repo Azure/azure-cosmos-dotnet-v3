@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using System.IO;
     using System.Linq;
     using System.Net.Http;
+    using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
@@ -400,7 +401,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 sessionToken: new SimpleSessionToken(42),
                                 usingLocalLSN: true,
                                 activityId: Guid.Empty.ToString(),
-                                backendRequestDurationInMs: "4.2"),
+                                backendRequestDurationInMs: "4.2",
+                                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             ResourceType.Document,
                             OperationType.Query,
                             uri1);
@@ -453,7 +455,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 sessionToken: default,
                                 usingLocalLSN: default,
                                 activityId: default,
-                                backendRequestDurationInMs: default),
+                                backendRequestDurationInMs: default,
+                                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             resourceType: default,
                             operationType: default,
                             locationEndpoint: default); ;
@@ -708,6 +711,50 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             return documentContainer;
         }
 
+        internal static TransportRequestStats CreateTransportRequestStats()
+        {
+            DateTime defaultDateTime = new DateTime(
+                year: 2021,
+                month: 12,
+                day: 31,
+                hour: 23,
+                minute: 59,
+                second: 59,
+                millisecond: 59,
+                kind: DateTimeKind.Utc);
+
+            TransportRequestStats transportRequestStats = new TransportRequestStats();
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.ChannelAcquisitionStarted);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Pipelined);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
+
+            FieldInfo field = transportRequestStats.GetType().GetField("requestCreatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(1);
+            field = transportRequestStats.GetType().GetField("channelAcquisitionStartedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(1);
+            field = transportRequestStats.GetType().GetField("requestPipelinedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(1);
+            field = transportRequestStats.GetType().GetField("requestSentTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(1);
+            field = transportRequestStats.GetType().GetField("requestReceivedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+
+            defaultDateTime += TimeSpan.FromMilliseconds(1);
+            field = transportRequestStats.GetType().GetField("requestCompletedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field.SetValue(transportRequestStats, defaultDateTime);
+            return transportRequestStats;
+        }
+
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
         {
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
@@ -822,7 +869,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         private sealed class TraceForBaselineTesting : ITrace
         {
             private readonly Dictionary<string, object> data;
-            private readonly List<TraceForBaselineTesting> children;
+            private readonly List<ITrace> children;
 
             public TraceForBaselineTesting(
                 string name,
@@ -834,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
-                this.children = new List<TraceForBaselineTesting>();
+                this.children = new List<ITrace>();
                 this.data = new Dictionary<string, object>();
             }
 
@@ -880,8 +927,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
-                this.children.Add(child);
+                this.AddChild(child);
                 return child;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                this.children.Add(trace);
             }
 
             public static TraceForBaselineTesting GetRootTrace()

@@ -15,6 +15,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal class DocumentServiceLeaseStoreManagerBuilder
     {
+        private static readonly string IdPkPathName = "/" + DocumentServiceLease.IdPropertyName;
+        private static readonly string PartitionKeyPkPathName = "/" + DocumentServiceLease.LeasePartitionKeyPropertyName;
+
         public static async Task<DocumentServiceLeaseStoreManager> InitializeAsync(
             ContainerInternal monitoredContainer,
             ContainerInternal leaseContainer,
@@ -30,14 +33,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             bool isMigratedFixed = containerProperties.PartitionKey?.IsSystemKey == true;
             if (isPartitioned
                 && !isMigratedFixed
-                && (containerProperties.PartitionKey.Paths.Count != 1 || containerProperties.PartitionKey.Paths[0] != "/id"))
+                && (containerProperties.PartitionKey.Paths.Count != 1 
+                    || !(containerProperties.PartitionKey.Paths[0] == IdPkPathName 
+                        || containerProperties.PartitionKey.Paths[0] == PartitionKeyPkPathName)))
             {
-                throw new ArgumentException("The lease collection, if partitioned, must have partition key equal to id.");
+                throw new ArgumentException($"The lease container, if partitioned, must have partition key equal to {IdPkPathName} or {PartitionKeyPkPathName}.");
             }
 
-            RequestOptionsFactory requestOptionsFactory = isPartitioned && !isMigratedFixed ?
-                (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory() :
-                (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
+            RequestOptionsFactory requestOptionsFactory;
+            if (isPartitioned && !isMigratedFixed)
+            {
+                requestOptionsFactory = containerProperties.PartitionKey.Paths[0] != IdPkPathName ?
+                    (RequestOptionsFactory)new PartitionedByPartitionKeyCollectionRequestOptionsFactory() 
+                    : (RequestOptionsFactory)new PartitionedByIdCollectionRequestOptionsFactory();
+            }
+            else
+            {
+                requestOptionsFactory = (RequestOptionsFactory)new SinglePartitionRequestOptionsFactory();
+
+            }
 
             DocumentServiceLeaseStoreManagerBuilder leaseStoreManagerBuilder = new DocumentServiceLeaseStoreManagerBuilder()
                 .WithLeasePrefix(leaseContainerPrefix)

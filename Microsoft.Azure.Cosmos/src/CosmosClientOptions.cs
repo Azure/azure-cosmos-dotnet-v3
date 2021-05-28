@@ -161,14 +161,9 @@ namespace Microsoft.Azure.Cosmos
         /// This avoids latency issues because the old token is used until the new token is retrieved.
         /// </summary>
         /// <remarks>
-        /// The recommended minimum value is 5 minutes. The default value is 25% of the token expire time.
+        /// The recommended minimum value is 5 minutes. The default value is 50% of the token expire time.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
+        public TimeSpan? TokenCredentialBackgroundRefreshInterval { get; set; }
 
         /// <summary>
         /// Gets the handlers run before the process
@@ -828,19 +823,40 @@ namespace Microsoft.Azure.Cosmos
                 features |= CosmosClientOptionsFeatures.HttpClientFactory;
             }
 
+            string featureString = null;
             if (features != CosmosClientOptionsFeatures.NoFeatures)
             {
-                string featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
-                if (!string.IsNullOrEmpty(featureString))
-                {
-                    userAgent.SetFeatures(featureString);
-                }
+                featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
             }
+
+            string regionConfiguration = this.GetRegionConfiguration();
+            userAgent.SetFeatures(featureString, regionConfiguration);
 
             if (!string.IsNullOrEmpty(this.ApplicationName))
             {
                 userAgent.Suffix = this.ApplicationName;
             }
+        }
+
+        /// <summary>
+        /// This generates a key that added to the user agent to make it 
+        /// possible to determine if the SDK has region failover enabled.
+        /// </summary>
+        /// <returns>Format Reg-{D (Disabled discovery)}-S(application region)|L(List of preferred regions)|N(None, user did not configure it)</returns>
+        private string GetRegionConfiguration()
+        {
+            string regionConfig = this.LimitToEndpoint ? "D" : string.Empty;
+            if (!string.IsNullOrEmpty(this.ApplicationRegion))
+            {
+                return regionConfig + "S";
+            }
+
+            if (this.ApplicationPreferredRegions != null)
+            {
+                return regionConfig + "L";
+            }
+
+            return regionConfig + "N";
         }
 
         /// <summary>

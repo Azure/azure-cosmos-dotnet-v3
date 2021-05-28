@@ -38,6 +38,23 @@
         }
 
         [TestMethod]
+        public void TestAddChild()
+        {
+            Trace oneChild = Trace.GetRootTrace(name: "OneChild");
+            Trace twoChild = Trace.GetRootTrace(name: "TwoChild");
+            Trace rootTrace;
+            using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+            {
+                rootTrace.AddChild(oneChild);
+                rootTrace.AddChild(twoChild);
+            }
+
+            Assert.AreEqual(2, rootTrace.Children.Count);
+            Assert.AreEqual(oneChild, rootTrace.Children[0]);
+            Assert.AreEqual(twoChild, rootTrace.Children[1]);
+        }
+
+        [TestMethod]
         public void TestTraceChildren()
         {
             using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace", component: TraceComponent.Query, level: TraceLevel.Info))
@@ -99,7 +116,8 @@
                 sessionToken: new SimpleSessionToken(42),
                 usingLocalLSN: true,
                 activityId: Guid.Empty.ToString(),
-                backendRequestDurationInMs: "4.2");
+                backendRequestDurationInMs: "4.2",
+                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,
@@ -121,6 +139,8 @@
             storeResultProperties.Remove(nameof(storeResult.BackendRequestDurationInMs));
             storeResultProperties.Add("TransportException");
             storeResultProperties.Remove(nameof(storeResult.Exception));
+            storeResultProperties.Add("RntbdRequestStats");
+            storeResultProperties.Remove(nameof(storeResult.TransportRequestStats));
 
             foreach (string key in jsonPropertyNames)
             {
