@@ -164,6 +164,35 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(1, count, "Only request should be made");
             }
 
+            count = 0;
+            try
+            {
+                await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: (uri) =>
+                    {
+                        count++;
+                        if (uri == defaultEndpoint)
+                        {
+                            throw new Microsoft.Azure.Documents.ForbiddenException("Mock ForbiddenException exception");
+                        }
+
+                        throw new Exception("This should never be hit since it should stop after the global endpoint hit the nonretriable exception");
+                    },
+                    cancellationToken: default);
+
+                Assert.Fail("Should throw the ForbiddenException");
+            }
+            catch (Microsoft.Azure.Documents.ForbiddenException)
+            {
+                Assert.AreEqual(1, count, "Only request should be made");
+            }
+
             int countDelayRequests = 0;
             count = 0;
             try
