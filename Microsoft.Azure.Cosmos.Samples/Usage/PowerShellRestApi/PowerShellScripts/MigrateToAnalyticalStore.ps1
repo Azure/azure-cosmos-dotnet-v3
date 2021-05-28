@@ -1,4 +1,4 @@
-﻿# Note: Analytical migration is in preview, so this script will only work if your Cosmos DB account is opted into the preview.
+# Note: Analytical migration is in preview, so this script will only work if your Cosmos DB account is opted into the preview.
 # This script requires PowerShell 6.0.0 or higher.
 param(
     [Parameter(Mandatory = $True, Position = 0, ValueFromPipeline = $false)]
@@ -64,30 +64,19 @@ $containerResourceId = "dbs/" + $DatabaseName + "/colls/" + $ContainerName
 $containerResourceLink = "dbs/" + $DatabaseName + "/colls/" + $ContainerName
 $requestUri = "$Endpoint$containerResourceLink"
 $verbMethod = "GET"
-
-try {
-    $authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion -ErrorAction Stop
-}
-catch {
-    throw $_.Exception
-}
-
+$userAgent = "PowerShell-MigrateToAnalyticalStore"
+$authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion -ErrorAction Stop
 $header = @{
     "authorization"                                      = "$authKey";
     "x-ms-version"                                       = "2018-12-31";
     "Cache-Control"                                      = "no-cache";
     "x-ms-date"                                          = "$xDate";
     "Accept"                                             = "application/json";
-    "User-Agent"                                         = "PowerShell-RestApi-Samples"
+    "User-Agent"                                         = "$userAgent"
     "x-ms-cosmos-populate-analytical-migration-progress" = "true"
 }
 
-try {
-    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json"
-}
-catch {
-    throw $_.Exception
-}
+$result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json"
 
 $NewBody = new-object psobject
 $NewBody | Add-Member -MemberType NoteProperty -Name "id" -Value $result.id
@@ -97,59 +86,39 @@ $NewBody = $NewBody | ConvertTo-Json
 
 # Step 2: Collection replace to trigger analytical migration.
 $verbMethod = "PUT"
-try {
-    $authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion
-}
-catch {
-    throw $_.Exception
-}
-
+$authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion
 $header = @{
     "authorization" = "$authKey";
     "x-ms-version"  = "2018-12-31";
     "Cache-Control" = "no-cache";
     "x-ms-date"     = "$xDate";
     "Accept"        = "application/json";
-    "User-Agent"    = "PowerShell-RestApi-Samples"
+    "User-Agent"    = "$userAgent"
 }
 
-try {
-    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -Body $NewBody
-}
-catch {
-    throw $_.Exception
-}
-
+$result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -Body $NewBody
 Write-Host "Analytical migration has been triggered and is pending."
 
 # Step 3: Wait for analytical migration progress to reach 100%.
-$verbMethod = "GET"
-try {
-    $authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion
-}
-catch {
-    throw $_.Exception
-}
-
-$header = @{
-    "authorization"                                      = "$authKey";
-    "x-ms-version"                                       = "2018-12-31";
-    "Cache-Control"                                      = "no-cache";
-    "x-ms-date"                                          = "$xDate";
-    "Accept"                                             = "application/json";
-    "User-Agent"                                         = "PowerShell-RestApi-Samples"
-    "x-ms-cosmos-populate-analytical-migration-progress" = "true"
-}
-
 $Progress = "0"
-while ($Progress -ne "100") {
+while ($Progress -ne "1001") {
+    $date = Get-Date
+    $utcDate = $date.ToUniversalTime()
+    $xDate = $utcDate.ToString('r', [System.Globalization.CultureInfo]::InvariantCulture)
+    $verbMethod = "GET"
+    $authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion
+    $header = @{
+        "authorization"                                      = "$authKey";
+        "x-ms-version"                                       = "2018-12-31";
+        "Cache-Control"                                      = "no-cache";
+        "x-ms-date"                                          = "$xDate";
+        "Accept"                                             = "application/json";
+        "User-Agent"                                         = "$userAgent"
+        "x-ms-cosmos-populate-analytical-migration-progress" = "true"
+    }
+
+    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable Headers
     Start-Sleep -s $PollingIntervalInSeconds
-    try {
-        $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable Headers2
-    }
-    catch {
-        throw $_.Exception
-    }
-    $Progress = $Headers2["x-ms-cosmos-analytical-migration-progress"]
-    Write-Host "Progress = "$Progress"%"
+    $Progress = $Headers["x-ms-cosmos-analytical-migration-progress"]
+    Write-Host "$(Get-Date) - Progress = $Progress%"
 }
