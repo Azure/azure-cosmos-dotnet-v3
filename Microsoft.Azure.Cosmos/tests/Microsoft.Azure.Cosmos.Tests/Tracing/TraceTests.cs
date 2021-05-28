@@ -116,7 +116,8 @@
                 sessionToken: new SimpleSessionToken(42),
                 usingLocalLSN: true,
                 activityId: Guid.Empty.ToString(),
-                backendRequestDurationInMs: "4.2");
+                backendRequestDurationInMs: "4.2",
+                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,
@@ -138,6 +139,8 @@
             storeResultProperties.Remove(nameof(storeResult.BackendRequestDurationInMs));
             storeResultProperties.Add("TransportException");
             storeResultProperties.Remove(nameof(storeResult.Exception));
+            storeResultProperties.Add("RntbdRequestStats");
+            storeResultProperties.Remove(nameof(storeResult.TransportRequestStats));
 
             foreach (string key in jsonPropertyNames)
             {
