@@ -104,11 +104,11 @@ namespace Microsoft.Azure.Cosmos
 
         static CosmosClient()
         {
-            #if PREVIEW
+#if PREVIEW
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2020_07_15;
-            #else
+#else
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
-            #endif
+#endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
             // V3 always assumes assemblies exists
@@ -202,27 +202,10 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null)
+             : this(accountEndpoint,
+                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
+                     clientOptions)
         {
-            if (string.IsNullOrEmpty(accountEndpoint))
-            {
-                throw new ArgumentNullException(nameof(accountEndpoint));
-            }
-
-            if (string.IsNullOrEmpty(authKeyOrResourceToken))
-            {
-                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
-            }
-
-            this.Endpoint = new Uri(accountEndpoint);
-            this.AccountKey = authKeyOrResourceToken;
-            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
-
-            this.ClientContext = ClientContextCore.Create(
-                this,
-                clientOptions);
-
-            this.IncrementNumberOfClientsCreated();
-            this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
         /// <summary>
@@ -239,24 +222,33 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             TokenCredential tokenCredential,
             CosmosClientOptions clientOptions = null)
+            : this(accountEndpoint,
+                    new AuthorizationTokenProviderTokenCredential(
+                        tokenCredential,
+                        new Uri(accountEndpoint),
+                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
+                    clientOptions)
         {
-            if (accountEndpoint == null)
+        }
+
+        /// <summary>
+        /// Used by Compute
+        /// Creates a new CosmosClient with the AuthorizationTokenProvider
+        /// </summary>
+        internal CosmosClient(
+             string accountEndpoint,
+             AuthorizationTokenProvider authorizationTokenProvider,
+             CosmosClientOptions clientOptions)
+        {
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (tokenCredential == null)
-            {
-                throw new ArgumentNullException(nameof(tokenCredential));
-            }
+            this.Endpoint = new Uri(accountEndpoint);
+            this.AuthorizationTokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
             clientOptions ??= new CosmosClientOptions();
-
-            this.Endpoint = new Uri(accountEndpoint);
-            this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(
-                tokenCredential,
-                this.Endpoint,
-                clientOptions.TokenCredentialBackgroundRefreshInterval);
 
             this.ClientContext = ClientContextCore.Create(
                 this,
@@ -298,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, 
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         string authKeyOrResourceToken,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
@@ -309,8 +301,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(containers));
             }
 
-            CosmosClient cosmosClient = new CosmosClient(accountEndpoint, 
-                                                         authKeyOrResourceToken, 
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
+                                                         authKeyOrResourceToken,
                                                          cosmosClientOptions);
 
             await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
@@ -1183,7 +1175,7 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        private Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers, 
+        private Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
                                           CancellationToken cancellationToken)
         {
             try

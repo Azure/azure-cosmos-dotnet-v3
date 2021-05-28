@@ -16,11 +16,9 @@ FROM root]]></SqlQuery>
       <Expression><![CDATA[query.Select(doc => doc.StringField.Equals("STR", Ordinal))]]></Expression>
     </Input>
     <Output>
-      <SqlQuery>
-        <![CDATA[
+      <SqlQuery><![CDATA[
 SELECT VALUE StringEquals(root["StringField"], "STR", false) 
-FROM root]]>
-      </SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>

@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["FamilyId"] 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -19,7 +19,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["FamilyId"] = "some id") ]]></SqlQuery>
+WHERE (root["FamilyId"] = "some id")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -31,7 +31,7 @@ WHERE (root["FamilyId"] = "some id") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (root["Int"] > 101)) ]]></SqlQuery>
+WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (root["Int"] > 101))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -43,7 +43,7 @@ WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (ro
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (root["Int"] > 101)) ]]></SqlQuery>
+WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (root["Int"] > 101))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -55,7 +55,7 @@ WHERE (((root["FamilyId"] = "some id") AND (root["IsRegistered"] = true)) OR (ro
       <SqlQuery><![CDATA[
 SELECT VALUE root["Int"] 
 FROM root 
-WHERE (root["FamilyId"] = "some id") ]]></SqlQuery>
+WHERE (root["FamilyId"] = "some id")]]></SqlQuery>
     </Output>
   </Result>
 </Results>
