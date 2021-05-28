@@ -371,6 +371,36 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
+        public override bool Visit(SqlLikeScalarExpression first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlLikeScalarExpression second))
+            {
+                return false;
+            }
+
+            if (!Equals(first.Expression, second.Expression))
+            {
+                return false;
+            }
+
+            if (!Equals(first.Pattern, second.Pattern))
+            {
+                return false;
+            }
+
+            if (!Equals(first.Not, second.Not))
+            {
+                return false;
+            }
+
+            if (!Equals(first.EscapeSequence, second.EscapeSequence))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlLimitSpec first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlLimitSpec second))

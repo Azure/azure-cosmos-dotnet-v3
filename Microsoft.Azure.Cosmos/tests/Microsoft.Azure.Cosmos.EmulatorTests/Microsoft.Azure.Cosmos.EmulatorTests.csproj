@@ -31,6 +31,7 @@
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.PointOperationsExceptionsAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.QueryAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadFeedAsync.xml" />
+    <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadManyAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml" />
     <None Remove="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.TypedPointOperationsAsync.xml" />
   </ItemGroup>
@@ -72,6 +73,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.PointOperationsExceptionsAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.ReadManyAsync.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.StreamPointOperationsAsync.xml">
@@ -269,6 +273,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <None Update="BaselineTest\TestBaseline\EndToEndTraceWriterBaselineTests.CancellationTokenAsync.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSpecialMethods.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

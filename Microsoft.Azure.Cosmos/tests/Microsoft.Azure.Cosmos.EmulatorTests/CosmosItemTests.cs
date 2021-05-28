@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true);
             string PartitionKey = "/pk";
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
@@ -436,7 +436,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Debugger.Break();
                     }
                 });
-            });
+            },
+            validatePartitionKeyRangeCalls: false);
 
             string dbName = Guid.NewGuid().ToString();
             string containerName = Guid.NewGuid().ToString();
@@ -2091,7 +2092,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ItemPatchCustomSerilizerTest()
+        public async Task ItemPatchCustomSerializerTest()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -2114,9 +2115,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             };
 
             DateTime patchDate = new DateTime(2020, 07, 01, 01, 02, 03);
-            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            Stream patchDateStreamInput = new CosmosJsonDotNetSerializer().ToStream(patchDate);
+            string streamDateJson;
+            using (Stream stream = new MemoryStream())
             {
-                PatchOperation.Add("/date", patchDate)
+                patchDateStreamInput.CopyTo(stream);
+                stream.Position = 0;
+                patchDateStreamInput.Position = 0;
+                using (StreamReader streamReader = new StreamReader(stream))
+                {
+                    streamDateJson = streamReader.ReadToEnd();
+                }
+            }
+
+            List <PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.Add("/date", patchDate),
+                PatchOperation.Add("/dateStream", patchDateStreamInput)
             };
 
             ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(
@@ -2139,6 +2154,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.IsNotNull(response.Resource);
             Assert.IsTrue(dateJson.Contains(response.Resource["date"].ToString()));
+            Assert.AreEqual(patchDate.ToString(), response.Resource["dateStream"].ToString());
+            Assert.AreNotEqual(response.Resource["date"], response.Resource["dateStream"]);
+        }
+
+        [TestMethod]
+        public async Task ItemPatchStreamInputTest()
+        {
+            dynamic testItem = new
+            {
+                id = "test",
+                cost = (double?)null,
+                totalCost = 98.2789,
+                pk = "MyCustomStatus",
+                taskNum = 4909,
+                itemIds = new int[] { 1, 5, 10 },
+                itemCode = new byte?[5] { 0x16, (byte)'\0', 0x3, null, (byte)'}' },
+            };
+
+            // Create item
+            await this.Container.CreateItemAsync<dynamic>(item: testItem);
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+
+            dynamic testItemUpdated = new
+            {
+                cost = 100,
+                totalCost = 198.2789,
+                taskNum = 4910,
+                itemCode = new byte?[3] { 0x14, (byte)'\0', (byte)'{' }
+            };
+
+            CosmosJsonDotNetSerializer cosmosJsonDotNetSerializer = new CosmosJsonDotNetSerializer();
+
+            List<PatchOperation> patchOperations = new List<PatchOperation>()
+            {
+                PatchOperation.Replace("/cost", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.cost)),
+                PatchOperation.Replace("/totalCost", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.totalCost)),
+                PatchOperation.Replace("/taskNum", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.taskNum)),
+                PatchOperation.Replace("/itemCode", cosmosJsonDotNetSerializer.ToStream(testItemUpdated.itemCode)),
+            };
+
+            ItemResponse<dynamic> response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testItem.id,
+                partitionKey: new Cosmos.PartitionKey(testItem.pk),
+                patchOperations: patchOperations);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+
+            Assert.AreEqual(testItemUpdated.cost.ToString(), response.Resource.cost.ToString());
+            Assert.AreEqual(testItemUpdated.totalCost.ToString(), response.Resource.totalCost.ToString());
+            Assert.AreEqual(testItemUpdated.taskNum.ToString(), response.Resource.taskNum.ToString());
+            Assert.AreEqual(testItemUpdated.itemCode[0].ToString(), response.Resource.itemCode[0].ToString());
+            Assert.AreEqual(testItemUpdated.itemCode[1].ToString(), response.Resource.itemCode[1].ToString());
+            Assert.AreEqual(testItemUpdated.itemCode[2].ToString(), response.Resource.itemCode[2].ToString());
         }
 
         // Read write non partition Container item.

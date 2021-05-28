@@ -440,6 +440,35 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         }
                     }
 
+                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                    {
+                        stringBuilder.AppendLine("Http Response Statistics");
+                        foreach (HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
+                        {
+                            stringBuilder.AppendLine($"{space}HttpResponse");
+                            stringBuilder.AppendLine($"{space}{space}RequestStartTime: {stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}RequestEndTime: {stat.RequestEndTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}RequestUri: {stat.RequestUri}");
+                            stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
+                            stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
+
+                            if (stat.Exception != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}ExceptionType: {stat.Exception.GetType()}");
+                                stringBuilder.AppendLine($"{space}{space}ExceptionMessage: {stat.Exception.Message}");
+                            }
+
+                            if (stat.HttpResponseMessage != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}StatusCode: {stat.HttpResponseMessage.StatusCode}");
+                                if (!stat.HttpResponseMessage.IsSuccessStatusCode)
+                                {
+                                    stringBuilder.AppendLine($"{space}{space}ReasonPhrase: {stat.HttpResponseMessage.ReasonPhrase}");
+                                }
+                            }
+                        }
+                    }
+
                     this.toStringValue = stringBuilder.ToString();
                 }
 
@@ -449,6 +478,22 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine(cpuHistoryTraceDatum.Value.ToString());
 
                     // TODO: Expose the raw data so we can custom format the string.
+
+                    this.toStringValue = stringBuilder.ToString();
+                }
+
+                public void Visit(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine("Client Configuration");
+                    stringBuilder.AppendLine($"Client Created Time: {clientConfigurationTraceDatum.ClientCreatedDateTimeUtc.ToString("o", CultureInfo.InvariantCulture)}");
+                    stringBuilder.AppendLine($"Number Of Clients Created: {CosmosClient.numberOfClientsCreated}");
+                    stringBuilder.AppendLine($"User Agent: {clientConfigurationTraceDatum.UserAgentContainer.UserAgent}");
+                    stringBuilder.AppendLine("Connection Config:");
+                    stringBuilder.AppendLine($"{space}'gw': {clientConfigurationTraceDatum.GatewayConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'rntbd': {clientConfigurationTraceDatum.RntbdConnectionConfig}");
+                    stringBuilder.AppendLine($"{space}'other': {clientConfigurationTraceDatum.OtherConnectionConfig}");
+                    stringBuilder.AppendLine($"Consistency Config: {clientConfigurationTraceDatum.ConsistencyConfig}");
 
                     this.toStringValue = stringBuilder.ToString();
                 }
