@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
-    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -190,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     tasksToWaitOn.Remove(completedTask);
                 }
 
-                if (!this.TransientExceptions.Any())
+                if (this.TransientExceptions.Count == 0)
                 {
                     throw new ArgumentException("Account properties and NonRetriableException are null and there are no TransientExceptions.");
                 }
