@@ -21,6 +21,17 @@ if(!(Test-Path -Path $updatedContractFolder)){
     Write-Output ("Updated contract " + $updatedContractFolder)
 }
 
+#Run the Cosmos DB SDK Emulator contract tests
+$projResult = dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Microsoft.Azure.Cosmos.EmulatorTests.csproj' --filter "TestCategory=UpdateContract" --configuration Release
+
+$updatedContractFolder = ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\bin\Release\netcoreapp2.1\BaselineTest\TestOutput\*"
+if(!(Test-Path -Path $updatedContractFolder)){
+    Write-Error ("The contract file did not get updated with the build. Please fix the test to output the contract file: " + $updatedContractFile)
+}else{
+    Copy-Item -Path $updatedContractFolder -Destination ".\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\BaselineTest\TestBaseline" -Recurse
+    Write-Output ("Updated contract " + $updatedContractFolder)
+}
+
 #Run the Cosmos DB SDK Preview contract tests
 $projResult = dotnet test '.\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.Tests\Microsoft.Azure.Cosmos.Tests.csproj' --filter "TestCategory=UpdateContract" --configuration Release -p:IsPreview=true
 
