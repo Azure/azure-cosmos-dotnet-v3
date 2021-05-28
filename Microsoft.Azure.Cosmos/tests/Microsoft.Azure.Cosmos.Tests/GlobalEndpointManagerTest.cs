@@ -164,35 +164,6 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(1, count, "Only request should be made");
             }
 
-            count = 0;
-            try
-            {
-                await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                    defaultEndpoint: defaultEndpoint,
-                    locations: new List<string>(){
-                       "westus",
-                       "southeastasia",
-                       "northcentralus"
-                    },
-                    getDatabaseAccountFn: (uri) =>
-                    {
-                        count++;
-                        if (uri == defaultEndpoint)
-                        {
-                            throw new Microsoft.Azure.Documents.ForbiddenException("Mock ForbiddenException exception");
-                        }
-
-                        throw new Exception("This should never be hit since it should stop after the global endpoint hit the nonretriable exception");
-                    },
-                    cancellationToken: default);
-
-                Assert.Fail("Should throw the ForbiddenException");
-            }
-            catch (Microsoft.Azure.Documents.ForbiddenException)
-            {
-                Assert.AreEqual(1, count, "Only request should be made");
-            }
-
             int countDelayRequests = 0;
             count = 0;
             try
@@ -223,6 +194,69 @@ namespace Microsoft.Azure.Cosmos
             {
                 Assert.IsTrue(count <= 3, "Global endpoint is 1, 2 tasks going to regions parallel");
                 Assert.AreEqual(2, count, "Only request should be made");
+            }
+
+            count = 0;
+            try
+            {
+                await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: (uri) =>
+                    {
+                        count++;
+                        if (uri == defaultEndpoint)
+                        {
+                            throw new Microsoft.Azure.Documents.ForbiddenException("Mock ForbiddenException exception");
+                        }
+
+                        throw new Exception("This should never be hit since it should stop after the global endpoint hit the nonretriable exception");
+                    },
+                    cancellationToken: default);
+
+                Assert.Fail("Should throw the ForbiddenException");
+            }
+            catch (Microsoft.Azure.Documents.ForbiddenException)
+            {
+                Assert.AreEqual(1, count, "Only request should be made");
+            }
+
+            // All endpoints failed. Validate aggregate exception
+            count = 0;
+            HashSet<Exception> exceptions = new HashSet<Exception>();
+            try
+            {
+                await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                    defaultEndpoint: defaultEndpoint,
+                    locations: new List<string>(){
+                       "westus",
+                       "southeastasia",
+                       "northcentralus"
+                    },
+                    getDatabaseAccountFn: (uri) =>
+                    {
+                        count++;
+                        Exception exception = new HttpRequestException("Mock HttpRequestException exception:" + count);
+                        exceptions.Add(exception);
+                        throw exception;
+                    },
+                    cancellationToken: default);
+
+                Assert.Fail("Should throw the AggregateException");
+            }
+            catch (AggregateException aggregateException)
+            {
+                Assert.AreEqual(4, count, "All endpoints should have been tried. 1 global, 3 regional endpoints");
+                Assert.AreEqual(4, exceptions.Count, "Some exceptions were not logged");
+                Assert.AreEqual(4, aggregateException.InnerExceptions.Count, "aggregateException should have 4 inner exceptions");
+                foreach(Exception exception in aggregateException.InnerExceptions)
+                {
+                    Assert.IsTrue(exceptions.Contains(exception));
+                }
             }
         }
 
