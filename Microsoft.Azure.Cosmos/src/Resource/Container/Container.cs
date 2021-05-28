@@ -1253,24 +1253,26 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     while (feedIterator.HasMoreResults)
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         if (response.StatusCode == NotModified) 
+        ///         {
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
         ///         {
         ///             using (StreamReader sr = new StreamReader(response.Content))
         ///             using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -1300,29 +1302,33 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
-        /// while (feedIterator.HasMoreResults)
-        /// {
+        ///     
         ///     while (feedIterator.HasMoreResults)
         ///     {
         ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var item in response)
+        ///
+        ///         if (response.StatusCode == NotModified) 
         ///         {
-        ///             Console.WriteLine(item);
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
+        ///         {
+        ///             foreach (var item in response)
+        ///             {
+        ///                 Console.WriteLine(item);
+        ///             }
         ///         }
         ///     }
-        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1331,18 +1337,6 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
-        /// <summary>
-        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
-        /// </summary>
-        /// <param name="feedRange">A <see cref="FeedRange"/></param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
-        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
-        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
-        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
-            FeedRange feedRange,
-            CancellationToken cancellationToken = default);
 
 #if INTERNAL
         /// <summary>
@@ -1363,6 +1357,18 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
 #if PREVIEW
+        /// <summary>
+        /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
+        /// </summary>
+        /// <param name="feedRange">A <see cref="FeedRange"/></param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>The list of Partition Key Range identifiers affected by a particular FeedRange.</returns>
+        /// <seealso cref="Container.GetFeedRangesAsync(CancellationToken)"/>
+        /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default);
+
         /// <summary>
         ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
         ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.

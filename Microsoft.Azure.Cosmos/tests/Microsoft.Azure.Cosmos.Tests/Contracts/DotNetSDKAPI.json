@@ -424,18 +424,6 @@
     "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Boolean EmitOldContinuationToken": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "Boolean EmitOldContinuationToken;CanRead:True;CanWrite:True;Boolean get_EmitOldContinuationToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EmitOldContinuationToken(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Boolean get_EmitOldContinuationToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Boolean get_EmitOldContinuationToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.Nullable`1[System.Int32] get_PageSizeHint()": {
           "Type": "Method",
           "Attributes": [],
@@ -476,13 +464,6 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
-        },
-        "Void set_EmitOldContinuationToken(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "Void set_EmitOldContinuationToken(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_IfMatchEtag(System.String)": {
           "Type": "Method",
@@ -1082,11 +1063,6 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ThroughputResponse] ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Threading.Tasks.Task`1[System.Collections.Generic.IEnumerable`1[System.String]] GetPartitionKeyRangesAsync(Microsoft.Azure.Cosmos.FeedRange, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[System.Collections.Generic.IReadOnlyList`1[Microsoft.Azure.Cosmos.FeedRange]] GetFeedRangesAsync(System.Threading.CancellationToken)": {
           "Type": "Method",
@@ -5378,18 +5354,6 @@
         "Microsoft.Azure.Cosmos.ChangeFeedRequestOptions;Microsoft.Azure.Cosmos.RequestOptions;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "Boolean EmitOldContinuationToken": {
-              "Type": "Property",
-              "Attributes": [],
-              "MethodInfo": "Boolean EmitOldContinuationToken;CanRead:True;CanWrite:True;Boolean get_EmitOldContinuationToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_EmitOldContinuationToken(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "Boolean get_EmitOldContinuationToken()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "Boolean get_EmitOldContinuationToken();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
             "System.Nullable`1[System.Int32] get_PageSizeHint()": {
               "Type": "Method",
               "Attributes": [],
@@ -5430,13 +5394,6 @@
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "[Void .ctor(), Void .ctor()]"
-            },
-            "Void set_EmitOldContinuationToken(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "Void set_EmitOldContinuationToken(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_IfMatchEtag(System.String)": {
               "Type": "Method",

@@ -133,6 +133,10 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
 #if !PREVIEW
+        public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
+            FeedRange feedRange,
+            CancellationToken cancellationToken = default);
+
         public abstract Task<ResponseMessage> PatchItemStreamAsync(
             string id,
             PartitionKey partitionKey,
