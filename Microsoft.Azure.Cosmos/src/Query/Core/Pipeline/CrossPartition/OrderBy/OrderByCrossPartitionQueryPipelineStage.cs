@@ -312,7 +312,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.cancellationToken);
             }
 
-            if (childRanges.Count() <= 1)
+            if (childRanges.Count() < 1)
             {
                 throw new InvalidOperationException("Expected more than 1 child");
             }
