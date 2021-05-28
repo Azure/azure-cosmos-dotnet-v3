@@ -48,6 +48,19 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         private GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private Mock<IDocumentClientInternal> mockedClient;
 
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            if (this.endpointManager != null)
+            {
+                try
+                {
+                    this.endpointManager.Dispose();
+                }
+                catch (Exception) { }
+            }
+        }
+
         [TestMethod]
         [Owner("atulk")]
         public void ValidateWriteEndpointOrderWithClientSideDisableMultipleWriteLocation()
