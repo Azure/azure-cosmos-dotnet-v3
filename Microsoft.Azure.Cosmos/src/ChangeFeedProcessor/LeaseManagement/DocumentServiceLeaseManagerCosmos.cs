@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                this.requestOptionsFactory.GetPartitionKey(lease.Id),
+                this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
                     if (serverLease.Owner != oldOwner)
@@ -115,6 +115,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 FeedRange = new FeedRangeEpk(partitionKeyRange.ToRange())
             };
 
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
+
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
@@ -137,6 +139,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
                 FeedRange = feedRange
             };
 
+            this.requestOptionsFactory.AddPartitionKeyIfNeeded((string pk) => documentServiceLease.LeasePartitionKey = pk, Guid.NewGuid().ToString());
+
             return this.TryCreateDocumentServiceLeaseAsync(documentServiceLease);
         }
 
@@ -155,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             await this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                this.requestOptionsFactory.GetPartitionKey(lease.Id),
+                this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
                     if (serverLease.Owner != lease.Owner)
@@ -176,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             }
 
             await this.leaseContainer.TryDeleteItemAsync<DocumentServiceLeaseCore>(
-                    this.requestOptionsFactory.GetPartitionKey(lease.Id),
+                    this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                     lease.Id).ConfigureAwait(false);
         }
 
@@ -197,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return await this.leaseUpdater.UpdateLeaseAsync(
                 refreshedLease,
                 refreshedLease.Id,
-                this.requestOptionsFactory.GetPartitionKey(lease.Id),
+                this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
                     if (serverLease.Owner != lease.Owner)
@@ -222,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
             return await this.leaseUpdater.UpdateLeaseAsync(
                 lease,
                 lease.Id,
-                this.requestOptionsFactory.GetPartitionKey(lease.Id),
+                this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey),
                 serverLease =>
                 {
                     if (serverLease.Owner != lease.Owner)
@@ -238,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
         private async Task<DocumentServiceLease> TryCreateDocumentServiceLeaseAsync(DocumentServiceLease documentServiceLease)
         {
             bool created = await this.leaseContainer.TryCreateItemAsync<DocumentServiceLease>(
-                this.requestOptionsFactory.GetPartitionKey(documentServiceLease.Id),
+                this.requestOptionsFactory.GetPartitionKey(documentServiceLease.Id, documentServiceLease.PartitionKey),
                 documentServiceLease).ConfigureAwait(false) != null;
             if (created)
             {
@@ -252,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 
         private async Task<DocumentServiceLease> TryGetLeaseAsync(DocumentServiceLease lease)
         {
-            return await this.leaseContainer.TryGetItemAsync<DocumentServiceLease>(this.requestOptionsFactory.GetPartitionKey(lease.Id), lease.Id).ConfigureAwait(false);
+            return await this.leaseContainer.TryGetItemAsync<DocumentServiceLease>(this.requestOptionsFactory.GetPartitionKey(lease.Id, lease.PartitionKey), lease.Id).ConfigureAwait(false);
         }
 
         private string GetDocumentId(string partitionId)

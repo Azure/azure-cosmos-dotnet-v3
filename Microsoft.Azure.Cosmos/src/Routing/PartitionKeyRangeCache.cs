@@ -27,12 +27,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly AsyncCache<string, CollectionRoutingMap> routingMapCache;
 
-        private readonly IAuthorizationTokenProvider authorizationTokenProvider;
+        private readonly ICosmosAuthorizationTokenProvider authorizationTokenProvider;
         private readonly IStoreModel storeModel;
         private readonly CollectionCache collectionCache;
 
         public PartitionKeyRangeCache(
-            IAuthorizationTokenProvider authorizationTokenProvider,
+            ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
             CollectionCache collectionCache)
         {
@@ -248,12 +248,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                     string authorizationToken = null;
                     try
                     {
-                        authorizationToken = (await this.authorizationTokenProvider.GetUserAuthorizationAsync(
+                        authorizationToken = await this.authorizationTokenProvider.GetUserAuthorizationTokenAsync(
                             request.ResourceAddress,
                             PathsHelper.GetResourcePath(request.ResourceType),
                             HttpConstants.HttpMethods.Get,
                             request.Headers,
-                            AuthorizationTokenType.PrimaryMasterKey)).token;
+                            AuthorizationTokenType.PrimaryMasterKey,
+                            childTrace);
                     }
                     catch (UnauthorizedException)
                     {
