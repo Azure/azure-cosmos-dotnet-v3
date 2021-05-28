@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["str"] = "5") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ("x" || root["str"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +29,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ("xs" || root["str"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -41,7 +41,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE d0 
 FROM root 
-JOIN d0 IN root["dblArray"] ]]></SqlQuery>
+JOIN d0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -54,7 +54,7 @@ JOIN d0 IN root["dblArray"] ]]></SqlQuery>
 SELECT VALUE (z0 + 2) 
 FROM root 
 JOIN z0 IN root["dblArray"] 
-WHERE (z0 > 2) ]]></SqlQuery>
+WHERE (z0 > 2)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -67,7 +67,7 @@ WHERE (z0 > 2) ]]></SqlQuery>
 SELECT VALUE (x0 + 1) 
 FROM root 
 JOIN x0 IN root["dblArray"] 
-WHERE (x0 = 3) ]]></SqlQuery>
+WHERE (x0 = 3)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -79,7 +79,7 @@ WHERE (x0 = 3) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE x0 
 FROM root 
-JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+JOIN x0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -91,7 +91,7 @@ JOIN x0 IN root["dblArray"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE d0 
 FROM root 
-JOIN d0 IN root["dblArray"] ]]></SqlQuery>
+JOIN d0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -103,7 +103,7 @@ JOIN d0 IN root["dblArray"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE (root["dbl"] + x0) 
 FROM root 
-JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+JOIN x0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -115,7 +115,7 @@ JOIN x0 IN root["dblArray"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE {"b": root["b"], "x": TRUNC((x0 * 100))} 
 FROM root 
-JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+JOIN x0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -127,7 +127,7 @@ JOIN x0 IN root["dblArray"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE x0 
 FROM root 
-JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+JOIN x0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -139,7 +139,7 @@ JOIN x0 IN root["dblArray"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE y0 
 FROM root 
-JOIN y0 IN root["dblArray"] ]]></SqlQuery>
+JOIN y0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -151,7 +151,7 @@ JOIN y0 IN root["dblArray"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE y0 
 FROM root 
-JOIN y0 IN root["dblArray"] ]]></SqlQuery>
+JOIN y0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -163,7 +163,7 @@ JOIN y0 IN root["dblArray"] ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE x0 
 FROM root 
-JOIN x0 IN root["dblArray"] ]]></SqlQuery>
+JOIN x0 IN root["dblArray"]]]></SqlQuery>
     </Output>
   </Result>
 </Results>
