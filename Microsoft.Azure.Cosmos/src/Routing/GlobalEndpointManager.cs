@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (!this.TransientExceptions.Any())
                 {
-                    throw new ArgumentException("Account properties and NonRetriableException are null and there is no LastTransientException.");
+                    throw new ArgumentException("Account properties and NonRetriableException are null and there are no TransientExceptions.");
                 }
 
                 if (this.TransientExceptions.Count == 1)
