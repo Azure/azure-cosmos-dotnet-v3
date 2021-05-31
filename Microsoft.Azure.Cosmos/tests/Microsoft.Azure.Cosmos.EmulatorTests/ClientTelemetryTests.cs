@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq.Protected;
     using Moq;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -236,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 List<Task<TransactionalBatchOperationResult>> tasks = new List<Task<TransactionalBatchOperationResult>>();
                 for (int i = 0; i < 10; i++)
                 {
-                    tasks.Add(executor.AddAsync(CreateItem(i.ToString()), null, default));
+                    tasks.Add(executor.AddAsync(CreateItem(i.ToString()), NoOpTrace.Singleton, default));
                 }
 
                 await Task.WhenAll(tasks);
@@ -298,17 +299,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int operationInfoMapCount,
             IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
         {
-            Console.WriteLine(DateTime.UtcNow + " : into assertion and sleeping for 2 sec");
+            Console.WriteLine(DateTime.UtcNow + " : into assertion and sleeping for 10 sec");
             Thread.Sleep(10000);
-            Console.WriteLine(DateTime.UtcNow + " : into assertion and woke up after 2 sec");
+            Console.WriteLine(DateTime.UtcNow + " : into assertion and woke up after 10 sec");
             Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
             {
-                expectedOperationCodeMap.TryGetValue(entry.Key.Operation, out HttpStatusCode expectedStatusCode);
-
                 Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
 
                 Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
+
+                expectedOperationCodeMap.TryGetValue(entry.Key.Operation, out HttpStatusCode expectedStatusCode);
+                Console.WriteLine("Operation : " + entry.Key.Operation);
                 Assert.AreEqual((int)expectedStatusCode, entry.Key.StatusCode);
 
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));

@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         /// It is a separate thread which collects virtual machine metadata information.
         /// </summary>
         /// <returns>Async Task</returns>
-        internal async Task LoadAzureVmMetaDataAsync()
+        private async Task LoadAzureVmMetaDataAsync()
         {
             try
             {
@@ -126,24 +126,28 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task CalculateAndSendTelemetryInformationAsync()
+        private async Task CalculateAndSendTelemetryInformationAsync()
         {
             if (this.CancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
+
             try
             {
-                Console.WriteLine(DateTime.UtcNow + " : -- Delaying -- ");
                 await Task.Delay(this.ClientTelemetrySchedulingInSeconds, this.CancellationTokenSource.Token);
-                Console.WriteLine(DateTime.UtcNow + " : -- Calculating and Sending data -- ");
+
                 this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
                 this.RecordSystemUtilization();
                 this.CalculateMetrics();
-                Console.WriteLine(DateTime.UtcNow + " : " + this.ClientTelemetryInfo.ToString());
-                await this.SendAsync();
-                Console.WriteLine(DateTime.UtcNow + " : -- Done -- ");
+                string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
+
+                string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo);
+
+                Console.WriteLine("endpointUrl : " + endpointUrl);
+                Console.WriteLine("json : " + json);
+                //await this.SendAsync();
             }
             catch (Exception ex)
             {
@@ -232,14 +236,46 @@ namespace Microsoft.Azure.Cosmos
 
         private void RecordSystemUtilization()
         {
-            // Waiting for msdata repo changes
+            Tuple<CpuLoadHistory, MemoryLoadHistory> usages 
+                = DiagnosticsHandlerHelper.Instance.GetCpuAndMemoryUsage(DiagnosticsHandlerHelper.Telemetrykey);
+
+            CpuLoadHistory cpuLoadHistory = usages.Item1;
+            if (cpuLoadHistory != null)
+            {
+                LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
+                                                     ClientTelemetryOptions.CpuMax,
+                                                     ClientTelemetryOptions.CpuPrecision);
+                foreach (CpuLoad cpuLoad in cpuLoadHistory.CpuLoad)
+                {
+                    cpuHistogram.RecordValue((long)cpuLoad.Value);
+                }
+
+                MetricInfo cpuMetric = new MetricInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+                cpuMetric.SetAggregators(cpuHistogram);
+                this.ClientTelemetryInfo.SystemInfo.Add(cpuMetric);
+            }
+
+            MemoryLoadHistory memoryLoadHistory = usages.Item2;
+            if (memoryLoadHistory != null)
+            {
+                LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
+                                         ClientTelemetryOptions.MemoryMax,
+                                         ClientTelemetryOptions.MemoryPrecision);
+                foreach (MemoryLoad memoryLoad in usages.Item2.MemoryLoad)
+                {
+                    memoryHistogram.RecordValue((long)memoryLoad.Value);
+                }
+
+                MetricInfo memoryMetric = new MetricInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
+                memoryMetric.SetAggregators(memoryHistogram);
+                this.ClientTelemetryInfo.SystemInfo.Add(memoryMetric);
+            }
         }
 
         private void CalculateMetrics()
         {
             this.FillMetricInformation(this.ClientTelemetryInfo.CacheRefreshInfoMap);
             this.FillMetricInformation(this.ClientTelemetryInfo.OperationInfoMap);
-            this.FillMetricInformation(this.ClientTelemetryInfo.SystemInfoMap);
         }
 
         private void FillMetricInformation(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
@@ -249,26 +285,14 @@ namespace Microsoft.Azure.Cosmos
                 ReportPayload payload = entry.Key;
                 LongConcurrentHistogram histogram = entry.Value;
 
-                LongConcurrentHistogram copyHistogram = (LongConcurrentHistogram)histogram.Copy();
-                payload.MetricInfo.Count = copyHistogram.TotalCount;
-                payload.MetricInfo.Max = copyHistogram.GetMaxValue();
-                payload.MetricInfo.Min = copyHistogram.GetMinValue();
-                payload.MetricInfo.Mean = copyHistogram.GetMean();
-                IDictionary<Double, Double> percentile = new Dictionary<Double, Double>
-                {
-                    { ClientTelemetryOptions.Percentile50,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile50) },
-                    { ClientTelemetryOptions.Percentile90,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile90) },
-                    { ClientTelemetryOptions.Percentile95,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile95) },
-                    { ClientTelemetryOptions.Percentile99,  copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile99) },
-                    { ClientTelemetryOptions.Percentile999, copyHistogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile999) }
-                };
-                payload.MetricInfo.Percentiles = percentile;
+                payload.MetricInfo.SetAggregators((LongConcurrentHistogram)histogram.Copy());
             }
         }
 
         private async Task SendAsync()
         {
             string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
+
             string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo);
             // If endpoint is not configured then do not send telemetry information
             if (string.IsNullOrEmpty(endpointUrl))
@@ -298,12 +322,11 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.ContentEncoding, "gzip");
                 request.Headers.Add(HttpConstants.HttpHeaders.XDate, headersCollection[HttpConstants.HttpHeaders.XDate]);
                 request.Headers.Add(HttpConstants.HttpHeaders.Authorization, headersCollection[HttpConstants.HttpHeaders.Authorization]);
-                //  Waiting for Msdata changes then replacekeys
-                request.Headers.Add("x-ms-databaseaccount-name", this.ClientTelemetryInfo.GlobalDatabaseAccountName);
+                request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, this.ClientTelemetryInfo.GlobalDatabaseAccountName);
                 String envName = ClientTelemetryOptions.GetEnvironmentName();
                 if (!string.IsNullOrEmpty(envName))
                 {
-                    request.Headers.Add("x-ms-environment-name", envName);
+                    request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
                 }
                 return request;
             }
@@ -311,17 +334,17 @@ namespace Microsoft.Azure.Cosmos
             try 
             {
                 HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
-                                                    ResourceType.Unknown,
+                                                    ResourceType.Telemetry,
                                                     HttpTimeoutPolicyDefault.Instance,
                                                     null,
                                                     this.CancellationTokenSource.Token);
 
-                if (response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode)
                 {
-                    //Once information is sent to telemetry endpoint successfully then clean Maps to collect new information otherwise keep collecting it.
-                    this.Reset();
+                    DefaultTrace.TraceError(response.ReasonPhrase);
                 }
-               
+                //Clean Maps to collect latest information.
+                this.Reset();
             } 
             catch (Exception ex)
             {
@@ -333,7 +356,7 @@ namespace Microsoft.Azure.Cosmos
         internal void Reset()
         {
             this.ClientTelemetryInfo.OperationInfoMap.Clear();
-            this.ClientTelemetryInfo.SystemInfoMap.Clear();
+            this.ClientTelemetryInfo.SystemInfo.Clear();
             this.ClientTelemetryInfo.CacheRefreshInfoMap.Clear();
         }
 

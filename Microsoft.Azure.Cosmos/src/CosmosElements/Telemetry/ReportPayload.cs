@@ -8,18 +8,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
     using System.Collections.Generic;
     using System.Text;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
 
+    [Serializable]
     internal class ReportPayload
     {
+        [JsonProperty(PropertyName = "regionsContacted")]
         public string RegionsContacted { get; }
+        [JsonProperty(PropertyName = "greaterThan1Kb")]
         public Boolean GreaterThan1Kb { get; }
+        [JsonProperty(PropertyName = "consistency")]
         public Microsoft.Azure.Cosmos.ConsistencyLevel Consistency { get; }
+        [JsonProperty(PropertyName = "databaseName")]
         public string DatabaseName { get; }
+        [JsonProperty(PropertyName = "containerName")]
         public string ContainerName { get; }
+        [JsonProperty(PropertyName = "operation")]
         public OperationType Operation { get; }
+        [JsonProperty(PropertyName = "resource")]
         public ResourceType Resource { get; }
+        [JsonProperty(PropertyName = "statusCode")]
         public int StatusCode { get; }
+        [JsonProperty(PropertyName = "responseSizeInBytes")]
         public int ResponseSizeInBytes { get; }
+        [JsonProperty(PropertyName = "metricInfo")]
         public MetricInfo MetricInfo { get; }
 
         public ReportPayload(string regionsContacted, 
