@@ -280,20 +280,17 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string continuation = null;
             while (feedIterator.HasMoreResults)
             {
-                try
+                FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
+                totalCount += feedResponse.Count;
+                foreach (ToDoActivity toDoActivity in feedResponse)
                 {
-                    FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
-                    totalCount += feedResponse.Count;
-                    foreach (ToDoActivity toDoActivity in feedResponse)
-                    {
-                        Assert.AreEqual(pkToRead, toDoActivity.pk);
-                    }
-
-                    continuation = feedResponse.ContinuationToken;
+                    Assert.AreEqual(pkToRead, toDoActivity.pk);
                 }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
+
+                continuation = feedResponse.ContinuationToken;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                 {
-                    continuation = cosmosException.Headers.ContinuationToken;
                     break;
                 }
             }
@@ -314,16 +311,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             while (setIteratorNew.HasMoreResults)
             {
-                try
+                FeedResponse<ToDoActivity> feedResponse = await setIteratorNew.ReadNextAsync(this.cancellationToken);
+                totalCount += feedResponse.Count;
+                foreach (ToDoActivity toDoActivity in feedResponse)
                 {
-                    FeedResponse<ToDoActivity> feedResponse = await setIteratorNew.ReadNextAsync(this.cancellationToken);
-                    totalCount += feedResponse.Count;
-                    foreach (ToDoActivity toDoActivity in feedResponse)
-                    {
-                        Assert.AreEqual(pkToRead, toDoActivity.pk);
-                    }
+                    Assert.AreEqual(pkToRead, toDoActivity.pk);
                 }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
                 }
@@ -351,15 +346,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string continuation = null;
             while (feedIterator.HasMoreResults)
             {
-                try
+                FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
+                totalCount += feedResponse.Count;
+                continuation = feedResponse.ContinuationToken;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                 {
-                    FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
-                    totalCount += feedResponse.Count;
-                    continuation = feedResponse.ContinuationToken;
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
-                {
-                    continuation = cosmosException.Headers.ContinuationToken;
                     break;
                 }
             }
@@ -374,12 +366,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
 
             while (setIteratorNew.HasMoreResults)
             {
-                try
-                {
-                    FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
-                    totalCount += feedResponse.Count;
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
+                FeedResponse<ToDoActivity> feedResponse = await feedIterator.ReadNextAsync(this.cancellationToken);
+                totalCount += feedResponse.Count;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
                 }
@@ -681,14 +671,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             string initialContinuation = null;
             while (fullFidelityIterator.HasMoreResults)
             {
-                try
+                FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                initialContinuation = feedResponse.ContinuationToken;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                 {
-                    FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
-                    initialContinuation = feedResponse.ContinuationToken;
-                }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
-                {
-                    initialContinuation = cosmosException.Headers.ContinuationToken;
                     break;
                 }
             }
@@ -710,20 +697,18 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             bool hasDeletes = false;
             while (fullFidelityIterator.HasMoreResults)
             {
-                try
+                FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                foreach (ToDoActivityWithMetadata item in feedResponse)
                 {
-                    FeedResponse<ToDoActivityWithMetadata> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
-                    foreach (ToDoActivityWithMetadata item in feedResponse)
-                    {
-                        Assert.IsNotNull(item.metadata, "Metadata not present");
-                        Assert.IsNotNull(item.metadata.operationType, "Metadata has no operationType");
-                        hasInserts |= item.metadata.operationType == "create";
-                        hasDeletes |= item.metadata.operationType == "delete";
-                    }
-
-                    detectedEvents += feedResponse.Count;
+                    Assert.IsNotNull(item.metadata, "Metadata not present");
+                    Assert.IsNotNull(item.metadata.operationType, "Metadata has no operationType");
+                    hasInserts |= item.metadata.operationType == "create";
+                    hasDeletes |= item.metadata.operationType == "delete";
                 }
-                catch (CosmosException cosmosException) when (cosmosException.StatusCode == HttpStatusCode.NotModified)
+
+                detectedEvents += feedResponse.Count;
+
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
                 }
