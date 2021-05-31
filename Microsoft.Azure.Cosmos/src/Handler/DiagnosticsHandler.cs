@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            DiagnosticsHandlerHelper.Instance.RecordCpuDiagnostics(request);
+            DiagnosticsHandlerHelper.Instance.RecordCpuDiagnostics(request, DiagnosticsHandlerHelper.Diagnostickey);
             return base.SendAsync(request, cancellationToken);
         }
     }

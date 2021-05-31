@@ -17,21 +17,36 @@ namespace Microsoft.Azure.Cosmos.Handler
     internal class DiagnosticsHandlerHelper
     {
         public static readonly DiagnosticsHandlerHelper Instance = new DiagnosticsHandlerHelper();
-        private readonly CpuMonitor cpuMonitor = null;
-        private bool isCpuMonitorEnabled = false;
+        private readonly SystemUsageMonitorBase systemUsageMonitor = null;
+
+        internal const string Diagnostickey = "diagnostic";
+        internal const string Telemetrykey = "telemetry";
+
+        private bool isMonitoringEnabled = false;
 
         private DiagnosticsHandlerHelper()
         {
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                this.cpuMonitor = new CpuMonitor();
-                this.cpuMonitor.Start();
-                this.isCpuMonitorEnabled = true;
+                this.systemUsageMonitor = SystemUsageMonitorBase.Create(
+                    new List<CpuAndMemoryUsageRecorder> 
+                    {
+                        new CpuAndMemoryUsageRecorder(Diagnostickey, 6, TimeSpan.FromSeconds(10)),
+                        new CpuAndMemoryUsageRecorder(Telemetrykey, 120, TimeSpan.FromSeconds(5))
+                    });
+
+                if (!(this.systemUsageMonitor is SystemUsageMonitorNoOps))
+                {
+                    this.systemUsageMonitor.Start();
+                    this.isMonitoringEnabled = true;
+                }
+               
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                this.isCpuMonitorEnabled = false;
+                Console.WriteLine(exception);
+                this.isMonitoringEnabled = false;
             }
         }
 
@@ -39,13 +54,13 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// The diagnostics should never block a request, and is a best attempt
         /// If the CPU load history fails then don't try it in the future.
         /// </summary>
-        public void RecordCpuDiagnostics(RequestMessage request)
+        public void RecordCpuDiagnostics(RequestMessage request, string recorderKey)
         {
-            if (this.isCpuMonitorEnabled)
+            if (this.isMonitoringEnabled)
             {
                 try
                 {
-                    CpuLoadHistory cpuHistory = this.cpuMonitor.GetCpuLoad();
+                    CpuLoadHistory cpuHistory = this.systemUsageMonitor.GetRecorder(recorderKey).CpuUsage;
                     if (cpuHistory != null)
                     {
                         request.Trace.AddDatum(
@@ -53,12 +68,40 @@ namespace Microsoft.Azure.Cosmos.Handler
                             new CpuHistoryTraceDatum(cpuHistory));
                     }
                 }
-                catch (Exception)
+                catch (Exception exception)
                 {
-                    this.isCpuMonitorEnabled = false;
+                    Console.WriteLine(exception);
+                    this.isMonitoringEnabled = false;
                 }
             }
         }
 
+        /// <summary>
+        /// This method will give CPU Usage(%) and Memory Usage(kb) for a given recorder, 
+        /// Right now only 2 recorders are available : Diagnostic and Telemetry
+        /// </summary>
+        /// <param name="recorderKey"></param>
+        /// <returns>CpuLoadHistory and MemoryLoadHistory</returns>
+        public Tuple<CpuLoadHistory, MemoryLoadHistory> GetCpuAndMemoryUsage(string recorderKey)
+        {
+            CpuLoadHistory cpuHistory = null;
+            MemoryLoadHistory memoryLoadHistory = null;
+            if (this.isMonitoringEnabled)
+            {
+                try
+                {
+                    CpuAndMemoryUsageRecorder recorder = this.systemUsageMonitor.GetRecorder(recorderKey);
+
+                    cpuHistory = recorder.CpuUsage;
+                    memoryLoadHistory = recorder.MemoryUsage;
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine(exception);
+                    this.isMonitoringEnabled = false;
+                }
+            }
+            return new Tuple<CpuLoadHistory, MemoryLoadHistory>(cpuHistory, memoryLoadHistory);
+        }
     }
 }

@@ -11,7 +11,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Newtonsoft.Json;
-
+    
+    [Serializable]
     internal class ClientTelemetryInfo
     {
         [JsonProperty(PropertyName = "timeStamp")]
@@ -33,14 +34,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [JsonProperty(PropertyName = "acceleratedNetworking")]
         public bool? AcceleratedNetworking { get; }
         [JsonProperty(PropertyName = "systemInfo")]
-        public List<ReportPayload> SystemInfo => new List<ReportPayload>(this.SystemInfoMap.Keys);
+        public List<MetricInfo> SystemInfo { get; set; }
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
         public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.CacheRefreshInfoMap.Keys);
         [JsonProperty(PropertyName = "operationInfo")]
         public List<ReportPayload> OperationInfo => new List<ReportPayload>(this.OperationInfoMap.Keys);
 
-        [JsonIgnore]
-        public ConcurrentDictionary<ReportPayload, LongConcurrentHistogram> SystemInfoMap { get; set; }
         [JsonIgnore]
         public ConcurrentDictionary<ReportPayload, LongConcurrentHistogram> CacheRefreshInfoMap { get; set; }
         [JsonIgnore]
@@ -57,11 +56,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.UserAgent = userAgent;
             this.ConnectionMode = connectionMode;
             this.AcceleratedNetworking = acceleratedNetworking;
-            this.SystemInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
+            this.SystemInfo = new List<MetricInfo>();
             this.CacheRefreshInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
             this.OperationInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
         }
-
+       
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();

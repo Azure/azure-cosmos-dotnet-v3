@@ -34,6 +34,11 @@ namespace Microsoft.Azure.Cosmos
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
+        internal const int MemoryMax = Int32.MaxValue;
+        internal const int MemoryPrecision = 2;
+        internal const String MemoryName = "Memory Remaining";
+        internal const String MemoryUnit = "MB";
+
         internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
         internal const double DefaultTimeStampInSeconds = 600;
         internal const double Percentile50 = 50.0;
