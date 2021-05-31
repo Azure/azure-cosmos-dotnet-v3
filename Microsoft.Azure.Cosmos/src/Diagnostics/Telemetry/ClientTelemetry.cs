@@ -130,7 +130,6 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task CalculateAndSendTelemetryInformationAsync()
         {
-            Console.WriteLine("CalculateAndSendTelemetryInformationAsync Start");
             if (this.CancellationTokenSource.IsCancellationRequested)
             {
                 return;
@@ -138,20 +137,10 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Delaying start : " + this.ClientTelemetrySchedulingInSeconds);
                 await Task.Delay(this.ClientTelemetrySchedulingInSeconds, this.CancellationTokenSource.Token);
-                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Delaying end : " + this.ClientTelemetrySchedulingInSeconds);
-
                 this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
-                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Record System Util start");
                 this.RecordSystemUtilization();
-                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Record System Util end");
-                string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-                string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo);
-
-                Console.WriteLine("endpointUrl : " + endpointUrl);
-                Console.WriteLine("json : " + json);
-                //await this.SendAsync();
+                await this.SendAsync();
             }
             catch (Exception ex)
             {
@@ -185,7 +174,6 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
-            //Console.WriteLine(DateTime.UtcNow + " : Collecting telemetry for : " + operationType);
             IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
             IList<Uri> regionUris = new List<Uri>();
             foreach ((_, Uri uri) in regionList)
@@ -242,43 +230,50 @@ namespace Microsoft.Azure.Cosmos
         {
             Tuple<CpuLoadHistory, MemoryLoadHistory> usages = this.diagnosticsHelper.GetCpuAndMemoryUsage(DiagnosticsHandlerHelper.Telemetrykey);
 
-            CpuLoadHistory cpuLoadHistory = usages.Item1;
-            if (cpuLoadHistory != null)
+            try
             {
-                LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
-                                                     ClientTelemetryOptions.CpuMax,
-                                                     ClientTelemetryOptions.CpuPrecision);
-                foreach (CpuLoad cpuLoad in cpuLoadHistory.CpuLoad)
+                CpuLoadHistory cpuLoadHistory = usages.Item1;
+                if (cpuLoadHistory != null)
                 {
-                    cpuHistogram.RecordValue((long)cpuLoad.Value);
+                    LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
+                                                         ClientTelemetryOptions.CpuMax,
+                                                         ClientTelemetryOptions.CpuPrecision);
+                    foreach (CpuLoad cpuLoad in cpuLoadHistory.CpuLoad)
+                    {
+                        cpuHistogram.RecordValue((long)cpuLoad.Value);
+                    }
+                    this.ClientTelemetryInfo.SystemInfo.Add(
+                        new MetricInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit)
+                        .SetAggregators(cpuHistogram));
                 }
 
-                MetricInfo cpuMetric = new MetricInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                cpuMetric.SetAggregators(cpuHistogram);
-                this.ClientTelemetryInfo.SystemInfo.Add(cpuMetric);
-            }
-
-            MemoryLoadHistory memoryLoadHistory = usages.Item2;
-            if (memoryLoadHistory != null)
-            {
-                LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
-                                         ClientTelemetryOptions.MemoryMax,
-                                         ClientTelemetryOptions.MemoryPrecision);
-                foreach (MemoryLoad memoryLoad in usages.Item2.MemoryLoad)
+                MemoryLoadHistory memoryLoadHistory = usages.Item2;
+                if (memoryLoadHistory != null)
                 {
-                    memoryHistogram.RecordValue((long)memoryLoad.Value);
-                }
+                    LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
+                                             ClientTelemetryOptions.MemoryMax,
+                                             ClientTelemetryOptions.MemoryPrecision);
+                    foreach (MemoryLoad memoryLoad in memoryLoadHistory.MemoryLoad)
+                    {
+                        long memoryLoadInMb = memoryLoad.Value / (1024 * 1024);
+                        memoryHistogram.RecordValue(memoryLoadInMb);
+                    }
 
-                MetricInfo memoryMetric = new MetricInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryMetric.SetAggregators(memoryHistogram);
-                this.ClientTelemetryInfo.SystemInfo.Add(memoryMetric);
+                    this.ClientTelemetryInfo.SystemInfo.Add(
+                        new MetricInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit)
+                        .SetAggregators(memoryHistogram));
+                }
             }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError(ex.Message);
+            }
+           
         }
 
         private async Task SendAsync()
         {
             string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-
             string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo);
             // If endpoint is not configured then do not send telemetry information
             if (string.IsNullOrEmpty(endpointUrl))

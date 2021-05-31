@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         [JsonProperty(PropertyName = "percentiles")]
         internal IDictionary<Double, Double> Percentiles { get; set; }
         
-        internal void SetAggregators(LongConcurrentHistogram histogram)
+        internal MetricInfo SetAggregators(LongConcurrentHistogram histogram)
         {
             this.Count = histogram.TotalCount;
             this.Max = histogram.GetMaxValue();
@@ -49,6 +49,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
                     { ClientTelemetryOptions.Percentile999, histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile999) }
                 };
             this.Percentiles = percentile;
+
+            return this;
         }
 
         public override string ToString()

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [JsonProperty(PropertyName = "systemInfo")]
         public List<MetricInfo> SystemInfo { get; set; }
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.FillMetricInformation(this.CacheRefreshInfoMap));
+        public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.CacheRefreshInfoMap.Keys);
         [JsonProperty(PropertyName = "operationInfo")]
         public List<ReportPayload> OperationInfo => new List<ReportPayload>(this.FillMetricInformation(this.OperationInfoMap));
 
