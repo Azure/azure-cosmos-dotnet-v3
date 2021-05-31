@@ -16,13 +16,25 @@ namespace Microsoft.Azure.Cosmos.Handler
     /// </summary>
     internal class DiagnosticsHandlerHelper
     {
-        public static readonly DiagnosticsHandlerHelper Instance = new DiagnosticsHandlerHelper();
+        private static DiagnosticsHandlerHelper helper;
         private readonly SystemUsageMonitorBase systemUsageMonitor = null;
 
         internal const string Diagnostickey = "diagnostic";
         internal const string Telemetrykey = "telemetry";
 
         private bool isMonitoringEnabled = false;
+
+        /// <summary>
+        /// Singleton to make sureonly one intsane of DiadnosticHandlerHelper is there
+        /// </summary>
+        public static DiagnosticsHandlerHelper Instance()
+        {
+            if (helper == null)
+            {
+                helper = new DiagnosticsHandlerHelper();
+            }
+            return helper;
+        }
 
         private DiagnosticsHandlerHelper()
         {
@@ -86,21 +98,27 @@ namespace Microsoft.Azure.Cosmos.Handler
         {
             CpuLoadHistory cpuHistory = null;
             MemoryLoadHistory memoryLoadHistory = null;
+
+            Console.WriteLine("GetCpuAndMemoryUsage : this.isMonitoringEnabled : 1: " + this.isMonitoringEnabled);
             if (this.isMonitoringEnabled)
             {
                 try
                 {
                     CpuAndMemoryUsageRecorder recorder = this.systemUsageMonitor.GetRecorder(recorderKey);
-
+                    Console.WriteLine("GetCpuAndMemoryUsage : CpuAndMemoryUsageRecorder : " + recorder);
                     cpuHistory = recorder.CpuUsage;
+                    Console.WriteLine("GetCpuAndMemoryUsage : cpuHistory : " + cpuHistory);
                     memoryLoadHistory = recorder.MemoryUsage;
+                    Console.WriteLine("GetCpuAndMemoryUsage : memoryLoadHistory : " + memoryLoadHistory);
                 }
                 catch (Exception exception)
                 {
+                    Console.WriteLine("GetCpuAndMemoryUsage : Exception : " + exception.Message);
                     Console.WriteLine(exception);
                     this.isMonitoringEnabled = false;
                 }
             }
+            Console.WriteLine("GetCpuAndMemoryUsage : this.isMonitoringEnabled : 2: " + this.isMonitoringEnabled);
             return new Tuple<CpuLoadHistory, MemoryLoadHistory>(cpuHistory, memoryLoadHistory);
         }
     }

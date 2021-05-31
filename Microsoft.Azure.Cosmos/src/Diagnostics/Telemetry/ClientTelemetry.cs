@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         internal DocumentClient documentClient;
         internal CosmosHttpClient httpClient;
         internal AuthorizationTokenProvider TokenProvider;
-
+        internal DiagnosticsHandlerHelper diagnosticsHelper;
         private bool isDisposed = false;
         private Task accountInfoTask;
         private Task vmTask;
@@ -48,9 +48,11 @@ namespace Microsoft.Azure.Cosmos
             DocumentClient documentClient,
             bool? acceleratedNetworking,
             ConnectionPolicy connectionPolicy,
-            AuthorizationTokenProvider authorizationTokenProvider)
+            AuthorizationTokenProvider authorizationTokenProvider,
+            DiagnosticsHandlerHelper diagnosticsHelper)
         {
             this.documentClient = documentClient ?? throw new ArgumentNullException(nameof(documentClient));
+            this.diagnosticsHelper = diagnosticsHelper;
             if (connectionPolicy == null)
             {
                 throw new ArgumentNullException(nameof(connectionPolicy));
@@ -128,6 +130,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task CalculateAndSendTelemetryInformationAsync()
         {
+            Console.WriteLine("CalculateAndSendTelemetryInformationAsync Start");
             if (this.CancellationTokenSource.IsCancellationRequested)
             {
                 return;
@@ -135,14 +138,15 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
+                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Delaying start : " + this.ClientTelemetrySchedulingInSeconds);
                 await Task.Delay(this.ClientTelemetrySchedulingInSeconds, this.CancellationTokenSource.Token);
+                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Delaying end : " + this.ClientTelemetrySchedulingInSeconds);
 
                 this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
-
+                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Record System Util start");
                 this.RecordSystemUtilization();
-                this.CalculateMetrics();
+                Console.WriteLine("CalculateAndSendTelemetryInformationAsync Record System Util end");
                 string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-
                 string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo);
 
                 Console.WriteLine("endpointUrl : " + endpointUrl);
@@ -236,8 +240,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void RecordSystemUtilization()
         {
-            Tuple<CpuLoadHistory, MemoryLoadHistory> usages 
-                = DiagnosticsHandlerHelper.Instance.GetCpuAndMemoryUsage(DiagnosticsHandlerHelper.Telemetrykey);
+            Tuple<CpuLoadHistory, MemoryLoadHistory> usages = this.diagnosticsHelper.GetCpuAndMemoryUsage(DiagnosticsHandlerHelper.Telemetrykey);
 
             CpuLoadHistory cpuLoadHistory = usages.Item1;
             if (cpuLoadHistory != null)
@@ -269,23 +272,6 @@ namespace Microsoft.Azure.Cosmos
                 MetricInfo memoryMetric = new MetricInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
                 memoryMetric.SetAggregators(memoryHistogram);
                 this.ClientTelemetryInfo.SystemInfo.Add(memoryMetric);
-            }
-        }
-
-        private void CalculateMetrics()
-        {
-            this.FillMetricInformation(this.ClientTelemetryInfo.CacheRefreshInfoMap);
-            this.FillMetricInformation(this.ClientTelemetryInfo.OperationInfoMap);
-        }
-
-        private void FillMetricInformation(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
-        {
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in metrics)
-            {
-                ReportPayload payload = entry.Key;
-                LongConcurrentHistogram histogram = entry.Value;
-
-                payload.MetricInfo.SetAggregators((LongConcurrentHistogram)histogram.Copy());
             }
         }
 
