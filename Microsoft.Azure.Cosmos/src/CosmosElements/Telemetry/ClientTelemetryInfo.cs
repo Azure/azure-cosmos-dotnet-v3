@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [JsonProperty(PropertyName = "systemInfo")]
         public List<MetricInfo> SystemInfo { get; set; }
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.CacheRefreshInfoMap.Keys);
+        public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.FillMetricInformation(this.CacheRefreshInfoMap));
         [JsonProperty(PropertyName = "operationInfo")]
-        public List<ReportPayload> OperationInfo => new List<ReportPayload>(this.OperationInfoMap.Keys);
+        public List<ReportPayload> OperationInfo => new List<ReportPayload>(this.FillMetricInformation(this.OperationInfoMap));
 
         [JsonIgnore]
         public ConcurrentDictionary<ReportPayload, LongConcurrentHistogram> CacheRefreshInfoMap { get; set; }
@@ -60,7 +60,20 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.CacheRefreshInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
             this.OperationInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
         }
-       
+
+        private ICollection<ReportPayload> FillMetricInformation(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
+        {
+            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in metrics)
+            {
+                ReportPayload payload = entry.Key;
+                LongConcurrentHistogram histogram = entry.Value;
+
+                payload.MetricInfo.SetAggregators((LongConcurrentHistogram)histogram.Copy());
+            }
+
+            return metrics.Keys;
+        }
+
         public override string ToString()
         {
             StringBuilder sb = new StringBuilder();

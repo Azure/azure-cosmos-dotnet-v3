@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Newtonsoft.Json.Linq;
 
@@ -25,7 +26,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 documentClient: documentClient,
                 acceleratedNetworking: null,
                 connectionPolicy: connectionPolicy,
-                authorizationTokenProvider: client.AuthorizationTokenProvider);
+                authorizationTokenProvider: client.AuthorizationTokenProvider,
+                diagnosticsHelper: DiagnosticsHandlerHelper.Instance());
 
             client.Telemetry = this.clientTelemetry;
             this.clientTelemetry.Start();
