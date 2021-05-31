@@ -37,9 +37,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "10");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
+           /* Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://juno-test.documents-dev.windows-int.net/api/clienttelemetry/trace");
-
+*/
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
             cosmosClientBuilder
                 .WithTelemetryEnabled();
@@ -258,7 +258,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task QueryOperationTest()
         {
-            Console.WriteLine(DateTime.UtcNow + " : Starting ");
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
             ItemResponse<ToDoActivity> createResponse = await this.container.CreateItemAsync<ToDoActivity>(testItem);
 
@@ -299,9 +298,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int operationInfoMapCount,
             IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
         {
-            Console.WriteLine(DateTime.UtcNow + " : into assertion and sleeping for 10 sec");
             Thread.Sleep(10000);
-            Console.WriteLine(DateTime.UtcNow + " : into assertion and woke up after 10 sec");
             Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
             Assert.IsTrue(this.telemetryInfo.SystemInfo.Count >  0);
 
@@ -312,7 +309,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
 
                 expectedOperationCodeMap.TryGetValue(entry.Key.Operation, out HttpStatusCode expectedStatusCode);
-                Console.WriteLine("Operation : " + entry.Key.Operation);
                 Assert.AreEqual((int)expectedStatusCode, entry.Key.StatusCode);
 
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
