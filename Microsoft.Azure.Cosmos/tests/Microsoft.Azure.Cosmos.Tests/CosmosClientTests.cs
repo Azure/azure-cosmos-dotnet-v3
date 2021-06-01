@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -105,7 +107,57 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.ThrowsException<ArgumentException>(() => new CosmosClient(""));
             Assert.ThrowsException<ArgumentNullException>(() => new CosmosClient(null));
         }
-        
+
+        [TestMethod]
+        public async Task ValidateAuthorizationTokenProviderTestAsync()
+        {
+            string authKeyValue = "MockAuthKey";
+            Mock<AuthorizationTokenProvider> mockAuth = new Mock<AuthorizationTokenProvider>(MockBehavior.Strict);
+            mockAuth.Setup(x => x.Dispose());
+            mockAuth.Setup(x => x.AddAuthorizationHeaderAsync(
+                It.IsAny<Documents.Collections.INameValueCollection>(),
+                It.IsAny<Uri>(),
+                It.IsAny<string>(),
+                It.IsAny<Documents.AuthorizationTokenType>()))
+                .Callback<Documents.Collections.INameValueCollection, Uri, string, Documents.AuthorizationTokenType>(
+                (headers, uri, verb, tokenType) => headers.Add(Documents.HttpConstants.HttpHeaders.Authorization, authKeyValue))
+                .Returns(() => new ValueTask());
+
+            bool validAuth = false;
+            Exception exceptionToThrow = new Exception("TestException");
+            Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
+            mockHttpHandler.Setup(x => x.SendAsync(
+                It.IsAny<HttpRequestMessage>(), 
+                It.IsAny<CancellationToken>()))
+                .Callback<HttpRequestMessage, CancellationToken>(
+                (request, cancellationToken) =>
+                {
+                    Assert.IsTrue(request.Headers.TryGetValues(Documents.HttpConstants.HttpHeaders.Authorization, out IEnumerable<string> authValues));
+                    Assert.AreEqual(authKeyValue, authValues.First());
+                    validAuth = true;
+                }).Throws(exceptionToThrow);
+
+            using CosmosClient client = new CosmosClient(
+                "https://localhost:8081",
+                authorizationTokenProvider: mockAuth.Object,
+                new CosmosClientOptions()
+                {
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                });
+
+            Container container = client.GetContainer("Test", "MockTest");
+
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(Guid.NewGuid().ToString(), new PartitionKey(Guid.NewGuid().ToString()));
+            }
+            catch (Exception e) when (object.ReferenceEquals(e, exceptionToThrow))
+            { 
+            }
+            
+            Assert.IsTrue(validAuth);
+        }
+
         [TestMethod]
         public void Builder_InvalidConnectionString()
         {

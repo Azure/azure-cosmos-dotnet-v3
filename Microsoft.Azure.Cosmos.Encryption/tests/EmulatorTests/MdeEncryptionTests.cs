@@ -347,6 +347,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             testDoc.Sensitive_ArrayFormat = null;
             testDoc.Sensitive_StringFormat = null;
+            testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2 = null;
 
             ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                    testDoc,
@@ -355,6 +356,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // run query on document with null property value.
+            QueryDefinition withEncryptedParameter = encryptionContainer.CreateQueryDefinition(
+                    "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_ArrayFormat = @Sensitive_ArrayFormat" +
+                    " AND c.Sensitive_IntFormat = @Sensitive_IntFormat" +
+                    " AND c.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2 = @Sensitive_StringFormatL2" +
+                    " AND c.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_DecimalFormatL2 = @Sensitive_DecimalFormatL2");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_StringFormat",
+                    testDoc.Sensitive_StringFormat,
+                    "/Sensitive_StringFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_ArrayFormat",
+                    testDoc.Sensitive_ArrayFormat,
+                    "/Sensitive_ArrayFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_IntFormat",
+                    testDoc.Sensitive_IntFormat,
+                    "/Sensitive_IntFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_StringFormatL2",
+                    testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2,
+                    "/Sensitive_NestedObjectFormatL1");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_DecimalFormatL2",
+                    testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_DecimalFormatL2,
+                    "/Sensitive_NestedObjectFormatL1");
+
+            TestDoc expectedDoc = new TestDoc(testDoc);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                encryptionContainer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
 
             // no access to key.
             testEncryptionKeyStoreProvider.RevokeAccessSet = true;
@@ -521,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             // string/int
-            string[] arrayofStringValues = new string[] { testDoc1.Sensitive_StringFormat, "randomValue" };
+            string[] arrayofStringValues = new string[] { testDoc1.Sensitive_StringFormat, "randomValue", null };
 
             QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where array_contains(@Sensitive_StringFormat, c.Sensitive_StringFormat) " +
@@ -2369,8 +2408,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 else
                 {
                     Assert.AreEqual(
-                        expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_IntFormatL2,
-                        verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_IntFormatL2);
+                        expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2,
+                        verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2);
 
                     Assert.AreEqual(
                         expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_IntFormatL3,
@@ -2497,7 +2536,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public class Sensitive_NestedObjectL2
             {
-                public int Sensitive_IntFormatL2 { get; set; }
+                public string Sensitive_StringFormatL2 { get; set; }
                 public decimal Sensitive_DecimalFormatL2 { get; set; }
                 public Sensitive_ArrayData[] Sensitive_ArrayFormatL2 { get; set; }
                 public Sensitive_NestedObjectL3 Sensitive_NestedObjectFormatL3 { get; set; }
@@ -2622,7 +2661,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                                     Sensitive_IntFormatL0 = 888,
                                     Sensitive_DecimalFormatL0 = 888.1m,
                                 },
-                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata1a", "verysensitivedata1a"},
+                                Sensitive_StringArrayMultiType = new string[3] { "sensitivedata1a", "verysensitivedata1a", null},
                                 Sensitive_ArrayMultiTypeDecimalFormat = 10.2m,
                                 Sensitive_IntArrayMultiType = new int[2] { 999, 1000 }
                             },
@@ -2683,7 +2722,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                         },
                         Sensitive_NestedObjectFormatL2 = new Sensitive_NestedObjectL2()
                         {
-                            Sensitive_IntFormatL2 = 2000,
+                            Sensitive_StringFormatL2 = "sensitiveData",
                             Sensitive_DecimalFormatL2 = 2000.1m,
                             Sensitive_ArrayFormatL2 = new Sensitive_ArrayData[]
                             {
