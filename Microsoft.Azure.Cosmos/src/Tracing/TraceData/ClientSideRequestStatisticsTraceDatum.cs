@@ -7,16 +7,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Net;
     using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
 
     internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
         private readonly object lockObject = new object();
         private readonly long clientSideRequestStatisticsCreateTime;
+        private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
+        private readonly Dictionary<int, DateTime> recordRequestHashCodeToStartTime;
+        private readonly List<StoreResponseStatistics> storeResponseStatistics;
+        private readonly List<HttpResponseStatistics> httpResponseStatistics;
 
         private long? firstStartRequestTimestamp;
         private long? lastStartRequestTimestamp;
@@ -27,35 +29,69 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
-            this.EndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
-            this.RecordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
+            this.endpointToAddressResolutionStats = new Dictionary<string, AddressResolutionStatistics>();
+            this.recordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
             this.ContactedReplicas = new List<Uri>();
-            this.StoreResponseStatisticsList = new List<StoreResponseStatistics>();
+            this.storeResponseStatistics = new List<StoreResponseStatistics>();
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContactedWithName = new HashSet<(string, Uri)>();
             this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
-            this.HttpResponseStatisticsList = new List<HttpResponseStatistics>();
+            this.httpResponseStatistics = new List<HttpResponseStatistics>();
         }
 
         public DateTime RequestStartTimeUtc { get; }
 
         public DateTime? RequestEndTimeUtc { get; set; }
 
-        public Dictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics { get; }
-
-        private Dictionary<int, DateTime> RecordRequestHashCodeToStartTime { get; }
+        public IEnumerable<KeyValuePair<string, AddressResolutionStatistics>> EndpointToAddressResolutionStatistics
+        {
+            get
+            {
+                lock (this.lockObject)
+                {
+                    foreach (KeyValuePair<string, AddressResolutionStatistics> a in this.endpointToAddressResolutionStats)
+                    {
+                        yield return a;
+                    }
+                }
+            }
+        }
 
         public List<Uri> ContactedReplicas { get; set; }
-
-        public List<StoreResponseStatistics> StoreResponseStatisticsList { get; }
-
-        public List<HttpResponseStatistics> HttpResponseStatisticsList { get; }
 
         public HashSet<Uri> FailedReplicas { get; }
 
         public HashSet<Uri> RegionsContacted { get; }
 
         public HashSet<(string, Uri)> RegionsContactedWithName { get; }
+
+        public IEnumerable<StoreResponseStatistics> StoreResponseStatisticsList
+        {
+            get
+            {
+                lock (this.lockObject)
+                {
+                    foreach (StoreResponseStatistics storeResponseStatistic in this.storeResponseStatistics)
+                    {
+                        yield return storeResponseStatistic;
+                    }
+                }
+            }
+        }
+
+        public IEnumerable<HttpResponseStatistics> HttpResponseStatisticsList
+        {
+            get
+            {
+                lock (this.httpResponseStatistics)
+                {
+                    foreach (HttpResponseStatistics httpResponseStatistic in this.httpResponseStatistics)
+                    {
+                        yield return httpResponseStatistic;
+                    }
+                }
+            }
+        }
 
         public TimeSpan RequestLatency
         {
@@ -109,14 +145,14 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.received429ResponseSinceLastStartRequest = false;
             }
 
-            this.RecordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
+            this.recordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
         }
 
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
             // One DocumentServiceRequest can map to multiple store results
             DateTime? startDateTime = null;
-            if (this.RecordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
+            if (this.recordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
             {
                 startDateTime = startRequestTime;
             }
@@ -153,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.RegionsContactedWithName.Add((regionName, locationEndpoint));
                 }
 
-                this.StoreResponseStatisticsList.Add(responseStatistics);
+                this.storeResponseStatistics.Add(responseStatistics);
 
                 if (!this.received429ResponseSinceLastStartRequest &&
                     storeResult.StatusCode == StatusCodes.TooManyRequests)
@@ -173,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             lock (this.lockObject)
             {
-                this.EndpointToAddressResolutionStatistics.Add(identifier, resolutionStats);
+                this.endpointToAddressResolutionStats.Add(identifier, resolutionStats);
             }
 
             return identifier;
@@ -189,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             DateTime responseTime = DateTime.UtcNow;
             lock (this.lockObject)
             {
-                if (!this.EndpointToAddressResolutionStatistics.ContainsKey(identifier))
+                if (!this.endpointToAddressResolutionStats.ContainsKey(identifier))
                 {
                     throw new ArgumentException("Identifier {0} does not exist. Please call start before calling end.", identifier);
                 }
@@ -199,9 +235,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.RequestEndTimeUtc = responseTime;
                 }
 
-                AddressResolutionStatistics start = this.EndpointToAddressResolutionStatistics[identifier];
+                AddressResolutionStatistics start = this.endpointToAddressResolutionStats[identifier];
 
-                this.EndpointToAddressResolutionStatistics[identifier] = new AddressResolutionStatistics(
+                this.endpointToAddressResolutionStats[identifier] = new AddressResolutionStatistics(
                     start.StartTime,
                     responseTime,
                     start.TargetEndpoint);
@@ -213,10 +249,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
-            lock (this.lockObject)
+            lock (this.httpResponseStatistics)
             {
                 DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
-                this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
                                                                            request.Method,
@@ -231,10 +267,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
-            lock (this.lockObject)
+            lock (this.httpResponseStatistics)
             {
                 DateTime requestEndTimeUtc = this.RecordHttpResponseEndTime();
-                this.HttpResponseStatisticsList.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
                                                                            request.Method,

@@ -213,9 +213,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
                 this.jsonWriter.WriteArrayStart();
 
-                foreach (ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                foreach (KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                 {
-                   this.VisitAddressResolutionStatistics(stat);
+                   this.VisitAddressResolutionStatistics(stat.Value);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteArrayEnd();
 
-                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Any())
                 {
                     this.jsonWriter.WriteFieldName("HttpResponseStats");
                     this.jsonWriter.WriteArrayStart();

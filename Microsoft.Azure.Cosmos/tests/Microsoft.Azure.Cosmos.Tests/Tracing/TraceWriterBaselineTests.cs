@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
-
+                        Type datumType = datum.GetType();
                         Uri uri1 = new Uri("http://someUri1.com");
                         Uri uri2 = new Uri("http://someUri2.com");
 
@@ -370,8 +370,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             DateTime.MinValue,
                             DateTime.MaxValue,
                             "http://localhost.com");
-                        datum.EndpointToAddressResolutionStatistics["asdf"] = mockStatistics;
-                        datum.EndpointToAddressResolutionStatistics["asdf2"] = mockStatistics;
+
+                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf", mockStatistics);
+                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf2", mockStatistics);
 
                         datum.FailedReplicas.Add(uri1);
                         datum.FailedReplicas.Add(uri2);
@@ -406,7 +407,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             ResourceType.Document,
                             OperationType.Query,
                             uri1);
-                        datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+
+                        ((List<StoreResponseStatistics>)datumType.GetField("storeResponseStatistics").GetValue(datum)).Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -422,12 +424,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
                         datum.ContactedReplicas.Add(default);
 
-                        ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
-                            default,
-                            default,
-                            targetEndpoint: "asdf");
-                        datum.EndpointToAddressResolutionStatistics["asdf"] = default;
-                        datum.EndpointToAddressResolutionStatistics["asdf2"] = default;
+                        Type datumType = datum.GetType();
+                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf", default);
+                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf2", default);
 
                         datum.FailedReplicas.Add(default);
 
@@ -456,11 +455,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 usingLocalLSN: default,
                                 activityId: default,
                                 backendRequestDurationInMs: default,
-                                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
+                                 transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             resourceType: default,
                             operationType: default,
-                            locationEndpoint: default); ;
-                        datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+                            locationEndpoint: default);
+                        ((List<StoreResponseStatistics>)datumType.GetField("storeResponseStatistics").GetValue(datum)).Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats Default", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -485,9 +484,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             HttpMethod.Get,
                             ResourceType.Document,
                             new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
-                            exception: null
-                            );
-                        datum.HttpResponseStatisticsList.Add(httpResponseStatistics);
+                            exception: null);
+
+                        Type datumType = datum.GetType();
+                        ((List<HttpResponseStatistics>)datumType.GetField("httpResponseStatistics").GetValue(datum)).Add(httpResponseStatistics);
 
                         HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
                             DateTime.MinValue,
@@ -496,9 +496,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             HttpMethod.Get,
                             ResourceType.Document,
                             responseMessage: null,
-                            exception: new OperationCanceledException()
-                            );
-                        datum.HttpResponseStatisticsList.Add(httpResponseStatisticsException);
+                            exception: new OperationCanceledException());
+                        ((List<HttpResponseStatistics>)datumType.GetField("httpResponseStatistics").GetValue(datum)).Add(httpResponseStatisticsException);
 
                         rootTrace.AddDatum("Client Side Request Stats", datum);
                     }
@@ -764,7 +763,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 GetQueryPlan(query),
-                new QueryPaginationOptions(pageSizeHint: 10),
+                new QueryPaginationOptions(pageSizeHint: pageSize),
                 maxConcurrency: 10,
                 requestCancellationToken: default,
                 requestContinuationToken: state);

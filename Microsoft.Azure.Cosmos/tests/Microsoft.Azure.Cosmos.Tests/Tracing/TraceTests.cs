@@ -127,7 +127,7 @@
                             OperationType.Query,
                             new Uri("http://someUri1.com"));
 
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+            ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics").GetValue(datum)).Add(storeResponseStatistics);
 
             CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
             string json = diagnostics.ToString();

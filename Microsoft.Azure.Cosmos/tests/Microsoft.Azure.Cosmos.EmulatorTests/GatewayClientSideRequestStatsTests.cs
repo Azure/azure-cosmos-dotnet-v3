@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
@@ -43,9 +45,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> response = await this.Container.CreateItemAsync(item);
             ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, "Transport");
             Assert.IsNotNull(datum.HttpResponseStatisticsList);
-            Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 1);
-            Assert.IsNotNull(datum.HttpResponseStatisticsList[0].HttpResponseMessage);
-            Assert.AreEqual(datum.RequestEndTimeUtc, datum.HttpResponseStatisticsList[0].RequestEndTime);
+            Assert.AreEqual(datum.HttpResponseStatisticsList.Count(), 1);
+            Assert.IsNotNull(datum.HttpResponseStatisticsList.First().HttpResponseMessage);
+            Assert.AreEqual(datum.RequestEndTimeUtc, datum.HttpResponseStatisticsList.First().RequestEndTime);
         }
 
         [TestMethod]
@@ -72,11 +74,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<ToDoActivity> response = await container.ReadItemAsync<ToDoActivity>(item.id, new PartitionKey(item.pk));
                 ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, traceToFind);
                 Assert.IsNotNull(datum.HttpResponseStatisticsList);
-                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, expectedHttpCalls);
-                Assert.IsTrue(datum.HttpResponseStatisticsList[0].Exception is OperationCanceledException);
-                Assert.IsTrue(datum.HttpResponseStatisticsList[1].Exception is OperationCanceledException);
-                Assert.IsNull(datum.HttpResponseStatisticsList[2].Exception);
-                Assert.IsNotNull(datum.HttpResponseStatisticsList[2].HttpResponseMessage);
+                Assert.AreEqual(datum.HttpResponseStatisticsList.Count(), expectedHttpCalls);
+
+                using IEnumerator<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> list = datum.HttpResponseStatisticsList.GetEnumerator();
+
+                list.MoveNext();
+                Assert.IsTrue(list.Current.Exception is OperationCanceledException);
+                list.MoveNext();
+                Assert.IsTrue(list.Current.Exception is OperationCanceledException);
+                list.MoveNext();
+                Assert.IsNull(list.Current.Exception);
+                Assert.IsNotNull(list.Current.HttpResponseMessage);
             }
         }
 
@@ -93,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ClientSideRequestStatisticsTraceDatum datum = this.GetClientSideRequestStatsFromTrace(((CosmosTraceDiagnostics)response.Diagnostics).Value, "Transport Request");
                 Assert.IsNotNull(datum.HttpResponseStatisticsList);
                 // One call for collection cache, 2 calls for PK range cache and 1 call for Address Resolution
-                Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 4);
+                Assert.AreEqual(datum.HttpResponseStatisticsList.Count(), 4);
             }
 
         }
