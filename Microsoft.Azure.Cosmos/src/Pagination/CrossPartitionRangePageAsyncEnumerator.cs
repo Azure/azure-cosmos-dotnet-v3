@@ -160,12 +160,8 @@ namespace Microsoft.Azure.Cosmos.Pagination
                             currentPaginator.FeedRangeState.FeedRange,
                             childTrace,
                             this.cancellationToken);
-                        if (childRanges.Count == 0)
-                        {
-                            throw new InvalidOperationException("Got back no children");
-                        }
 
-                        if (childRanges.Count == 1)
+                        if (childRanges.Count <= 1)
                         {
                             // We optimistically assumed that the cache is not stale.
                             // In the event that it is (where we only get back one child / the partition that we think got split)
@@ -177,9 +173,17 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 this.cancellationToken);
                         }
 
-                        if (childRanges.Count() < 1)
+                        if (childRanges.Count < 1)
                         {
-                            throw new InvalidOperationException("Expected more than 1 child");
+                            string errorMessage = "SDK invariant violated: Must have at least one EPK range in a cross partition enumerator";
+                            throw new CosmosException(
+                                statusCode: HttpStatusCode.InternalServerError,
+                                message: errorMessage,
+                                stackTrace: string.Empty,
+                                headers: null,
+                                trace: childTrace,
+                                error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated", Message = errorMessage },
+                                innerException: null);
                         }
 
                         foreach (FeedRangeInternal childRange in childRanges)
