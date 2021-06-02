@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Tracing;
+    using System.Diagnostics;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -37,9 +38,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInitialize()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "10");
-           /* Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://juno-test.documents-dev.windows-int.net/api/clienttelemetry/trace");
-*/
+
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
             cosmosClientBuilder
                 .WithTelemetryEnabled();
@@ -128,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             allowedOperations.Add(Documents.OperationType.Delete);
             expectedOperationCodeMap.Add(Documents.OperationType.Delete, HttpStatusCode.NoContent);
             this.AssertClientTelemetryInfo(allowedOperations, 12, expectedOperationCodeMap);
+
         }
 
         [TestMethod]
@@ -290,6 +292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                    { OperationType.Query, HttpStatusCode.OK },
                    { OperationType.Create, HttpStatusCode.Created }
                };
+
             this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
         }
 
@@ -300,12 +303,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Thread.Sleep(10000);
             Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
-            Assert.IsTrue(this.telemetryInfo.SystemInfo.Count >  0);
+            Assert.IsTrue(this.telemetryInfo.SystemInfo.Count > 0);
 
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
             {
                 Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
-
                 Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
 
                 expectedOperationCodeMap.TryGetValue(entry.Key.Operation, out HttpStatusCode expectedStatusCode);
@@ -313,11 +315,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
                 Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-/*
-                Assert.IsTrue(entry.Key.MetricInfo.Max >= 0);
-                Assert.IsTrue(entry.Key.MetricInfo.Mean >= 0);
-                Assert.IsTrue(entry.Key.MetricInfo.Count > 0);
-                Assert.AreEqual(5, entry.Key.MetricInfo.Percentiles.Count, "Percentile count Not matched");*/
             }
         }
 

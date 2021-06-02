@@ -34,6 +34,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         [JsonProperty(PropertyName = "percentiles")]
         internal IDictionary<Double, Double> Percentiles { get; set; }
         
+        /// <summary>
+        /// It will set the current object with the aggregated values from the given histogram
+        /// </summary>
+        /// <param name="histogram"></param>
+        /// <returns>MetricInfo</returns>
         internal MetricInfo SetAggregators(LongConcurrentHistogram histogram)
         {
             this.Count = histogram.TotalCount;

@@ -17,16 +17,27 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         public string RegionsContacted { get; }
         [JsonProperty(PropertyName = "greaterThan1Kb")]
         public Boolean GreaterThan1Kb { get; }
-        [JsonProperty(PropertyName = "consistency")]
-        public Microsoft.Azure.Cosmos.ConsistencyLevel Consistency { get; }
+
         [JsonProperty(PropertyName = "databaseName")]
         public string DatabaseName { get; }
         [JsonProperty(PropertyName = "containerName")]
         public string ContainerName { get; }
-        [JsonProperty(PropertyName = "operation")]
+
+        [JsonIgnore]
         public OperationType Operation { get; }
-        [JsonProperty(PropertyName = "resource")]
+        [JsonProperty(PropertyName = "operation")]
+        public string OperationValue => this.Operation.ToOperationTypeString();
+
+        [JsonIgnore]
         public ResourceType Resource { get; }
+        [JsonProperty(PropertyName = "resource")]
+        public string Recourcevalue => this.Resource.ToResourceTypeString();
+
+        [JsonIgnore]
+        public Microsoft.Azure.Cosmos.ConsistencyLevel Consistency { get; }
+        [JsonProperty(PropertyName = "consistency")]
+        public string ConsistencyValue => this.Consistency.ToString();
+
         [JsonProperty(PropertyName = "statusCode")]
         public int StatusCode { get; }
         [JsonProperty(PropertyName = "responseSizeInBytes")]
