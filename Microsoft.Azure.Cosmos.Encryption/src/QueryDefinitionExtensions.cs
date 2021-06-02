@@ -64,9 +64,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(name));
             }
 
+            // if null use as-is
             if (value == null)
             {
-                throw new ArgumentNullException(nameof(value));
+                queryDefinition.WithParameter(name, value);
+                return queryDefinition;
             }
 
             QueryDefinition queryDefinitionwithEncryptedValues = queryDefinition;

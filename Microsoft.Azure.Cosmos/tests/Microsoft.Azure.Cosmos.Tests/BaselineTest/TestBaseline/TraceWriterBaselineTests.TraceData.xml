@@ -245,7 +245,8 @@
                     sessionToken: new SimpleSessionToken(42),
                     usingLocalLSN: true,
                     activityId: Guid.Empty.ToString(),
-                    backendRequestDurationInMs: "4.2"),
+                    backendRequestDurationInMs: "4.2",
+                    transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 ResourceType.Document,
                 OperationType.Query,
                 uri1);
@@ -365,6 +366,38 @@
             "StorePhysicalAddress": "http://storephysicaladdress.com/",
             "RequestCharge": 3.14,
             "BELatencyInMs": "4.2",
+            "RntbdRequestStats": [
+              {
+                "EventName": "Created",
+                "StartTime": "2021-12-31T23:59:59.059Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "ChannelAcquisitionStarted",
+                "StartTime": "2021-12-31T23:59:59.06Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Pipelined",
+                "StartTime": "2021-12-31T23:59:59.061Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Transit Time",
+                "StartTime": "2021-12-31T23:59:59.062Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Received",
+                "StartTime": "2021-12-31T23:59:59.063Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Completed",
+                "StartTime": "2021-12-31T23:59:59.064Z",
+                "DurationInMicroSec": "0"
+              }
+            ],
             "TransportException": null
           }
         }
@@ -417,7 +450,8 @@
                     sessionToken: default,
                     usingLocalLSN: default,
                     activityId: default,
-                    backendRequestDurationInMs: default),
+                    backendRequestDurationInMs: default,
+                    transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 resourceType: default,
                 operationType: default,
                 locationEndpoint: default); ;
@@ -525,6 +559,38 @@
             "StorePhysicalAddress": null,
             "RequestCharge": 0,
             "BELatencyInMs": null,
+            "RntbdRequestStats": [
+              {
+                "EventName": "Created",
+                "StartTime": "2021-12-31T23:59:59.059Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "ChannelAcquisitionStarted",
+                "StartTime": "2021-12-31T23:59:59.06Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Pipelined",
+                "StartTime": "2021-12-31T23:59:59.061Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Transit Time",
+                "StartTime": "2021-12-31T23:59:59.062Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Received",
+                "StartTime": "2021-12-31T23:59:59.063Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Completed",
+                "StartTime": "2021-12-31T23:59:59.064Z",
+                "DurationInMicroSec": "0"
+              }
+            ],
             "TransportException": null
           }
         }
