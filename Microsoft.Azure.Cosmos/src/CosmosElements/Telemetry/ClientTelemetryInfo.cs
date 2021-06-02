@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [JsonProperty(PropertyName = "systemInfo")]
         public List<MetricInfo> SystemInfo { get; set; }
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.CacheRefreshInfoMap.Keys);
+        public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.FillMetricInformation(this.CacheRefreshInfoMap));
         [JsonProperty(PropertyName = "operationInfo")]
         public List<ReportPayload> OperationInfo => new List<ReportPayload>(this.FillMetricInformation(this.OperationInfoMap));
 
@@ -61,8 +61,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.OperationInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
         }
 
+        /// <summary>
+        /// This function will be called at the time of serialization to calculate the agrregated values.
+        /// </summary>
+        /// <param name="metrics"></param>
+        /// <returns>Collection of ReportPayload</returns>
         private ICollection<ReportPayload> FillMetricInformation(IDictionary<ReportPayload, LongConcurrentHistogram> metrics)
         {
+            if (metrics == null)
+            {
+                return null;
+            }
+
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in metrics)
             {
                 ReportPayload payload = entry.Key;

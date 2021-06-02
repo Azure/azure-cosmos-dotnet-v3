@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
     using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
 
     /// <summary>
-    /// This class collect all the telemetry information
+    /// This class collects and send all the telemetry information.
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
@@ -39,12 +39,14 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosHttpClient httpClient;
         internal AuthorizationTokenProvider TokenProvider;
         internal DiagnosticsHandlerHelper diagnosticsHelper;
+
         private bool isDisposed = false;
+
         private Task accountInfoTask;
         private Task vmTask;
         private Task telemetryTask;
 
-        public ClientTelemetry(
+        internal ClientTelemetry(
             DocumentClient documentClient,
             bool? acceleratedNetworking,
             ConnectionPolicy connectionPolicy,
@@ -73,9 +75,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         ///  Start telemetry Process which trigger 3 seprate processes
-        ///  1. Set Account information
-        ///  2. Load VM metedata information
-        ///  3. Calculate and Send telemetry Information (infinite process)
+        ///  1. Set Account information (one time at the time of initialization)
+        ///  2. Load VM metedata information (one time at the time of initialization)
+        ///  3. Calculate and Send telemetry Information (never ending task)
         /// </summary>
         internal void Start()
         {
@@ -86,17 +88,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets Account Properties from cache if available otherwise make a network call
+        /// Task to get Account Properties from cache if available otherwise make a network call.
         /// </summary>
-        /// <returns>It is a Task</returns>
-        internal async Task SetAccountNameAsync()
+        /// <returns>Async Task</returns>
+        private async Task SetAccountNameAsync()
         {
             AccountProperties accountProperties = await this.documentClient.GlobalEndpointManager.GetDatabaseAccountAsync();
             this.ClientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
         }
 
         /// <summary>
-        /// It is a separate thread which collects virtual machine metadata information.
+        /// Task to collect virtual machine metadata information. using instance metedata service API.
+        /// ref: https://docs.microsoft.com/en-us/azure/virtual-machines/windows/instance-metadata-service?tabs=windows
+        /// Collects only application region and environment information
         /// </summary>
         /// <returns>Async Task</returns>
         private async Task LoadAzureVmMetaDataAsync()
@@ -128,6 +132,10 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        /// <summary>
+        /// Task which collects System Information and send telemetry information to juno service, periodically
+        /// </summary>
+        /// <returns>Async Task</returns>
         private async Task CalculateAndSendTelemetryInformationAsync()
         {
             if (this.CancellationTokenSource.IsCancellationRequested)
@@ -153,7 +161,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// This function is being called on each operation and it collects corresponding telemetry information.
+        /// Collects Telemetry Information.
         /// </summary>
         /// <param name="cosmosDiagnostics"></param>
         /// <param name="statusCode"></param>
@@ -226,12 +234,15 @@ namespace Microsoft.Azure.Cosmos
                 .RecordValue((long)requestCharge);
         }
 
+        /// <summary>
+        /// Record CPU and memory usage which will be sent as part of telemetry information
+        /// </summary>
         private void RecordSystemUtilization()
         {
-            Tuple<CpuLoadHistory, MemoryLoadHistory> usages = this.diagnosticsHelper.GetCpuAndMemoryUsage(DiagnosticsHandlerHelper.Telemetrykey);
-
             try
             {
+                Tuple<CpuLoadHistory, MemoryLoadHistory> usages = this.diagnosticsHelper.GetCpuAndMemoryUsage(DiagnosticsHandlerHelper.Telemetrykey);
+
                 CpuLoadHistory cpuLoadHistory = usages.Item1;
                 if (cpuLoadHistory != null)
                 {
@@ -271,6 +282,12 @@ namespace Microsoft.Azure.Cosmos
            
         }
 
+        /// <summary>
+        /// Task to send telemetry information to configured Juno endpoint. 
+        /// If endpoint is not configured then it won't even try to send information. It will just trace an error message.
+        /// In any case it reset the telemetry information to collect the latest one.
+        /// </summary>
+        /// <returns>Async Task</returns>
         private async Task SendAsync()
         {
             string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
@@ -279,6 +296,9 @@ namespace Microsoft.Azure.Cosmos
             if (string.IsNullOrEmpty(endpointUrl))
             {
                 DefaultTrace.TraceError("Telemetry endpoint is not configured");
+                //Clean Maps to collect latest information.
+                this.Reset();
+
                 return;
             }
 
@@ -299,8 +319,6 @@ namespace Microsoft.Azure.Cosmos
                        "POST",
                        AuthorizationTokenType.PrimaryMasterKey);
 
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentType, "application/json");
-                request.Headers.Add(HttpConstants.HttpHeaders.ContentEncoding, "gzip");
                 request.Headers.Add(HttpConstants.HttpHeaders.XDate, headersCollection[HttpConstants.HttpHeaders.XDate]);
                 request.Headers.Add(HttpConstants.HttpHeaders.Authorization, headersCollection[HttpConstants.HttpHeaders.Authorization]);
                 request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, this.ClientTelemetryInfo.GlobalDatabaseAccountName);
@@ -324,16 +342,22 @@ namespace Microsoft.Azure.Cosmos
                 {
                     DefaultTrace.TraceError(response.ReasonPhrase);
                 }
-                //Clean Maps to collect latest information.
-                this.Reset();
             } 
             catch (Exception ex)
             {
                 DefaultTrace.TraceError(ex.Message);
             }
+            finally
+            {
+                //Clean collections to collect latest information.
+                this.Reset();
+            }
 
         }
 
+        /// <summary>
+        /// Reset all the operation, System Utilization and Cache refresh related collections
+        /// </summary>
         internal void Reset()
         {
             this.ClientTelemetryInfo.OperationInfoMap.Clear();
@@ -367,5 +391,11 @@ namespace Microsoft.Azure.Cosmos
                 this.isDisposed = true;
             }
         }
+
+        internal bool IsAccountInfoTaskRunning => this.accountInfoTask.Status == TaskStatus.Running;
+
+        internal bool IsVmInfoTaskRunning => this.vmTask.Status == TaskStatus.Running;
+
+        internal bool IsTelemetryTaskRunning => this.telemetryTask.Status == TaskStatus.Running;
     }
 }
