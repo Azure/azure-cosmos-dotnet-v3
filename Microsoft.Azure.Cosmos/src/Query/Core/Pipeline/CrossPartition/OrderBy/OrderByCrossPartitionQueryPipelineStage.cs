@@ -310,15 +310,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             if (childRanges.Count < 1)
             {
-                string errorMessage = "SDK invariant violated: Must have at least one EPK range in a cross partition enumerator";
-                throw new CosmosException(
-                    statusCode: HttpStatusCode.InternalServerError,
-                    message: errorMessage,
-                    stackTrace: string.Empty,
-                    headers: null,
-                    trace: trace,
-                    error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated", Message = errorMessage },
-                    innerException: null);
+                string errorMessage = "SDK invariant violated 82086B2D: Must have at least one EPK range in a cross partition enumerator";
+                throw Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
+                                message: errorMessage,
+                                headers: null,
+                                stackTrace: null,
+                                trace: trace,
+                                error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated_82086B2D", Message = errorMessage });
             }
 
             foreach (FeedRangeInternal childRange in childRanges)

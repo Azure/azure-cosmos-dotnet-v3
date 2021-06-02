@@ -175,15 +175,13 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
                         if (childRanges.Count < 1)
                         {
-                            string errorMessage = "SDK invariant violated: Must have at least one EPK range in a cross partition enumerator";
-                            throw new CosmosException(
-                                statusCode: HttpStatusCode.InternalServerError,
+                            string errorMessage = "SDK invariant violated 4795CC37: Must have at least one EPK range in a cross partition enumerator";
+                            throw Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
                                 message: errorMessage,
-                                stackTrace: string.Empty,
                                 headers: null,
+                                stackTrace: null,
                                 trace: childTrace,
-                                error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated", Message = errorMessage },
-                                innerException: null);
+                                error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated_4795CC37", Message = errorMessage });
                         }
 
                         foreach (FeedRangeInternal childRange in childRanges)
