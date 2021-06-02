@@ -1278,7 +1278,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private static PartitionKeyHashRange FeedRangeEpkToHashRange(FeedRangeEpk feedRangeEpk)
         {
             PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
-            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
+            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty || feedRangeEpk.Range.Max == "FF" ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
             PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
             return hashRange;
         }
