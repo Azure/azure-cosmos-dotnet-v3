@@ -371,8 +371,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             DateTime.MaxValue,
                             "http://localhost.com");
 
-                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf", mockStatistics);
-                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf2", mockStatistics);
+                        TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", mockStatistics);
+                        TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", mockStatistics);
 
                         datum.FailedReplicas.Add(uri1);
                         datum.FailedReplicas.Add(uri2);
@@ -408,7 +408,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             OperationType.Query,
                             uri1);
 
-                        ((List<StoreResponseStatistics>)datumType.GetField("storeResponseStatistics").GetValue(datum)).Add(storeResponseStatistics);
+                        TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -424,9 +424,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
                         datum.ContactedReplicas.Add(default);
 
-                        Type datumType = datum.GetType();
-                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf", default);
-                        ((Dictionary<string, AddressResolutionStatistics>)datumType.GetField("endpointToAddressResolutionStats").GetValue(datum)).Add("asdf2", default);
+                        TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
+                        TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", default);
 
                         datum.FailedReplicas.Add(default);
 
@@ -459,7 +458,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             resourceType: default,
                             operationType: default,
                             locationEndpoint: default);
-                        ((List<StoreResponseStatistics>)datumType.GetField("storeResponseStatistics").GetValue(datum)).Add(storeResponseStatistics);
+
+                        TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats Default", datum);
                     }
                     endLineNumber = GetLineNumber();
@@ -486,8 +486,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
                             exception: null);
 
-                        Type datumType = datum.GetType();
-                        ((List<HttpResponseStatistics>)datumType.GetField("httpResponseStatistics").GetValue(datum)).Add(httpResponseStatistics);
+                        TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
 
                         HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
                             DateTime.MinValue,
@@ -497,7 +496,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             ResourceType.Document,
                             responseMessage: null,
                             exception: new OperationCanceledException());
-                        ((List<HttpResponseStatistics>)datumType.GetField("httpResponseStatistics").GetValue(datum)).Add(httpResponseStatisticsException);
+                        TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
 
                         rootTrace.AddDatum("Client Side Request Stats", datum);
                     }
@@ -752,6 +751,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             field = transportRequestStats.GetType().GetField("requestCompletedTime", BindingFlags.NonPublic | BindingFlags.Instance);
             field.SetValue(transportRequestStats, defaultDateTime);
             return transportRequestStats;
+        }
+
+        internal static T GetPrivateField<T>(
+            ClientSideRequestStatisticsTraceDatum datum,
+            string propertyName)
+        {
+            return (T)datum.GetType().GetField(propertyName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum);
         }
 
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)

@@ -52,63 +52,58 @@
 
             Task backgroundTask = Task.Run(() => this.UpdateAddressesInBackground(datum, cancellationTokenSource.Token));
 
-            // Wait for the background thread to start
-            while (!datum.EndpointToAddressResolutionStatistics.Any())
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(50));
-            }
-
-            foreach(KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> address in datum.EndpointToAddressResolutionStatistics)
-            {
-                Assert.IsNotNull(address);
-            }
-
-            cancellationTokenSource.Cancel();
+            await this.ConcurrentUpdateTestHelper<KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics>>(
+                (clientSideRequestStatistics, cancellationToken) => this.UpdateAddressesInBackground(clientSideRequestStatistics, cancellationToken),
+                (clientSideRequestStatistics) => clientSideRequestStatistics.EndpointToAddressResolutionStatistics);
         }
 
         [TestMethod]
         [Timeout(10000)]
         public async Task ConcurrentUpdateHttpResponseStatisticsListTests()
         {
-            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
-
-            Task backgroundTask = Task.Run(() => this.UpdateHttpResponsesInBackground(datum, cancellationTokenSource.Token));
-
-            // Wait for the background thread to start
-            while (!datum.HttpResponseStatisticsList.Any())
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(50));
-            }
-
-            foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in datum.HttpResponseStatisticsList)
-            {
-                Assert.IsNotNull(httpResponseStatistics);
-            }
-
-            cancellationTokenSource.Cancel();
+            await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics>(
+                (clientSideRequestStatistics, cancellationToken) => this.UpdateHttpResponsesInBackground(clientSideRequestStatistics, cancellationToken),
+                (clientSideRequestStatistics) => clientSideRequestStatistics.HttpResponseStatisticsList);
         }
 
         [TestMethod]
         [Timeout(10000)]
         public async Task ConcurrentUpdateStoreResponseStatisticsListTests()
         {
+            await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics>(
+                (clientSideRequestStatistics, cancellationToken) => this.UpdateStoreResponseStatisticsListInBackground(clientSideRequestStatistics, cancellationToken),
+                (clientSideRequestStatistics) => clientSideRequestStatistics.StoreResponseStatisticsList);
+        }
+
+        private async Task ConcurrentUpdateTestHelper<T>(
+            Action<ClientSideRequestStatisticsTraceDatum, CancellationToken> backgroundUpdater,
+            Func<ClientSideRequestStatisticsTraceDatum, IEnumerable<T>> getList)
+        {
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
 
-            Task backgroundTask = Task.Run(() => this.UpdateHttpResponsesInBackground(datum, cancellationTokenSource.Token));
+            Task backgroundTask = Task.Run(() => backgroundUpdater(datum, cancellationTokenSource.Token));
 
             // Wait for the background thread to start
-            while (!datum.HttpResponseStatisticsList.Any())
+            while (!getList(datum).Any())
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(50));
             }
 
-            foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStatistics in datum.StoreResponseStatisticsList)
+            foreach (T item in getList(datum))
             {
-                Assert.IsNotNull(storeResponseStatistics);
+                Assert.IsNotNull(item);
+            }
+
+            int count = getList(datum).Count();
+            using (IEnumerator<T> enumerator = getList(datum).GetEnumerator())
+            {
+                // IEnumerator should not block items being added to the list
+                while (getList(datum).Count() == count)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(50));
+                }
             }
 
             cancellationTokenSource.Cancel();

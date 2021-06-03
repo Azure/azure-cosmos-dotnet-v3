@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteArrayEnd();
 
-                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Any())
+                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
                 {
                     this.jsonWriter.WriteFieldName("HttpResponseStats");
                     this.jsonWriter.WriteArrayStart();
