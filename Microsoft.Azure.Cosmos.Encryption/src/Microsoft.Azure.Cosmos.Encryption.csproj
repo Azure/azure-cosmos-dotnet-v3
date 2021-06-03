@@ -67,4 +67,7 @@
     <AssemblyOriginatorKeyFile>..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   
+  <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+    <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
+  </PropertyGroup>
 </Project>
