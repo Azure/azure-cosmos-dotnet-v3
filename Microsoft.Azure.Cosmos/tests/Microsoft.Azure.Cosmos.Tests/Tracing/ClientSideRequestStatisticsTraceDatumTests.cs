@@ -42,23 +42,17 @@
         /// This test is needed because different parts of the SDK use the same ClientSideRequestStatisticsTraceDatum across multiple
         /// threads. It's even possible that there are background threads referencing the same instance.
         /// </summary>
-        //[TestMethod]
-        //[Timeout(5000)]
+        [TestMethod]
+        [Timeout(5000)]
         public async Task ConcurrentUpdateEndpointToAddressResolutionStatisticsTests()
         {
-            using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
-
-            Task backgroundTask = Task.Run(() => this.UpdateAddressesInBackground(datum, cancellationTokenSource.Token));
-
             await this.ConcurrentUpdateTestHelper<KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics>>(
                 (clientSideRequestStatistics, cancellationToken) => this.UpdateAddressesInBackground(clientSideRequestStatistics, cancellationToken),
                 (clientSideRequestStatistics) => clientSideRequestStatistics.EndpointToAddressResolutionStatistics);
         }
 
-        //[TestMethod]
-        //[Timeout(5000)]
+        [TestMethod]
+        [Timeout(5000)]
         public async Task ConcurrentUpdateHttpResponseStatisticsListTests()
         {
             await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics>(
@@ -66,8 +60,8 @@
                 (clientSideRequestStatistics) => clientSideRequestStatistics.HttpResponseStatisticsList);
         }
 
-        //[TestMethod]
-        //[Timeout(5000)]
+        [TestMethod]
+        [Timeout(5000)]
         public async Task ConcurrentUpdateStoreResponseStatisticsListTests()
         {
             await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics>(
@@ -86,10 +80,22 @@
             Task backgroundTask = Task.Run(() => backgroundUpdater(datum, cancellationTokenSource.Token));
 
             // Wait for the background thread to start
-            while (!getList(datum).Any())
+            for (int i = 0; i < 100; i++)
             {
+                if (getList(datum).Any())
+                {
+                    break;
+                }
+
+                if (backgroundTask.Exception != null || backgroundTask.IsCompleted || backgroundTask.IsFaulted || backgroundTask.IsCanceled)
+                {
+                    Assert.Fail($"BackgroundTask stopped running. {backgroundTask.Exception}");
+                }
+
                 await Task.Delay(TimeSpan.FromMilliseconds(50));
             }
+
+            Assert.IsTrue(getList(datum).Any(), $"BackgroundTask never started running.");
 
             foreach (T item in getList(datum))
             {
@@ -99,11 +105,19 @@
             int count = getList(datum).Count();
             using (IEnumerator<T> enumerator = getList(datum).GetEnumerator())
             {
-                // IEnumerator should not block items being added to the list
-                while (getList(datum).Count() == count)
+                // Wait for the background thread to start
+                for (int i = 0; i < 100; i++)
                 {
+                    // IEnumerator should not block items being added to the list
+                    if (getList(datum).Count() != count)
+                    {
+                        break;
+                    }
+
                     await Task.Delay(TimeSpan.FromMilliseconds(50));
                 }
+                
+                Assert.IsTrue(getList(datum).Count() > count, "Background task never updated the list.");
             }
 
             cancellationTokenSource.Cancel();
