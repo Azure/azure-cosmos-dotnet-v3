@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
             int processedDocCount = 0;
             string accumulator = string.Empty;
             ChangeFeedProcessor processor = this.Container
-                .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", async (ChangeFeedProcessorContext context, Stream stream, Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync, CancellationToken token) =>
+                .GetChangeFeedProcessorBuilderWithManualCheckpoint("test", async (ChangeFeedProcessorContext context, Stream stream, Func<Task> checkpointAsync, CancellationToken token) =>
                 {
                     this.ValidateContext(context);
 
@@ -113,9 +113,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     if (processedDocCount == 1)
                     {
                         // Checkpointing on the first document to be able to have a point to rollback to
-                        (bool isSuccess, Exception exception) = await tryCheckpointAsync();
-                        Assert.IsTrue(isSuccess);
-                        Assert.IsNull(exception);
+                        await checkpointAsync();
                     }
 
                     if (processedDocCount == 12)
