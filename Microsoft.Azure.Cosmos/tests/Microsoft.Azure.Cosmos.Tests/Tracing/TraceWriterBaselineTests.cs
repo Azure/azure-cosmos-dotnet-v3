@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
-                        Type datumType = datum.GetType();
+
                         Uri uri1 = new Uri("http://someUri1.com");
                         Uri uri2 = new Uri("http://someUri2.com");
 

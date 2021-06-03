@@ -62,11 +62,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 lock (this.endpointToAddressResolutionStats)
                 {
-                    if (this.shallowCopyOfEndpointToAddressResolutionStatistics != null)
-                    {
-                        return this.shallowCopyOfEndpointToAddressResolutionStatistics;
-                    }
-
                     this.shallowCopyOfEndpointToAddressResolutionStatistics ??= CreateShallowCopy(this.endpointToAddressResolutionStats);
                     return this.shallowCopyOfEndpointToAddressResolutionStatistics;
                 }
