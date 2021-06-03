@@ -42,8 +42,8 @@ namespace Microsoft.Azure.Cosmos
 
         private bool isDisposed = false;
 
-        private Task accountInfoTask;
-        private Task vmTask;
+       /* private Task accountInfoTask;
+        private Task vmTask;*/
         private Task telemetryTask;
 
         internal ClientTelemetry(
@@ -81,9 +81,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal void Start()
         {
-            this.accountInfoTask = Task.Run(this.SetAccountNameAsync);
+           /* this.accountInfoTask = Task.Run(this.SetAccountNameAsync);
             this.vmTask = Task.Run(this.LoadAzureVmMetaDataAsync);
-
+*/
             this.telemetryTask = Task.Run(this.CalculateAndSendTelemetryInformationAsync);
         }
 
@@ -384,18 +384,16 @@ namespace Microsoft.Azure.Cosmos
                     this.CancellationTokenSource.Dispose();
 
                     this.telemetryTask = null;
-                    this.vmTask = null;
-                    this.accountInfoTask = null;
                 }
 
                 this.isDisposed = true;
             }
         }
 
-        internal bool IsAccountInfoTaskRunning => this.accountInfoTask.Status == TaskStatus.Running;
+      /*  internal bool IsAccountInfoTaskRunning => this.accountInfoTask.Status == TaskStatus.Running;
 
         internal bool IsVmInfoTaskRunning => this.vmTask.Status == TaskStatus.Running;
-
+*/
         internal bool IsTelemetryTaskRunning => this.telemetryTask.Status == TaskStatus.Running;
     }
 }
