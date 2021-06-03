@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public void RecordRequest(DocumentServiceRequest request)
         {
-            lock (this.storeResponseStatistics)
+            lock (this.recordRequestHashCodeToStartTime)
             {
                 long timestamp = Stopwatch.GetTimestamp();
                 if (this.received429ResponseSinceLastStartRequest)
@@ -160,22 +160,25 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 this.lastStartRequestTimestamp = timestamp;
                 this.received429ResponseSinceLastStartRequest = false;
-            }
 
-            this.recordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
+                this.recordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
+            }
         }
 
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
             // One DocumentServiceRequest can map to multiple store results
             DateTime? startDateTime = null;
-            if (this.recordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
+            lock (this.recordRequestHashCodeToStartTime)
             {
-                startDateTime = startRequestTime;
-            }
-            else
-            {
-                Debug.Fail("DocumentServiceRequest start time not recorded");
+                if (this.recordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
+                {
+                    startDateTime = startRequestTime;
+                }
+                else
+                {
+                    Debug.Fail("DocumentServiceRequest start time not recorded");
+                }
             }
 
             DateTime responseTime = this.GetAndUpdateRequestEndTime();
