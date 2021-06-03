@@ -224,7 +224,7 @@
             datum.RegionsContactedWithName.Add(("local", uri1));
             datum.RegionsContactedWithName.Add(("local", uri2));
 
-            datum.RequestEndTimeUtc = DateTime.MaxValue;
+            TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 DateTime.MinValue,
@@ -426,7 +426,7 @@
 
             datum.RegionsContactedWithName.Add(default);
 
-            datum.RequestEndTimeUtc = default;
+            TraceWriterBaselineTests.SetEndRequestTime(datum, default);
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 requestStartTime: default,
@@ -606,10 +606,8 @@
         TraceForBaselineTesting rootTrace;
         using (rootTrace = TraceForBaselineTesting.GetRootTrace())
         {
-            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue)
-            {
-                RequestEndTimeUtc = DateTime.MaxValue
-            };
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
 
             HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
                 DateTime.MinValue,

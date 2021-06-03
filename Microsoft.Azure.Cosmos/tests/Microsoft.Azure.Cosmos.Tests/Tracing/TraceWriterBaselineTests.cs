@@ -760,9 +760,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
         internal static void SetEndRequestTime(
             ClientSideRequestStatisticsTraceDatum datum,
-            DateTime dateTime)
+            DateTime? dateTime)
         {
-            datum.GetType().GetField(nameof(datum.RequestEndTimeUtc), BindingFlags.NonPublic | BindingFlags.Instance).SetValue(datum, dateTime);
+            datum.GetType().GetProperty("RequestEndTimeUtc").SetValue(datum, dateTime);
         }
 
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
