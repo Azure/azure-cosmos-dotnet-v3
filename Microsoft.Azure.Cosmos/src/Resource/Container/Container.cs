@@ -1234,25 +1234,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
-#if INTERNAL
-        /// <summary>
-        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
-        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
-        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
-        /// </summary>
-        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
-        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
-        /// </returns>
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
-
-#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
         /// </summary>
@@ -1272,24 +1253,26 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     while (feedIterator.HasMoreResults)
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         if (response.StatusCode == NotModified) 
+        ///         {
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
         ///         {
         ///             using (StreamReader sr = new StreamReader(response.Content))
         ///             using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -1319,29 +1302,33 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
-        /// while (feedIterator.HasMoreResults)
-        /// {
+        ///     
         ///     while (feedIterator.HasMoreResults)
         ///     {
         ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var item in response)
+        ///
+        ///         if (response.StatusCode == NotModified) 
         ///         {
-        ///             Console.WriteLine(item);
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
+        ///         {
+        ///             foreach (var item in response)
+        ///             {
+        ///                 Console.WriteLine(item);
+        ///             }
         ///         }
         ///     }
-        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1351,6 +1338,25 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
+#if INTERNAL
+        /// <summary>
+        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
+        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
+        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
+        /// </summary>
+        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
+        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
+        /// </returns>
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
+#if PREVIEW
         /// <summary>
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
