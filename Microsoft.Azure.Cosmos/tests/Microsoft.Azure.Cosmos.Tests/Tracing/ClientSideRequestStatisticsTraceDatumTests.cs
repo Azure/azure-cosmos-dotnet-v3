@@ -43,7 +43,7 @@
         /// threads. It's even possible that there are background threads referencing the same instance.
         /// </summary>
         [TestMethod]
-        [Timeout(10000)]
+        [Timeout(5000)]
         public async Task ConcurrentUpdateEndpointToAddressResolutionStatisticsTests()
         {
             using CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -58,7 +58,7 @@
         }
 
         [TestMethod]
-        [Timeout(10000)]
+        [Timeout(5000)]
         public async Task ConcurrentUpdateHttpResponseStatisticsListTests()
         {
             await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics>(
@@ -67,7 +67,7 @@
         }
 
         [TestMethod]
-        [Timeout(10000)]
+        [Timeout(5000)]
         public async Task ConcurrentUpdateStoreResponseStatisticsListTests()
         {
             await this.ConcurrentUpdateTestHelper<ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics>(

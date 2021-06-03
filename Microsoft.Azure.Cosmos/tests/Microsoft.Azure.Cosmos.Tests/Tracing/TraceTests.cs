@@ -91,6 +91,7 @@
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public void ValidateStoreResultSerialization()
         {
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();

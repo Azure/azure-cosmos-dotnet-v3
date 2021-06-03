@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         };
 
         [TestMethod]
+        [Timeout(5000)]
         public void Serialization()
         {
             List<Input> inputs = new List<Input>();
@@ -267,6 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public void TraceData()
         {
             List<Input> inputs = new List<Input>();
@@ -534,6 +536,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public async Task ScenariosAsync()
         {
             List<Input> inputs = new List<Input>();
