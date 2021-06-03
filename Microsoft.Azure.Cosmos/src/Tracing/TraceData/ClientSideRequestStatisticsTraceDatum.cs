@@ -13,18 +13,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
     internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
-        private static readonly IEnumerable<KeyValuePair<string, AddressResolutionStatistics>> EmptyEndpointToAddressResolutionStatistics = new List<KeyValuePair<string, AddressResolutionStatistics>>();
+        private static readonly IReadOnlyDictionary<string, AddressResolutionStatistics> EmptyEndpointToAddressResolutionStatistics = new Dictionary<string, AddressResolutionStatistics>();
         private static readonly IReadOnlyList<StoreResponseStatistics> EmptyStoreResponseStatistics = new List<StoreResponseStatistics>();
         private static readonly IReadOnlyList<HttpResponseStatistics> EmptyHttpResponseStatistics = new List<HttpResponseStatistics>();
 
-        private readonly object lockObject = new object();
+        private readonly object requestEndTimeLock = new object();
         private readonly long clientSideRequestStatisticsCreateTime;
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
         private readonly Dictionary<int, DateTime> recordRequestHashCodeToStartTime;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
         private readonly List<HttpResponseStatistics> httpResponseStatistics;
 
-        private IEnumerable<KeyValuePair<string, AddressResolutionStatistics>> shallowCopyOfEndpointToAddressResolutionStatistics = null;
+        private IReadOnlyDictionary<string, AddressResolutionStatistics> shallowCopyOfEndpointToAddressResolutionStatistics = null;
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
 
@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public DateTime RequestStartTimeUtc { get; }
 
-        public DateTime? RequestEndTimeUtc { get; set; }
+        public DateTime? RequestEndTimeUtc { get; private set; }
 
-        public IEnumerable<KeyValuePair<string, AddressResolutionStatistics>> EndpointToAddressResolutionStatistics
+        public IReadOnlyDictionary<string, AddressResolutionStatistics> EndpointToAddressResolutionStatistics
         {
             get
             {
@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 lock (this.endpointToAddressResolutionStats)
                 {
-                    this.shallowCopyOfEndpointToAddressResolutionStatistics ??= CreateShallowCopy(this.endpointToAddressResolutionStats);
+                    this.shallowCopyOfEndpointToAddressResolutionStatistics ??= new Dictionary<string, AddressResolutionStatistics>(this.endpointToAddressResolutionStats);
                     return this.shallowCopyOfEndpointToAddressResolutionStatistics;
                 }
             }
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 lock (this.storeResponseStatistics)
                 {
-                    this.shallowCopyOfStoreResponseStatistics ??= ClientSideRequestStatisticsTraceDatum.CreateShallowCopy(this.storeResponseStatistics);
+                    this.shallowCopyOfStoreResponseStatistics ??= new List<StoreResponseStatistics>(this.storeResponseStatistics);
                     return this.shallowCopyOfStoreResponseStatistics;
                 }
             }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 lock (this.httpResponseStatistics)
                 {
-                    this.shallowCopyOfHttpResponseStatistics ??= ClientSideRequestStatisticsTraceDatum.CreateShallowCopy(this.httpResponseStatistics);
+                    this.shallowCopyOfHttpResponseStatistics ??= new List<HttpResponseStatistics>(this.httpResponseStatistics);
                     return this.shallowCopyOfHttpResponseStatistics;
                 }
             }
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private DateTime GetAndUpdateRequestEndTime()
         {
             DateTime requestEndTimeUtc = DateTime.UtcNow;
-            lock (this.lockObject)
+            lock (this.requestEndTimeLock)
             {
                 if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
                 {
@@ -308,28 +308,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
 
             return requestEndTimeUtc;
-        }
-
-        private static IReadOnlyList<T> CreateShallowCopy<T>(List<T> originalList)
-        {
-            List<T> shallowCopy = new List<T>(originalList.Count);
-            foreach (T item in originalList)
-            {
-                shallowCopy.Add(item);
-            }
-
-            return shallowCopy;
-        }
-
-        private static IEnumerable<KeyValuePair<string, T>> CreateShallowCopy<T>(Dictionary<string, T> originalDict)
-        {
-            List<KeyValuePair<string, T>> shallowCopy = new List<KeyValuePair<string, T>>(originalDict.Count);
-            foreach (KeyValuePair<string, T> item in originalDict)
-            {
-                shallowCopy.Add(item);
-            }
-
-            return shallowCopy;
         }
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)

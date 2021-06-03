@@ -380,7 +380,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         datum.RegionsContactedWithName.Add(("local", uri1));
                         datum.RegionsContactedWithName.Add(("local", uri2));
 
-                        datum.RequestEndTimeUtc = DateTime.MaxValue;
+                        TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
                         StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,
@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
                         datum.RegionsContactedWithName.Add(default);
 
-                        datum.RequestEndTimeUtc = default;
+                        TraceWriterBaselineTests.SetEndRequestTime(datum, default);
 
                         StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             requestStartTime: default,
@@ -472,10 +472,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     TraceForBaselineTesting rootTrace;
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
-                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue)
-                        {
-                            RequestEndTimeUtc = DateTime.MaxValue
-                        };
+                        ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+                        TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
 
                         HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
                             DateTime.MinValue,
@@ -758,6 +756,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             string propertyName)
         {
             return (T)datum.GetType().GetField(propertyName, BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum);
+        }
+
+        internal static void SetEndRequestTime(
+            ClientSideRequestStatisticsTraceDatum datum,
+            DateTime dateTime)
+        {
+            datum.GetType().GetField(nameof(datum.RequestEndTimeUtc), BindingFlags.NonPublic | BindingFlags.Instance).SetValue(datum, dateTime);
         }
 
         private static IQueryPipelineStage CreatePipeline(IDocumentContainer documentContainer, string query, int pageSize = 10, CosmosElement state = null)
