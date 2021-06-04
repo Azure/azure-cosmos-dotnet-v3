@@ -47,17 +47,55 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(metadata.VMSize, "Standard_D2s_v3");
         }
 
-       /* [TestMethod]
-        public void DiagnosticsHandlerHelperParseCPUDataTest()
+        [TestMethod]
+        public void ReportPayloadObjectEqualsAndHasCodeTest()
         {
-            List<double> readingList = new List<double>();
-            DiagnosticsHandlerHelper.Instance.GetDetails(null, readingList);
-            Assert.AreEqual(0, readingList.Count);
+            ClientTelemetry telemetry = new ClientTelemetry();
+            string containerId = new Guid().ToString();
+            string databaseId = new Guid().ToString();
 
-            DiagnosticsHandlerHelper.Instance.GetDetails(
-                "(2021-04-11T16:51:17.6899435Z 20.455), (2021-04-11T16:51:27.6951465Z 20.613), (2021-04-11T16:51:38.3777583Z 15.914)", 
-                readingList);
-            Assert.AreEqual(3, readingList.Count);
-        }*/
+            telemetry.Collect(cosmosDiagnostics: new CosmosTraceDiagnostics(NoOpTrace.Singleton),
+                          statusCode: HttpStatusCode.OK,
+                          responseSizeInBytes: 10,
+                          containerId: containerId,
+                          databaseId: databaseId,
+                          operationType: OperationType.Create,
+                          resourceType: ResourceType.Telemetry,
+                          consistencyLevel: Cosmos.ConsistencyLevel.Strong,
+                          requestCharge: 10d);
+
+            telemetry.Collect(cosmosDiagnostics: new CosmosTraceDiagnostics(NoOpTrace.Singleton),
+                          statusCode: HttpStatusCode.OK,
+                          responseSizeInBytes: 10,
+                          containerId: containerId,
+                          databaseId: databaseId,
+                          operationType: OperationType.Create,
+                          resourceType: ResourceType.Telemetry,
+                          consistencyLevel: Cosmos.ConsistencyLevel.Strong,
+                          requestCharge: 10d);
+
+            telemetry.Collect(cosmosDiagnostics: new CosmosTraceDiagnostics(NoOpTrace.Singleton),
+                          statusCode: HttpStatusCode.OK,
+                          responseSizeInBytes: 10,
+                          containerId: containerId,
+                          databaseId: databaseId,
+                          operationType: OperationType.Create,
+                          resourceType: ResourceType.Telemetry,
+                          consistencyLevel: Cosmos.ConsistencyLevel.Strong,
+                          requestCharge: 10d);
+
+            telemetry.Collect(cosmosDiagnostics: new CosmosTraceDiagnostics(NoOpTrace.Singleton),
+                          statusCode: HttpStatusCode.OK,
+                          responseSizeInBytes: 10,
+                          containerId: containerId,
+                          databaseId: databaseId,
+                          operationType: OperationType.Create,
+                          resourceType: ResourceType.Telemetry,
+                          consistencyLevel: Cosmos.ConsistencyLevel.Strong,
+                          requestCharge: 10d);
+
+            Assert.AreEqual(2, telemetry.ClientTelemetryInfo.OperationInfoMap.Count);
+
+        }
     }
 }
