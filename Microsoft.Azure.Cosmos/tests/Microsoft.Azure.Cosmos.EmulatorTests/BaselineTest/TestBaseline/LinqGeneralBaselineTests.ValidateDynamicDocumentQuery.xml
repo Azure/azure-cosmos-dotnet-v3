@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["title"] = "My Book") ]]></SqlQuery>
+WHERE (root["title"] = "My Book")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["title"] = "My Book") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["Author"]["id"] = "Don") ]]></SqlQuery>
+WHERE (root["Author"]["id"] = "Don")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (root["Author"]["id"] = "Don") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Author"] 
 FROM root 
-WHERE (root["Languages"][0]["Name"] = "English") ]]></SqlQuery>
+WHERE (root["Languages"][0]["Name"] = "English")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -45,7 +45,7 @@ WHERE (root["Languages"][0]["Name"] = "English") ]]></SqlQuery>
 SELECT VALUE book0["Copyright"] 
 FROM root 
 JOIN book0 IN root["Languages"] 
-WHERE (book0["Name"] = "French") ]]></SqlQuery>
+WHERE (book0["Name"] = "French")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -57,7 +57,7 @@ WHERE (book0["Name"] = "French") ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Author"] 
 FROM root 
-WHERE (root["Price"] < 10) ]]></SqlQuery>
+WHERE (root["Price"] < 10)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -69,7 +69,7 @@ WHERE (root["Price"] < 10) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((root["title"] = "My Book") OR (root["Author"]["id"] = "Don")) ]]></SqlQuery>
+WHERE ((root["title"] = "My Book") OR (root["Author"]["id"] = "Don"))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -81,7 +81,7 @@ WHERE ((root["title"] = "My Book") OR (root["Author"]["id"] = "Don")) ]]></SqlQu
       <SqlQuery><![CDATA[
 SELECT VALUE book0["Name"] 
 FROM root 
-JOIN book0 IN root["Editions"] ]]></SqlQuery>
+JOIN book0 IN root["Editions"]]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -94,7 +94,7 @@ JOIN book0 IN root["Editions"] ]]></SqlQuery>
 SELECT VALUE root["Author"] 
 FROM root 
 JOIN lng0 IN root["Languages"] 
-WHERE (lng0["Name"] = "English") ]]></SqlQuery>
+WHERE (lng0["Name"] = "English")]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -107,7 +107,7 @@ WHERE (lng0["Name"] = "English") ]]></SqlQuery>
 SELECT VALUE root["Author"] 
 FROM root 
 JOIN edition0 IN root["Editions"] 
-WHERE (edition0["Year"] = 2001) ]]></SqlQuery>
+WHERE (edition0["Year"] = 2001)]]></SqlQuery>
     </Output>
   </Result>
 </Results>

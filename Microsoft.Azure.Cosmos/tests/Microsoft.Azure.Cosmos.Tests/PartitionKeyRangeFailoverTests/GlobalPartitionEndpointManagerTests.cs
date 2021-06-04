@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class GlobalPartitionEndpointManagerTests
     {
         [TestMethod]
+        [Timeout(10000)]
         public async Task TestWriteForbiddenScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
@@ -72,9 +73,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
                 cosmosClientOptions))
             {
-
-
-
                 Container container = customClient.GetContainer(databaseName, containerName);
 
                 ToDoActivity toDoActivity = new ToDoActivity()
@@ -106,12 +104,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
             }
-
-            await Task.Delay(TimeSpan.FromMinutes(5));
-            Console.WriteLine("done");
         }
 
         [TestMethod]
+        [Timeout(10000)]
         public async Task TestServiceUnavailableExceptionScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
@@ -208,6 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Timeout(10000)]
         public async Task TestRequestTimeoutExceptionScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(

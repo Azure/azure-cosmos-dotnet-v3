@@ -91,6 +91,7 @@
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public void ValidateStoreResultSerialization()
         {
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();
@@ -127,7 +128,7 @@
                             OperationType.Query,
                             new Uri("http://someUri1.com"));
 
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+            ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);
 
             CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
             string json = diagnostics.ToString();
