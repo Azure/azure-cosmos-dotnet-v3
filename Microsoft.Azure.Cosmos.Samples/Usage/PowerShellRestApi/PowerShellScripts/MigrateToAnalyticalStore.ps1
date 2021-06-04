@@ -101,7 +101,7 @@ Write-Host "Analytical migration has been triggered and is pending."
 
 # Step 3: Wait for analytical migration progress to reach 100%.
 $Progress = "0"
-while ($Progress -ne "1001") {
+while ($Progress -ne "100") {
     $date = Get-Date
     $utcDate = $date.ToUniversalTime()
     $xDate = $utcDate.ToString('r', [System.Globalization.CultureInfo]::InvariantCulture)
