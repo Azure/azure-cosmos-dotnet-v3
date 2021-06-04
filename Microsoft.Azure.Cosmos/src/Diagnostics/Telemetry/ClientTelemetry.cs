@@ -99,9 +99,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal void Start()
         {
-            _ = this.SetAccountNameAsync();
-            _ = this.LoadAzureVmMetaDataAsync();
-
             this.telemetryTask = Task.Run(this.CalculateAndSendTelemetryInformationAsync);
         }
 
@@ -163,6 +160,18 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
+                // Load account information if not available
+                if (string.IsNullOrEmpty(this.ClientTelemetryInfo.GlobalDatabaseAccountName))
+                {
+                    await this.SetAccountNameAsync();
+                }
+
+                // Load host information if not available
+                if (string.IsNullOrEmpty(this.ClientTelemetryInfo.HostEnvInfo))
+                {
+                    await this.LoadAzureVmMetaDataAsync();
+                }
+               
                 await Task.Delay(this.ClientTelemetrySchedulingInSeconds, this.CancellationTokenSource.Token);
                 this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
                 this.RecordSystemUtilization();
@@ -342,8 +351,11 @@ namespace Microsoft.Azure.Cosmos
                        "POST",
                        AuthorizationTokenType.PrimaryMasterKey);
 
-                request.Headers.Add(HttpConstants.HttpHeaders.XDate, headersCollection[HttpConstants.HttpHeaders.XDate]);
-                request.Headers.Add(HttpConstants.HttpHeaders.Authorization, headersCollection[HttpConstants.HttpHeaders.Authorization]);
+                foreach (string key in headersCollection.AllKeys())
+                {
+                    request.Headers.Add(key, headersCollection[key]);
+                }
+
                 request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, this.ClientTelemetryInfo.GlobalDatabaseAccountName);
                 String envName = ClientTelemetryOptions.GetEnvironmentName();
                 if (!string.IsNullOrEmpty(envName))
@@ -413,10 +425,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-      /*  internal bool IsAccountInfoTaskRunning => this.accountInfoTask.Status == TaskStatus.Running;
-
-        internal bool IsVmInfoTaskRunning => this.vmTask.Status == TaskStatus.Running;
-*/
         internal bool IsTelemetryTaskRunning => this.telemetryTask.Status == TaskStatus.Running;
     }
 }
