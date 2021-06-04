@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "10");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://juno-test.documents-dev.windows-int.net/api/clienttelemetry/trace");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://juno-test2.documents-dev.windows-int.net/api/clienttelemetry/trace");
 
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
             cosmosClientBuilder
@@ -286,6 +286,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                             Documents.OperationType.Query,
                                             Documents.OperationType.Create
                });
+
             IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
                = new Dictionary<OperationType, HttpStatusCode>
                {
