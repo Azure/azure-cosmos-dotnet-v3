@@ -47,13 +47,16 @@
                 }
 
                 // <CosmosClientOptionsConfiguration>
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
                 JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
                 {
                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 };
                 CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
-                cosmosClientOptions.Serializer = cosmosSystemTextJsonSerializer;
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ApplicationName = "SystemTextJsonSample",
+                    Serializer = cosmosSystemTextJsonSerializer
+                };
                 // </CosmosClientOptionsConfiguration>
 
                 //Read the Cosmos endpointUrl and authorisationKeys from configuration
