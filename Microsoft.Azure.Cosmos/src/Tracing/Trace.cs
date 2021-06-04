@@ -12,12 +12,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
     internal sealed class Trace : ITrace
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
+        private static readonly Stopwatch stopwatch = Stopwatch.StartNew();
         private readonly Lazy<Dictionary<string, object>> data;
+        private readonly long startTick;
 
         // singlechild to avoid List creation for trace objects with only 1 child
         private List<ITrace> children;
         private ITrace singleChild;
-        private DateTime? endTime;
+        private long? endTick;
 
         private Trace(
             string name,
@@ -34,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.data = new Lazy<Dictionary<string, object>>(() => new Dictionary<string, object>());
+            this.startTick = Trace.stopwatch.ElapsedTicks;
         }
 
         public string Name { get; }
@@ -44,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public DateTime StartTime { get; }
 
-        public TimeSpan Duration => (this.endTime ?? DateTime.UtcNow) - this.StartTime;
+        public TimeSpan Duration => new TimeSpan((this.endTick ?? Trace.stopwatch.ElapsedTicks) - this.startTick);
 
         public TraceLevel Level { get; }
 
@@ -74,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void Dispose()
         {
-            this.endTime = DateTime.UtcNow;
+            this.endTick = Trace.stopwatch.ElapsedTicks;
         }
 
         public ITrace StartChild(
