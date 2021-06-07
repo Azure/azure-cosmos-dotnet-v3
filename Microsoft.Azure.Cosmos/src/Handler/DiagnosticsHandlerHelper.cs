@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Handler
         private bool isMonitoringEnabled = false;
 
         /// <summary>
-        /// Singleton to make sureonly one intsane of DiadnosticHandlerHelper is there
+        /// Singleton to make sureonly one intsane of DiagnosticHandlerHelper is there
         /// </summary>
         public static DiagnosticsHandlerHelper Instance()
         {
@@ -91,25 +91,22 @@ namespace Microsoft.Azure.Cosmos.Handler
         /// Right now only 2 recorders are available : Diagnostic and Telemetry
         /// </summary>
         /// <param name="recorderKey"></param>
-        /// <returns>CpuLoadHistory and MemoryLoadHistory</returns>
-        public Tuple<CpuLoadHistory, MemoryLoadHistory> GetCpuAndMemoryUsage(string recorderKey)
+        /// <returns> CpuAndMemoryUsageRecorder</returns>
+        public CpuAndMemoryUsageRecorder GetUsageRecorder(string recorderKey)
         {
-            CpuLoadHistory cpuHistory = null;
-            MemoryLoadHistory memoryLoadHistory = null;
             if (this.isMonitoringEnabled)
             {
                 try
                 {
-                    CpuAndMemoryUsageRecorder recorder = this.systemUsageMonitor.GetRecorder(recorderKey);
-                    cpuHistory = recorder.CpuUsage;
-                    memoryLoadHistory = recorder.MemoryUsage;
+                    return this.systemUsageMonitor.GetRecorder(recorderKey);
                 }
                 catch (Exception)
                 {
                     this.isMonitoringEnabled = false;
                 }
+
             }
-            return new Tuple<CpuLoadHistory, MemoryLoadHistory>(cpuHistory, memoryLoadHistory);
+            return null;
         }
     }
 }

@@ -632,6 +632,7 @@ namespace Microsoft.Azure.Cosmos
         /// Flag that controls whether CPU monitoring thread is created to enrich timeout exceptions with additional diagnostic. Default value is true.
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
+        
         /// <summary>
         /// Flag to enable telemetry
         /// </summary>

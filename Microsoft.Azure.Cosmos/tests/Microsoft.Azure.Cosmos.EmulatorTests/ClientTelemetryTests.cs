@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "10");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "5");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://juno-test2.documents-dev.windows-int.net/api/clienttelemetry/trace");
 
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task PointFailureOperationsTest()
+        public async Task PointReadFailureOperationsTest()
         {
             // Create an item with invalid Id
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "Invalid#/\\?Id");
@@ -154,8 +154,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 await this.container.ReadItemAsync<JObject>(
-                    testItem.id, 
-                    new Cosmos.PartitionKey(testItem.pk));
+                    new Guid().ToString(), 
+                    new Cosmos.PartitionKey(new Guid().ToString()));
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
             {
@@ -165,6 +165,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             allowedOperations.Add(OperationType.Read);
             expectedOperationCodeMap.Add(OperationType.Read, HttpStatusCode.NotFound);
             this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
+        }
+
+
+        [TestMethod]
+        public async Task StreamReadFailureOperationsTest()
+        {
+            List<Documents.OperationType> allowedOperations
+               = new List<Documents.OperationType>(new Documents.OperationType[] {
+                                Documents.OperationType.Read
+               });
+            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
+              = new Dictionary<OperationType, HttpStatusCode>
+              {
+                    { OperationType.Read, HttpStatusCode.NotFound }
+              };
+            // Fail Read
+            try
+            {
+                await this.container.ReadItemStreamAsync(
+                    new Guid().ToString(),
+                    new Cosmos.PartitionKey(new Guid().ToString()));
+            }
+            catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
+            {
+                string message = ce.ToString();
+                Assert.IsNotNull(message);
+            }
+
+            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
         }
 
         [TestMethod]
@@ -302,16 +331,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int operationInfoMapCount,
             IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
         {
-            Thread.Sleep(10000);
             Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
-            Assert.IsTrue(this.telemetryInfo.SystemInfo.Count > 0);
 
             foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
             {
-                Assert.IsTrue(allowedOperations.Contains(entry.Key.Operation));
+                Assert.IsTrue(allowedOperations.Contains((OperationType)entry.Key.Operation));
                 Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
 
-                expectedOperationCodeMap.TryGetValue(entry.Key.Operation, out HttpStatusCode expectedStatusCode);
+                expectedOperationCodeMap.TryGetValue((OperationType)entry.Key.Operation, out HttpStatusCode expectedStatusCode);
                 Assert.AreEqual((int)expectedStatusCode, entry.Key.StatusCode);
 
                 Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));

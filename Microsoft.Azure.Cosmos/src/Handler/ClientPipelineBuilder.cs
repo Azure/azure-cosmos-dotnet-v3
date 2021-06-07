@@ -89,7 +89,23 @@ namespace Microsoft.Azure.Cosmos
         ///                                                 |
         ///                                    +-----------------------------+
         ///                                    |                             |
+        ///                                    |       DiagnosticHandler     |
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
         ///                                    |       RetryHandler          |-> RetryPolicy -> ResetSessionTokenRetryPolicyFactory -> ClientRetryPolicy -> ResourceThrottleRetryPolicy
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |       Telemetry Handler     |-> Trigger a thread to monitor system usage/operation information and send it to juno
         ///                                    |                             |
         ///                                    +-----------------------------+
         ///                                                 |
@@ -152,7 +168,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.telemetryHandler != null)
             {
-                Debug.Assert(this.telemetryHandler != null, nameof(this.telemetryHandler));
                 current.InnerHandler = this.telemetryHandler;
                 current = current.InnerHandler;
             }

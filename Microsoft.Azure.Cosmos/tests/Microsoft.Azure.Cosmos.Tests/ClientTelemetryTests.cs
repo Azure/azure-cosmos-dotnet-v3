@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
+    using Moq;
+    using Microsoft.Azure.Cosmos.Fluent;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.

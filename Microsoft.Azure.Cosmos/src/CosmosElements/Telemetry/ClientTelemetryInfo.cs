@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [JsonProperty(PropertyName = "userAgent")]
         public string UserAgent { get; }
         [JsonProperty(PropertyName = "connectionMode")]
-        public ConnectionMode ConnectionMode { get; }
+        public string ConnectionMode { get; }
         [JsonProperty(PropertyName = "globalDatabaseAccountName")]
         public string GlobalDatabaseAccountName { get; set;  }
         [JsonProperty(PropertyName = "applicationRegion")]
@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [JsonProperty(PropertyName = "hostEnvInfo")]
         public string HostEnvInfo { get; set; }
         [JsonProperty(PropertyName = "acceleratedNetworking")]
-        public bool? AcceleratedNetworking { get; }
+        public bool? AcceleratedNetworking { get; set; }
         [JsonProperty(PropertyName = "systemInfo")]
-        public List<MetricInfo> SystemInfo { get; set; }
+        public List<ReportPayload> SystemInfo { get; set; }
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
         public List<ReportPayload> CacheRefreshInfo => new List<ReportPayload>(this.FillMetricInformation(this.CacheRefreshInfoMap));
         [JsonProperty(PropertyName = "operationInfo")]
@@ -48,15 +48,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public ClientTelemetryInfo(string clientId,
                                    string processId,
                                    string userAgent,
-                                   ConnectionMode connectionMode,
-                                   bool? acceleratedNetworking)
+                                   ConnectionMode connectionMode)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
-            this.ConnectionMode = connectionMode;
-            this.AcceleratedNetworking = acceleratedNetworking;
-            this.SystemInfo = new List<MetricInfo>();
+            this.ConnectionMode = connectionMode.ToString();
+            this.SystemInfo = new List<ReportPayload>();
             this.CacheRefreshInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
             this.OperationInfoMap = new ConcurrentDictionary<ReportPayload, LongConcurrentHistogram>();
         }
@@ -78,32 +76,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 ReportPayload payload = entry.Key;
                 LongConcurrentHistogram histogram = entry.Value;
 
-                payload.MetricInfo.SetAggregators((LongConcurrentHistogram)histogram.Copy());
+                payload.SetAggregators((LongConcurrentHistogram)histogram.Copy());
             }
 
             return metrics.Keys;
-        }
-
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder();
-            foreach (System.Reflection.PropertyInfo property in this.GetType().GetProperties())
-            {
-                sb.Append(property.Name);
-                sb.Append(": ");
-                if (property.GetIndexParameters().Length > 0)
-                {
-                    sb.Append("Indexed Property cannot be used");
-                }
-                else
-                {
-                    sb.Append(property.GetValue(this, null));
-                }
-
-                sb.Append(System.Environment.NewLine);
-            }
-
-            return sb.ToString();
         }
     }
 }
