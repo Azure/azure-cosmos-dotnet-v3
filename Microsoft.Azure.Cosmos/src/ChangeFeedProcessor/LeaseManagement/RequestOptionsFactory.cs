@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
 {
+    using System;
     using Microsoft.Azure.Cosmos;
 
     /// <summary>
@@ -11,8 +12,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement
     /// </summary>
     internal abstract class RequestOptionsFactory
     {
-        public abstract PartitionKey GetPartitionKey(string itemId);
+        public abstract PartitionKey GetPartitionKey(string itemId, string partitionKey);
 
-        public abstract FeedOptions CreateFeedOptions();
+        public abstract void AddPartitionKeyIfNeeded(Action<string> partitionKeySetter, string partitionKey);
     }
 }

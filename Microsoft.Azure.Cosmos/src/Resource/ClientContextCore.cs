@@ -433,6 +433,19 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new CosmosOperationCanceledException(oe, trace);
                 }
+                catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
+                {
+                    throw new CosmosObjectDisposedException(
+                        objectDisposed, 
+                        this.client, 
+                        trace);
+                }
+                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                {
+                    throw new CosmosNullReferenceException(
+                        nullRefException,
+                        trace);
+                }
             }
         }
 

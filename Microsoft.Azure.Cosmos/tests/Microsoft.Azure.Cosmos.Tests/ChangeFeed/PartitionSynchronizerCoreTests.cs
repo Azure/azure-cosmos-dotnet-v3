@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
                 Mock.Of<Common.CollectionCache>());
 
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
                 Mock.Of<Common.CollectionCache>());
 
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
                 Mock.Of<Common.CollectionCache>());
 
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             };
 
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
                 Mock.Of<Common.CollectionCache>());
 
@@ -274,7 +274,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task CreateMissingLeases_NoLeases()
         {
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
                 Mock.Of<Common.CollectionCache>());
 
@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task CreateMissingLeases_SomePKRangeLeases()
         {
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
                 Mock.Of<Common.CollectionCache>());
 
@@ -370,7 +370,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public async Task CreateMissingLeases_SomePKRangeAndEPKLeases()
         {
             Mock<Routing.PartitionKeyRangeCache> pkRangeCache = new Mock<Routing.PartitionKeyRangeCache>(
-                Mock.Of<Documents.IAuthorizationTokenProvider>(),
+                Mock.Of<ICosmosAuthorizationTokenProvider>(),
                 Mock.Of<Documents.IStoreModel>(),
                 Mock.Of<Common.CollectionCache>());
 

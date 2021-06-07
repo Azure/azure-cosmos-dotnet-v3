@@ -382,12 +382,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.TopLine);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.Header);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.MiddleLine);
-                    foreach (AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                    foreach (KeyValuePair<string, AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                     {
                         string row = AddressResolutionStatisticsTextTable.Singleton.GetRow(
-                            stat.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
-                            stat.EndTime.HasValue ? stat.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
-                            stat.TargetEndpoint);
+                            stat.Value.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
+                            stat.Value.EndTime.HasValue ? stat.Value.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
+                            stat.Value.TargetEndpoint);
                         stringBuilder.AppendLine(row);
                     }
 
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         }
                     }
 
-                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Any())
                     {
                         stringBuilder.AppendLine("Http Response Statistics");
                         foreach (HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)

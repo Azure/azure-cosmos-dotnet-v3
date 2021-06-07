@@ -45,20 +45,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task RetriesOn413_OnRead()
+        public async Task RetriesOn413_3204()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
                 OperationType.Read,
                 new ResourceThrottleRetryPolicy(1));
 
-            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge);
+            TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge) { SubStatusCode = (SubStatusCodes)3402 };
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
             Assert.IsTrue(shouldRetryResult.ShouldRetry);
         }
 
         [TestMethod]
-        public async Task RetriesOn413_OnWrite()
+        public async Task RetriesOn413_0()
         {
             IDocumentClientRetryPolicy retryPolicy = new BulkExecutionRetryPolicy(
                 Mock.Of<ContainerInternal>(),
