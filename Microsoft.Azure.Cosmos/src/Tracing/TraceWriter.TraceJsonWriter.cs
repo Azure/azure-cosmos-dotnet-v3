@@ -213,9 +213,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
                 this.jsonWriter.WriteArrayStart();
 
-                foreach (ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                foreach (KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                 {
-                   this.VisitAddressResolutionStatistics(stat);
+                   this.VisitAddressResolutionStatistics(stat.Value);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
