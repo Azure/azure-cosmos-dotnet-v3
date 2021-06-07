@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 estimator = ChangeFeedEstimatorRunnerTests.CreateEstimator(estimationDelegate, out Mock<ChangeFeedEstimator> remainingWorkEstimator);
                 estimator.ApplyBuildConfiguration(
                     leaseStoreManager.Object,
-                    null,
+                    ChangeFeedEstimatorRunnerTests.GetMockedContainer("leases"),
                     "instanceName",
                     new ChangeFeedLeaseOptions(),
                     new ChangeFeedProcessorOptions(),

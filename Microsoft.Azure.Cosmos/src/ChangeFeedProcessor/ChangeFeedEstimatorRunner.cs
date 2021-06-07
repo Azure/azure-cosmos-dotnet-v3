@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             
             if (this.running)
             {
-                throw new InvalidOperationException("Change Feed Estimator already started.");
+                throw new InvalidOperationException($"Change Feed Estimator for container {this.monitoredContainer.Id} with lease container {this.leaseContainer.Id} already started.");
             }
 
             this.shutdownCts = new CancellationTokenSource();
