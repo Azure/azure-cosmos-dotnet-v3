@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
@@ -32,7 +33,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        internal readonly CancellationTokenSource CancellationTokenSource;
+        private readonly CancellationTokenSource CancellationTokenSource;
+
         private readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
                                                         ClientTelemetryOptions.CpuMax,
                                                         ClientTelemetryOptions.CpuPrecision);
@@ -40,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
                          ClientTelemetryOptions.MemoryMax,
                          ClientTelemetryOptions.MemoryPrecision);
 
-        internal ClientTelemetryInfo ClientTelemetryInfo;
+        internal volatile ClientTelemetryInfo ClientTelemetryInfo;
         internal TimeSpan ClientTelemetrySchedulingInSeconds;
         internal DocumentClient documentClient;
         internal CosmosHttpClient httpClient;
@@ -60,13 +62,11 @@ namespace Microsoft.Azure.Cosmos
                 clientId: Guid.NewGuid().ToString(),
                 processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName,
                 userAgent: "useragent",
-                connectionMode: ConnectionMode.Direct,
-                acceleratedNetworking: null);
+                connectionMode: ConnectionMode.Direct);
         }
 
         internal ClientTelemetry(
             DocumentClient documentClient,
-            bool? acceleratedNetworking,
             ConnectionPolicy connectionPolicy,
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper)
@@ -82,8 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 clientId: Guid.NewGuid().ToString(), 
                 processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
                 userAgent: connectionPolicy.UserAgentContainer.UserAgent, 
-                connectionMode: connectionPolicy.ConnectionMode,
-                acceleratedNetworking: acceleratedNetworking);
+                connectionMode: connectionPolicy.ConnectionMode);
 
             this.ClientTelemetrySchedulingInSeconds = ClientTelemetryOptions.GetSchedulingInSeconds();
             this.httpClient = documentClient.httpClient;
@@ -92,10 +91,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        ///  Start telemetry Process which trigger 3 seprate processes
-        ///  1. Set Account information (one time at the time of initialization)
-        ///  2. Load VM metedata information (one time at the time of initialization)
-        ///  3. Calculate and Send telemetry Information (never ending task)
+        ///  Start telemetry Process which Calculate and Send telemetry Information (never ending task)
         /// </summary>
         internal void Start()
         {
@@ -108,8 +104,16 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Async Task</returns>
         private async Task SetAccountNameAsync()
         {
-            AccountProperties accountProperties = await this.documentClient.GlobalEndpointManager.GetDatabaseAccountAsync();
-            this.ClientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
+            try
+            {
+                AccountProperties accountProperties = await this.documentClient.GlobalEndpointManager.GetDatabaseAccountAsync();
+                this.ClientTelemetryInfo.GlobalDatabaseAccountName = accountProperties.Id;
+            } 
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Exception while getting accounnt information in client telemetry : " + ex.Message);
+            }
+           
         }
 
         /// <summary>
@@ -140,6 +144,7 @@ namespace Microsoft.Azure.Cosmos
 
                 this.ClientTelemetryInfo.ApplicationRegion = azMetadata.Location;
                 this.ClientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(azMetadata);
+                //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
             }
             catch (Exception ex)
             {
@@ -148,8 +153,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Task which collects System Information and send telemetry information to juno service, periodically
-        /// </summary>
+        /// Task which does below operations , periodically
+        ///  1. Set Account information (one time at the time of initialization)
+        ///  2. Load VM metedata information (one time at the time of initialization)
+        ///  3. Calculate and Send telemetry Information to juno service (never ending task)/// </summary>
         /// <returns>Async Task</returns>
         private async Task CalculateAndSendTelemetryInformationAsync()
         {
@@ -160,7 +167,7 @@ namespace Microsoft.Azure.Cosmos
 
             try
             {
-                // Load account information if not available
+                // Load account information if not available, cache is already implemented
                 if (string.IsNullOrEmpty(this.ClientTelemetryInfo.GlobalDatabaseAccountName))
                 {
                     await this.SetAccountNameAsync();
@@ -174,6 +181,7 @@ namespace Microsoft.Azure.Cosmos
                
                 await Task.Delay(this.ClientTelemetrySchedulingInSeconds, this.CancellationTokenSource.Token);
                 this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
+                
                 this.RecordSystemUtilization();
                 await this.SendAsync();
             }
@@ -209,64 +217,81 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
+            lock (this.ClientTelemetryInfo)
+            {
+                StringBuilder regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
+
+                // If consistency level is not mentioned in request then take the sdk/account level
+                if (consistencyLevel == null)
+                {
+                    consistencyLevel = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
+                }
+
+                // Recording Request Latency
+                ReportPayload latencyPayloadKey = new ReportPayload(regionsContacted: regionsContacted.ToString(),
+                                                responseSizeInBytes: responseSizeInBytes,
+                                                consistency: consistencyLevel,
+                                                databaseName: databaseId,
+                                                containerName: containerId,
+                                                operation: operationType,
+                                                resource: resourceType,
+                                                statusCode: (int)statusCode,
+                                                ClientTelemetryOptions.RequestLatencyName,
+                                                ClientTelemetryOptions.RequestLatencyUnit);
+
+                LongConcurrentHistogram latencyHistogram = this.ClientTelemetryInfo
+                     .OperationInfoMap
+                     .GetOrAdd(latencyPayloadKey, new LongConcurrentHistogram(1,
+                                                           ClientTelemetryOptions.RequestLatencyMaxMicroSec,
+                                                           statusCode.IsSuccess() ?
+                                                             ClientTelemetryOptions.RequestLatencySuccessPrecision :
+                                                             ClientTelemetryOptions.RequestLatencyFailurePrecision));
+
+                latencyHistogram.RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
+
+                // Recording Request Charge
+                ReportPayload requestChargePayloadKey = new ReportPayload(
+                                                                regionsContacted: regionsContacted.ToString(),
+                                                                responseSizeInBytes: responseSizeInBytes,
+                                                                consistency: consistencyLevel,
+                                                                databaseName: databaseId,
+                                                                containerName: containerId,
+                                                                operation: operationType,
+                                                                resource: resourceType,
+                                                                statusCode: (int)statusCode,
+                                                                ClientTelemetryOptions.RequestChargeName,
+                                                                ClientTelemetryOptions.RequestChargeUnit);
+                LongConcurrentHistogram requestChargeHistogram = this.ClientTelemetryInfo
+                    .OperationInfoMap
+                    .GetOrAdd(requestChargePayloadKey, new LongConcurrentHistogram(1,
+                                                          ClientTelemetryOptions.RequestChargeMax,
+                                                          ClientTelemetryOptions.RequestChargePrecision));
+                requestChargeHistogram.RecordValue((long)requestCharge);
+            }
+
+        }
+
+        /// <summary>
+        /// Get comma separated list of regions contacted from the diagnostic
+        /// </summary>
+        /// <param name="cosmosDiagnostics"></param>
+        /// <returns>Comma separated region list</returns>
+        private StringBuilder GetContactedRegions(CosmosDiagnostics cosmosDiagnostics)
+        {
             IReadOnlyList<(string regionName, Uri uri)> regionList = cosmosDiagnostics.GetContactedRegions();
-            IList<Uri> regionUris = new List<Uri>();
+            StringBuilder regionsContacted = new StringBuilder();
+
             foreach ((_, Uri uri) in regionList)
             {
-                regionUris.Add(uri);
-            }
-            
-            // If consistency level is not mentioned in request then take the sdk/account level
-            if (consistencyLevel == null)
-            {
-                consistencyLevel = (Cosmos.ConsistencyLevel)this.documentClient.ConsistencyLevel;
+                if (regionsContacted.Length > 0)
+                {
+                    regionsContacted.Append(",");
+
+                }
+                regionsContacted.Append(uri);
             }
 
-            // Recordig Request Latency
-            ReportPayload latencyPayloadKey = new ReportPayload(regionsContacted: string.Join(",", regionUris),
-                                            responseSizeInBytes: responseSizeInBytes,
-                                            consistency: consistencyLevel.GetValueOrDefault(),
-                                            databaseName: databaseId,
-                                            containerName: containerId,
-                                            operation: operationType,
-                                            resource: resourceType,
-                                            statusCode: (int)statusCode,
-                                            ClientTelemetryOptions.RequestLatencyName,
-                                            ClientTelemetryOptions.RequestLatencyUnit);
-            if (!this.ClientTelemetryInfo
-                .OperationInfoMap
-                .TryGetValue(latencyPayloadKey, out LongConcurrentHistogram latencyHistogram))
-            {
-                latencyHistogram = new LongConcurrentHistogram(1,
-                                                      ClientTelemetryOptions.RequestLatencyMaxMicroSec,
-                                                      statusCode.IsSuccess() ?
-                                                        ClientTelemetryOptions.RequestLatencySuccessPrecision :
-                                                        ClientTelemetryOptions.RequestLatencyFailurePrecision);
-                this.ClientTelemetryInfo.OperationInfoMap.TryAdd(latencyPayloadKey, latencyHistogram);
-            }
-            latencyHistogram.RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
-
-            // Recording Request Charge
-            ReportPayload requestChargePayloadKey = new ReportPayload(regionsContacted: string.Join(",", regionUris),
-                                                            responseSizeInBytes: responseSizeInBytes,
-                                                            consistency: consistencyLevel.GetValueOrDefault(),
-                                                            databaseName: databaseId,
-                                                            containerName: containerId,
-                                                            operation: operationType,
-                                                            resource: resourceType,
-                                                            statusCode: (int)statusCode,
-                                                            ClientTelemetryOptions.RequestChargeName,
-                                                            ClientTelemetryOptions.RequestChargeUnit);
-            if (!this.ClientTelemetryInfo
-                .OperationInfoMap
-                .TryGetValue(requestChargePayloadKey, out LongConcurrentHistogram requestChargeHistogram)) 
-            {
-                requestChargeHistogram = new LongConcurrentHistogram(1,
-                                                      ClientTelemetryOptions.RequestChargeMax,
-                                                      ClientTelemetryOptions.RequestChargePrecision);
-                this.ClientTelemetryInfo.OperationInfoMap.TryAdd(requestChargePayloadKey, requestChargeHistogram);
-            }
-            requestChargeHistogram.RecordValue((long)requestCharge);
+            return regionsContacted;
         }
 
         /// <summary>
@@ -276,35 +301,35 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                Tuple<CpuLoadHistory, MemoryLoadHistory> usages = this.diagnosticsHelper.GetCpuAndMemoryUsage(DiagnosticsHandlerHelper.Telemetrykey);
-                
-                this.cpuHistogram.Reset();
-                this.memoryHistogram.Reset();
+                CpuAndMemoryUsageRecorder systemUsageRecorder = this.diagnosticsHelper.GetUsageRecorder(DiagnosticsHandlerHelper.Telemetrykey);
 
-                CpuLoadHistory cpuLoadHistory = usages.Item1;
-                if (cpuLoadHistory != null)
+                if (systemUsageRecorder != null )
                 {
-                    foreach (CpuLoad cpuLoad in cpuLoadHistory.CpuLoad)
+                    CpuLoadHistory cpuLoadHistory = systemUsageRecorder.CpuUsage;
+                    if (cpuLoadHistory != null)
                     {
-                        this.cpuHistogram.RecordValue((long)cpuLoad.Value);
-                    }
-                    this.ClientTelemetryInfo.SystemInfo.Add(
-                        new MetricInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit)
-                        .SetAggregators(this.cpuHistogram));
-                }
-
-                MemoryLoadHistory memoryLoadHistory = usages.Item2;
-                if (memoryLoadHistory != null)
-                {
-                    foreach (MemoryLoad memoryLoad in memoryLoadHistory.MemoryLoad)
-                    {
-                        long memoryLoadInMb = memoryLoad.Value / (1024 * 1024);
-                        this.memoryHistogram.RecordValue(memoryLoadInMb);
+                        foreach (CpuLoad cpuLoad in cpuLoadHistory.CpuLoad)
+                        {
+                            this.cpuHistogram.RecordValue((long)cpuLoad.Value);
+                        }
+                        this.ClientTelemetryInfo.SystemInfo.Add(
+                            new ReportPayload(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit)
+                            .SetAggregators(this.cpuHistogram));
                     }
 
-                    this.ClientTelemetryInfo.SystemInfo.Add(
-                        new MetricInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit)
-                        .SetAggregators(this.memoryHistogram));
+                    MemoryLoadHistory memoryLoadHistory = systemUsageRecorder.MemoryUsage;
+                    if (memoryLoadHistory != null)
+                    {
+                        foreach (MemoryLoad memoryLoad in memoryLoadHistory.MemoryLoad)
+                        {
+                            long memoryLoadInMb = memoryLoad.Value / (1024 * 1024);
+                            this.memoryHistogram.RecordValue(memoryLoadInMb);
+                        }
+
+                        this.ClientTelemetryInfo.SystemInfo.Add(
+                            new ReportPayload(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit)
+                            .SetAggregators(this.memoryHistogram));
+                    }
                 }
             }
             catch (Exception ex)
@@ -323,7 +348,12 @@ namespace Microsoft.Azure.Cosmos
         private async Task SendAsync()
         {
             string endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
-            string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo);
+            string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo, 
+                new JsonSerializerSettings 
+                { 
+                    NullValueHandling = NullValueHandling.Ignore
+                });
+            
             // If endpoint is not configured then do not send telemetry information
             if (string.IsNullOrEmpty(endpointUrl))
             {
@@ -384,7 +414,7 @@ namespace Microsoft.Azure.Cosmos
             }
             finally
             {
-                //Clean collections to collect latest information.
+                // Finally, Clean collections to collect latest information.
                 this.Reset();
             }
 
@@ -395,6 +425,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal void Reset()
         {
+            this.cpuHistogram.Reset();
+            this.memoryHistogram.Reset();
+
             this.ClientTelemetryInfo.OperationInfoMap.Clear();
             this.ClientTelemetryInfo.SystemInfo.Clear();
             this.ClientTelemetryInfo.CacheRefreshInfoMap.Clear();
@@ -419,6 +452,8 @@ namespace Microsoft.Azure.Cosmos
                     this.CancellationTokenSource.Dispose();
 
                     this.telemetryTask = null;
+
+                    this.Reset();
                 }
 
                 this.isDisposed = true;

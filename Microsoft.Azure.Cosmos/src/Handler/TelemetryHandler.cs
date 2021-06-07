@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             this.clientTelemetry = new ClientTelemetry(
                 documentClient: documentClient,
-                acceleratedNetworking: null,
                 connectionPolicy: connectionPolicy,
                 authorizationTokenProvider: client.AuthorizationTokenProvider,
                 diagnosticsHelper: DiagnosticsHandlerHelper.Instance());
