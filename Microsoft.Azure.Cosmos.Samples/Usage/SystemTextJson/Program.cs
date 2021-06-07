@@ -89,7 +89,6 @@
 
         private static async Task RunDemo()
         {
-            // Create an item that uses System.Text.Json serialization attributes
             ToDoActivity activeActivity = new ToDoActivity()
             {
                 Id = Guid.NewGuid().ToString(),
@@ -106,6 +105,7 @@
                 Status = "Completed"
             };
 
+            // Create items that use System.Text.Json serialization attributes
             ItemResponse<ToDoActivity> createActiveActivity = await container.CreateItemAsync(activeActivity, new PartitionKey(activeActivity.PartitionKey));
 
             Console.WriteLine($"Created Active activity with id {createActiveActivity.Resource.Id} that cost {createActiveActivity.RequestCharge}");
@@ -114,11 +114,45 @@
 
             Console.WriteLine($"Created Completed activity with id {createCompletedActivity.Resource.Id} that cost {createCompletedActivity.RequestCharge}");
 
+            // Execute queries materializing responses using System.Text.Json
             using FeedIterator<ToDoActivity> iterator = container.GetItemQueryIterator<ToDoActivity>("select * from c where c.status = 'Completed'");
             while (iterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> queryResponse = await iterator.ReadNextAsync();
                 Console.WriteLine($"Obtained {queryResponse.Count} results on query for {queryResponse.RequestCharge}");
+            }
+
+            // Read items materializing responses using System.Text.Json
+            ItemResponse<ToDoActivity> readActiveActivity = await container.ReadItemAsync<ToDoActivity>(activeActivity.Id, new PartitionKey(completedActivity.PartitionKey));
+
+            Console.WriteLine($"Read Active activity with id {activeActivity.Id} that cost {readActiveActivity.RequestCharge}");
+
+            // Using TransactionalBatch to atomically create multiple items as a single transaction
+            string batchPartitionKey = "myPartitionKey";
+            ToDoActivity newActivity = new ToDoActivity()
+            {
+                Id = Guid.NewGuid().ToString(),
+                ActivityId = Guid.NewGuid().ToString(),
+                PartitionKey = batchPartitionKey,
+                Status = "Active"
+            };
+
+            ToDoActivity anotherNewActivity = new ToDoActivity()
+            {
+                Id = Guid.NewGuid().ToString(),
+                ActivityId = Guid.NewGuid().ToString(),
+                PartitionKey = batchPartitionKey,
+                Status = "Active"
+            };
+
+            TransactionalBatchResponse batchResponse = await container.CreateTransactionalBatch(new PartitionKey(batchPartitionKey))
+                .CreateItem(newActivity)
+                .CreateItem(anotherNewActivity)
+                .ExecuteAsync();
+
+            if (batchResponse.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Completed transactional batch that cost {batchResponse.RequestCharge}");
             }
         }
 
