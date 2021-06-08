@@ -522,11 +522,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enable and send telemetry data
+        /// Disable Telemetry if enabled using environment properties
         /// </summary>
-        internal CosmosClientBuilder WithTelemetryEnabled()
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithTelemetryDisabled()
         {
-            this.clientOptions.EnableClientTelemetry = true;
+            this.clientOptions.EnableClientTelemetry = false;
             return this;
         }
 

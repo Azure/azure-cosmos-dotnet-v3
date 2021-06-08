@@ -18,18 +18,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
     internal class TelemetryHandler : RequestHandler
     {
-        private readonly ClientTelemetry clientTelemetry;
+        private readonly ClientTelemetry telemetry;
 
-        public TelemetryHandler(CosmosClient client, DocumentClient documentClient, ConnectionPolicy connectionPolicy)
+        public TelemetryHandler(ClientTelemetry telemetry)
         {
-            this.clientTelemetry = new ClientTelemetry(
-                documentClient: documentClient,
-                connectionPolicy: connectionPolicy,
-                authorizationTokenProvider: client.AuthorizationTokenProvider,
-                diagnosticsHelper: DiagnosticsHandlerHelper.Instance());
-
-            client.Telemetry = this.clientTelemetry;
-            this.clientTelemetry.Start();
+            this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
+            telemetry.Start();
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -39,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                this.clientTelemetry
+                this.telemetry
                     .Collect(
                           cosmosDiagnostics: response.Diagnostics,
                           statusCode: response.StatusCode,

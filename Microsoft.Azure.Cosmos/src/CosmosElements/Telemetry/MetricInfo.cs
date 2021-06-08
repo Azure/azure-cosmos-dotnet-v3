@@ -12,13 +12,30 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
     using Newtonsoft.Json;
     
     [Serializable]
-    internal class MetricInfo
+    internal sealed class MetricInfo
     {
-        public MetricInfo(string metricsName, string unitName)
+        internal MetricInfo(string metricsName, string unitName)
         {
             this.MetricsName = metricsName;
             this.UnitName = unitName;
         }
+
+        public MetricInfo(string metricsName, 
+            string unitName, 
+            double mean, 
+            long count, 
+            double min, 
+            double max, 
+            IReadOnlyDictionary<double, double> percentiles)
+            : this(metricsName, unitName)
+        {
+            this.Mean = mean;
+            this.Count = count;
+            this.Min = min;
+            this.Max = max;
+            this.Percentiles = percentiles;
+        }
+
         [JsonProperty(PropertyName = "metricsName")]
         internal String MetricsName { get; }
         [JsonProperty(PropertyName = "unitName")]
@@ -32,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         [JsonProperty(PropertyName = "max")]
         internal double Max { get; set; }
         [JsonProperty(PropertyName = "percentiles")]
-        internal IDictionary<Double, Double> Percentiles { get; set; }
+        internal IReadOnlyDictionary<Double, Double> Percentiles { get; set; }
         
         /// <summary>
         /// It will set the current object with the aggregated values from the given histogram
@@ -41,11 +58,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         /// <returns>MetricInfo</returns>
         internal MetricInfo SetAggregators(LongConcurrentHistogram histogram)
         {
-            this.Count = histogram.TotalCount;
-            this.Max = histogram.GetMaxValue();
-            this.Min = histogram.GetMinValue();
-            this.Mean = histogram.GetMean();
-            IDictionary<Double, Double> percentile = new Dictionary<Double, Double>
+            if (histogram != null)
+            {
+                this.Count = histogram.TotalCount;
+                this.Max = histogram.GetMaxValue();
+                this.Min = histogram.GetMinValue();
+                this.Mean = histogram.GetMean();
+                IReadOnlyDictionary<Double, Double> percentile = new Dictionary<Double, Double>
                 {
                     { ClientTelemetryOptions.Percentile50,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile50) },
                     { ClientTelemetryOptions.Percentile90,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile90) },
@@ -53,21 +72,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
                     { ClientTelemetryOptions.Percentile99,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile99) },
                     { ClientTelemetryOptions.Percentile999, histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile999) }
                 };
-            this.Percentiles = percentile;
-
+                this.Percentiles = percentile;
+            }
             return this;
-        }
-
-        public override string ToString()
-        {
-            return base.ToString() + " : " +
-                this.MetricsName + " : " +
-                this.UnitName + " : " +
-                this.Mean + " : " +
-                this.Count + " : " +
-                this.Min + " : " +
-                this.Max + " : " +
-                this.Percentiles;
         }
     }
 }

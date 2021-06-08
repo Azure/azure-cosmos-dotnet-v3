@@ -59,25 +59,38 @@ namespace Microsoft.Azure.Cosmos
             ResourceType.Document
         });
 
+        private static string vmMetadataUrl;
+        private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
+        private static string clientTelemetryEndpoint;
+        private static string environmentName;
+
         internal static string GetVmMetadataUrl()
         {
-            return CosmosConfigurationManager.GetEnvironmentVariable<string>(
-                    EnvPropsClientTelemetryVmMetadataUrl,
-                    DefaultVmMetadataUrL);
+            if (string.IsNullOrEmpty(vmMetadataUrl))
+            {
+                vmMetadataUrl = CosmosConfigurationManager.GetEnvironmentVariable<string>(
+                   EnvPropsClientTelemetryVmMetadataUrl,
+                   DefaultVmMetadataUrL);
+            }
+            return vmMetadataUrl;
         }
 
-        internal static TimeSpan GetSchedulingInSeconds()
+        internal static TimeSpan GetScheduledTimeSpan()
         {
-            double scheduledTimeInSeconds = CosmosConfigurationManager
+            if (scheduledTimeSpan.Equals(TimeSpan.Zero))
+            {
+                double scheduledTimeInSeconds = CosmosConfigurationManager
                 .GetEnvironmentVariable<double>(
                     ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds,
                     ClientTelemetryOptions.DefaultTimeStampInSeconds);
 
-            if (scheduledTimeInSeconds <= 0)
-            {
-                throw new ArgumentException("Telemetry Scheduled time can not be less than or equal to 0.");
+                if (scheduledTimeInSeconds <= 0)
+                {
+                    throw new ArgumentException("Telemetry Scheduled time can not be less than or equal to 0.");
+                }
+                scheduledTimeSpan = TimeSpan.FromSeconds(scheduledTimeInSeconds); 
             }
-            return TimeSpan.FromSeconds(scheduledTimeInSeconds);
+            return scheduledTimeSpan;
         }
 
         internal static async Task<AzureVMMetadata> ProcessResponseAsync(HttpResponseMessage httpResponseMessage)
@@ -88,26 +101,33 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetHostInformation(AzureVMMetadata azMetadata) 
         {
-            return String.Concat(azMetadata.OSType, "|",
-                    azMetadata.SKU, "|",
-                    azMetadata.VMSize, "|",
-                    azMetadata.AzEnvironment);
+            return String.Concat(azMetadata?.OSType, "|",
+                    azMetadata?.SKU, "|",
+                    azMetadata?.VMSize, "|",
+                    azMetadata?.AzEnvironment);
         } 
 
         internal static string GetClientTelemetryEndpoint()
         {
-            return CosmosConfigurationManager
-                .GetEnvironmentVariable<string>(
-                    ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint,
-                    string.Empty);
+            if (string.IsNullOrEmpty(clientTelemetryEndpoint))
+            {
+                clientTelemetryEndpoint = CosmosConfigurationManager
+                    .GetEnvironmentVariable<string>(
+                        ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, string.Empty);
+            }
+            return clientTelemetryEndpoint;
         }
 
         internal static string GetEnvironmentName()
         {
-            return CosmosConfigurationManager
+            if (string.IsNullOrEmpty(environmentName))
+            {
+                environmentName = CosmosConfigurationManager
                 .GetEnvironmentVariable<string>(
-                    ClientTelemetryOptions.EnvPropsClientTelemetryEnvironmentName, 
+                    ClientTelemetryOptions.EnvPropsClientTelemetryEnvironmentName,
                     string.Empty);
+            }
+            return environmentName;
         }
     }
 }

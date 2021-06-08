@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosResponseFactoryInternal responseFactory;
         private readonly RequestInvokerHandler requestHandler;
         private readonly CosmosClientOptions clientOptions;
+        private readonly ClientTelemetry telemetry;
 
         private readonly string userAgent;
         private bool isDisposed = false;
@@ -39,7 +41,8 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler requestHandler,
             DocumentClient documentClient,
             string userAgent,
-            BatchAsyncContainerExecutorCache batchExecutorCache)
+            BatchAsyncContainerExecutorCache batchExecutorCache,
+            ClientTelemetry telemetry)
         {
             this.client = client;
             this.clientOptions = clientOptions;
@@ -49,6 +52,7 @@ namespace Microsoft.Azure.Cosmos
             this.documentClient = documentClient;
             this.userAgent = userAgent;
             this.batchExecutorCache = batchExecutorCache;
+            this.telemetry = telemetry;
         }
 
         internal static CosmosClientContext Create(
@@ -102,6 +106,18 @@ namespace Microsoft.Azure.Cosmos
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
+            ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy();
+            ClientTelemetry telemetry = null;
+            if (connectionPolicy.EnableClientTelemetry)
+            {
+                telemetry = new ClientTelemetry(
+                     documentClient: documentClient,
+                     userAgent: connectionPolicy.UserAgentContainer.UserAgent,
+                     connectionMode: connectionPolicy.ConnectionMode,
+                     authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
+                     diagnosticsHelper: DiagnosticsHandlerHelper.Instance());
+            }
+
             if (requestInvokerHandler == null)
             {
                 //Request pipeline 
@@ -110,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
                     documentClient,
                     clientOptions.ConsistencyLevel,
                     clientOptions.CustomHandlers,
-                    clientOptions.GetConnectionPolicy());
+                    telemetry: telemetry);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
@@ -132,7 +148,8 @@ namespace Microsoft.Azure.Cosmos
                 requestHandler: requestInvokerHandler,
                 documentClient: documentClient,
                 userAgent: documentClient.ConnectionPolicy.UserAgentContainer.UserAgent,
-                batchExecutorCache: new BatchAsyncContainerExecutorCache());
+                batchExecutorCache: new BatchAsyncContainerExecutorCache(),
+                telemetry: telemetry);
         }
 
         /// <summary>
@@ -416,6 +433,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     this.batchExecutorCache.Dispose();
                     this.DocumentClient.Dispose();
+                    this.telemetry?.Dispose();
                 }
 
                 this.isDisposed = true;

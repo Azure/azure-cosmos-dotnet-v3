@@ -33,9 +33,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public MockedItemBenchmarkHelper(
             bool useCustomSerializer = false,
             bool includeDiagnosticsToString = false,
-            bool isClientTelemetryEnabled = false,bool useBulk = false)
+            bool useBulk = false,
+            bool? isClientTelemetryEnabled = null)
         {
-            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, isClientTelemetryEnabled, (builder) => builder.WithBulkExecution(useBulk));
+            
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, isClientTelemetryEnabled?.ToString());
+
+            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, (builder) => builder.WithBulkExecution(useBulk));
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
 
@@ -63,21 +67,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
             string diagnostics = cosmosDiagnostics.ToString();
             if (string.IsNullOrEmpty(diagnostics))
-            {
-                throw new Exception();
-            }
-        }
-
-        public void IncludeTelemetryInformation()
-        {
-            if (!this.TestClient.ClientOptions.EnableClientTelemetry.HasValue)
-            {
-                return;
-            }
-
-            ClientTelemetryInfo clientTelementry = 
-                this.TestClient.Telemetry.ClientTelemetryInfo;
-            if (clientTelementry.OperationInfoMap.Count == 0)
             {
                 throw new Exception();
             }

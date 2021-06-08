@@ -244,7 +244,6 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ResponseMessage response = await this.feedIterator.ReadNextAsync(trace, cancellationToken);
-
             using (ITrace childTrace = trace.StartChild("POCO Materialization", TraceComponent.Poco, TraceLevel.Info))
             {
                 return this.responseCreator(response);

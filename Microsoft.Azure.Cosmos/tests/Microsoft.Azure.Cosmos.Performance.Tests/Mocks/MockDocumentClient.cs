@@ -42,16 +42,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
-            bool isClientTelemetryEnabled= false,
-            Action <CosmosClientBuilder> customizeClientBuilder = null)
+            Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             MockDocumentClient documentClient = new MockDocumentClient();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
             cosmosClientBuilder.WithConnectionModeDirect();
-            if (isClientTelemetryEnabled)
-            {
-                cosmosClientBuilder.WithTelemetryEnabled();
-            }
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             if (useCustomSerializer)
@@ -205,7 +200,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
             this.InitStoreModels();
-
         }
 
         private void InitStoreModels()

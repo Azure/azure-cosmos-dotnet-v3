@@ -109,13 +109,12 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultRntbdReceiveHangDetectionTimeSeconds = 65;
         private const int DefaultRntbdSendHangDetectionTimeSeconds = 10;
         private const bool DefaultEnableCpuMonitor = true;
-        
+
         //Auth
         private readonly AuthorizationTokenProvider cosmosAuthorization;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
-
         private bool allowOverrideStrongerConsistency = false;
         private int maxConcurrentConnectionOpenRequests = Environment.ProcessorCount * MaxConcurrentConnectionOpenRequestsPerProcessor;
         private int openConnectionTimeoutInSeconds = 5;
@@ -132,6 +131,7 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
         private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
+
         //Consistency
         private Documents.ConsistencyLevel? desiredConsistencyLevel;
 
@@ -148,11 +148,11 @@ namespace Microsoft.Azure.Cosmos
 
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
-        public CosmosHttpClient httpClient { get; private set; }
+        internal CosmosHttpClient httpClient;
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
-    // Setting this flag to false will result in store client factory not being disposed when client is disposed.
-    // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
+        // Setting this flag to false will result in store client factory not being disposed when client is disposed.
+        // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
         private bool isStoreClientFactoryCreatedInternally;
 
         //Id counter.
@@ -562,7 +562,7 @@ namespace Microsoft.Azure.Cosmos
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
-
+        
         internal GlobalPartitionEndpointManager PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
@@ -674,7 +674,8 @@ namespace Microsoft.Azure.Cosmos
                 string maxConcurrentConnectionOpenRequestsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.MaxConcurrentConnectionOpenConfig];
                 if (!string.IsNullOrEmpty(maxConcurrentConnectionOpenRequestsOverrideString))
                 {
-                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out int maxConcurrentConnectionOpenRequestOverrideInt))
+                    int maxConcurrentConnectionOpenRequestOverrideInt = 0;
+                    if (Int32.TryParse(maxConcurrentConnectionOpenRequestsOverrideString, out maxConcurrentConnectionOpenRequestOverrideInt))
                     {
                         this.maxConcurrentConnectionOpenRequests = maxConcurrentConnectionOpenRequestOverrideInt;
                     }
@@ -683,7 +684,8 @@ namespace Microsoft.Azure.Cosmos
                 string openConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.OpenConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(openConnectionTimeoutInSecondsOverrideString))
                 {
-                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out int openConnectionTimeoutInSecondsOverrideInt))
+                    int openConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(openConnectionTimeoutInSecondsOverrideString, out openConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.openConnectionTimeoutInSeconds = openConnectionTimeoutInSecondsOverrideInt;
                     }
@@ -692,7 +694,8 @@ namespace Microsoft.Azure.Cosmos
                 string idleConnectionTimeoutInSecondsOverrideString = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.IdleConnectionTimeoutInSecondsConfig];
                 if (!string.IsNullOrEmpty(idleConnectionTimeoutInSecondsOverrideString))
                 {
-                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out int idleConnectionTimeoutInSecondsOverrideInt))
+                    int idleConnectionTimeoutInSecondsOverrideInt = 0;
+                    if (Int32.TryParse(idleConnectionTimeoutInSecondsOverrideString, out idleConnectionTimeoutInSecondsOverrideInt))
                     {
                         this.idleConnectionTimeoutInSeconds = idleConnectionTimeoutInSecondsOverrideInt;
                     }
@@ -870,7 +873,7 @@ namespace Microsoft.Azure.Cosmos
                     this.rntbdPortReuseMode = connectionPolicy.PortReuseMode.Value;
                 }
             }
-           
+
             this.ServiceEndpoint = serviceEndpoint.OriginalString.EndsWith("/", StringComparison.Ordinal) ? serviceEndpoint : new Uri(serviceEndpoint.OriginalString + "/");
 
             this.ConnectionPolicy = connectionPolicy ?? ConnectionPolicy.Default;
@@ -6934,6 +6937,5 @@ namespace Microsoft.Azure.Cosmos
         }
 
         #endregion
-
     }
 }

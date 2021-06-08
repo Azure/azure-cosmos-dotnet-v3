@@ -28,46 +28,66 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
     {
+        private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private Container container;
-        private List<string> allowedMetrics;
-        private List<string> allowedUnitnames;
 
-        private ClientTelemetryInfo telemetryInfo;
-
+        private ClientTelemetryInfo actualInfo;
+        private int counter = 0;
         [TestInitialize]
         public async Task TestInitialize()
         {
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "5");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, "http://8gl6e.mocklab.io/metadata");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://juno-test2.documents-dev.windows-int.net/api/clienttelemetry/trace");
+            this.actualInfo = null;
+            this.counter = 0;
+
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
             CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
-            cosmosClientBuilder
-                .WithTelemetryEnabled();
 
-            this.cosmosClient = cosmosClientBuilder.Build();
+            HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper();
+            HttpClient httpClient = new HttpClient(httpHandler);
+
+            httpHandler.RequestCallBack = (request, cancellation) =>
+            {
+                if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint()))
+                {
+                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+                    this.counter++;
+                    if (this.counter == 1)
+                    {
+                        string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
+                        this.actualInfo = JsonConvert.DeserializeObject<ClientTelemetryInfo>(jsonObject);
+                    }
+
+                    return Task.FromResult(result);
+                }
+                else if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetVmMetadataUrl()))
+                {
+                    HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
+
+                    object jsonObject = JsonConvert.DeserializeObject("{\"compute\":{\"azEnvironment\":\"AzurePublicCloud\",\"customData\":\"\",\"isHostCompatibilityLayerVm\":\"false\",\"licenseType\":\"\",\"location\":\"eastus\",\"name\":\"sourabh-testing\",\"offer\":\"UbuntuServer\",\"osProfile\":{\"adminUsername\":\"azureuser\",\"computerName\":\"sourabh-testing\"},\"osType\":\"Linux\",\"placementGroupId\":\"\",\"plan\":{\"name\":\"\",\"product\":\"\",\"publisher\":\"\"},\"platformFaultDomain\":\"0\",\"platformUpdateDomain\":\"0\",\"provider\":\"Microsoft.Compute\",\"publicKeys\":[{\"keyData\":\"ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC5uCeOAm3ehmhI+2PbMoMl17Eo\r\nqfHKCycSaBJsv9qxlmBOuFheSJc1XknJleXUSsuTO016/d1PyWpevnqOZNRksWoa\r\nJvQ23sDTxcK+X2OP3QlCUeX4cMjPXqlL8z1UYzU4Bx3fFvf8fs67G3N72sxWBw5P\r\nZyuXyhBm0NCe/2NYMKgEDT4ma8XszO0ikbhoPKbMbgHAQk/ktWQHNcqYOPQKEWqp\r\nEK1R0rjS2nmtovfScP/ZGXcvOpJ1/NDBo4dh1K+OxOGM/4PSH/F448J5Zy4eAyEk\r\nscys+IpeIOTOlRUy/703SNIX0LEWlnYqbyL9c1ypcYLQqF76fKkDfzzFI/OWVlGw\r\nhj/S9uP8iMsR+fhGIbn6MAa7O4DWPWLuedSp7KDYyjY09gqNJsfuaAJN4LiC6bPy\r\nhknm0PVLK3ux7EUOt+cZrHCdIFWbdOtxiPNIl1tkv9kV5aE5Aj2gJm4MeB9uXYhS\r\nOuksboBc0wyUGrl9+XZJ1+NlZOf7IjVi86CieK8= generated-by-azure\r\n\",\"path\":\"/home/azureuser/.ssh/authorized_keys\"}],\"publisher\":\"Canonical\",\"resourceGroupName\":\"sourabh-telemetry-sdk\",\"resourceId\":\"/subscriptions/8fba6d4f-7c37-4d13-9063-fd58ad2b86e2/resourceGroups/sourabh-telemetry-sdk/providers/Microsoft.Compute/virtualMachines/sourabh-testing\",\"securityProfile\":{\"secureBootEnabled\":\"false\",\"virtualTpmEnabled\":\"false\"},\"sku\":\"18.04-LTS\",\"storageProfile\":{\"dataDisks\":[],\"imageReference\":{\"id\":\"\",\"offer\":\"UbuntuServer\",\"publisher\":\"Canonical\",\"sku\":\"18.04-LTS\",\"version\":\"latest\"},\"osDisk\":{\"caching\":\"ReadWrite\",\"createOption\":\"FromImage\",\"diffDiskSettings\":{\"option\":\"\"},\"diskSizeGB\":\"30\",\"encryptionSettings\":{\"enabled\":\"false\"},\"image\":{\"uri\":\"\"},\"managedDisk\":{\"id\":\"/subscriptions/8fba6d4f-7c37-4d13-9063-fd58ad2b86e2/resourceGroups/sourabh-telemetry-sdk/providers/Microsoft.Compute/disks/sourabh-testing_OsDisk_1_9a54abfc5ba149c6a106bd9e5b558c2a\",\"storageAccountType\":\"Premium_LRS\"},\"name\":\"sourabh-testing_OsDisk_1_9a54abfc5ba149c6a106bd9e5b558c2a\",\"osType\":\"Linux\",\"vhd\":{\"uri\":\"\"},\"writeAcceleratorEnabled\":\"false\"}},\"subscriptionId\":\"8fba6d4f-7c37-4d13-9063-fd58ad2b86e2\",\"tags\":\"azsecpack:nonprod;platformsettings.host_environment.service.platform_optedin_for_rootcerts:true\",\"tagsList\":[{\"name\":\"azsecpack\",\"value\":\"nonprod\"},{\"name\":\"platformsettings.host_environment.service.platform_optedin_for_rootcerts\",\"value\":\"true\"}],\"version\":\"18.04.202103250\",\"vmId\":\"d0cb93eb-214b-4c2b-bd3d-cc93e90d9efd\",\"vmScaleSetName\":\"\",\"vmSize\":\"Standard_D2s_v3\",\"zone\":\"1\"},\"network\":{\"interface\":[{\"ipv4\":{\"ipAddress\":[{\"privateIpAddress\":\"10.0.7.5\",\"publicIpAddress\":\"\"}],\"subnet\":[{\"address\":\"10.0.7.0\",\"prefix\":\"24\"}]},\"ipv6\":{\"ipAddress\":[]},\"macAddress\":\"000D3A8F8BA0\"}]}}");
+                    string payload = JsonConvert.SerializeObject(jsonObject);
+                    result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+                    return Task.FromResult(result);
+                }
+                return null;
+            };
+
+            this.cosmosClient = cosmosClientBuilder.WithHttpClientFactory(() => httpClient).Build();
 
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             this.container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
 
-            this.telemetryInfo = this.cosmosClient.Telemetry.ClientTelemetryInfo;
-
-            this.allowedMetrics = new List<string>(new string[] {
-                ClientTelemetryOptions.RequestChargeName,
-                ClientTelemetryOptions.RequestLatencyName
-            });
-
-            this.allowedUnitnames = new List<string>(new string[] {
-                ClientTelemetryOptions.RequestChargeUnit,
-                ClientTelemetryOptions.RequestLatencyUnit
-            });
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryVmMetadataUrl, null);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
 
             await base.TestCleanup();
@@ -80,35 +100,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
             ItemResponse<ToDoActivity> createResponse = await this.container.CreateItemAsync<ToDoActivity>(testItem);
             ToDoActivity testItemCreated = createResponse.Resource;
-            List<Documents.OperationType> allowedOperations
-               = new List<Documents.OperationType>(new Documents.OperationType[] {
-                                Documents.OperationType.Create
-               });
-            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
-               = new Dictionary<OperationType, HttpStatusCode>
-               {
-                    { OperationType.Create, HttpStatusCode.Created }
-               };
-            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
 
             // Read an Item
             await this.container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            allowedOperations.Add(Documents.OperationType.Read);
-            expectedOperationCodeMap.Add(Documents.OperationType.Read, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
 
             // Upsert an Item
             await this.container.UpsertItemAsync<ToDoActivity>(testItem);
 
-            allowedOperations.Add(Documents.OperationType.Upsert);
-            expectedOperationCodeMap.Add(Documents.OperationType.Upsert, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 6, expectedOperationCodeMap);
-
             // Replace an Item
             await this.container.ReplaceItemAsync<ToDoActivity>(testItemCreated, testItemCreated.id.ToString());
-            allowedOperations.Add(Documents.OperationType.Replace);
-            expectedOperationCodeMap.Add(Documents.OperationType.Replace, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 8, expectedOperationCodeMap);
 
             // Patch an Item
             List<PatchOperation> patch = new List<PatchOperation>()
@@ -120,36 +120,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 new Cosmos.PartitionKey(testItem.id),
                 patch);
 
-            allowedOperations.Add(Documents.OperationType.Patch);
-            expectedOperationCodeMap.Add(Documents.OperationType.Patch, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 10, expectedOperationCodeMap);
-
             // Delete an Item
             await this.container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            allowedOperations.Add(Documents.OperationType.Delete);
-            expectedOperationCodeMap.Add(Documents.OperationType.Delete, HttpStatusCode.NoContent);
-            this.AssertClientTelemetryInfo(allowedOperations, 12, expectedOperationCodeMap);
 
+            this.WaitAndAssert(14);
         }
 
         [TestMethod]
         public async Task PointReadFailureOperationsTest()
         {
-            // Create an item with invalid Id
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "Invalid#/\\?Id");
-
-            await this.container.CreateItemAsync<ToDoActivity>(testItem);
-            List<Documents.OperationType> allowedOperations
-               = new List<Documents.OperationType>(new Documents.OperationType[] {
-                                Documents.OperationType.Create
-               });
-            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
-              = new Dictionary<OperationType, HttpStatusCode>
-              {
-                    { OperationType.Create, HttpStatusCode.Created }
-              };
-            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
-
             // Fail Read
             try
             {
@@ -162,24 +141,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
             }
-            allowedOperations.Add(OperationType.Read);
-            expectedOperationCodeMap.Add(OperationType.Read, HttpStatusCode.NotFound);
-            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
+            this.WaitAndAssert(4);
         }
-
 
         [TestMethod]
         public async Task StreamReadFailureOperationsTest()
         {
-            List<Documents.OperationType> allowedOperations
-               = new List<Documents.OperationType>(new Documents.OperationType[] {
-                                Documents.OperationType.Read
-               });
-            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
-              = new Dictionary<OperationType, HttpStatusCode>
-              {
-                    { OperationType.Read, HttpStatusCode.NotFound }
-              };
             // Fail Read
             try
             {
@@ -193,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
-            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
+            this.WaitAndAssert(4);
         }
 
         [TestMethod]
@@ -205,34 +172,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), 
                 new Cosmos.PartitionKey(testItem.id));
 
-            List<Documents.OperationType> allowedOperations
-                = new List<Documents.OperationType>(new Documents.OperationType[] {
-                                            Documents.OperationType.Create
-                });
-            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
-             = new Dictionary<OperationType, HttpStatusCode>
-             {
-                    { OperationType.Create, HttpStatusCode.Created }
-             };
-            this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
-
             //Upsert an Item
             await this.container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new Cosmos.PartitionKey(testItem.id));
-            allowedOperations.Add(Documents.OperationType.Upsert);
-            expectedOperationCodeMap.Add(Documents.OperationType.Upsert, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
 
             //Read an Item
             await this.container.ReadItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            allowedOperations.Add(Documents.OperationType.Read);
-            expectedOperationCodeMap.Add(Documents.OperationType.Read, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 6, expectedOperationCodeMap);
 
             //Replace an Item
             await this.container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new Cosmos.PartitionKey(testItem.id));
-            allowedOperations.Add(Documents.OperationType.Replace);
-            expectedOperationCodeMap.Add(Documents.OperationType.Replace, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 8, expectedOperationCodeMap);
 
             // Patch an Item
             List<PatchOperation> patch = new List<PatchOperation>()
@@ -243,15 +190,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 partitionKey: new Cosmos.PartitionKey(testItem.id),
                 id: testItem.id,
                 patchOperations: patch);
-            allowedOperations.Add(Documents.OperationType.Patch);
-            expectedOperationCodeMap.Add(Documents.OperationType.Patch, HttpStatusCode.OK);
-            this.AssertClientTelemetryInfo(allowedOperations, 10, expectedOperationCodeMap);
 
             //Delete an Item
             await this.container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
-            allowedOperations.Add(Documents.OperationType.Delete);
-            expectedOperationCodeMap.Add(Documents.OperationType.Delete, HttpStatusCode.NoContent);
-            this.AssertClientTelemetryInfo(allowedOperations, 12, expectedOperationCodeMap);
+
+            this.WaitAndAssert(14);
         }
 
         [TestMethod]
@@ -272,18 +215,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 await Task.WhenAll(tasks);
-
-                List<Documents.OperationType> allowedOperations
-                   = new List<Documents.OperationType>(new Documents.OperationType[] {
-                                            Documents.OperationType.Batch
-                   });
-                IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
-                = new Dictionary<OperationType, HttpStatusCode>
-                {
-                    { OperationType.Batch, HttpStatusCode.OK }
-                };
-                this.AssertClientTelemetryInfo(allowedOperations, 2, expectedOperationCodeMap);
             }
+            this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -309,41 +242,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-
-            List<Documents.OperationType> allowedOperations
-               = new List<Documents.OperationType>(new Documents.OperationType[] {
-                                            Documents.OperationType.Query,
-                                            Documents.OperationType.Create
-               });
-
-            IDictionary<OperationType, HttpStatusCode> expectedOperationCodeMap
-               = new Dictionary<OperationType, HttpStatusCode>
-               {
-                   { OperationType.Query, HttpStatusCode.OK },
-                   { OperationType.Create, HttpStatusCode.Created }
-               };
-
-            this.AssertClientTelemetryInfo(allowedOperations, 4, expectedOperationCodeMap);
+            this.WaitAndAssert(4);
         }
 
-        private void AssertClientTelemetryInfo(
-            List<Documents.OperationType> allowedOperations, 
-            int operationInfoMapCount,
-            IDictionary<OperationType, HttpStatusCode>  expectedOperationCodeMap)
+        private void WaitAndAssert(int expectedOperationCount, int milliseconds = 2000)
         {
-            Assert.AreEqual(operationInfoMapCount, this.telemetryInfo.OperationInfoMap.Count);
+            Task.Delay(milliseconds).Wait();
 
-            foreach (KeyValuePair<ReportPayload, LongConcurrentHistogram> entry in this.telemetryInfo.OperationInfoMap)
-            {
-                Assert.IsTrue(allowedOperations.Contains((OperationType)entry.Key.Operation));
-                Assert.AreEqual(Documents.ResourceType.Document, entry.Key.Resource);
+            Assert.IsNotNull(this.actualInfo);
+            Assert.AreEqual(expectedOperationCount, this.actualInfo.OperationInfo.Count);
+            Assert.AreEqual(2, this.actualInfo.SystemInfo.Count);
 
-                expectedOperationCodeMap.TryGetValue((OperationType)entry.Key.Operation, out HttpStatusCode expectedStatusCode);
-                Assert.AreEqual((int)expectedStatusCode, entry.Key.StatusCode);
-
-                Assert.IsTrue(this.allowedMetrics.Contains(entry.Key.MetricInfo.MetricsName));
-                Assert.IsTrue(this.allowedUnitnames.Contains(entry.Key.MetricInfo.UnitName));
-            }
+            Assert.IsNotNull(this.actualInfo.HostEnvInfo);
+            Assert.IsNotNull(this.actualInfo.GlobalDatabaseAccountName);
+            Assert.IsNotNull(this.actualInfo.ApplicationRegion);
+            Assert.IsNotNull(this.actualInfo.TimeStamp);
         }
 
         private static ItemBatchOperation CreateItem(string itemId)
