@@ -1,12 +1,12 @@
 ﻿{
   "AppSettings": {
-    "GatewayEndpoint": "https://127.0.0.1:8081/",
+    "GatewayEndpoint": "https://test-sql.documents-test.windows-int.net:443/",
     "Location": "South Central US",
     "Location2": "West US",
     "GlobalDatabaseAccountId": "globaldb",
     "DatabaseAccountId": "localhost",
     "DatabaseAccountId2": "localhost-westus",
-    "MasterKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+    "MasterKey": "RxAj4zgPDHc73YlFKh4YXCOojetmrlp70prVSgTqdLJM68a6gO4KS5yL1iwaU0hcbJiNF0N4qRJyM9JPKTR5JQ==",
     "ServerStalenessIntervalInSeconds": "5",
     "MasterStalenessIntervalInSeconds": "1"
   }
