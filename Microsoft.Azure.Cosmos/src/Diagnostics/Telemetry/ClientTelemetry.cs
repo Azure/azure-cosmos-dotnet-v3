@@ -241,7 +241,7 @@ namespace Microsoft.Azure.Cosmos
 
                 LongConcurrentHistogram latencyHistogram = this.ClientTelemetryInfo
                      .OperationInfoMap
-                     .GetOrAdd(latencyPayloadKey, new LongConcurrentHistogram(1,
+                     .GetOrAdd(latencyPayloadKey, x => new LongConcurrentHistogram(1,
                                                            ClientTelemetryOptions.RequestLatencyMaxMicroSec,
                                                            statusCode.IsSuccess() ?
                                                              ClientTelemetryOptions.RequestLatencySuccessPrecision :
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
                                                                 ClientTelemetryOptions.RequestChargeUnit);
                 LongConcurrentHistogram requestChargeHistogram = this.ClientTelemetryInfo
                     .OperationInfoMap
-                    .GetOrAdd(requestChargePayloadKey, new LongConcurrentHistogram(1,
+                    .GetOrAdd(requestChargePayloadKey, x => new LongConcurrentHistogram(1,
                                                           ClientTelemetryOptions.RequestChargeMax,
                                                           ClientTelemetryOptions.RequestChargePrecision));
                 requestChargeHistogram.RecordValue((long)requestCharge);
@@ -353,14 +353,14 @@ namespace Microsoft.Azure.Cosmos
                 { 
                     NullValueHandling = NullValueHandling.Ignore
                 });
-            
+
+            // Finally, Clean collections to collect latest information.
+            this.Reset();
+
             // If endpoint is not configured then do not send telemetry information
             if (string.IsNullOrEmpty(endpointUrl))
             {
                 DefaultTrace.TraceError("Telemetry endpoint is not configured");
-                //Clean Maps to collect latest information.
-                this.Reset();
-
                 return;
             }
 
@@ -411,11 +411,6 @@ namespace Microsoft.Azure.Cosmos
             catch (Exception ex)
             {
                 DefaultTrace.TraceError(ex.Message);
-            }
-            finally
-            {
-                // Finally, Clean collections to collect latest information.
-                this.Reset();
             }
 
         }

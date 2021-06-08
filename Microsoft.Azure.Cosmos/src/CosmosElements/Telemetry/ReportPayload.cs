@@ -77,16 +77,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
 
         public override int GetHashCode()
         {
-            int hash = 0;
-            hash = (hash * 397) ^ (this.RegionsContacted == null ? 0 : this.RegionsContacted.GetHashCode());
-            hash = (hash * 397) ^ (this.GreaterThan1Kb == null ? 0 : this.GreaterThan1Kb.GetHashCode());
-            hash = (hash * 397) ^ (this.Consistency == null ? 0 : this.Consistency.GetHashCode());
-            hash = (hash * 397) ^ (this.DatabaseName == null ? 0 : this.DatabaseName.GetHashCode());
-            hash = (hash * 397) ^ (this.ContainerName == null ? 0 : this.ContainerName.GetHashCode());
-            hash = (hash * 397) ^ (this.Operation == null ? 0 : this.Operation.GetHashCode());
-            hash = (hash * 397) ^ (this.Resource == null ? 0 : this.Resource.GetHashCode());
-            hash = (hash * 397) ^ (this.StatusCode == null ? 0 : this.StatusCode.GetHashCode());
-            hash = (hash * 397) ^ (this.MetricInfo == null ? 0 : this.MetricInfo.MetricsName == null ? 0 :
+            int hash = 17;
+            hash = (hash * 23) ^ (this.RegionsContacted == null ? 0 : this.RegionsContacted.GetHashCode());
+            hash = (hash * 23) ^ (this.GreaterThan1Kb == null ? 0 : this.GreaterThan1Kb.GetHashCode());
+            hash = (hash * 23) ^ (this.Consistency == null ? 0 : this.Consistency.GetHashCode());
+            hash = (hash * 23) ^ (this.DatabaseName == null ? 0 : this.DatabaseName.GetHashCode());
+            hash = (hash * 23) ^ (this.ContainerName == null ? 0 : this.ContainerName.GetHashCode());
+            hash = (hash * 23) ^ (this.Operation == null ? 0 : this.Operation.GetHashCode());
+            hash = (hash * 23) ^ (this.Resource == null ? 0 : this.Resource.GetHashCode());
+            hash = (hash * 23) ^ (this.StatusCode == null ? 0 : this.StatusCode.GetHashCode());
+            hash = (hash * 23) ^ (this.MetricInfo == null ? 0 : this.MetricInfo.MetricsName == null ? 0 :
                 this.MetricInfo.MetricsName.GetHashCode());
             return hash;
         }
