@@ -84,6 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         cancellationToken: default);
 
                     await this.DocumentContainer.MergeAsync(ranges[0], ranges[1], default);
+                    await this.DocumentContainer.RefreshProviderAsync(NoOpTrace.Singleton, default);
                     this.ShouldMerge = TriState.Done;
 
                     return new CosmosException(
@@ -116,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await this.DocumentContainer.SplitAsync(ranges.First(), cancellationToken: default);
 
                 IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerator = this.CreateEnumerator(this.DocumentContainer);
-                HashSet<string> identifiers = new HashSet<string>();
+                List<string> identifiers = new List<string>();
                 int iteration = 0;
                 while (await enumerator.MoveNextAsync())
                 {
