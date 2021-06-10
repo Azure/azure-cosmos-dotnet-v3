@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             PartitionKeyDefinition partitionKeyDefinition)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
-            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
+            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(Cosmos.UInt128.MaxValue));
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
             this.partitionedRecords[fullRange] = new Records();
@@ -131,9 +131,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         PartitionKeyHashRange userRange = FeedRangeEpkToHashRange(feedRangeEpk);
                         foreach (PartitionKeyHashRange systemRange in this.cachedPartitionKeyRangeIdToHashRange.Values)
                         {
-                            if (userRange.TryGetOverlappingRange(systemRange, out PartitionKeyHashRange overlappingRange))
+                            if (systemRange.TryGetOverlappingRange(userRange, out PartitionKeyHashRange overlappingRange))
                             {
-                                overlappingRanges.Add(HashRangeToFeedRangeEpk(overlappingRange));
+                                overlappingRanges.Add(HashRangeToFeedRangeEpk(systemRange));
                             }
                         }
                     }
