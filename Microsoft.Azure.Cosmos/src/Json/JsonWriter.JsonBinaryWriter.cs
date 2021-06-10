@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Blitted bytes.</returns>
         public static PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(Action<ITypedBinaryJsonWriter> scopeWriter)
         {
-            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: true);
+            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: false);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
