@@ -319,19 +319,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                                 error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated_82086B2D", Message = errorMessage });
             }
 
-            foreach (FeedRangeInternal childRange in childRanges)
+            if (childRanges.Count == 1)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
+                // On a merge, the 410/1002 results in a single parent
+                // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
+                this.enumerators.Enqueue(uninitializedEnumerator);
+            }
+            else
+            {
+                // Split
+                foreach (FeedRangeInternal childRange in childRanges)
+                {
+                    this.cancellationToken.ThrowIfCancellationRequested();
 
-                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
-                    this.documentContainer,
-                    uninitializedEnumerator.SqlQuerySpec,
-                    new FeedRangeState<QueryState>(childRange, uninitializedEnumerator.StartOfPageState),
-                    partitionKey: null,
-                    uninitializedEnumerator.QueryPaginationOptions,
-                    uninitializedEnumerator.Filter,
-                    this.cancellationToken);
-                this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+                    OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                        this.documentContainer,
+                        uninitializedEnumerator.SqlQuerySpec,
+                        new FeedRangeState<QueryState>(childRange, uninitializedEnumerator.StartOfPageState),
+                        partitionKey: null,
+                        uninitializedEnumerator.QueryPaginationOptions,
+                        uninitializedEnumerator.Filter,
+                        this.cancellationToken);
+                    this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+                }
             }
 
             // Recursively retry

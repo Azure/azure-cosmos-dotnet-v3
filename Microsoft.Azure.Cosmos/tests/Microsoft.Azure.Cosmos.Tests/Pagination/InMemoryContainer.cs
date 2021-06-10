@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         {
                             if (userRange.TryGetOverlappingRange(systemRange, out PartitionKeyHashRange overlappingRange))
                             {
-                                overlappingRanges.Add(HashRangeToFeedRangeEpk(systemRange));
+                                overlappingRanges.Add(HashRangeToFeedRangeEpk(overlappingRange));
                             }
                         }
                     }
