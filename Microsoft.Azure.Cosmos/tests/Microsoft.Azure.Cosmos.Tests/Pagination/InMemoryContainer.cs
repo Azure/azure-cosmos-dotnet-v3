@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         PartitionKeyHashRange userRange = FeedRangeEpkToHashRange(feedRangeEpk);
                         foreach (PartitionKeyHashRange systemRange in this.cachedPartitionKeyRangeIdToHashRange.Values)
                         {
-                            if (systemRange.TryGetOverlappingRange(userRange, out PartitionKeyHashRange overlappingRange))
+                            if (userRange.TryGetOverlappingRange(systemRange, out PartitionKeyHashRange overlappingRange))
                             {
                                 overlappingRanges.Add(HashRangeToFeedRangeEpk(systemRange));
                             }
