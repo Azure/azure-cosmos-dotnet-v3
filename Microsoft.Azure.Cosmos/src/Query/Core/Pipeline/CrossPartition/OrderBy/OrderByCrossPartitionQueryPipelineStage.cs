@@ -323,7 +323,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             {
                 // On a merge, the 410/1002 results in a single parent
                 // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
-                this.enumerators.Enqueue(uninitializedEnumerator);
+                OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                    this.documentContainer,
+                    uninitializedEnumerator.SqlQuerySpec,
+                    new FeedRangeState<QueryState>(uninitializedEnumerator.FeedRangeState.FeedRange, uninitializedEnumerator.StartOfPageState),
+                    partitionKey: null,
+                    uninitializedEnumerator.QueryPaginationOptions,
+                    uninitializedEnumerator.Filter,
+                    this.cancellationToken);
+                this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
             }
             else
             {
