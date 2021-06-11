@@ -171,11 +171,21 @@ namespace Microsoft.Azure.Cosmos.Pagination
                                 error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated_4795CC37", Message = errorMessage });
                         }
 
-                        foreach (FeedRangeInternal childRange in childRanges)
+                        if (childRanges.Count == 1)
                         {
-                            PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
-                                new FeedRangeState<TState>(childRange, currentPaginator.FeedRangeState.State));
-                            enumerators.Enqueue(childPaginator);
+                            // On a merge, the 410/1002 results in a single parent
+                            // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
+                            enumerators.Enqueue(currentPaginator);
+                        }
+                        else
+                        {
+                            // Split
+                            foreach (FeedRangeInternal childRange in childRanges)
+                            {
+                                PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.createPartitionRangeEnumerator(
+                                    new FeedRangeState<TState>(childRange, currentPaginator.FeedRangeState.State));
+                                enumerators.Enqueue(childPaginator);
+                            }
                         }
 
                         // Recursively retry

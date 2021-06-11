@@ -6,13 +6,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public sealed class CrossPartitionPartitionRangeEnumeratorTests
@@ -43,6 +48,159 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         {
             Implementation implementation = new Implementation(true);
             await implementation.TestMergeToSinglePartition();
+        }
+
+        // Validates that on a merge (split with 1 result) we do not create new child enumerators for the merge result
+        [TestMethod]
+        public async Task OnMergeRequeueRange()
+        {
+            // We expect only creation of enumerators for the original ranges, not any child ranges
+            List<EnumeratorThatSplits> createdEnumerators = new List<EnumeratorThatSplits>();
+            PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
+                FeedRangeState<ReadFeedState> feedRangeState)
+            {
+                EnumeratorThatSplits enumerator = new EnumeratorThatSplits(feedRangeState, default, createdEnumerators.Count == 0);
+                createdEnumerators.Add(enumerator);
+                return enumerator;
+            }
+
+            // We expect a request for children and we return the merged range
+            Mock<IFeedRangeProvider> feedRangeProvider = new Mock<IFeedRangeProvider>();
+            feedRangeProvider.Setup(p => p.GetChildRangeAsync(
+                It.Is<FeedRangeInternal>(splitRange => ((FeedRangeEpk)splitRange).Range.Min == "" && ((FeedRangeEpk)splitRange).Range.Max == "A"),
+                It.IsAny<ITrace>(), 
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<FeedRangeEpk>() { 
+                    FeedRangeEpk.FullRange});
+
+            CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                feedRangeProvider: feedRangeProvider.Object,
+                createPartitionRangeEnumerator: createEnumerator,
+                comparer: null,
+                maxConcurrency: 0,
+                cancellationToken: default,
+                state: new CrossFeedRangeState<ReadFeedState>(
+                    new FeedRangeState<ReadFeedState>[]
+                    {
+                        // start with 2 ranges
+                        new FeedRangeState<ReadFeedState>(new FeedRangeEpk(new Documents.Routing.Range<string>("", "A", true, false)), ReadFeedState.Beginning()),
+                        new FeedRangeState<ReadFeedState>(new FeedRangeEpk(new Documents.Routing.Range<string>("A", "FF", true, false)), ReadFeedState.Beginning())
+                    }));
+
+            // Trigger merge, should requeue and read second enumerator
+            await enumerator.MoveNextAsync();
+
+            // Should read first enumerator again
+            await enumerator.MoveNextAsync();
+
+            Assert.AreEqual(2, createdEnumerators.Count, "Should only create the original 2 enumerators");
+            Assert.AreEqual("", ((FeedRangeEpk)createdEnumerators[0].FeedRangeState.FeedRange).Range.Min);
+            Assert.AreEqual("A", ((FeedRangeEpk)createdEnumerators[0].FeedRangeState.FeedRange).Range.Max);
+            Assert.AreEqual("A", ((FeedRangeEpk)createdEnumerators[1].FeedRangeState.FeedRange).Range.Min);
+            Assert.AreEqual("FF", ((FeedRangeEpk)createdEnumerators[1].FeedRangeState.FeedRange).Range.Max);
+
+            Assert.AreEqual(2, createdEnumerators[0].GetNextPageAsyncCounter, "First enumerator should have been requeued and called again");
+            Assert.AreEqual(1, createdEnumerators[1].GetNextPageAsyncCounter, "Second enumerator should be used once");
+        }
+
+        // Validates that on a split we create children enumerators and use them
+        [TestMethod]
+        public async Task OnSplitQueueNewEnumerators()
+        {
+            // We expect creation of the initial full range enumerator and the 2 children
+            List<EnumeratorThatSplits> createdEnumerators = new List<EnumeratorThatSplits>();
+            PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
+                FeedRangeState<ReadFeedState> feedRangeState)
+            {
+                EnumeratorThatSplits enumerator = new EnumeratorThatSplits(feedRangeState, default, createdEnumerators.Count == 0);
+                createdEnumerators.Add(enumerator);
+                return enumerator;
+            }
+
+            // We expect a request for children and we return the new children
+            Mock<IFeedRangeProvider> feedRangeProvider = new Mock<IFeedRangeProvider>();
+            feedRangeProvider.Setup(p => p.GetChildRangeAsync(
+                It.Is<FeedRangeInternal>(splitRange => ((FeedRangeEpk)splitRange).Range.Min == FeedRangeEpk.FullRange.Range.Min && ((FeedRangeEpk)splitRange).Range.Max == FeedRangeEpk.FullRange.Range.Max),
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<FeedRangeEpk>() {
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("", "A", true, false)),
+                    new FeedRangeEpk(new Documents.Routing.Range<string>("A", "FF", true, false))});
+
+            CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                feedRangeProvider: feedRangeProvider.Object,
+                createPartitionRangeEnumerator: createEnumerator,
+                comparer: null,
+                maxConcurrency: 0,
+                cancellationToken: default,
+                state: new CrossFeedRangeState<ReadFeedState>(
+                    new FeedRangeState<ReadFeedState>[]
+                    {
+                        // start with 1 range
+                        new FeedRangeState<ReadFeedState>(FeedRangeEpk.FullRange, ReadFeedState.Beginning())
+                    }));
+
+            // Trigger split, should create children and call first children
+            await enumerator.MoveNextAsync();
+
+            // Should read second children
+            await enumerator.MoveNextAsync();
+
+            Assert.AreEqual(3, createdEnumerators.Count, "Should have the original enumerator and the children");
+            Assert.AreEqual(FeedRangeEpk.FullRange.Range.Min, ((FeedRangeEpk)createdEnumerators[0].FeedRangeState.FeedRange).Range.Min);
+            Assert.AreEqual(FeedRangeEpk.FullRange.Range.Max, ((FeedRangeEpk)createdEnumerators[0].FeedRangeState.FeedRange).Range.Max);
+            Assert.AreEqual("", ((FeedRangeEpk)createdEnumerators[1].FeedRangeState.FeedRange).Range.Min);
+            Assert.AreEqual("A", ((FeedRangeEpk)createdEnumerators[1].FeedRangeState.FeedRange).Range.Max);
+            Assert.AreEqual("A", ((FeedRangeEpk)createdEnumerators[2].FeedRangeState.FeedRange).Range.Min);
+            Assert.AreEqual("FF", ((FeedRangeEpk)createdEnumerators[2].FeedRangeState.FeedRange).Range.Max);
+
+            Assert.AreEqual(1, createdEnumerators[0].GetNextPageAsyncCounter, "First enumerator should have been called once");
+            Assert.AreEqual(1, createdEnumerators[1].GetNextPageAsyncCounter, "Second enumerator should have been called once");
+            Assert.AreEqual(1, createdEnumerators[2].GetNextPageAsyncCounter, "Second enumerator should not be used");
+        }
+
+        private class EnumeratorThatSplits : PartitionRangePageAsyncEnumerator<ReadFeedPage,ReadFeedState>
+        {
+            private readonly bool throwError;
+
+            public EnumeratorThatSplits(
+                FeedRangeState<ReadFeedState> feedRangeState, 
+                CancellationToken cancellationToken,
+                bool throwError = true)
+                : base(feedRangeState, cancellationToken)
+            {
+                this.throwError = throwError;
+            }
+
+            public override ValueTask DisposeAsync()
+            {
+                throw new NotImplementedException();
+            }
+
+            public int GetNextPageAsyncCounter { get; private set; }
+
+            protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                this.GetNextPageAsyncCounter++;
+
+                if (this.GetNextPageAsyncCounter == 1
+                    && this.throwError)
+                {
+                    CosmosException splitError = new CosmosException("merge", System.Net.HttpStatusCode.Gone, (int)Documents.SubStatusCodes.PartitionKeyRangeGone, string.Empty, 0);
+                    TryCatch<ReadFeedPage> state = TryCatch<ReadFeedPage>.FromException(splitError);
+                    return Task.FromResult(state);
+                }
+                else
+                {
+                    return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(
+                        new ReadFeedPage(
+                            new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}")),
+                            requestCharge: 1,
+                            activityId: Guid.NewGuid().ToString(),
+                            additionalHeaders: null,
+                            state: ReadFeedState.Beginning())));
+                }
+            }
         }
 
         [TestMethod]
@@ -84,6 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         cancellationToken: default);
 
                     await this.DocumentContainer.MergeAsync(ranges[0], ranges[1], default);
+                    await this.DocumentContainer.RefreshProviderAsync(NoOpTrace.Singleton, default);
                     this.ShouldMerge = TriState.Done;
 
                     return new CosmosException(
@@ -116,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 await this.DocumentContainer.SplitAsync(ranges.First(), cancellationToken: default);
 
                 IAsyncEnumerator<TryCatch<CrossFeedRangePage<ReadFeedPage, ReadFeedState>>> enumerator = this.CreateEnumerator(this.DocumentContainer);
-                HashSet<string> identifiers = new HashSet<string>();
+                List<string> identifiers = new List<string>();
                 int iteration = 0;
                 while (await enumerator.MoveNextAsync())
                 {
