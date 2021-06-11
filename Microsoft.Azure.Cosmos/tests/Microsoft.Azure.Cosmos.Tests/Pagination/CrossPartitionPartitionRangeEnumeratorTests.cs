@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Assert.AreEqual(1, createdEnumerators[1].GetNextPageAsyncCounter, "Second enumerator should be used once");
         }
 
-        // Validates that on a merge (split with 1 result) we do not create new child enumerators for the merge result
+        // Validates that on a split we create children enumerators and use them
         [TestMethod]
         public async Task OnSplitQueueNewEnumerators()
         {
