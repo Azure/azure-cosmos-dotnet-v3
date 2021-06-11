@@ -454,6 +454,35 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Compares this UInt128 to another instance of the UInt128 type using their byte arrays.
+        /// </summary>
+        /// <param name="other">The other instance to compare to.</param>
+        /// <returns>
+        /// A negative number if this instance is less than the other instance.
+        /// Zero if they are the same.
+        /// A positive number if this instance is greater than the other instance.
+        /// </returns>
+        public int CompareToUsingByteArray(UInt128 other)
+        {
+            byte[] thisByteArray = UInt128.ToByteArray(this);
+            byte[] otherByteArray = UInt128.ToByteArray(other);
+
+            for (int i = 0; i < 16; i++)
+            {
+                if (thisByteArray[i] < otherByteArray[i])
+                {
+                    return -1;
+                }
+                else if (thisByteArray[i] > otherByteArray[i])
+                {
+                    return 1;
+                }
+            }
+
+            return 0;
+        }
+
+        /// <summary>
         /// Returns whether this instance equals another object.
         /// </summary>
         /// <param name="obj">The object to compare to.</param>

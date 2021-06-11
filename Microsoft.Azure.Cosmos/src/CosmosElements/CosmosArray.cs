@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             UInt128 hash1 = DistinctHash.GetHash(this);
             UInt128 hash2 = DistinctHash.GetHash(cosmosArray);
-            return hash1.CompareTo(hash2);
+            return hash1.CompareToUsingByteArray(hash2);
         }
 
         public static CosmosArray Create(
