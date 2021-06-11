@@ -1873,6 +1873,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task ContainerRecreateScenarioGatewayTest()
+        {
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                        new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
+
+            Container createdContainer = (ContainerInlineCore)response;
+
+            CosmosClient client1 = TestCommon.CreateCosmosClient(useGateway: true);
+            CosmosClient client2 = TestCommon.CreateCosmosClient(useGateway: true);
+
+            Container container1 = client1.GetContainer(this.database.Id, createdContainer.Id);
+            Container container2 = client2.GetContainer(this.database.Id, createdContainer.Id);
+            Cosmos.Database database2 = client2.GetDatabase(this.database.Id);
+
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk2002", "id2002");
+            await container1.CreateItemAsync<ToDoActivity>(item);
+
+            await container2.DeleteContainerAsync();
+            await database2.CreateContainerAsync(createdContainer.Id, "/pk");
+
+            container2 = database2.GetContainer(this.Container.Id);
+            await container2.CreateItemAsync<ToDoActivity>(item);
+
+            // should not throw exception
+            await this.Container.ReadItemAsync<ToDoActivity>("id2002", new Cosmos.PartitionKey("pk2002"));
+        }
+
         [Ignore]
         [TestMethod]
         public async Task BatchPatchConditionTest()
