@@ -358,12 +358,15 @@ namespace Microsoft.Azure.Cosmos
                         NoOpTrace.Singleton);
                 }
 
-                partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(
-                    request: request,
-                    partitionKeyString: partitionKeyString,
-                    collectionCacheUptoDate: false,
-                    collection: collection,
-                    routingMap: collectionRoutingMap);
+                if (collectionRoutingMap != null)
+                {
+                    partitonKeyRange = AddressResolver.TryResolveServerPartitionByPartitionKey(
+                        request: request,
+                        partitionKeyString: partitionKeyString,
+                        collectionCacheUptoDate: false,
+                        collection: collection,
+                        routingMap: collectionRoutingMap);
+                }
             }
             else if (request.PartitionKeyRangeIdentity != null)
             {
