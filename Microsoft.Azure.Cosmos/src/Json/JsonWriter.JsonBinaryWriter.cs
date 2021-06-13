@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     abstract partial class JsonWriter : IJsonWriter
     {
+        internal bool EnableEncodedStrings { get; private set; }
+
         /// <summary>
         /// Executes the provided lambda and captures a copy of the written bytes for reuse.
         /// The lambda is executed at a field name, and should leave the reader in a state where
@@ -31,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Blitted bytes.</returns>
         public static PreblittedBinaryJsonScope CapturePreblittedBinaryJsonScope(Action<ITypedBinaryJsonWriter> scopeWriter)
         {
-            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter();
+            JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(initialCapacity: 256, serializeCount: false, enableEncodedStrings: false);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.IsPropertyExpected);
@@ -270,10 +272,13 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="serializeCount">Whether to serialize the count for object and array typemarkers.</param>
+            /// <param name="enableEncodedStrings">enable reference string encoding</param>
             public JsonBinaryWriter(
-                int initialCapacity = 256,
-                bool serializeCount = false)
+                int initialCapacity,
+                bool serializeCount,
+                bool enableEncodedStrings)
             {
+                this.EnableEncodedStrings = enableEncodedStrings;
                 this.binaryWriter = new JsonBinaryMemoryWriter(initialCapacity);
                 this.bufferedContexts = new Stack<ArrayAndObjectInfo>();
                 this.serializeCount = serializeCount;
@@ -827,20 +832,23 @@ namespace Microsoft.Azure.Cosmos.Json
                             throw new InvalidOperationException($"Unable to serialize a {nameof(JsonBinaryEncoding.MultiByteTypeMarker)} of length: {multiByteTypeMarker.Length}");
                     }
                 }
-                else if (isFieldName
+                else if (this.EnableEncodedStrings
+                    && isFieldName
                     && (utf8Span.Length >= MinReferenceStringLength)
                     && this.TryRegisterStringValue(utf8Span))
                 {
                     // Work is done in the check
                 }
-                else if (!isFieldName
+                else if (this.EnableEncodedStrings
+                    && !isFieldName
                     && (utf8Span.Length == JsonBinaryEncoding.GuidLength)
                     && JsonBinaryEncoding.TryEncodeGuidString(utf8Span.Span, this.binaryWriter.Cursor))
                 {
                     // Encoded value as guid string
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
                 }
-                else if (!isFieldName
+                else if (this.EnableEncodedStrings
+                    && !isFieldName
                     && (utf8Span.Length == JsonBinaryEncoding.GuidWithQuotesLength)
                     && (utf8Span.Span[0] == '"')
                     && (utf8Span.Span[JsonBinaryEncoding.GuidWithQuotesLength - 1] == '"')
@@ -851,13 +859,15 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Cursor[0] = JsonBinaryEncoding.TypeMarker.DoubleQuotedLowercaseGuidString;
                     this.binaryWriter.Position += JsonBinaryEncoding.EncodedGuidLength;
                 }
-                else if (!isFieldName
+                else if (this.EnableEncodedStrings
+                    && !isFieldName
                     && JsonBinaryEncoding.TryEncodeCompressedString(utf8Span.Span, this.binaryWriter.Cursor, out int bytesWritten))
                 {
                     // Encoded value as a compressed string
                     this.binaryWriter.Position += bytesWritten;
                 }
-                else if (!isFieldName
+                else if (this.EnableEncodedStrings
+                    && !isFieldName
                     && (utf8Span.Length >= MinReferenceStringLength)
                     && (utf8Span.Length <= MaxReferenceStringLength)
                     && this.TryRegisterStringValue(utf8Span))
