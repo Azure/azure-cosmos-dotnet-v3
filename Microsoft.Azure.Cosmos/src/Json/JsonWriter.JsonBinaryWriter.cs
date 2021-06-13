@@ -954,7 +954,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 else
                 {
                     this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset);
-                    this.binaryWriter.Write(hashAndIndex.index);
+                    this.binaryWriter.Write((int)hashAndIndex.index);
                 }
 
                 return true;

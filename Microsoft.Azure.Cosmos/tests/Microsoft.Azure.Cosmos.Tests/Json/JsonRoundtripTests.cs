@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 // <copyright file="JsonRoundTripsTests.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
@@ -392,6 +392,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void MsnCollectionTest()
         {
             this.RoundTripTestCuratedJson("MsnCollection.json");
+        }
+
+        [TestMethod]
+        [Owner("ndeshpan")]
+        public void LargeArrayBinaryJsonTest()
+        {
+            string json = System.IO.File.ReadAllText("TestJsons/Array32MB.json");
+            byte[] binaryJson = JsonTestUtils.ConvertTextToBinary(json);
+            IJsonNavigator navigator = JsonNavigator.Create(binaryJson);
+            int count = navigator.GetArrayItemCount(navigator.GetRootNode());
+            IJsonNavigatorNode node = navigator.GetArrayItemAt(navigator.GetRootNode(), count - 1);
+            string stringValue = navigator.GetStringValue(node);
+            Assert.AreEqual("string_two", stringValue);
         }
 
         [TestMethod]
