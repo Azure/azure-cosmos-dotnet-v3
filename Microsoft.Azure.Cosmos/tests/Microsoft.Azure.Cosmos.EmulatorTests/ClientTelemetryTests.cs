@@ -31,13 +31,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private Container container;
 
-        private ClientTelemetryInfo actualInfo;
-        private int counter = 0;
+        private List<ClientTelemetryInfo> actualInfo;
+       // private int counter = 0;
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.actualInfo = null;
-            this.counter = 0;
+            this.actualInfo = new List<ClientTelemetryInfo>();
+            //this.counter = 0;
 
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
@@ -53,14 +53,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetClientTelemetryEndpoint()))
                 {
                     HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-                    this.counter++;
-                    if (this.counter == 1)
-                    {
-                        string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            
+                    string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
-                        this.actualInfo = JsonConvert.DeserializeObject<ClientTelemetryInfo>(jsonObject);
-                    }
-
+                    this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryInfo>(jsonObject));
+    
                     return Task.FromResult(result);
                 }
                 else if (request.RequestUri.AbsoluteUri.Equals(ClientTelemetryOptions.GetVmMetadataUrl()))
@@ -123,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete an Item
             await this.container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            this.WaitAndAssert(14);
+            this.WaitAndAssert(12);
         }
 
         [TestMethod]
@@ -141,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
             }
-            this.WaitAndAssert(4);
+            this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -160,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
-            this.WaitAndAssert(4);
+            this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -194,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Delete an Item
             await this.container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            this.WaitAndAssert(14);
+            this.WaitAndAssert(12);
         }
 
         [TestMethod]
@@ -250,13 +247,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Task.Delay(milliseconds).Wait();
 
             Assert.IsNotNull(this.actualInfo);
-            Assert.AreEqual(expectedOperationCount, this.actualInfo.OperationInfo.Count);
-            Assert.AreEqual(2, this.actualInfo.SystemInfo.Count);
 
-            Assert.IsNotNull(this.actualInfo.HostEnvInfo);
-            Assert.IsNotNull(this.actualInfo.GlobalDatabaseAccountName);
-            Assert.IsNotNull(this.actualInfo.ApplicationRegion);
-            Assert.IsNotNull(this.actualInfo.TimeStamp);
+            List<ReportPayload> actualOperationList = new List<ReportPayload>();
+            List<ReportPayload> actualSystemInformation = new List<ReportPayload>();
+
+            // Asserting If basic client telemetry object is as expected
+            foreach (ClientTelemetryInfo telemetryInfo in this.actualInfo)
+            {
+                actualOperationList.AddRange(telemetryInfo.OperationInfo);
+                actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
+
+                Assert.AreEqual(2, telemetryInfo.SystemInfo.Count);
+
+                Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName);
+                Assert.IsNotNull(telemetryInfo.TimeStamp);
+            }
+            Assert.AreEqual(expectedOperationCount, actualOperationList.Count);
+
+            // Asserting If operation list is as expected
+            foreach (ReportPayload operation in actualOperationList)
+            {
+                Assert.IsNotNull(operation.Operation);
+                Assert.IsNotNull(operation.Resource);
+                Assert.IsNotNull(operation.ResponseSizeInBytes);
+                Assert.IsNotNull(operation.StatusCode);
+                Assert.IsNotNull(operation.Consistency);
+
+                Assert.IsNotNull(operation.MetricInfo);
+                Assert.IsNotNull(operation.MetricInfo.MetricsName);
+                Assert.IsNotNull(operation.MetricInfo.UnitName);
+                Assert.IsNotNull(operation.MetricInfo.Percentiles);
+                Assert.IsTrue(operation.MetricInfo.Count > 0);
+                Assert.IsTrue(operation.MetricInfo.Mean >= 0);
+                Assert.IsTrue(operation.MetricInfo.Max >= 0);
+                Assert.IsTrue(operation.MetricInfo.Min >= 0);
+            }
+
+            // Asserting If system information list is as expected
+            foreach (ReportPayload operation in actualSystemInformation)
+            {
+                Assert.IsNull(operation.Operation);
+                Assert.IsNull(operation.Resource);
+                Assert.IsNull(operation.ResponseSizeInBytes);
+                Assert.IsNull(operation.StatusCode);
+
+                Assert.IsNotNull(operation.MetricInfo);
+                Assert.IsNotNull(operation.MetricInfo.MetricsName);
+                Assert.IsNotNull(operation.MetricInfo.UnitName);
+                Assert.IsNotNull(operation.MetricInfo.Percentiles);
+                Assert.IsTrue(operation.MetricInfo.Count > 0);
+                Assert.IsTrue(operation.MetricInfo.Mean >= 0);
+                Assert.IsTrue(operation.MetricInfo.Max >= 0);
+                Assert.IsTrue(operation.MetricInfo.Min >= 0);
+            }
         }
 
         private static ItemBatchOperation CreateItem(string itemId)

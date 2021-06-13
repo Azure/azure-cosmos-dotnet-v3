@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Net;
@@ -34,27 +35,31 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private readonly CancellationTokenSource CancellationTokenSource;
-
         private readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
                                                         ClientTelemetryOptions.CpuMax,
                                                         ClientTelemetryOptions.CpuPrecision);
         private readonly LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
                          ClientTelemetryOptions.MemoryMax,
                          ClientTelemetryOptions.MemoryPrecision);
+
         private readonly string EndpointUrl;
-        private readonly TimeSpan ClientTelemetryScheduledTimeSpan;
+        private readonly TimeSpan ObservingWindow;
 
-        internal volatile ClientTelemetryInfo ClientTelemetryInfo;
+        private readonly ClientTelemetryInfo ClientTelemetryInfo;
 
-        internal DocumentClient documentClient;
-        internal CosmosHttpClient httpClient;
-        internal AuthorizationTokenProvider TokenProvider;
-        internal DiagnosticsHandlerHelper diagnosticsHelper;
+        private readonly DocumentClient documentClient;
+        private readonly CosmosHttpClient httpClient;
+        private readonly AuthorizationTokenProvider TokenProvider;
+        private readonly DiagnosticsHandlerHelper diagnosticsHelper;
+
+        private readonly CancellationTokenSource CancellationTokenSource;
 
         private bool isDisposed = false;
 
         private Task telemetryTask;
+
+        private ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
+            = new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
         internal ClientTelemetry(
             DocumentClient documentClient,
@@ -73,19 +78,19 @@ namespace Microsoft.Azure.Cosmos
                 userAgent: userAgent, 
                 connectionMode: connectionMode);
 
-            this.ClientTelemetryScheduledTimeSpan = ClientTelemetryOptions.GetScheduledTimeSpan();
+            this.EndpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
+            this.ObservingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
+
             this.httpClient = documentClient.httpClient;
             this.CancellationTokenSource = new CancellationTokenSource();
-
-            this.EndpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         }
 
         /// <summary>
         ///  Start telemetry Process which Calculate and Send telemetry Information (never ending task)
         /// </summary>
-        internal void Start()
+        internal void StartObserverTask()
         {
-            this.telemetryTask = Task.Run(this.CalculateAndSendTelemetryInformationAsync, this.CancellationTokenSource.Token);
+            this.telemetryTask = Task.Run(this.EnrichAndSendAsync, this.CancellationTokenSource.Token);
         }
 
         /// <summary>
@@ -160,9 +165,8 @@ namespace Microsoft.Azure.Cosmos
         ///  2. Load VM metedata information (one time at the time of initialization)
         ///  3. Calculate and Send telemetry Information to juno service (never ending task)/// </summary>
         /// <returns>Async Task</returns>
-        private async Task CalculateAndSendTelemetryInformationAsync()
+        private async Task EnrichAndSendAsync()
         {
-            Console.WriteLine("Background task started");
             try
             {
                 while (!this.CancellationTokenSource.IsCancellationRequested)
@@ -179,25 +183,17 @@ namespace Microsoft.Azure.Cosmos
                         await this.LoadAzureVmMetaDataAsync();
                     }
 
-                    Console.WriteLine("waiting started (" + this.ClientTelemetryScheduledTimeSpan + "):" + DateTime.UtcNow);
-                    await Task.Delay(this.ClientTelemetryScheduledTimeSpan, this.CancellationTokenSource.Token);
-                    Console.WriteLine("waiting ended:" + DateTime.UtcNow);
+                    await Task.Delay(this.ObservingWindow, this.CancellationTokenSource.Token);
 
                     this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
-                    Console.WriteLine("Recording System Information started");
                     this.RecordSystemUtilization();
-                    Console.WriteLine("Recording System Information ended");
-
-                    Console.WriteLine("sending data to juno");
                     await this.SendAsync();
                 }
-                Console.WriteLine("Background task ended");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Background task ended with exception " + ex.Message);
-                DefaultTrace.TraceError("Exception in CalculateAndSendTelemetryInformationAsync() : " + ex.Message);
+                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : " + ex.Message);
             }
        
         }
@@ -224,7 +220,6 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
-            Console.WriteLine("I am collecting");
             string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
 
             // If consistency level is not mentioned in request then take the sdk/account level
@@ -243,23 +238,18 @@ namespace Microsoft.Azure.Cosmos
                                             resource: resourceType,
                                             statusCode: (int)statusCode);
 
-            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.ClientTelemetryInfo
-                    .OperationInfoMap
+            (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(1,
                                                         ClientTelemetryOptions.RequestLatencyMaxMicroSec,
                                                         statusCode.IsSuccess() ?
                                                             ClientTelemetryOptions.RequestLatencySuccessPrecision :
                                                             ClientTelemetryOptions.RequestLatencyFailurePrecision),
-                         requestcharge: new LongConcurrentHistogram(1,
+                            requestcharge: new LongConcurrentHistogram(1,
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
             latency.RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
             requestcharge.RecordValue((long)requestCharge);
-
-            Console.WriteLine(this.ClientTelemetryInfo.OperationInfo.Count);
-
-            Console.WriteLine("Collection done");
         }
 
         /// <summary>
@@ -309,6 +299,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             this.cpuHistogram.RecordValue((long)cpuLoad.Value);
                         }
+
                         this.ClientTelemetryInfo.SystemInfo.Add(
                             new ReportPayload(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit)
                             .SetAggregators(this.cpuHistogram));
@@ -346,49 +337,51 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.EndpointUrl != null)
             {
-                Console.WriteLine("Start sending data to juno ");
-
-                string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo,
-                  new JsonSerializerSettings
-                  {
-                      NullValueHandling = NullValueHandling.Ignore
-                  });
-                // Reset everything to have new data
-                this.Reset();
-
-                Uri endpoint = new Uri(this.EndpointUrl);
-                using HttpRequestMessage request = new HttpRequestMessage
-                {
-                    Method = HttpMethod.Post,
-                    RequestUri = endpoint,
-                    Content = new StringContent(json, Encoding.UTF8, "application/json")
-                };
-
-                async ValueTask<HttpRequestMessage> CreateRequestMessage()
-                {
-                    INameValueCollection headersCollection = new NameValueCollectionWrapperFactory().CreateNewNameValueCollection();
-                    await this.TokenProvider.AddAuthorizationHeaderAsync(
-                           headersCollection,
-                           endpoint,
-                           "POST",
-                           AuthorizationTokenType.PrimaryMasterKey);
-
-                    foreach (string key in headersCollection.AllKeys())
-                    {
-                        request.Headers.Add(key, headersCollection[key]);
-                    }
-
-                    request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, this.ClientTelemetryInfo.GlobalDatabaseAccountName);
-                    String envName = ClientTelemetryOptions.GetEnvironmentName();
-                    if (!string.IsNullOrEmpty(envName))
-                    {
-                        request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
-                    }
-                    return request;
-                }
-
                 try
                 {
+                    ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
+                                            = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                    
+                    this.ClientTelemetryInfo.OperationInfo = ToListWithMetricsInfo(operationInfoSnapshot);
+
+                    string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo,
+                      new JsonSerializerSettings
+                      {
+                          NullValueHandling = NullValueHandling.Ignore
+                      });
+
+                    Uri endpoint = new Uri(this.EndpointUrl);
+                    using HttpRequestMessage request = new HttpRequestMessage
+                    {
+                        Method = HttpMethod.Post,
+                        RequestUri = endpoint,
+                        Content = new StringContent(json, Encoding.UTF8, "application/json")
+                    };
+
+                    async ValueTask<HttpRequestMessage> CreateRequestMessage()
+                    {
+                        INameValueCollection headersCollection = new NameValueCollectionWrapperFactory().CreateNewNameValueCollection();
+                        await this.TokenProvider.AddAuthorizationHeaderAsync(
+                               headersCollection,
+                               endpoint,
+                               "POST",
+                               AuthorizationTokenType.PrimaryMasterKey);
+
+                        foreach (string key in headersCollection.AllKeys())
+                        {
+                            request.Headers.Add(key, headersCollection[key]);
+                        }
+
+                        request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, this.ClientTelemetryInfo.GlobalDatabaseAccountName);
+                        String envName = ClientTelemetryOptions.GetEnvironmentName();
+                        if (!string.IsNullOrEmpty(envName))
+                        {
+                            request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
+                        }
+
+                        return request;
+                    }
+
                     using HttpResponseMessage response = await this.httpClient.SendHttpAsync(CreateRequestMessage,
                                                         ResourceType.Telemetry,
                                                         HttpTimeoutPolicyDefault.Instance,
@@ -399,11 +392,17 @@ namespace Microsoft.Azure.Cosmos
                     {
                         DefaultTrace.TraceError(response.ReasonPhrase);
                     }
+
                 }
                 catch (Exception ex)
                 {
                     DefaultTrace.TraceError(ex.Message);
                 }
+                finally
+                {
+                    this.Reset();
+                }
+
             }
             else
             {
@@ -418,7 +417,8 @@ namespace Microsoft.Azure.Cosmos
         {
             this.cpuHistogram.Reset();
             this.memoryHistogram.Reset();
-            this.ClientTelemetryInfo.Clear();
+
+            this.ClientTelemetryInfo.SystemInfo.Clear();
         }
 
         public void Dispose()
@@ -440,14 +440,34 @@ namespace Microsoft.Azure.Cosmos
                     this.CancellationTokenSource.Dispose();
 
                     this.telemetryTask = null;
-
-                    this.Reset();
                 }
 
                 this.isDisposed = true;
             }
         }
 
-        internal bool IsTelemetryTaskRunning => this.telemetryTask.Status == TaskStatus.Running;
+        /// <summary>
+        /// Convert map with operation information to list of operations along with request latency and request charge metrics
+        /// </summary>
+        /// <param name="metrics"></param>
+        /// <returns>Collection of ReportPayload</returns>
+        internal static List<ReportPayload> ToListWithMetricsInfo(IDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        {
+            List<ReportPayload> payloadWithMetricInformation = new List<ReportPayload>();
+            foreach (KeyValuePair<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
+            {
+                ReportPayload payloadForLatency = entry.Key;
+                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit)
+                    .SetAggregators(entry.Value.latency);
+                payloadWithMetricInformation.Add(payloadForLatency);
+
+                ReportPayload payloadForRequestCharge = payloadForLatency.Copy();
+                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit)
+                    .SetAggregators(entry.Value.requestcharge);
+                payloadWithMetricInformation.Add(payloadForRequestCharge);
+            }
+
+            return payloadWithMetricInformation;
+        }
     }
 }

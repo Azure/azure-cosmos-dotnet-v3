@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
     using Moq;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using System.Threading;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -42,11 +44,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             AzureVMMetadata metadata = await ClientTelemetryOptions.ProcessResponseAsync(result);
 
-            Assert.AreEqual(metadata.Location, "eastus");
-            Assert.AreEqual(metadata.SKU, "18.04-LTS");
-            Assert.AreEqual(metadata.AzEnvironment, "AzurePublicCloud");
-            Assert.AreEqual(metadata.OSType, "Linux");
-            Assert.AreEqual(metadata.VMSize, "Standard_D2s_v3");
+            Assert.AreEqual("eastus", metadata.Location);
+            Assert.AreEqual("18.04-LTS", metadata.SKU);
+            Assert.AreEqual("AzurePublicCloud", metadata.AzEnvironment);
+            Assert.AreEqual("Linux", metadata.OSType);
+            Assert.AreEqual("Standard_D2s_v3", metadata.VMSize);
         }
 
     }

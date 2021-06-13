@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos
 
         public ClientPipelineBuilder(
             CosmosClient client,
-            DocumentClient documentClient,
             ConsistencyLevel? requestedClientConsistencyLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
             ClientTelemetry telemetry)

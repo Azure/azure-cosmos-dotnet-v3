@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public TelemetryHandler(ClientTelemetry telemetry)
         {
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
-            telemetry.Start();
+            telemetry.StartObserverTask();
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                           operationType: request.OperationType,
                           resourceType: request.ResourceType,
                           consistencyLevel: this.GetConsistencyLevel(request),
-                          requestCharge: request.Headers.RequestCharge);
+                          requestCharge: response.Headers.RequestCharge);
             }
             return response;
         }

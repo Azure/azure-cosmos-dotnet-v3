@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         {
             this.Compute = compute;
         }
+
         internal string Location => this.Compute.Location;
         internal string SKU => this.Compute.SKU;
         internal string AzEnvironment => this.Compute.AzEnvironment;

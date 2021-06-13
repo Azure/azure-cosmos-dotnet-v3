@@ -95,6 +95,10 @@ namespace Microsoft.Azure.Cosmos
 
         internal static async Task<AzureVMMetadata> ProcessResponseAsync(HttpResponseMessage httpResponseMessage)
         {
+            if (httpResponseMessage.Content == null)
+            {
+                return null;
+            }
             string jsonVmInfo = await httpResponseMessage.Content.ReadAsStringAsync();
             return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
         }

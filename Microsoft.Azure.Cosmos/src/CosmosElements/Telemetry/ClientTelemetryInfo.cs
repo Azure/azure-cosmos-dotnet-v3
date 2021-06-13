@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Newtonsoft.Json;
-    
+
     [Serializable]
     internal sealed class ClientTelemetryInfo
     {
@@ -26,28 +26,24 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         [JsonProperty(PropertyName = "connectionMode")]
         private string ConnectionMode { get; }
         [JsonProperty(PropertyName = "globalDatabaseAccountName")]
-        internal string GlobalDatabaseAccountName { get; set;  }
+        internal string GlobalDatabaseAccountName { get; set; }
         [JsonProperty(PropertyName = "applicationRegion")]
         internal string ApplicationRegion { get; set; }
         [JsonProperty(PropertyName = "hostEnvInfo")]
         internal string HostEnvInfo { get; set; }
         [JsonProperty(PropertyName = "acceleratedNetworking")]
-        internal bool? AcceleratedNetworking { private get; set; }
+        private bool? AcceleratedNetworking { get; set; }
         [JsonProperty(PropertyName = "systemInfo")]
         internal List<ReportPayload> SystemInfo { get; set; }
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        internal List<ReportPayload> CacheRefreshInfo { get; set; }
+        private List<ReportPayload> CacheRefreshInfo { get; set; }
 
         [JsonProperty(PropertyName = "operationInfo")]
-        internal List<ReportPayload> OperationInfo
-        {
-            get => new List<ReportPayload>(this.GetWithAggregation(this.OperationInfoMap));
-            set => this.OperationInfoMap = this.SetOperationMapFromList(value);
-        }
-        
+        internal List<ReportPayload> OperationInfo { get; set; }
+
         [JsonIgnore]
-        internal ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> OperationInfoMap { get; set; }
+        private readonly ConnectionMode ConnectionModeEnum;
 
         internal ClientTelemetryInfo(string clientId,
                                    string processId,
@@ -57,21 +53,21 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
+            this.ConnectionModeEnum = connectionMode;
             this.ConnectionMode = connectionMode.ToString();
             this.SystemInfo = new List<ReportPayload>();
-            this.OperationInfoMap = new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
         }
 
-        public ClientTelemetryInfo(string timeStamp, 
-            string clientId, 
-            string processId, 
-            string userAgent, 
-            string connectionMode, 
-            string globalDatabaseAccountName, 
-            string applicationRegion, 
-            string hostEnvInfo, 
-            bool? acceleratedNetworking, 
-            List<ReportPayload> systemInfo, 
+        public ClientTelemetryInfo(string timeStamp,
+            string clientId,
+            string processId,
+            string userAgent,
+            string connectionMode,
+            string globalDatabaseAccountName,
+            string applicationRegion,
+            string hostEnvInfo,
+            bool? acceleratedNetworking,
+            List<ReportPayload> systemInfo,
             List<ReportPayload> cacheRefreshInfo,
             List<ReportPayload> operationInfo)
         {
@@ -87,54 +83,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.SystemInfo = systemInfo;
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
-        }
-
-        /// <summary>
-        /// This function will be called at the time of serialization to calculate the agrregated values.
-        /// </summary>
-        /// <param name="metrics"></param>
-        /// <returns>Collection of ReportPayload</returns>
-        private ICollection<ReportPayload> GetWithAggregation(IDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
-        {
-            List<ReportPayload> payloadWithMetricInformation = new List<ReportPayload>();
-            foreach (KeyValuePair<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
-            {
-                ReportPayload payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit)
-                    .SetAggregators(entry.Value.latency);
-                payloadWithMetricInformation.Add(payloadForLatency);
-
-                ReportPayload payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit)
-                    .SetAggregators(entry.Value.requestcharge);
-                payloadWithMetricInformation.Add(payloadForRequestCharge);
-            }
-
-            return payloadWithMetricInformation;
-        }
-
-        /// <summary>
-        /// Required by Tests while DeSerializing the Json
-        /// </summary>
-        /// <param name="payloadList"></param>
-        /// <returns>Return Map with payload as keys and null tuple as values</returns>
-        private ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> SetOperationMapFromList(List<ReportPayload> payloadList)
-        {
-            ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap = new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
-            if (payloadList != null)
-            {
-                foreach (ReportPayload payload in payloadList)
-                {
-                    operationInfoMap.TryAdd(payload, (null, null));
-                }
-            }
-            return operationInfoMap;
-        }
-
-        internal void Clear()
-        {
-            this.OperationInfoMap.Clear();
-            this.SystemInfo.Clear();
         }
     }
 }
