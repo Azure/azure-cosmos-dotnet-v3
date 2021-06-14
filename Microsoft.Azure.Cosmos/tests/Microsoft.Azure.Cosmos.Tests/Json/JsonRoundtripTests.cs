@@ -398,7 +398,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("ndeshpan")]
         public void LargeArrayBinaryJsonTest()
         {
-            string json = System.IO.File.ReadAllText("TestJsons/Array32MB.json");
+            StringBuilder builder = new StringBuilder((1 << 24) + 50);
+            builder.Append('[');
+            for (int x = 1 << 24; x < (1 << 24) + 3355450; ++x)
+            {
+                builder.Append(x);
+                builder.Append(',');
+            }
+            builder.Append("\"string_one\"");
+            builder.Append(',');
+            builder.Append("\"string_two\"");
+            builder.Append(',');
+            builder.Append("\"string_two\"");
+            builder.Append(']');
+
+            string json = builder.ToString();
             byte[] binaryJson = JsonTestUtils.ConvertTextToBinary(json);
             IJsonNavigator navigator = JsonNavigator.Create(binaryJson);
             int count = navigator.GetArrayItemCount(navigator.GetRootNode());
