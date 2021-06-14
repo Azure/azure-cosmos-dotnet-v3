@@ -45,6 +45,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2398](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2398) Patch : Adds TrySerializeValueParameter and makes PatchOperation<T> internal since it is not used in any public API
 - [#2331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2331) ChangeFeedProcessor: Adds support for manual checkpoint, context, and stream
 
+### <a name="3.18.1-preview"/> [3.18.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.1-preview) - 2021-06-14
+
+#### Fixed
+- [#2510](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2510) Query: Fixes InvalidOperationException on merge to a single partition
+- [#2531](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2531) Query: Fixes handling of pipeline execution on partition merge
+
 ### <a name="3.18.0"/> [3.18.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.18.0) - 2021-04-26
 
 #### Added
