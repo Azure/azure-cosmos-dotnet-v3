@@ -174,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void VerifyDefaultUserAgentContainsRegionConfig()
         {
             UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer();
-            Assert.IsTrue(userAgentContainer.UserAgent.Contains("|N|"));
+            Assert.IsTrue(userAgentContainer.UserAgent.Contains("|NS|"));
         }
 
         [TestMethod]
