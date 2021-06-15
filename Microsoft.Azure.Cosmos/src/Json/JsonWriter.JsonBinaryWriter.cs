@@ -951,10 +951,14 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset);
                     this.binaryWriter.Write((JsonBinaryEncoding.UInt24)(int)hashAndIndex.index);
                 }
-                else
+                else if (sharedString.MaxOffset <= int.MaxValue)
                 {
                     this.binaryWriter.Write(JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset);
-                    this.binaryWriter.Write(hashAndIndex.index);
+                    this.binaryWriter.Write((int)hashAndIndex.index);
+                }
+                else
+                {
+                    return false;
                 }
 
                 return true;
