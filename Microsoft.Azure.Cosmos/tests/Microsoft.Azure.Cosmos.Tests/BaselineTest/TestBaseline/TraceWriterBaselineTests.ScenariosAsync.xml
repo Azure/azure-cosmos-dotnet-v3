@@ -21,7 +21,7 @@
         }
     }
 
-    Assert.AreEqual(numChildren, rootTrace.Children.Count);
+    Assert.AreEqual(numChildren, rootTrace.Children.Count());
 ]]></Setup>
     </Input>
     <Output>
@@ -1367,7 +1367,7 @@
         }
     }
 
-    Assert.AreEqual(numChildren, rootTrace.Children.Count);
+    Assert.AreEqual(numChildren, rootTrace.Children.Count());
 ]]></Setup>
     </Input>
     <Output>
@@ -2267,7 +2267,7 @@
         }
     }
 
-    Assert.AreEqual(numChildren, rootTrace.Children.Count);
+    Assert.AreEqual(numChildren, rootTrace.Children.Count());
 ]]></Setup>
     </Input>
     <Output>
