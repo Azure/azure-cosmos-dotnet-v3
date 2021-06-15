@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos
 
         public UserAgentContainer(
             string features = null,
-            string regionConfiguration = "N",
+            string regionConfiguration = "NS",
             string suffix = null) 
                : base()
         {
