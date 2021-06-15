@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -120,7 +121,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosContainerSettingsTests.AssertSerializedPayloads(containerSettings, dc);
         }
 
-#if INTERNAL
         [TestMethod]
         public void ValidateIncludedPathSerialization()
         {
@@ -144,9 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 StreamReader reader = new StreamReader(stream);
                 string content = reader.ReadToEnd();
 
-                System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(
-                    content,
-                    "\"includedPaths\":\\[(.+?)\\],\"excludedPaths\"");
+                Match match = Regex.Match(content, "\"includedPaths\":\\[(.+?)\\],\"excludedPaths\"");
                 Assert.IsTrue(match.Success, "IncludedPaths not found in serialized content");
 
                 // verify IncludedPath ignores null IsFullIndex
@@ -166,7 +164,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue((bool)containerSettings.IndexingPolicy.IncludedPaths[1].IsFullIndex, "listprop IsFullIndex is not set to true");
             }
         }
-#endif
 
         private static string SerializeDocumentCollection(DocumentCollection collection)
         {

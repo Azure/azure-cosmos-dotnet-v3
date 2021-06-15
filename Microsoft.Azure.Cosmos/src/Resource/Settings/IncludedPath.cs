@@ -35,12 +35,10 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.Indexes)]
         internal Collection<Index> Indexes { get; set; } = new Collection<Index>();
 
-#if INTERNAL
         /// <summary>
         /// Gets or sets whether this is a full index used for collection types.
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.IsFullIndex, NullValueHandling = NullValueHandling.Ignore)]
-        public bool? IsFullIndex { get; set; }
-#endif
+        internal bool? IsFullIndex { get; set; }
     }
 }
