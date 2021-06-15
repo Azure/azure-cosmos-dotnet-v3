@@ -9,19 +9,18 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Runtime.CompilerServices;
     using System.Text;
-    using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
 
     [TestClass]
     public class GlobalPartitionEndpointManagerTests
     {
         [TestMethod]
+        [Timeout(10000)]
         public async Task TestWriteForbiddenScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
@@ -69,44 +68,46 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            using CosmosClient customClient = new CosmosClient(
+            using (CosmosClient customClient = new CosmosClient(
                 globalEndpoint,
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                cosmosClientOptions);
-
-            Container container = customClient.GetContainer(databaseName, containerName);
-
-            ToDoActivity toDoActivity = new ToDoActivity()
+                cosmosClientOptions))
             {
-                Id = "TestItem",
-                Pk = "TestPk"
-            };
+                Container container = customClient.GetContainer(databaseName, containerName);
 
-            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            mockTransport.VerifyAll();
-            mockHttpHandler.VerifyAll();
+                ToDoActivity toDoActivity = new ToDoActivity()
+                {
+                    Id = "TestItem",
+                    Pk = "TestPk"
+                };
 
-            // Clears all the setups. No network calls should be done on the next operation.
-            mockHttpHandler.Reset();
-            mockTransport.Reset();
-            mockTransport.Setup(x => x.Dispose());
+                ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                mockTransport.VerifyAll();
+                mockHttpHandler.VerifyAll();
 
-            MockSetupsHelper.SetupCreateItemResponse(
-                mockTransport,
-                secondaryRegionPrimaryReplicaUri);
+                // Clears all the setups. No network calls should be done on the next operation.
+                mockHttpHandler.Reset();
+                mockTransport.Reset();
+                mockTransport.Setup(x => x.Dispose());
 
-            ToDoActivity toDoActivity2 = new ToDoActivity()
-            {
-                Id = "TestItem2",
-                Pk = "TestPk"
-            };
+                MockSetupsHelper.SetupCreateItemResponse(
+                    mockTransport,
+                    secondaryRegionPrimaryReplicaUri);
 
-            response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                ToDoActivity toDoActivity2 = new ToDoActivity()
+                {
+                    Id = "TestItem2",
+                    Pk = "TestPk"
+                };
+
+                response = await container.CreateItemAsync(toDoActivity2, new Cosmos.PartitionKey(toDoActivity2.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
         }
 
         [TestMethod]
+        [Timeout(10000)]
         public async Task TestServiceUnavailableExceptionScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
@@ -121,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 out TransportAddressUri primaryRegionprimaryReplicaUri);
 
             Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
-            
+
             MockSetupsHelper.SetupServiceUnavailableException(
                 mockTransport,
                 primaryRegionprimaryReplicaUri);
@@ -154,10 +155,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-           using CosmosClient customClient = new CosmosClient(
-                globalEndpoint,
-                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                cosmosClientOptions);
+            using CosmosClient customClient = new CosmosClient(
+                 globalEndpoint,
+                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                 cosmosClientOptions);
 
             Container container = customClient.GetContainer(databaseName, containerName);
 
@@ -203,6 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Timeout(10000)]
         public async Task TestRequestTimeoutExceptionScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
@@ -307,9 +309,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             out ResourceId containerResourceId,
             out Mock<IHttpHandler> mockHttpHandler,
             out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
-            out TransportAddressUri primaryRegionprimaryReplicaUri)
+            out TransportAddressUri primaryRegionprimaryReplicaUri,
+            [CallerMemberName] string accountName = nameof(GlobalPartitionEndpointManagerTests))
         {
-            string accountName = "testAccount";
             string primaryRegionNameForUri = "eastus";
             secondaryRegionNameForUri = "westus";
             globalEndpoint = $"https://{accountName}.documents.azure.com:443/";

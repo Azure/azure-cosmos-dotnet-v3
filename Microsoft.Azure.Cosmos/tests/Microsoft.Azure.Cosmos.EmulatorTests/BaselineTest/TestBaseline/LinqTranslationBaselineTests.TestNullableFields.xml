@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root["NullableField"] = 5) ]]></SqlQuery>
+WHERE (root["NullableField"] = 5)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -20,7 +20,7 @@ WHERE (root["NullableField"] = 5) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (IS_DEFINED(root["NullableField"]) AND (root["NullableField"] = 5)) ]]></SqlQuery>
+WHERE (IS_DEFINED(root["NullableField"]) AND (root["NullableField"] = 5))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -32,7 +32,7 @@ WHERE (IS_DEFINED(root["NullableField"]) AND (root["NullableField"] = 5)) ]]></S
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE IS_DEFINED(root["NullableField"]) ]]></SqlQuery>
+WHERE IS_DEFINED(root["NullableField"])]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -44,7 +44,7 @@ WHERE IS_DEFINED(root["NullableField"]) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (IS_DEFINED(root["NullableField"]) = true) ]]></SqlQuery>
+WHERE (IS_DEFINED(root["NullableField"]) = true)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -56,7 +56,7 @@ WHERE (IS_DEFINED(root["NullableField"]) = true) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (IS_DEFINED(root["NullableField"]) = false) ]]></SqlQuery>
+WHERE (IS_DEFINED(root["NullableField"]) = false)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -68,7 +68,7 @@ WHERE (IS_DEFINED(root["NullableField"]) = false) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (NOT IS_DEFINED(root["NullableField"])) ]]></SqlQuery>
+WHERE (NOT IS_DEFINED(root["NullableField"]))]]></SqlQuery>
     </Output>
   </Result>
 </Results>

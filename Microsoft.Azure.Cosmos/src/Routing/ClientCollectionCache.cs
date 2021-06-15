@@ -19,18 +19,13 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class ClientCollectionCache : CollectionCache
     {
         private readonly IStoreModel storeModel;
-        private readonly IAuthorizationTokenProvider tokenProvider;
+        private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly IRetryPolicyFactory retryPolicy;
         private readonly ISessionContainer sessionContainer;
 
-        public ClientCollectionCache(ISessionContainer sessionContainer, IStoreModel storeModel, IAuthorizationTokenProvider tokenProvider, IRetryPolicyFactory retryPolicy)
+        public ClientCollectionCache(ISessionContainer sessionContainer, IStoreModel storeModel, ICosmosAuthorizationTokenProvider tokenProvider, IRetryPolicyFactory retryPolicy)
         {
-            if (storeModel == null)
-            {
-                throw new ArgumentNullException("storeModel");
-            }
-
-            this.storeModel = storeModel;
+            this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;
             this.retryPolicy = retryPolicy;
             this.sessionContainer = sessionContainer;
@@ -89,21 +84,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                         childTrace.AddDatum("Client Side Request Stats", request.RequestContext.ClientRequestStatistics);
                     }
 
-                    (string authorizationToken, string payload) = await this.tokenProvider.GetUserAuthorizationAsync(
+                    string authorizationToken = await this.tokenProvider.GetUserAuthorizationTokenAsync(
                         request.ResourceAddress,
                         PathsHelper.GetResourcePath(request.ResourceType),
                         HttpConstants.HttpMethods.Get,
                         request.Headers,
-                        AuthorizationTokenType.PrimaryMasterKey);
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        childTrace);
 
                     request.Headers[HttpConstants.HttpHeaders.Authorization] = authorizationToken;
 
                     using (new ActivityScope(Guid.NewGuid()))
                     {
-                        if (retryPolicyInstance != null)
-                        {
-                            retryPolicyInstance.OnBeforeSendRequest(request);
-                        }
+                        retryPolicyInstance?.OnBeforeSendRequest(request);
 
                         try
                         {
