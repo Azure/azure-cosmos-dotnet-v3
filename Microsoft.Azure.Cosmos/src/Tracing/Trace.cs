@@ -77,7 +77,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void Dispose()
         {
-            this.endTick = Trace.stopwatch.ElapsedTicks;
+            if (!this.endTick.HasValue)
+            {
+                this.endTick = Trace.stopwatch.ElapsedTicks;
+            }
         }
 
         public ITrace StartChild(
