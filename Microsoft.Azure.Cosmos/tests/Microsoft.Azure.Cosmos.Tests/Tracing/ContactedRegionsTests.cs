@@ -6,18 +6,32 @@
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class ContactedRegionsTests
     {
         [TestMethod]
-        public void ContactedRegionsTest()
+        public void ContactedRegionsWithNameTest()
         {
             CosmosDiagnostics diagnostics = new CosmosTraceDiagnostics(this.CreateTestTraceTree());
             IReadOnlyList<(string, Uri)> regionsContacted = diagnostics.GetContactedRegions();
             Assert.IsNotNull(regionsContacted);
             Assert.AreEqual(regionsContacted.Count, 4);
+        }
+
+        [TestMethod]
+        public void ContactedRegionsWithoutNameTest()
+        {
+            ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 0);
+
+            clientSideRequestStatistics.RegionsContactedWithName.Add(("WestUs", new Uri("http://someUri1.com")));
+            Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 1);
+
+            clientSideRequestStatistics.RegionsContactedWithName.Add(("EastUs", new Uri("http://someUri2.com")));
+            Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 2);
         }
 
         private ITrace CreateTestTraceTree()
