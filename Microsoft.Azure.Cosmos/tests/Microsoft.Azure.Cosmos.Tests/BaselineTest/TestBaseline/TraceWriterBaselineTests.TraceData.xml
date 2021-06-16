@@ -653,14 +653,14 @@
             Http Response Statistics
               HttpResponse
                 RequestStartTime: 0001-01-01T00:00:00.0000000
-                RequestEndTime: 9999-12-31T23:59:59.9999999
+                DurationInMs: 315537897600000.00
                 RequestUri: http://someuri1.com/
                 ResourceType: Document
                 HttpMethod: GET
                 StatusCode: OK
               HttpResponse
                 RequestStartTime: 0001-01-01T00:00:00.0000000
-                RequestEndTime: 9999-12-31T23:59:59.9999999
+                DurationInMs: 315537897600000.00
                 RequestUri: http://someuri1.com/
                 ResourceType: Document
                 HttpMethod: GET
@@ -689,7 +689,7 @@
       "HttpResponseStats": [
         {
           "StartTimeUTC": "0001-01-01T00:00:00",
-          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "DurationInMs": 315537897600000,
           "RequestUri": "http://someuri1.com/",
           "ResourceType": "Document",
           "HttpMethod": "GET",
@@ -698,7 +698,7 @@
         },
         {
           "StartTimeUTC": "0001-01-01T00:00:00",
-          "EndTimeUTC": "9999-12-31T23:59:59.9999999",
+          "DurationInMs": 315537897600000,
           "RequestUri": "http://someuri1.com/",
           "ResourceType": "Document",
           "HttpMethod": "GET",
