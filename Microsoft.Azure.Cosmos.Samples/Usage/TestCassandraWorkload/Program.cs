@@ -325,8 +325,14 @@
 
             Console.WriteLine($"Creating a {throughputToProvision} RU/s {(isAutoScale ? "auto-scale" : "manual throughput")} table...");
 
-            // todo: autoscale, shouldIndexAllProperties
-            session.Execute("CREATE TABLE " + tableName + "(pk text, ck text, other text, primary key(pk, ck)) WITH cosmosdb_provisioned_throughput = " + throughputToProvision);
+            // todo: shouldIndexAllProperties
+            string throughputToken = "cosmosdb_provisioned_throughput"; 
+            if(isAutoScale)
+            {
+                throughputToken = "cosmosdb_autoscale_max_throughput";
+            }
+
+            session.Execute("CREATE TABLE " + tableName + "(pk text, ck text, other text, primary key(pk, ck)) WITH " + throughputToken + " = " + throughputToProvision);
         }
 
         private static int GetConfig(IConfigurationRoot iConfigurationRoot, string configName, int defaultValue)
