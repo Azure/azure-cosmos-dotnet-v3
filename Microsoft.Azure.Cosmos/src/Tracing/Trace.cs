@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.data = new Lazy<Dictionary<string, object>>(() => new Dictionary<string, object>());
-            this.startTick = Trace.stopwatch.ElapsedTicks;
+            this.startTick = Trace.stopwatch.Elapsed.Ticks;
         }
 
         public string Name { get; }
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public DateTime StartTime { get; }
 
-        public TimeSpan Duration => new TimeSpan((this.endTick ?? Trace.stopwatch.ElapsedTicks) - this.startTick);
+        public TimeSpan Duration => new TimeSpan((this.endTick ?? Trace.stopwatch.Elapsed.Ticks) - this.startTick);
 
         public TraceLevel Level { get; }
 
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (!this.endTick.HasValue)
             {
-                this.endTick = Trace.stopwatch.ElapsedTicks;
+                this.endTick = Trace.stopwatch.Elapsed.Ticks;
             }
         }
 

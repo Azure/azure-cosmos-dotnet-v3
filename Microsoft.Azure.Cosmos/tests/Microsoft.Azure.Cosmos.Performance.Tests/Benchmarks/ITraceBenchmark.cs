@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     {
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
-        public void OptimizedITrace()
+        public void CreateITrace()
         {
             this.CreateITraceTree();
         }
