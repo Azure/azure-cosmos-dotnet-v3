@@ -1,10 +1,14 @@
 ﻿// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
+
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
 
+    /// <summary>
+    /// Compare UInt128's by least significant byte to most significant byte.
+    /// </summary>
     internal sealed class BinaryComparer : IComparer<UInt128>
     {
         public static readonly BinaryComparer Singleton = new BinaryComparer();
