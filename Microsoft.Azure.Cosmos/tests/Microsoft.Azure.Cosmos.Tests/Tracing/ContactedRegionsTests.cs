@@ -27,11 +27,15 @@
             ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
             Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 0);
 
-            clientSideRequestStatistics.RegionsContactedWithName.Add(("WestUs", new Uri("http://someUri1.com")));
+            Uri uri1 = new Uri("http://someUri1.com");
+            clientSideRequestStatistics.RegionsContactedWithName.Add(("WestUs", uri1));
             Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 1);
+            Assert.IsTrue(clientSideRequestStatistics.RegionsContacted.Contains(uri1));
 
-            clientSideRequestStatistics.RegionsContactedWithName.Add(("EastUs", new Uri("http://someUri2.com")));
+            Uri uri2 = new Uri("http://someUri2.com");
+            clientSideRequestStatistics.RegionsContactedWithName.Add(("EastUs", uri2));
             Assert.AreEqual(clientSideRequestStatistics.RegionsContacted.Count, 2);
+            Assert.IsTrue(clientSideRequestStatistics.RegionsContacted.Contains(uri2));
         }
 
         private ITrace CreateTestTraceTree()

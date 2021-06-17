@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private long? lastStartRequestTimestamp;
         private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
         private bool received429ResponseSinceLastStartRequest = false;
-        private HashSet<Uri> contactedUris;
 
         public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
         {
@@ -77,21 +76,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             get
             {
-                if (this.contactedUris == null)
+                HashSet<Uri> regionContacted = new HashSet<Uri>();
+                foreach ((string _, Uri uriContacted) in this.RegionsContactedWithName)
                 {
-                    this.contactedUris = new HashSet<Uri>();
+                    regionContacted.Add(uriContacted);
                 }
-
-                if (this.contactedUris.Count != this.RegionsContactedWithName.Count)
-                {
-                    this.contactedUris.Clear();
-                    foreach ((string _, Uri uriContacted) in this.RegionsContactedWithName)
-                    {
-                        this.contactedUris.Add(uriContacted);
-                    }
-                }
-
-                return this.contactedUris;
+                return regionContacted;
             }
         }
 
