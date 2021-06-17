@@ -72,7 +72,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public HashSet<Uri> FailedReplicas { get; }
 
-        public HashSet<Uri> RegionsContacted { get; }
+        public HashSet<Uri> RegionsContacted
+        {
+            get
+            {
+                HashSet<Uri> regionContacted = new HashSet<Uri>();
+                foreach ((string _, Uri uriContacted) in this.RegionsContactedWithName)
+                {
+                    regionContacted.Add(uriContacted);
+                }
+                return regionContacted;
+            }
+        }
 
         public HashSet<(string, Uri)> RegionsContactedWithName { get; }
 
