@@ -22,12 +22,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
 
         [JsonProperty(PropertyName = "location")]
         internal string Location { get; }
+
         [JsonProperty(PropertyName = "sku")]
         internal string SKU { get; }
+
         [JsonProperty(PropertyName = "azEnvironment")]
         internal string AzEnvironment { get; }
+
         [JsonProperty(PropertyName = "osType")]
         internal string OSType { get; }
+
         [JsonProperty(PropertyName = "vmSize")]
         internal string VMSize { get; }
     }

@@ -50,6 +50,11 @@ namespace CosmosCTL
 
                     logger.LogInformation("Initialization completed.");
 
+#if PREVIEW
+                    if(client.ClientOptions.EnableClientTelemetry) {
+                        logger.LogInformation("Telemetry is enabled.");
+                    }
+#endif
                     List<Task> tasks = new List<Task>
                     {
                         scenario.RunAsync(

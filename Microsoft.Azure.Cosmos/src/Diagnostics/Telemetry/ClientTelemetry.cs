@@ -42,7 +42,8 @@ namespace Microsoft.Azure.Cosmos
                          ClientTelemetryOptions.MemoryMax,
                          ClientTelemetryOptions.MemoryPrecision);
 
-        private readonly string EndpointUrl;
+        private readonly Uri EndpointUrl;
+        private readonly Uri VmMetadataEndpointUrl;
         private readonly TimeSpan ObservingWindow;
 
         private readonly ClientTelemetryInfo ClientTelemetryInfo;
@@ -79,6 +80,7 @@ namespace Microsoft.Azure.Cosmos
                 connectionMode: connectionMode);
 
             this.EndpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
+            this.VmMetadataEndpointUrl = ClientTelemetryOptions.GetVmMetadataUrl();
             this.ObservingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
             this.httpClient = documentClient.httpClient;
@@ -129,17 +131,18 @@ namespace Microsoft.Azure.Cosmos
                     return;
                 }
 
-                static ValueTask<HttpRequestMessage> CreateRequestMessage()
+                ValueTask<HttpRequestMessage> CreateRequestMessage()
                 {
                     HttpRequestMessage request = new HttpRequestMessage()
                     {
-                        RequestUri = new Uri(ClientTelemetryOptions.GetVmMetadataUrl()),
+                        RequestUri = this.VmMetadataEndpointUrl,
                         Method = HttpMethod.Get,
                     };
                     request.Headers.Add("Metadata", "true");
 
                     return new ValueTask<HttpRequestMessage>(request);
                 }
+
                 using HttpResponseMessage httpResponseMessage = await this.httpClient
                     .SendHttpAsync(CreateRequestMessage, 
                     ResourceType.Telemetry, 
@@ -172,13 +175,13 @@ namespace Microsoft.Azure.Cosmos
                 while (!this.CancellationTokenSource.IsCancellationRequested)
                 {
                     // Load account information if not available, cache is already implemented
-                    if (string.IsNullOrEmpty(this.ClientTelemetryInfo.GlobalDatabaseAccountName))
+                    if (String.IsNullOrEmpty(this.ClientTelemetryInfo.GlobalDatabaseAccountName))
                     {
                         await this.SetAccountNameAsync();
                     }
 
                     // Load host information if not available
-                    if (string.IsNullOrEmpty(this.ClientTelemetryInfo.HostEnvInfo))
+                    if (String.IsNullOrEmpty(this.ClientTelemetryInfo.HostEnvInfo))
                     {
                         await this.LoadAzureVmMetaDataAsync();
                     }
@@ -220,6 +223,11 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
+            if (cosmosDiagnostics == null)
+            {
+                throw new ArgumentNullException(nameof(cosmosDiagnostics));
+            }
+
             string regionsContacted = this.GetContactedRegions(cosmosDiagnostics);
 
             // If consistency level is not mentioned in request then take the sdk/account level
@@ -229,7 +237,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Recording Request Latency and Request Charge
-            ReportPayload payloadKey = new ReportPayload(regionsContacted: regionsContacted.ToString(),
+            ReportPayload payloadKey = new ReportPayload(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
                                             consistency: consistencyLevel,
                                             databaseName: databaseId,
@@ -248,7 +256,9 @@ namespace Microsoft.Azure.Cosmos
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
-            latency.RecordValue((long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000);
+            double totalElapsedTimeInMicroSeconds = cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000;
+
+            latency.RecordValue((long)totalElapsedTimeInMicroSeconds);
             requestcharge.RecordValue((long)requestCharge);
         }
 
@@ -297,7 +307,12 @@ namespace Microsoft.Azure.Cosmos
                     {
                         foreach (CpuLoad cpuLoad in cpuLoadHistory.CpuLoad)
                         {
-                            this.cpuHistogram.RecordValue((long)cpuLoad.Value);
+                            float cpuValue = cpuLoad.Value;
+                            if (!float.IsNaN(cpuValue))
+                            {
+                                this.cpuHistogram.RecordValue((long)cpuValue);
+                            }
+
                         }
 
                         this.ClientTelemetryInfo.SystemInfo.Add(
@@ -324,13 +339,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 DefaultTrace.TraceError(ex.Message);
             }
-           
         }
 
         /// <summary>
         /// Task to send telemetry information to configured Juno endpoint. 
         /// If endpoint is not configured then it won't even try to send information. It will just trace an error message.
-        /// In any case it reset the telemetry information to collect the latest one.
+        /// In any case it resets the telemetry information to collect the latest one.
         /// </summary>
         /// <returns>Async Task</returns>
         private async Task SendAsync()
@@ -340,8 +354,8 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
-                                            = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
-                    
+                                = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+
                     this.ClientTelemetryInfo.OperationInfo = ToListWithMetricsInfo(operationInfoSnapshot);
 
                     string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo,
@@ -350,11 +364,10 @@ namespace Microsoft.Azure.Cosmos
                           NullValueHandling = NullValueHandling.Ignore
                       });
 
-                    Uri endpoint = new Uri(this.EndpointUrl);
                     using HttpRequestMessage request = new HttpRequestMessage
                     {
                         Method = HttpMethod.Post,
-                        RequestUri = endpoint,
+                        RequestUri = this.EndpointUrl,
                         Content = new StringContent(json, Encoding.UTF8, "application/json")
                     };
 
@@ -363,7 +376,7 @@ namespace Microsoft.Azure.Cosmos
                         INameValueCollection headersCollection = new NameValueCollectionWrapperFactory().CreateNewNameValueCollection();
                         await this.TokenProvider.AddAuthorizationHeaderAsync(
                                headersCollection,
-                               endpoint,
+                               this.EndpointUrl,
                                "POST",
                                AuthorizationTokenType.PrimaryMasterKey);
 
@@ -374,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
 
                         request.Headers.Add(HttpConstants.HttpHeaders.DatabaseAccountName, this.ClientTelemetryInfo.GlobalDatabaseAccountName);
                         String envName = ClientTelemetryOptions.GetEnvironmentName();
-                        if (!string.IsNullOrEmpty(envName))
+                        if (!String.IsNullOrEmpty(envName))
                         {
                             request.Headers.Add(HttpConstants.HttpHeaders.EnvironmentName, envName);
                         }

@@ -16,22 +16,31 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
     {
         [JsonProperty(PropertyName = "regionsContacted")]
         private string RegionsContacted { get; }
+
         [JsonProperty(PropertyName = "greaterThan1Kb")]
         private bool? GreaterThan1Kb { get; }
+
         [JsonProperty(PropertyName = "databaseName")]
         private string DatabaseName { get; }
+
         [JsonProperty(PropertyName = "containerName")]
         private string ContainerName { get; }
+
         [JsonProperty(PropertyName = "operation")]
         internal string Operation { get; }
+
         [JsonProperty(PropertyName = "resource")]
         internal string Resource { get; }
+
         [JsonProperty(PropertyName = "consistency")]
         internal string Consistency { get; }
+
         [JsonProperty(PropertyName = "statusCode")]
         public int? StatusCode { get; }
+
         [JsonProperty(PropertyName = "responseSizeInBytes")]
         public int? ResponseSizeInBytes { get; }
+
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 

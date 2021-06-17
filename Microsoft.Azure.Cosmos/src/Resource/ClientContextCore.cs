@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
 
             clientOptions = ClientContextCore.CreateOrCloneClientOptions(clientOptions);
 
-            ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy();
+            ConnectionPolicy connectionPolicy = clientOptions.GetConnectionPolicy(cosmosClient.ClientId);
             ClientTelemetry telemetry = null;
             if (connectionPolicy.EnableClientTelemetry)
             {

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Handler
     using System.Collections.Generic;
     using System.Text;
     using Documents.Rntbd;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Tracing.TraceData;
 
     /// <summary>
@@ -20,20 +21,30 @@ namespace Microsoft.Azure.Cosmos.Handler
         private readonly SystemUsageMonitorBase systemUsageMonitor = null;
 
         internal const string Diagnostickey = "diagnostic";
+        private const int HistoryLengthForDiagnostics = 6;
+        private readonly TimeSpan refreshIntervalForDiagnostics = TimeSpan.FromSeconds(10);
+
         internal const string Telemetrykey = "telemetry";
+        private const int HistoryLengthForTelemetry = 120;
+        private readonly TimeSpan refreshIntervalForTelemetry = TimeSpan.FromSeconds(5);
 
         private bool isMonitoringEnabled = false;
+
+        private static readonly object staticLock = new object();
 
         /// <summary>
         /// Singleton to make sureonly one intsane of DiagnosticHandlerHelper is there
         /// </summary>
         public static DiagnosticsHandlerHelper Instance()
         {
-            if (helper == null)
+            lock (staticLock)
             {
-                helper = new DiagnosticsHandlerHelper();
+                if (helper != null)
+                {
+                    return helper;
+                }
+                return helper = new DiagnosticsHandlerHelper();
             }
-            return helper;
         }
 
         private DiagnosticsHandlerHelper()
@@ -42,21 +53,23 @@ namespace Microsoft.Azure.Cosmos.Handler
             try
             {
                 this.systemUsageMonitor = SystemUsageMonitorBase.Create(
-                    new List<CpuAndMemoryUsageRecorder> 
+                    new List<CpuAndMemoryUsageRecorder>
                     {
-                        new CpuAndMemoryUsageRecorder(Diagnostickey, 6, TimeSpan.FromSeconds(10)),
-                        new CpuAndMemoryUsageRecorder(Telemetrykey, 120, TimeSpan.FromSeconds(5))
+                        new CpuAndMemoryUsageRecorder(Diagnostickey, HistoryLengthForDiagnostics, this.refreshIntervalForDiagnostics),
+                        new CpuAndMemoryUsageRecorder(Telemetrykey, HistoryLengthForTelemetry, this.refreshIntervalForTelemetry)
                     });
 
-                if (!(this.systemUsageMonitor is SystemUsageMonitorNoOps))
+                if (this.systemUsageMonitor is SystemUsageMonitorNoOps)
                 {
-                    this.systemUsageMonitor.Start();
-                    this.isMonitoringEnabled = true;
+                    throw new Exception("Unsupported System Usage Monitor");
                 }
-               
+
+                this.systemUsageMonitor.Start();
+                this.isMonitoringEnabled = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                DefaultTrace.TraceError(ex.Message);
                 this.isMonitoringEnabled = false;
             }
         }
@@ -79,8 +92,9 @@ namespace Microsoft.Azure.Cosmos.Handler
                             new CpuHistoryTraceDatum(cpuHistory));
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    DefaultTrace.TraceError(ex.Message);
                     this.isMonitoringEnabled = false;
                 }
             }
@@ -100,12 +114,13 @@ namespace Microsoft.Azure.Cosmos.Handler
                 {
                     return this.systemUsageMonitor.GetRecorder(recorderKey);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    DefaultTrace.TraceError(ex.Message);
                     this.isMonitoringEnabled = false;
                 }
-
             }
+
             return null;
         }
     }

@@ -38,16 +38,22 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
 
         [JsonProperty(PropertyName = "metricsName")]
         internal String MetricsName { get; }
+
         [JsonProperty(PropertyName = "unitName")]
         internal String UnitName { get; }
+
         [JsonProperty(PropertyName = "mean")]
         internal double Mean { get; set; }
+
         [JsonProperty(PropertyName = "count")]
         internal long Count { get; set; }
+
         [JsonProperty(PropertyName = "min")]
         internal double Min { get; set; }
+
         [JsonProperty(PropertyName = "max")]
         internal double Max { get; set; }
+
         [JsonProperty(PropertyName = "percentiles")]
         internal IReadOnlyDictionary<Double, Double> Percentiles { get; set; }
         

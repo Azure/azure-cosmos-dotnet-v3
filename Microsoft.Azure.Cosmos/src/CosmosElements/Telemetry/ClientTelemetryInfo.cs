@@ -17,22 +17,31 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     {
         [JsonProperty(PropertyName = "timeStamp")]
         internal string TimeStamp { get; set; }
+
         [JsonProperty(PropertyName = "clientId")]
         private string ClientId { get; }
+
         [JsonProperty(PropertyName = "processId")]
         private string ProcessId { get; }
+
         [JsonProperty(PropertyName = "userAgent")]
         private string UserAgent { get; }
+
         [JsonProperty(PropertyName = "connectionMode")]
         private string ConnectionMode { get; }
+
         [JsonProperty(PropertyName = "globalDatabaseAccountName")]
         internal string GlobalDatabaseAccountName { get; set; }
+
         [JsonProperty(PropertyName = "applicationRegion")]
         internal string ApplicationRegion { get; set; }
+
         [JsonProperty(PropertyName = "hostEnvInfo")]
         internal string HostEnvInfo { get; set; }
+
         [JsonProperty(PropertyName = "acceleratedNetworking")]
         private bool? AcceleratedNetworking { get; set; }
+
         [JsonProperty(PropertyName = "systemInfo")]
         internal List<ReportPayload> SystemInfo { get; set; }
 

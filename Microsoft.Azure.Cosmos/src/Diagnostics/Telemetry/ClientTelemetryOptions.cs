@@ -59,18 +59,21 @@ namespace Microsoft.Azure.Cosmos
             ResourceType.Document
         });
 
-        private static string vmMetadataUrl;
+        private static Uri vmMetadataUrl;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;
-        private static string clientTelemetryEndpoint;
+        private static Uri clientTelemetryEndpoint;
         private static string environmentName;
 
-        internal static string GetVmMetadataUrl()
+        internal static Uri GetVmMetadataUrl()
         {
-            if (string.IsNullOrEmpty(vmMetadataUrl))
+            if (vmMetadataUrl == null)
             {
-                vmMetadataUrl = CosmosConfigurationManager.GetEnvironmentVariable<string>(
-                   EnvPropsClientTelemetryVmMetadataUrl,
-                   DefaultVmMetadataUrL);
+                string vmMetadataUrlProp = CosmosConfigurationManager.GetEnvironmentVariable<string>(
+                   EnvPropsClientTelemetryVmMetadataUrl, DefaultVmMetadataUrL);
+                if (!String.IsNullOrEmpty(vmMetadataUrlProp))
+                {
+                    vmMetadataUrl = new Uri(vmMetadataUrlProp);
+                }
             }
             return vmMetadataUrl;
         }
@@ -111,25 +114,29 @@ namespace Microsoft.Azure.Cosmos
                     azMetadata?.AzEnvironment);
         } 
 
-        internal static string GetClientTelemetryEndpoint()
+        internal static Uri GetClientTelemetryEndpoint()
         {
-            if (string.IsNullOrEmpty(clientTelemetryEndpoint))
+            if (clientTelemetryEndpoint == null)
             {
-                clientTelemetryEndpoint = CosmosConfigurationManager
+                string uriProp = CosmosConfigurationManager
                     .GetEnvironmentVariable<string>(
-                        ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, string.Empty);
+                        ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
+                if (!String.IsNullOrEmpty(uriProp))
+                {
+                    clientTelemetryEndpoint = new Uri(uriProp);
+                }
             }
             return clientTelemetryEndpoint;
         }
 
         internal static string GetEnvironmentName()
         {
-            if (string.IsNullOrEmpty(environmentName))
+            if (String.IsNullOrEmpty(environmentName))
             {
                 environmentName = CosmosConfigurationManager
                 .GetEnvironmentVariable<string>(
                     ClientTelemetryOptions.EnvPropsClientTelemetryEnvironmentName,
-                    string.Empty);
+                    String.Empty);
             }
             return environmentName;
         }
