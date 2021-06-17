@@ -2761,10 +2761,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
             }
-            catch (NullReferenceException)
-            {
-                Assert.Fail("Should not throw NullRef Exception");
-            }
             catch (CosmosException ex)
             {
                 Assert.AreEqual(ex.StatusCode, HttpStatusCode.ServiceUnavailable);
