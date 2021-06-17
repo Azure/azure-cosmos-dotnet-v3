@@ -9,9 +9,13 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Compare UInt128's by least significant byte to most significant byte.
     /// </summary>
-    internal sealed class BinaryComparer : IComparer<UInt128>
+    internal sealed class UInt128BinaryComparer : IComparer<UInt128>
     {
-        public static readonly BinaryComparer Singleton = new BinaryComparer();
+        public static readonly UInt128BinaryComparer Singleton = new UInt128BinaryComparer();
+
+        private UInt128BinaryComparer()
+        {
+        }
 
         public int Compare(UInt128 x, UInt128 y)
         {
@@ -21,10 +25,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return -1;
                 }
-                else
-                {
-                    return 1;
-                }
+                
+                return 1;
             }
 
             if (x.GetHigh() != y.GetHigh())
@@ -33,10 +35,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return -1;
                 }
-                else
-                {
-                    return 1;
-                }
+                    
+                return 1;
             }
 
             return 0;
