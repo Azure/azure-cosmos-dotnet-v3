@@ -11,36 +11,21 @@ namespace Microsoft.Azure.Cosmos
     internal class UserAgentContainer : Documents.UserAgentContainer
     {
         private const int MaxOperatingSystemString = 30;
-        private string cosmosBaseUserAgent;
+        private readonly string cosmosBaseUserAgent;
 
-        public UserAgentContainer()
-            : base()
+        public UserAgentContainer(
+            string features = null,
+            string regionConfiguration = "NS",
+            string suffix = null) 
+               : base()
         {
-        }
-
-        internal override string BaseUserAgent
-        {
-            get
-            {
-                if (this.cosmosBaseUserAgent == null)
-                {
-                    this.cosmosBaseUserAgent = this.CreateBaseUserAgentString();
-                }
-
-                return this.cosmosBaseUserAgent;
-            }
-        }
-
-        internal void SetFeatures(
-            string features,
-            string regionConfiguration)
-        {
-            // Regenerate base user agent to account for features
             this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(
                 features: features,
                 regionConfiguration: regionConfiguration);
-            this.Suffix = string.Empty;
+            this.Suffix = suffix ?? string.Empty;
         }
+
+        internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;
 
         protected virtual void GetEnvironmentInformation(
             out string clientVersion,
@@ -53,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             clientVersion = environmentInformation.ClientVersion;
             directVersion = environmentInformation.DirectVersion;
-            clientId = environmentInformation.ClientId;
+            clientId = CosmosClient.numberOfClientsCreated.ToString();
             processArchitecture = environmentInformation.ProcessArchitecture;
             operatingSystem = environmentInformation.OperatingSystem;
             runtimeFramework = environmentInformation.RuntimeFramework;

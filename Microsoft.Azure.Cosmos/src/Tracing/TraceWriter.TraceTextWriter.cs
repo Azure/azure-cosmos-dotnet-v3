@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                         {
                             stringBuilder.AppendLine($"{space}HttpResponse");
                             stringBuilder.AppendLine($"{space}{space}RequestStartTime: {stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture)}");
-                            stringBuilder.AppendLine($"{space}{space}RequestEndTime: {stat.RequestEndTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}DurationInMs: {stat.Duration.TotalMilliseconds:0.00}");
                             stringBuilder.AppendLine($"{space}{space}RequestUri: {stat.RequestUri}");
                             stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
                             stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
