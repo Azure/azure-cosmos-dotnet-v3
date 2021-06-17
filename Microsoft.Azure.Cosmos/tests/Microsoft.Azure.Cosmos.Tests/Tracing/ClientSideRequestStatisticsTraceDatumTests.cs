@@ -69,6 +69,15 @@
                 (clientSideRequestStatistics) => clientSideRequestStatistics.StoreResponseStatisticsList);
         }
 
+        [TestMethod]
+        public void VerifyIClientSideRequestStatisticsNullTests()
+        {
+            IClientSideRequestStatistics clientSideRequestStatistics = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            Assert.IsNotNull(clientSideRequestStatistics.ContactedReplicas);
+            Assert.IsNotNull(clientSideRequestStatistics.FailedReplicas);
+            Assert.IsNotNull(clientSideRequestStatistics.RegionsContacted);
+        }
+
         private async Task ConcurrentUpdateTestHelper<T>(
             Action<ClientSideRequestStatisticsTraceDatum, CancellationToken> backgroundUpdater,
             Func<ClientSideRequestStatisticsTraceDatum, IEnumerable<T>> getList)
