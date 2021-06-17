@@ -391,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 Exception exception)
             {
                 this.RequestStartTime = requestStartTime;
-                this.RequestEndTime = requestEndTime;
+                this.Duration = requestEndTime - requestStartTime;
                 this.HttpResponseMessage = responseMessage;
                 this.Exception = exception;
                 this.ResourceType = resourceType;
@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
 
             public DateTime RequestStartTime { get; }
-            public DateTime RequestEndTime { get; }
+            public TimeSpan Duration { get; }
             public HttpResponseMessage HttpResponseMessage { get; }
             public Exception Exception { get; }
             public ResourceType ResourceType { get; }
