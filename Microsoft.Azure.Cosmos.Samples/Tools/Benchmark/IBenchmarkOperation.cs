@@ -10,6 +10,6 @@ namespace CosmosBenchmark
     {
         Task PrepareAsync();
 
-        Task<OperationResult> ExecuteOnceAsync();
+        OperationResult ExecuteOnceAsync();
     }
 }

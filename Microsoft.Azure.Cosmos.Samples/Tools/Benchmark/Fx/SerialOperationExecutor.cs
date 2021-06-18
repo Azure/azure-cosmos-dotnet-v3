@@ -53,7 +53,7 @@ namespace CosmosBenchmark
                     {
                         try
                         {
-                            operationResult = await this.operation.ExecuteOnceAsync();
+                            operationResult = this.operation.ExecuteOnceAsync();
 
                             // Success case
                             this.SuccessOperationCount++;

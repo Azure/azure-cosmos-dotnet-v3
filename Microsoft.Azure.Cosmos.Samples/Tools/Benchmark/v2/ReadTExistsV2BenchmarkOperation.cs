@@ -42,13 +42,13 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public async Task<OperationResult> ExecuteOnceAsync()
+        public OperationResult ExecuteOnceAsync()
         {
             Uri itemUri = UriFactory.CreateDocumentUri(this.databsaeName, this.containerName, this.nextExecutionItemId);
-            DocumentResponse<Dictionary<string, object>> itemResponse = await this.documentClient.ReadDocumentAsync<Dictionary<string, object>>(
+            DocumentResponse<Dictionary<string, object>> itemResponse = this.documentClient.ReadDocumentAsync<Dictionary<string, object>>(
                         itemUri,
                         new RequestOptions() { PartitionKey = new PartitionKey(this.nextExecutionItemPartitionKey) }
-                        );
+                        ).Result;
 
             Dictionary<string, object> response = itemResponse.Document;
             double ruCharges = itemResponse.RequestCharge;
