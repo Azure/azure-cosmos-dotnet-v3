@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             //!HACK START
             if (memberInfo is PropertyInfo propertyInfo)
             {
-                var name = (string)memberInfo.DeclaringType?.GetMethod("GetJsonName",
+                string name = (string)memberInfo.DeclaringType?.GetMethod("GetJsonName",
                         BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
                         BindingFlags.FlattenHierarchy, null, new[] {typeof(PropertyInfo)}, null)?
                     .Invoke(null, new object[] {propertyInfo});
@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
             //!HACK END
             
+            string memberName = null;
             // Json.Net honors JsonPropertyAttribute more than DataMemberAttribute
             // So we check for JsonPropertyAttribute first.
             JsonPropertyAttribute jsonPropertyAttribute = memberInfo.GetCustomAttribute<JsonPropertyAttribute>(true);

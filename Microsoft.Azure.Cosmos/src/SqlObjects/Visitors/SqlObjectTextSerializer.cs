@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Linq;
 
     internal sealed class SqlObjectTextSerializer : SqlObjectVisitor
     {
