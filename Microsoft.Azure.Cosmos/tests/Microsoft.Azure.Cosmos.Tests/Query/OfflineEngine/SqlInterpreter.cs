@@ -854,6 +854,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return false;
                 }
 
+                public override bool Visit(SqlTagsMatchExpression scalarExpression)
+                {
+                    return false;
+                }
+
                 public override bool Visit(SqlUnaryScalarExpression scalarExpression)
                 {
                     if (this.MatchesGroupByExpression(scalarExpression))

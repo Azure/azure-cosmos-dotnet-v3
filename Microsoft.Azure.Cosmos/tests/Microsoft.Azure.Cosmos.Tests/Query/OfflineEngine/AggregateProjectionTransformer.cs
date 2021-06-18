@@ -333,6 +333,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return sqlSubqueryScalarExpression;
                 }
 
+                public override SqlScalarExpression Visit(SqlTagsMatchExpression scalarExpression)
+                {
+                    return scalarExpression;
+                }
+
                 public override SqlScalarExpression Visit(SqlUnaryScalarExpression sqlUnaryScalarExpression)
                 {
                     return SqlUnaryScalarExpression.Create(

@@ -343,6 +343,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             return result;
         }
 
+        public override CosmosElement Visit(SqlTagsMatchExpression sqlObject, CosmosElement input) => Undefined;
+
         public override CosmosElement Visit(SqlUnaryScalarExpression scalarExpression, CosmosElement document)
         {
             CosmosElement expression = scalarExpression.Expression.Accept(this, document);
