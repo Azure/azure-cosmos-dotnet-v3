@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2491](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2491) Change Feed Processor: Adds support for Graph API accounts. Graph API accounts can now create lease containers with `/partitionKey` instead of `/id`.
 
 #### Fixed
+- [#2567](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2567) ReadMany: Fixes AddRequestHeaders request option and missing headers and message on failure scenarios
 - [#2510](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2510) Query: Fixes InvalidOperationException when partitions are merged. Introduced in 3.17.0 PR [#2084](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2084).
 - [#2510](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2510) Query: Fixes handling of pipeline execution on partition merge. Introduced in 3.17.0 PR [#2084](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2084).
 - [#2547](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2547) Query: Fixes incorrect order by query when the field is an object or array
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#2488](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2488) Change Feed Processor: Refactors checkpoint API to throw exception. Introduced in [#2331](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2331). This is considered a breaking change on the preview API as it evolves into GA.
 
 #### Fixed
+- [#2567](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2567) ReadMany: Fixes AddRequestHeaders request option and missing headers and message on failure scenarios
 - [#2510](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2510) Query: Fixes InvalidOperationException when partitions are merged. Introduced in 3.17.0 PR [#2084](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2084).
 - [#2510](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2510) Query: Fixes handling of pipeline execution on partition merge. Introduced in 3.17.0 PR [#2084](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2084).
 - [#2547](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2547) Query: Fixes incorrect order by query when the field is an object or array
