@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(datum.HttpResponseStatisticsList);
             Assert.AreEqual(datum.HttpResponseStatisticsList.Count, 1);
             Assert.IsNotNull(datum.HttpResponseStatisticsList[0].HttpResponseMessage);
-            Assert.AreEqual(datum.RequestEndTimeUtc, datum.HttpResponseStatisticsList[0].RequestEndTime);
+            Assert.AreEqual(datum.RequestEndTimeUtc, datum.HttpResponseStatisticsList[0].RequestStartTime + datum.HttpResponseStatisticsList[0].Duration);
         }
 
         [TestMethod]

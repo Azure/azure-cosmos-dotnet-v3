@@ -253,8 +253,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteFieldName("StartTimeUTC");
                 this.WriteDateTimeStringValue(stat.RequestStartTime);
 
-                jsonWriter.WriteFieldName("EndTimeUTC");
-                this.WriteDateTimeStringValue(stat.RequestEndTime);
+                jsonWriter.WriteFieldName("DurationInMs");
+                jsonWriter.WriteNumber64Value(stat.Duration.TotalMilliseconds);
 
                 jsonWriter.WriteFieldName("RequestUri");
                 jsonWriter.WriteStringValue(stat.RequestUri.ToString());

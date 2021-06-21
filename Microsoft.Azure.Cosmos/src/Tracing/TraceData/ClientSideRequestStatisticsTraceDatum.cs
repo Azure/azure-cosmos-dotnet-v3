@@ -72,7 +72,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public HashSet<Uri> FailedReplicas { get; }
 
-        public HashSet<Uri> RegionsContacted { get; }
+        public HashSet<Uri> RegionsContacted
+        {
+            get
+            {
+                HashSet<Uri> regionContacted = new HashSet<Uri>();
+                foreach ((string _, Uri uriContacted) in this.RegionsContactedWithName)
+                {
+                    regionContacted.Add(uriContacted);
+                }
+                return regionContacted;
+            }
+        }
 
         public HashSet<(string, Uri)> RegionsContactedWithName { get; }
 
@@ -380,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 Exception exception)
             {
                 this.RequestStartTime = requestStartTime;
-                this.RequestEndTime = requestEndTime;
+                this.Duration = requestEndTime - requestStartTime;
                 this.HttpResponseMessage = responseMessage;
                 this.Exception = exception;
                 this.ResourceType = resourceType;
@@ -399,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
 
             public DateTime RequestStartTime { get; }
-            public DateTime RequestEndTime { get; }
+            public TimeSpan Duration { get; }
             public HttpResponseMessage HttpResponseMessage { get; }
             public Exception Exception { get; }
             public ResourceType ResourceType { get; }
