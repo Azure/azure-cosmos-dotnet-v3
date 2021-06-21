@@ -309,7 +309,7 @@
                 CreateInput(description: "Empty Object", scalarExpression: "{}"),
                 CreateInput(description: "Single Property", scalarExpression: "{ 'prop' : 42 }"),
                 CreateInput(description: "Multiple Property", scalarExpression: "{ 'prop1' : 42, 'prop2' : 1337 }"),
-                
+
                 CreateInput(description: "Double Quotes", scalarExpression: "{ \"prop\" : \"Some String\" }"),
                 CreateInput(description: "Single Quotes", scalarExpression: "{ 'prop' : 'Some String' }"),
                 CreateInput(description: "Mixed Quotes", scalarExpression: "{ 'prop' : \"Some String\" }"),
@@ -317,6 +317,8 @@
 
                 CreateInput(description: "Double Quotes Within Single Quotes", scalarExpression: "{ 'prop' : 'Some \"String\" Value' }"),
                 CreateInput(description: "Single Quotes Within Double Quotes", scalarExpression: "{ 'prop' : \"Some 'String' Value\" }"),
+
+                CreateInput(description: "Escaped Double Quotes Within Double Quotes", scalarExpression: "{ 'prop' : \"Some \\\"String\\\" Value\" }"),
 
                 // Negative
                 CreateInput(description: "Missing Close Brace", scalarExpression: "{"),
