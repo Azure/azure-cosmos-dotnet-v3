@@ -170,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteStringValueOrNull(pointOperationStatisticsTraceDatum.ActivityId);
 
                 this.jsonWriter.WriteFieldName("ResponseTimeUtc");
-                this.jsonWriter.WriteStringValue(pointOperationStatisticsTraceDatum.ResponseTimeUtc.ToString("o", CultureInfo.InvariantCulture));
+                this.WriteDateTimeStringValue(pointOperationStatisticsTraceDatum.ResponseTimeUtc);
 
                 this.jsonWriter.WriteFieldName("StatusCode");
                 this.jsonWriter.WriteNumber64Value((int)pointOperationStatisticsTraceDatum.StatusCode);
@@ -213,9 +213,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("AddressResolutionStatistics");
                 this.jsonWriter.WriteArrayStart();
 
-                foreach (ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                foreach (KeyValuePair<string, ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                 {
-                    VisitAddressResolutionStatistics(stat, this.jsonWriter);
+                   this.VisitAddressResolutionStatistics(stat.Value);
                 }
 
                 this.jsonWriter.WriteArrayEnd();
@@ -251,10 +251,10 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteObjectStart();
 
                 jsonWriter.WriteFieldName("StartTimeUTC");
-                jsonWriter.WriteStringValue(stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture));
+                this.WriteDateTimeStringValue(stat.RequestStartTime);
 
-                jsonWriter.WriteFieldName("EndTimeUTC");
-                jsonWriter.WriteStringValue(stat.RequestEndTime.ToString("o", CultureInfo.InvariantCulture));
+                jsonWriter.WriteFieldName("DurationInMs");
+                jsonWriter.WriteNumber64Value(stat.Duration.TotalMilliseconds);
 
                 jsonWriter.WriteFieldName("RequestUri");
                 jsonWriter.WriteStringValue(stat.RequestUri.ToString());
@@ -292,36 +292,35 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 jsonWriter.WriteObjectEnd();
             }
 
-            private static void VisitAddressResolutionStatistics(
-                ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics addressResolutionStatistics,
-                IJsonWriter jsonWriter)
+            private void VisitAddressResolutionStatistics(
+                ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics addressResolutionStatistics)
             {
-                jsonWriter.WriteObjectStart();
+                this.jsonWriter.WriteObjectStart();
 
-                jsonWriter.WriteFieldName("StartTimeUTC");
-                jsonWriter.WriteStringValue(addressResolutionStatistics.StartTime.ToString("o", CultureInfo.InvariantCulture));
+                this.jsonWriter.WriteFieldName("StartTimeUTC");
+                this.WriteDateTimeStringValue(addressResolutionStatistics.StartTime);
 
-                jsonWriter.WriteFieldName("EndTimeUTC");
+                this.jsonWriter.WriteFieldName("EndTimeUTC");
                 if (addressResolutionStatistics.EndTime.HasValue)
                 {
-                    jsonWriter.WriteStringValue(addressResolutionStatistics.EndTime.Value.ToString("o", CultureInfo.InvariantCulture));
+                    this.WriteDateTimeStringValue(addressResolutionStatistics.EndTime.Value);
                 }
                 else
                 {
-                    jsonWriter.WriteStringValue("EndTime Never Set.");
+                    this.jsonWriter.WriteStringValue("EndTime Never Set.");
                 }
 
-                jsonWriter.WriteFieldName("TargetEndpoint");
+                this.jsonWriter.WriteFieldName("TargetEndpoint");
                 if (addressResolutionStatistics.TargetEndpoint == null)
                 {
-                    jsonWriter.WriteNullValue();
+                    this.jsonWriter.WriteNullValue();
                 }
                 else
                 {
-                    jsonWriter.WriteStringValue(addressResolutionStatistics.TargetEndpoint);
+                    this.jsonWriter.WriteStringValue(addressResolutionStatistics.TargetEndpoint);
                 }
 
-                jsonWriter.WriteObjectEnd();
+                this.jsonWriter.WriteObjectEnd();
             }
 
             private void VisitStoreResponseStatistics(
@@ -330,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteObjectStart();
 
                 this.jsonWriter.WriteFieldName("ResponseTimeUTC");
-                this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestResponseTime.ToString("o", CultureInfo.InvariantCulture));
+                this.WriteDateTimeStringValue(storeResponseStatistics.RequestResponseTime);
 
                 this.jsonWriter.WriteFieldName("ResourceType");
                 this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestResourceType.ToString());
@@ -431,6 +430,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("BELatencyInMs");
                 this.WriteStringValueOrNull(storeResult.BackendRequestDurationInMs);
 
+                this.VisitTransportRequestStats(storeResult.TransportRequestStats);
+
                 this.jsonWriter.WriteFieldName("TransportException");
                 TransportException transportException = storeResult.Exception?.InnerException as TransportException;
                 this.WriteStringValueOrNull(transportException?.Message);
@@ -465,6 +466,37 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     {
                         this.WriteStringValueOrNull(uri?.ToString());
                     }
+                }
+
+                this.jsonWriter.WriteArrayEnd();
+            }
+
+            private void VisitTransportRequestStats(TransportRequestStats transportRequestStats)
+            {
+                this.jsonWriter.WriteFieldName("RntbdRequestStats");
+                if (transportRequestStats == null)
+                {
+                    this.jsonWriter.WriteNullValue();
+                    return;
+                }
+
+                IEnumerable<TransportRequestStats.RequestEvent> events = transportRequestStats.GetRequestTimeline();
+                this.jsonWriter.WriteArrayStart();
+
+                foreach (TransportRequestStats.RequestEvent requestEvent in events)
+                {
+                    this.jsonWriter.WriteObjectStart();
+
+                    this.jsonWriter.WriteFieldName("EventName");
+                    this.jsonWriter.WriteStringValue(requestEvent.EventName);
+
+                    this.jsonWriter.WriteFieldName("StartTime");
+                    this.WriteDateTimeStringValue(requestEvent.StartTime);
+
+                    this.jsonWriter.WriteFieldName("DurationInMicroSec");
+                    this.jsonWriter.WriteStringValue(requestEvent.DurationInMicroSec.ToString(CultureInfo.InvariantCulture));
+
+                    this.jsonWriter.WriteObjectEnd();
                 }
 
                 this.jsonWriter.WriteArrayEnd();
@@ -533,6 +565,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 else
                 {
                     this.jsonWriter.WriteStringValue(value);
+                }
+            }
+
+            private void WriteDateTimeStringValue(DateTime value)
+            {
+                if (value == null)
+                {
+                    this.jsonWriter.WriteNullValue();
+                }
+                else
+                {
+                    this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
                 }
             }
         }

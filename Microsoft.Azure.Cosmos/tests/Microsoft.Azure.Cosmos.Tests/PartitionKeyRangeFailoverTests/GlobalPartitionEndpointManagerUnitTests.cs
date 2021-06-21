@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class GlobalPartitionEndpointManagerUnitTests
     {
         [TestMethod]
+        [Timeout(10000)]
         public void TestSingleReadRegionScenario()
         {
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
@@ -66,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(5)]
         [DataRow(10)]
         [DataRow(100)]
+        [Timeout(30000)]
         public void VerifyAllReadRegionsAreVisited(int numOfReadRegions)
         {
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);

@@ -1234,25 +1234,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A new instance of <see cref="TransactionalBatch"/>.</returns>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
 
-#if INTERNAL
-        /// <summary>
-        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
-        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
-        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
-        /// </summary>
-        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
-        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
-        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>
-        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
-        /// </returns>
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-               Cosmos.PartitionKey partitionKey,
-               RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default(CancellationToken));
-#endif
-
-#if PREVIEW
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
         /// </summary>
@@ -1272,24 +1253,26 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangesAsync();
-        /// // Distribute feedRanges across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator feedIterator = this.Container.GetChangeFeedStreamIterator(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
         ///
         /// while (feedIterator.HasMoreResults)
         /// {
-        ///     while (feedIterator.HasMoreResults)
+        ///     using (ResponseMessage response = await feedIterator.ReadNextAsync())
         ///     {
-        ///         using (ResponseMessage response = await feedIterator.ReadNextAsync())
+        ///         if (response.StatusCode == NotModified) 
+        ///         {
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
         ///         {
         ///             using (StreamReader sr = new StreamReader(response.Content))
         ///             using (JsonTextReader jtr = new JsonTextReader(sr))
@@ -1319,29 +1302,33 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// IReadOnlyList<FeedRange> feedRanges = await this.Container.GetFeedRangessAsync();
-        /// // Distribute feedRangess across multiple compute units and pass each one to a different iterator
-        ///
         /// ChangeFeedRequestOptions options = new ChangeFeedRequestOptions()
         /// {
         ///     PageSizeHint = 10,
         /// }
         /// 
         /// FeedIterator<MyItem> feedIterator = this.Container.GetChangeFeedIterator<MyItem>(
-        ///     ChangeFeedStartFrom.Beginning(feedRanges[0]),
+        ///     ChangeFeedStartFrom.Beginning(),
         ///     ChangeFeedMode.Incremental,
         ///     options);
-        /// while (feedIterator.HasMoreResults)
-        /// {
+        ///     
         ///     while (feedIterator.HasMoreResults)
         ///     {
         ///         FeedResponse<MyItem> response = await feedIterator.ReadNextAsync();
-        ///         foreach (var item in response)
+        ///
+        ///         if (response.StatusCode == NotModified) 
         ///         {
-        ///             Console.WriteLine(item);
+        ///             // No new changes
+        ///             // Capture response.ContinuationToken and break or sleep for some time
+        ///         }
+        ///         else 
+        ///         {
+        ///             foreach (var item in response)
+        ///             {
+        ///                 Console.WriteLine(item);
+        ///             }
         ///         }
         ///     }
-        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1351,6 +1338,25 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
 
+#if INTERNAL
+        /// <summary>
+        /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.
+        /// Starts an asynchronous Cosmos DB background operation which deletes all items in the Container with the specified value. 
+        /// The asynchronous Cosmos DB background operation runs using a percentage of user RUs.
+        /// </summary>
+        /// <param name="partitionKey">The <see cref="PartitionKey"/> of the items to be deleted.</param>
+        /// <param name="requestOptions">(Optional) The options for the Partition Key Delete request.</param>
+        /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
+        /// <returns>
+        /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
+        /// </returns>
+        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+               Cosmos.PartitionKey partitionKey,
+               RequestOptions requestOptions = null,
+               CancellationToken cancellationToken = default(CancellationToken));
+#endif
+
+#if PREVIEW
         /// <summary>
         /// Gets the list of Partition Key Range identifiers for a <see cref="FeedRange"/>.
         /// </summary>
@@ -1482,23 +1488,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="context">The context related to the changes.</param>
         /// <param name="changes">The changes that happened.</param>
-        /// <param name="tryCheckpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// (ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync, CancellationToken cancellationToken) =>
+        /// (ChangeFeedProcessorContext context, IReadOnlyCollection<T> changes, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
         /// {
         ///     // consume changes
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
-        ///     if (!isSuccess)
-        ///     {
-        ///         // log error, could not checkpoint
-        ///         throw error;
-        ///     }
+        ///     await checkpointAsync();
         /// }
         /// ]]>
         /// </code>
@@ -1506,7 +1507,7 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedHandlerWithManualCheckpoint<T>(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<T> changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            Func<Task> checkpointAsync,
             CancellationToken cancellationToken);
 
         /// <summary>
@@ -1526,23 +1527,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="context">The context related to the changes.</param>
         /// <param name="changes">The changes that happened.</param>
-        /// <param name="tryCheckpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
+        /// <param name="checkpointAsync">A task representing an asynchronous checkpoint on the progress of a lease.</param>
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the changes.</returns>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// (ChangeFeedProcessorContext context, Stream stream, Func<Task<(bool isSuccess, CosmosException error)>> tryCheckpointAsync, CancellationToken cancellationToken) =>
+        /// (ChangeFeedProcessorContext context, Stream stream, Func<Task> checkpointAsync, CancellationToken cancellationToken) =>
         /// {
         ///     // consume stream
         ///     
         ///     // On certain condition, we can checkpoint
-        ///     (bool isSuccess, Exception error) checkpointResult = await tryCheckpointAsync();
-        ///     if (!isSuccess)
-        ///     {
-        ///         // log error, could not checkpoint
-        ///         throw error;
-        ///     }
+        ///     await checkpointAsync();
         /// }
         /// ]]>
         /// </code>
@@ -1550,7 +1546,7 @@ namespace Microsoft.Azure.Cosmos
         public delegate Task ChangeFeedStreamHandlerWithManualCheckpoint(
             ChangeFeedProcessorContext context,
             Stream changes,
-            Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+            Func<Task> checkpointAsync,
             CancellationToken cancellationToken);
 
         /// <summary>

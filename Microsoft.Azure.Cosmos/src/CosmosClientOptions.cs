@@ -650,8 +650,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            UserAgentContainer userAgent = new UserAgentContainer();
-            this.SetUserAgentFeatures(userAgent);
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -659,7 +657,7 @@ namespace Microsoft.Azure.Cosmos
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
-                UserAgentContainer = userAgent,
+                UserAgentContainer = this.CreateUserAgentContainerWithFeatures(),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
@@ -810,7 +808,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal void SetUserAgentFeatures(UserAgentContainer userAgent)
+        internal UserAgentContainer CreateUserAgentContainerWithFeatures()
         {
             CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
             if (this.AllowBulkExecution)
@@ -830,12 +828,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string regionConfiguration = this.GetRegionConfiguration();
-            userAgent.SetFeatures(featureString, regionConfiguration);
 
-            if (!string.IsNullOrEmpty(this.ApplicationName))
-            {
-                userAgent.Suffix = this.ApplicationName;
-            }
+            return new UserAgentContainer(
+                        features: featureString,
+                        regionConfiguration: regionConfiguration,
+                        suffix: this.ApplicationName);
         }
 
         /// <summary>

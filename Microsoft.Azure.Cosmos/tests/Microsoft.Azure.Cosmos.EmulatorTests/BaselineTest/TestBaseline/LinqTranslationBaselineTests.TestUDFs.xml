@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.NoParameterUDF() 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.SingleParameterUDF(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -29,7 +29,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.SingleParameterUDFWithArray(root["ArrayField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -40,7 +40,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.MultiParamterUDF(root["NumericField"], root["StringField"], root["Point"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -51,7 +51,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.MultiParamterUDWithArrayF(root["ArrayField"], root["NumericField"], root["Point"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -63,7 +63,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (udf.ArrayCount(root["ArrayField"]) > 2) ]]></SqlQuery>
+WHERE (udf.ArrayCount(root["ArrayField"]) > 2)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -75,7 +75,7 @@ WHERE (udf.ArrayCount(root["ArrayField"]) > 2) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((udf.ArrayCount(root["ArrayField"]) > 2) AND udf.SomeBooleanUDF()) ]]></SqlQuery>
+WHERE ((udf.ArrayCount(root["ArrayField"]) > 2) AND udf.SomeBooleanUDF())]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -87,7 +87,7 @@ WHERE ((udf.ArrayCount(root["ArrayField"]) > 2) AND udf.SomeBooleanUDF()) ]]></S
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE ((udf.SingleParameterUDF(root["NumericField"]) + 2) = 4) ]]></SqlQuery>
+WHERE ((udf.SingleParameterUDF(root["NumericField"]) + 2) = 4)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -98,7 +98,7 @@ WHERE ((udf.SingleParameterUDF(root["NumericField"]) + 2) = 4) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.SingleParameterUDF(1) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -109,7 +109,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.SingleParameterUDFWithArray([1, 2, 3]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -120,7 +120,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.SingleParameterUDFWithArray(["1", "2"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -131,7 +131,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.MultiParamterUDF(1, "str", true) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -142,7 +142,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE udf.MultiParamterUDWithArrayF([1, 2, 3], 1, "str") 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -154,7 +154,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (udf.ArrayCount([1, 2, 3]) > 2) ]]></SqlQuery>
+WHERE (udf.ArrayCount([1, 2, 3]) > 2)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -166,7 +166,7 @@ WHERE (udf.ArrayCount([1, 2, 3]) > 2) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE udf.MultiParamterUDF2(root["Point"], "str", 1) ]]></SqlQuery>
+WHERE udf.MultiParamterUDF2(root["Point"], "str", 1)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
