@@ -67,7 +67,8 @@ namespace Microsoft.Azure.Cosmos
                 SessionToken = this.SessionToken,
                 IfMatchEtag = this.IfMatchEtag,
                 IfNoneMatchEtag = this.IfNoneMatchEtag,
-                Properties = this.Properties
+                Properties = this.Properties,
+                AddRequestHeaders = this.AddRequestHeaders
             };
         }
     }
