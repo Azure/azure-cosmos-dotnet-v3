@@ -214,16 +214,14 @@
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
@@ -278,16 +276,14 @@
 
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);

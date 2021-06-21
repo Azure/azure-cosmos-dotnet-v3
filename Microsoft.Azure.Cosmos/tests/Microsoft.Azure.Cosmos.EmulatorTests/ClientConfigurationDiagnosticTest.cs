@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -72,9 +73,24 @@
             Assert.AreEqual(gwConfig.MaxConnectionLimit, 20);
 
             ConsistencyConfig consistencyConfig = cosmosClient.ClientConfigurationTraceDatum.ConsistencyConfig;
-            Assert.AreEqual(consistencyConfig.ConsistencyLevel, ConsistencyLevel.Session);
+            Assert.AreEqual(consistencyConfig.ConsistencyLevel.Value, ConsistencyLevel.Session);
         }
-        
+
+        [TestMethod]
+        public void ConsistencyConfigSerializationTest()
+        {
+            List<string> preferredRegions = new List<string> { "EastUS", "WestUs" };
+            ConsistencyLevel consistencyLevel = ConsistencyLevel.Session;
+
+            ConsistencyConfig consistencyConfig = new ConsistencyConfig(consistencyLevel, preferredRegions);
+            Assert.AreEqual(consistencyConfig.ToString(), "(consistency: Session, prgns:[EastUS, WestUs])");
+
+            ConsistencyConfig consistencyConfigWithNull = new ConsistencyConfig(consistencyLevel: null,
+                                                                                preferredRegions: null);
+
+            Assert.AreEqual(consistencyConfigWithNull.ToString(), "(consistency: NotSet, prgns:[])");
+        }
+
         [TestMethod]
         public async Task CachedSerializationTest()
         {

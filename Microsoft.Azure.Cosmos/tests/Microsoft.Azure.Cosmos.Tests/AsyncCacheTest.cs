@@ -99,6 +99,33 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
+        /// The scenario tested here is that when a generator throws an
+        /// exception it removes itself from the cache. This behavior
+        /// is to prevent indefinite caching of items which are never used.
+        /// </summary>
+        [TestMethod]
+        public async Task TestRemoveWhenGeneratorThrowsException()
+        {
+            AsyncCache<int, int> cache = new AsyncCache<int, int>();
+            using SemaphoreSlim resetEventSlim = new SemaphoreSlim(0, 1);
+
+            Func<Task<int>> generatorFunc = () => Task.Run(async () =>
+            {
+                await resetEventSlim.WaitAsync();
+                throw new Exception(nameof(TestRemoveWhenGeneratorThrowsException));
+#pragma warning disable CS0162 // Unreachable code detected
+                return 1;
+#pragma warning restore CS0162 // Unreachable code detected
+            });
+
+            Task<int> getTask = cache.GetAsync(key: 1, obsoleteValue: -1, singleValueInitFunc: generatorFunc, cancellationToken: default);
+            resetEventSlim.Release();
+            Exception ex = await Assert.ThrowsExceptionAsync<Exception>(() => getTask);
+            Assert.AreEqual(nameof(TestRemoveWhenGeneratorThrowsException), ex.Message);
+            Assert.IsFalse(cache.Keys.Contains(1));
+        }
+
+        /// <summary>
         /// The scenario tested here is a concurrent race when
         /// Thread 1 enqueues a task and is currently awaiting its completion
         /// Before the task is completed, Thread 2 requests the same key
