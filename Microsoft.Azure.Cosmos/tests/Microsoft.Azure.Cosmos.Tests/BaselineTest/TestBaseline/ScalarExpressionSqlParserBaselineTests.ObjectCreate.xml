@@ -68,7 +68,7 @@
       <Query><![CDATA[SELECT VALUE { 'prop' : 'Some "String" Value' }]]></Query>
     </Input>
     <Output>
-      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some 'String' Value"}]]></ParsedQuery>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some \"String\" Value"}]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
@@ -78,6 +78,15 @@
     </Input>
     <Output>
       <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some 'String' Value"}]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Escaped Double Quotes Within Double Quotes]]></Description>
+      <Query><![CDATA[SELECT VALUE { 'prop' : "Some \"String\" Value" }]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT VALUE {"prop": "Some \"String\" Value"}]]></ParsedQuery>
     </Output>
   </Result>
   <Result>
