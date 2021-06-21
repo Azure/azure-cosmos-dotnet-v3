@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class FeedRangeInternalConverter : JsonConverter
     {
+        private const string PartitionKeyNoneValue = "None";
         private const string RangePropertyName = "Range";
         private const string PartitionKeyPropertyName = "PK";
         private const string PartitionKeyRangeIdPropertyName = "PKRangeId";
@@ -73,7 +74,13 @@ namespace Microsoft.Azure.Cosmos
 
             if (jObject.TryGetValue(FeedRangeInternalConverter.PartitionKeyPropertyName, out JToken pkJToken))
             {
-                if (!PartitionKey.TryParseJsonString(pkJToken.Value<string>(), out PartitionKey partitionKey))
+                string value = pkJToken.Value<string>();
+                if (FeedRangeInternalConverter.PartitionKeyNoneValue.Equals(value, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new FeedRangePartitionKey(PartitionKey.None);
+                }
+
+                if (!PartitionKey.TryParseJsonString(value, out PartitionKey partitionKey))
                 {
                     throw new JsonReaderException();
                 }
@@ -104,7 +111,15 @@ namespace Microsoft.Azure.Cosmos
             if (value is FeedRangePartitionKey feedRangePartitionKey)
             {
                 writer.WritePropertyName(FeedRangeInternalConverter.PartitionKeyPropertyName);
-                writer.WriteValue(feedRangePartitionKey.PartitionKey.ToJsonString());
+                if (feedRangePartitionKey.PartitionKey.IsNone)
+                {
+                    writer.WriteValue(FeedRangeInternalConverter.PartitionKeyNoneValue);
+                }
+                else
+                {
+                    writer.WriteValue(feedRangePartitionKey.PartitionKey.ToJsonString());
+                }
+
                 return;
             }
 

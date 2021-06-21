@@ -295,12 +295,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 uninitializedEnumerator.FeedRangeState.FeedRange,
                 trace,
                 this.cancellationToken);
-            if (childRanges.Count == 0)
-            {
-                throw new InvalidOperationException("Got back no children");
-            }
 
-            if (childRanges.Count == 1)
+            if (childRanges.Count <= 1)
             {
                 // We optimistically assumed that the cache is not stale.
                 // In the event that it is (where we only get back one child / the partition that we think got split)
@@ -312,24 +308,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     this.cancellationToken);
             }
 
-            if (childRanges.Count() <= 1)
+            if (childRanges.Count < 1)
             {
-                throw new InvalidOperationException("Expected more than 1 child");
+                string errorMessage = "SDK invariant violated 82086B2D: Must have at least one EPK range in a cross partition enumerator";
+                throw Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
+                                message: errorMessage,
+                                headers: null,
+                                stackTrace: null,
+                                trace: trace,
+                                error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated_82086B2D", Message = errorMessage });
             }
 
-            foreach (FeedRangeInternal childRange in childRanges)
+            if (childRanges.Count == 1)
             {
-                this.cancellationToken.ThrowIfCancellationRequested();
-
+                // On a merge, the 410/1002 results in a single parent
+                // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
                 OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
                     this.documentContainer,
                     uninitializedEnumerator.SqlQuerySpec,
-                    new FeedRangeState<QueryState>(childRange, uninitializedEnumerator.StartOfPageState),
+                    new FeedRangeState<QueryState>(uninitializedEnumerator.FeedRangeState.FeedRange, uninitializedEnumerator.StartOfPageState),
                     partitionKey: null,
                     uninitializedEnumerator.QueryPaginationOptions,
                     uninitializedEnumerator.Filter,
                     this.cancellationToken);
                 this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+            }
+            else
+            {
+                // Split
+                foreach (FeedRangeInternal childRange in childRanges)
+                {
+                    this.cancellationToken.ThrowIfCancellationRequested();
+
+                    OrderByQueryPartitionRangePageAsyncEnumerator childPaginator = new OrderByQueryPartitionRangePageAsyncEnumerator(
+                        this.documentContainer,
+                        uninitializedEnumerator.SqlQuerySpec,
+                        new FeedRangeState<QueryState>(childRange, uninitializedEnumerator.StartOfPageState),
+                        partitionKey: null,
+                        uninitializedEnumerator.QueryPaginationOptions,
+                        uninitializedEnumerator.Filter,
+                        this.cancellationToken);
+                    this.uninitializedEnumeratorsAndTokens.Enqueue((childPaginator, token));
+                }
             }
 
             // Recursively retry

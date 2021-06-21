@@ -46,15 +46,20 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
         /// <param name="initalCapacity">Initial capacity to help avoid intermeidary allocations.</param>
+        /// <param name="enableEncodedStrings">Only applicable to the binary writer</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
-            int initalCapacity = 256)
+            int initalCapacity = 256,
+            bool enableEncodedStrings = true)
         {
             return jsonSerializationFormat switch
             {
                 JsonSerializationFormat.Text => new JsonTextWriter(initalCapacity),
-                JsonSerializationFormat.Binary => new JsonBinaryWriter(initalCapacity, serializeCount: false),
+                JsonSerializationFormat.Binary => new JsonBinaryWriter(
+                    initialCapacity: initalCapacity,
+                    serializeCount: false,
+                    enableEncodedStrings: enableEncodedStrings),
                 _ => throw new ArgumentException(
                         string.Format(
                             CultureInfo.CurrentCulture,
