@@ -160,10 +160,12 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (!responseMessage.IsSuccessStatusCode)
                         {
-                            return new ResponseMessage(responseMessage.StatusCode)
-                            {
-                                Trace = trace
-                            };
+                            return new ResponseMessage(
+                                responseMessage.StatusCode,
+                                requestMessage: null,
+                                responseMessage.Headers,
+                                responseMessage.CosmosException,
+                                trace);
                         }
 
                         if (responseMessage is QueryResponse queryResponse)
