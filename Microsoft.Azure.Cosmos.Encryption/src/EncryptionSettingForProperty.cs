@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
             catch (CosmosException ex)
             {
+                // if there was a retry with ifNoneMatchEtags
                 if (ex.StatusCode == HttpStatusCode.NotModified && !forceRefreshGatewayCache)
                 {
                     throw new InvalidOperationException($"The Client Encryption Key needs to be rewrapped with a valid Key Encryption Key." +
