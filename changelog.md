@@ -1,3 +1,13 @@
+## <a name="recommended-version"></a> Recommended version
+
+The **minimum recommended version is [3.20.0](#3.20.0)**.
+
+Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes.
+
+Any known issues detected on that version are listed in the [known issues](#known-issues) section.
+
+## Release notes
+
 Preview features are treated as a separate branch and will not be included in the official release until the feature is ready. Each preview release lists all the additional features that are enabled.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -718,6 +728,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to scale non-partitioned containers.
 - Extensible and customizable serializer.
 - Extensible request pipeline with support for custom handlers.
+
+## <a name="known-issues"></a> Known issues
+
+Below is a list of any know issues affecting the [recommended minimum version](#recommended-version):
+
+| Issue | Impact | Mitigation | Tracking link |
+| --- | --- | --- | --- |
 
 ## Release & Retirement dates
 
