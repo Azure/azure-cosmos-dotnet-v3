@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             return new ResponseMessage(
                                 responseMessage.StatusCode,
-                                responseMessage.RequestMessage,
+                                requestMessage: null,
                                 responseMessage.Headers,
                                 responseMessage.CosmosException,
                                 trace);
