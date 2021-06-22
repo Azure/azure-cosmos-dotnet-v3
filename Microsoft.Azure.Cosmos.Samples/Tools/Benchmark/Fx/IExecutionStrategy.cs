@@ -7,7 +7,7 @@ namespace CosmosBenchmark
     using System;
     using System.Threading.Tasks;
 
-    internal interface IExecutionStrategy
+    internal abstract class IExecutionStrategy
     {
         public static IExecutionStrategy StartNew(
             BenchmarkConfig config,
@@ -16,7 +16,7 @@ namespace CosmosBenchmark
             return new ParallelExecutionStrategy(benchmarkOperation);
         }
 
-        public Task<RunSummary> ExecuteAsync(
+        public abstract Task<RunSummary> ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             bool traceFalures,

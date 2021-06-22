@@ -24,7 +24,7 @@ namespace CosmosBenchmark
             this.benchmarkOperation = benchmarkOperation;
         }
 
-        public async Task<RunSummary> ExecuteAsync(
+        public override async Task<RunSummary> ExecuteAsync(
             int serialExecutorConcurrency,
             int serialExecutorIterationCount,
             bool traceFailures,
