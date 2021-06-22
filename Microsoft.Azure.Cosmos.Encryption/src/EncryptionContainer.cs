@@ -1410,7 +1410,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 return await this.ReadManyItemsHelperAsync(
                     items,
                     clonedRequestOptions,
-                    cancellationToken);
+                    cancellationToken,
+                    isRetry: true);
             }
 
             Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(responseMessage.Content, encryptionSettings, cancellationToken);
