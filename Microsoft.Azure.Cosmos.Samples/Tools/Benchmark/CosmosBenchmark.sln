@@ -5,22 +5,30 @@ VisualStudioVersion = 16.0.29102.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CosmosBenchmark", "CosmosBenchmark.csproj", "{929BCCC9-E268-4788-A6C8-3CA441E20965}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CosmosBenchmarkFx", "..\BenchmarkFx\CosmosBenchmarkFx.csproj", "{D1CC90E3-B729-43A9-92F0-0B20DEE208EB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BenchmarkFx", "..\BenchmarkFx\BenchmarkFx.csproj", "{A0228D59-BFFE-4D3D-B415-190F2A043735}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Debug|x64.ActiveCfg = Debug|x64
+		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Debug|x64.Build.0 = Debug|x64
 		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D1CC90E3-B729-43A9-92F0-0B20DEE208EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D1CC90E3-B729-43A9-92F0-0B20DEE208EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D1CC90E3-B729-43A9-92F0-0B20DEE208EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D1CC90E3-B729-43A9-92F0-0B20DEE208EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Release|x64.ActiveCfg = Release|x64
+		{929BCCC9-E268-4788-A6C8-3CA441E20965}.Release|x64.Build.0 = Release|x64
+		{A0228D59-BFFE-4D3D-B415-190F2A043735}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0228D59-BFFE-4D3D-B415-190F2A043735}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0228D59-BFFE-4D3D-B415-190F2A043735}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A0228D59-BFFE-4D3D-B415-190F2A043735}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0228D59-BFFE-4D3D-B415-190F2A043735}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0228D59-BFFE-4D3D-B415-190F2A043735}.Release|x64.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
