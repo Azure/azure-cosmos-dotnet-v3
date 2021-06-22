@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.18.0</ClientOfficialVersion>
-		<ClientPreviewVersion>3.19.0</ClientPreviewVersion>
+		<ClientOfficialVersion>3.20.0</ClientOfficialVersion>
+		<ClientPreviewVersion>3.20.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview</ClientPreviewSuffixVersion>
-		<DirectVersion>3.19.1</DirectVersion>
-		<EncryptionVersion>1.0.0-previewV14</EncryptionVersion>
+		<DirectVersion>3.19.3</DirectVersion>
+		<EncryptionVersion>1.0.0-previewV15</EncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
 		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW</DefineConstants>

@@ -11,32 +11,21 @@ namespace Microsoft.Azure.Cosmos
     internal class UserAgentContainer : Documents.UserAgentContainer
     {
         private const int MaxOperatingSystemString = 30;
-        private string cosmosBaseUserAgent;
+        private readonly string cosmosBaseUserAgent;
 
-        public UserAgentContainer()
-            : base()
+        public UserAgentContainer(
+            string features = null,
+            string regionConfiguration = "NS",
+            string suffix = null) 
+               : base()
         {
+            this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(
+                features: features,
+                regionConfiguration: regionConfiguration);
+            this.Suffix = suffix ?? string.Empty;
         }
 
-        internal override string BaseUserAgent
-        {
-            get
-            {
-                if (this.cosmosBaseUserAgent == null)
-                {
-                    this.cosmosBaseUserAgent = this.CreateBaseUserAgentString();
-                }
-
-                return this.cosmosBaseUserAgent;
-            }
-        }
-
-        internal void SetFeatures(string features)
-        {
-            // Regenerate base user agent to account for features
-            this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(features);
-            this.Suffix = string.Empty;
-        }
+        internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;
 
         protected virtual void GetEnvironmentInformation(
             out string clientVersion,
@@ -49,13 +38,15 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             clientVersion = environmentInformation.ClientVersion;
             directVersion = environmentInformation.DirectVersion;
-            clientId = environmentInformation.ClientId;
+            clientId = CosmosClient.numberOfClientsCreated.ToString();
             processArchitecture = environmentInformation.ProcessArchitecture;
             operatingSystem = environmentInformation.OperatingSystem;
             runtimeFramework = environmentInformation.RuntimeFramework;
         }
 
-        private string CreateBaseUserAgentString(string features = null)
+        private string CreateBaseUserAgentString(
+            string features = null,
+            string regionConfiguration = null)
         {
             this.GetEnvironmentInformation(
                 out string clientVersion,
@@ -73,6 +64,11 @@ namespace Microsoft.Azure.Cosmos
             // Regex replaces all special characters with empty space except . - | since they do not cause format exception for the user agent string.
             // Do not change the cosmos-netstandard-sdk as it is required for reporting
             string baseUserAgent = $"cosmos-netstandard-sdk/{clientVersion}" + Regex.Replace($"|{directVersion}|{clientId}|{processArchitecture}|{operatingSystem}|{runtimeFramework}|", @"[^0-9a-zA-Z\.\|\-]+", " ");
+
+            if (!string.IsNullOrEmpty(regionConfiguration))
+            {
+                baseUserAgent += $"{regionConfiguration}|";
+            }
 
             if (!string.IsNullOrEmpty(features))
             {

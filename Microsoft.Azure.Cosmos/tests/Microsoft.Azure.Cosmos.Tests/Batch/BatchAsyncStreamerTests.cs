@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private readonly BatchAsyncBatcherExecuteDelegate ExecutorWithFailure = (PartitionKeyRangeServerBatchRequest request, ITrace trace, CancellationToken cancellationToken) => throw expectedException;
 
-        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, ITrace trace, CancellationToken cancellation) => Task.CompletedTask;
+        private readonly BatchAsyncBatcherRetryDelegate Retrier = (ItemBatchOperation operation, CancellationToken cancellation) => Task.CompletedTask;
 
         [DataTestMethod]
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static ItemBatchOperationContext AttachContext(ItemBatchOperation operation)
         {
-            ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty);
+            ItemBatchOperationContext context = new ItemBatchOperationContext(string.Empty, NoOpTrace.Singleton);
             operation.AttachContext(context);
             return context;
         }

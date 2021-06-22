@@ -26,22 +26,17 @@
         public static Container container;
 
         [ClassInitialize()]
-        public static void ClassInit(TestContext context)
+        public static async Task ClassInitAsync(TestContext context)
         {
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(useGateway: false);
-            database = client
-                .CreateDatabaseAsync(
+            EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
-                    cancellationToken: default)
-                .Result
-                .Database;
-            container = database
-                .CreateContainerAsync(
+                    cancellationToken: default);
+
+            EndToEndTraceWriterBaselineTests.container = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/id",
-                    throughput: 20000)
-                .Result
-                .Container;
+                    throughput: 20000);
 
             for (int i = 0; i < 100; i++)
             {
@@ -51,14 +46,17 @@
                         { "id", CosmosString.Create(i.ToString()) }
                     });
 
-                _ = container.CreateItemAsync(JToken.Parse(cosmosObject.ToString())).Result;
+                await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
             }
         }
 
         [ClassCleanup()]
-        public static void ClassCleanup()
+        public static async Task ClassCleanupAsync()
         {
-            _ = database.DeleteAsync().Result;
+            if(database != null)
+            {
+                await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
+            }
         }
 
         [TestMethod]
@@ -216,16 +214,14 @@
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
@@ -280,16 +276,14 @@
 
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
@@ -879,7 +873,7 @@
                 CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                     createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
@@ -897,12 +891,59 @@
                     traces.Add(trace);
                 }
 
-                ITrace joinedTrace = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Bulk Operation", joinedTrace, startLineNumber, endLineNumber));
+                foreach (ITrace trace in traces)
+                {
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber));
+                }
             }
             //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Bulk with retry on throttle
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
+                Guid exceptionActivityId = Guid.NewGuid();
+                // Set a small retry count to reduce test time
+                CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                    builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
+                    .WithBulkExecution(true)
+                    .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                           transportClient,
+                           (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
+                                uri,
+                                resourceOperation,
+                                request,
+                                exceptionActivityId,
+                                errorMessage)))
+                    );
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions();
+                Container containerWithThrottleException = throttleClient.GetContainer(
+                    database.Id,
+                    container.Id);
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                ITrace trace = null;
+                try
+                {
+                    ItemResponse<ToDoActivity> createResponse = await containerWithThrottleException.CreateItemAsync<ToDoActivity>(
+                      item: testItem,
+                      partitionKey: new PartitionKey(testItem.id),
+                      requestOptions: requestOptions);
+                    Assert.Fail("Should have thrown a throttling exception");
+                }
+                catch (CosmosException ce) when ((int)ce.StatusCode == (int)Documents.StatusCodes.TooManyRequests)
+                {
+                    trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber));
+            }
 
             this.ExecuteTestSuite(inputs);
         }
@@ -1202,7 +1243,7 @@
         private sealed class TraceForBaselineTesting : ITrace
         {
             public readonly Dictionary<string, object> data;
-            public readonly List<TraceForBaselineTesting> children;
+            public readonly List<ITrace> children;
 
             public TraceForBaselineTesting(
                 string name,
@@ -1214,7 +1255,7 @@
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
-                this.children = new List<TraceForBaselineTesting>();
+                this.children = new List<ITrace>();
                 this.data = new Dictionary<string, object>();
             }
 
@@ -1266,8 +1307,13 @@
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
-                this.children.Add(child);
+                this.AddChild(child);
                 return child;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                this.children.Add(trace);
             }
 
             public static TraceForBaselineTesting GetRootTrace()

@@ -235,6 +235,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
+                    // Initialization issue, there are no enumerators to invoke
+                    this.hasMoreResults = false;
                     throw createException;
                 }
 
@@ -247,9 +249,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossPartitionChangeFeedAsyncEnumerator enumerator = monadicEnumerator.Result;
-            if (!await enumerator.MoveNextAsync(trace))
+            enumerator.SetCancellationToken(cancellationToken);
+
+            try
             {
-                throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
+                if (!await enumerator.MoveNextAsync(trace))
+                {
+                    throw new InvalidOperationException("ChangeFeed enumerator should always have a next continuation");
+                }
+            }
+            catch (OperationCanceledException ex) when (!(ex is CosmosOperationCanceledException))
+            {
+                throw new CosmosOperationCanceledException(ex, trace);
             }
 
             if (enumerator.Current.Failed)
@@ -259,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     trace,
                     out CosmosException cosmosException))
                 {
-                    throw enumerator.Current.Exception;
+                    throw ExceptionWithStackTraceException.UnWrapMonadExcepion(enumerator.Current.Exception, trace);
                 }
 
                 if (!IsRetriableException(cosmosException))
@@ -291,40 +302,12 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
 
             CrossFeedRangeState<ChangeFeedState> crossFeedRangeState = crossFeedRangePage.State;
-            string continuationToken;
-            if (this.changeFeedRequestOptions.EmitOldContinuationToken)
-            {
-                List<CompositeContinuationToken> compositeContinuationTokens = new List<CompositeContinuationToken>();
-                for (int i = 0; i < crossFeedRangeState.Value.Length; i++)
-                {
-                    FeedRangeState<ChangeFeedState> changeFeedFeedRangeState = crossFeedRangeState.Value.Span[i];
-                    string token = changeFeedFeedRangeState.State is ChangeFeedStateContinuation changeFeedStateContinuation ? ((CosmosString)changeFeedStateContinuation.ContinuationToken).Value : null;
-                    Documents.Routing.Range<string> range = ((FeedRangeEpk)changeFeedFeedRangeState.FeedRange).Range;
-                    CompositeContinuationToken compositeContinuationToken = new CompositeContinuationToken()
-                    {
-                        Range = range,
-                        Token = token,
-                    };
-
-                    compositeContinuationTokens.Add(compositeContinuationToken);
-                }
-
-                FeedRangeCompositeContinuation feedRangeCompositeContinuationToken = new FeedRangeCompositeContinuation(
-                    await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken),
-                    FeedRangeEpk.FullRange,
-                    compositeContinuationTokens);
-
-                continuationToken = feedRangeCompositeContinuationToken.ToString();
-            }
-            else
-            {
-                ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(crossFeedRangeState.Value);
-                continuationToken = VersionedAndRidCheckedCompositeToken.ToCosmosElement(
-                    new VersionedAndRidCheckedCompositeToken(
-                        VersionedAndRidCheckedCompositeToken.Version.V2,
-                        changeFeedCrossFeedRangeState.ToCosmosElement(),
-                        await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken))).ToString();
-            }
+            ChangeFeedCrossFeedRangeState changeFeedCrossFeedRangeState = new ChangeFeedCrossFeedRangeState(crossFeedRangeState.Value);
+            string continuationToken = VersionedAndRidCheckedCompositeToken.ToCosmosElement(
+                new VersionedAndRidCheckedCompositeToken(
+                    VersionedAndRidCheckedCompositeToken.Version.V2,
+                    changeFeedCrossFeedRangeState.ToCosmosElement(),
+                    await this.documentContainer.GetResourceIdentifierAsync(trace, cancellationToken))).ToString();
 
             responseMessage.Headers.ContinuationToken = continuationToken;
             responseMessage.Headers.RequestCharge = changeFeedPage.RequestCharge;

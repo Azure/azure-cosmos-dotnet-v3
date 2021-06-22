@@ -3413,7 +3413,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             while (e != null)
             {
                 DocumentClientException docException = e as DocumentClientException;
-                if (docException != null && docException.Error != null)
+                if (docException?.Error != null)
                 {
                     exceptionMessage.Append("Code : " + docException.Error.Code);
                     if (docException.Error.ErrorDetails != null)

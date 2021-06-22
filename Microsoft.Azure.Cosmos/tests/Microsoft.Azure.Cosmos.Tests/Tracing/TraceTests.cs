@@ -38,6 +38,23 @@
         }
 
         [TestMethod]
+        public void TestAddChild()
+        {
+            Trace oneChild = Trace.GetRootTrace(name: "OneChild");
+            Trace twoChild = Trace.GetRootTrace(name: "TwoChild");
+            Trace rootTrace;
+            using (rootTrace = Trace.GetRootTrace(name: "RootTrace"))
+            {
+                rootTrace.AddChild(oneChild);
+                rootTrace.AddChild(twoChild);
+            }
+
+            Assert.AreEqual(2, rootTrace.Children.Count);
+            Assert.AreEqual(oneChild, rootTrace.Children[0]);
+            Assert.AreEqual(twoChild, rootTrace.Children[1]);
+        }
+
+        [TestMethod]
         public void TestTraceChildren()
         {
             using (Trace rootTrace = Trace.GetRootTrace(name: "RootTrace", component: TraceComponent.Query, level: TraceLevel.Info))
@@ -74,6 +91,7 @@
         }
 
         [TestMethod]
+        [Timeout(5000)]
         public void ValidateStoreResultSerialization()
         {
             HashSet<string> storeResultProperties = typeof(StoreResult).GetProperties(BindingFlags.Public | BindingFlags.Instance).Select(x => x.Name).ToHashSet<string>();
@@ -99,7 +117,8 @@
                 sessionToken: new SimpleSessionToken(42),
                 usingLocalLSN: true,
                 activityId: Guid.Empty.ToString(),
-                backendRequestDurationInMs: "4.2");
+                backendRequestDurationInMs: "4.2",
+                transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats());
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                             DateTime.MinValue,
@@ -109,7 +128,7 @@
                             OperationType.Query,
                             new Uri("http://someUri1.com"));
 
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+            ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);
 
             CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(trace);
             string json = diagnostics.ToString();
@@ -121,6 +140,8 @@
             storeResultProperties.Remove(nameof(storeResult.BackendRequestDurationInMs));
             storeResultProperties.Add("TransportException");
             storeResultProperties.Remove(nameof(storeResult.Exception));
+            storeResultProperties.Add("RntbdRequestStats");
+            storeResultProperties.Remove(nameof(storeResult.TransportRequestStats));
 
             foreach (string key in jsonPropertyNames)
             {

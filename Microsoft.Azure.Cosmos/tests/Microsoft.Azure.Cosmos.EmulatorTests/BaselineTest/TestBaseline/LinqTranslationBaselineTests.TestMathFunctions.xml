@@ -7,7 +7,7 @@
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["DecimalField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -18,7 +18,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -30,7 +30,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]]></SqlQuery>
+WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -42,7 +42,7 @@ WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["IntField"]) 
 FROM root 
-WHERE ((root["IntField"] >= -2147483648) AND (root["IntField"] <= 2147483647)) ]]></SqlQuery>
+WHERE ((root["IntField"] >= -2147483648) AND (root["IntField"] <= 2147483647))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -54,7 +54,7 @@ WHERE ((root["IntField"] >= -2147483648) AND (root["IntField"] <= 2147483647)) ]
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -9.2233720368547758E+18) AND (root["NumericField"] <= 9.2233720368547758E+18)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -9.2233720368547758E+18) AND (root["NumericField"] <= 9.2233720368547758E+18))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -66,7 +66,7 @@ WHERE ((root["NumericField"] >= -9.2233720368547758E+18) AND (root["NumericField
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -78,7 +78,7 @@ WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127)) ]]></Sq
       <SqlQuery><![CDATA[
 SELECT VALUE ABS(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -32768) AND (root["NumericField"] <= 32767)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -32768) AND (root["NumericField"] <= 32767))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -90,7 +90,7 @@ WHERE ((root["NumericField"] >= -32768) AND (root["NumericField"] <= 32767)) ]]>
       <SqlQuery><![CDATA[
 SELECT VALUE ACOS(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -1) AND (root["NumericField"] <= 1)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -1) AND (root["NumericField"] <= 1))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -102,7 +102,7 @@ WHERE ((root["NumericField"] >= -1) AND (root["NumericField"] <= 1)) ]]></SqlQue
       <SqlQuery><![CDATA[
 SELECT VALUE ASIN(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -1) AND (root["NumericField"] <= 1)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -1) AND (root["NumericField"] <= 1))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -113,7 +113,7 @@ WHERE ((root["NumericField"] >= -1) AND (root["NumericField"] <= 1)) ]]></SqlQue
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ATN2(root["NumericField"], 1) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -124,7 +124,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CEILING(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -135,7 +135,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE CEILING(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -147,7 +147,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE CEILING(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]]></SqlQuery>
+WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -158,7 +158,7 @@ WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE COS(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -170,7 +170,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE EXP(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -3) AND (root["NumericField"] <= 3)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -3) AND (root["NumericField"] <= 3))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -181,7 +181,7 @@ WHERE ((root["NumericField"] >= -3) AND (root["NumericField"] <= 3)) ]]></SqlQue
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE FLOOR(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -192,7 +192,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE FLOOR(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -204,7 +204,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE FLOOR(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]]></SqlQuery>
+WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -216,7 +216,7 @@ WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]
       <SqlQuery><![CDATA[
 SELECT VALUE LOG(root["NumericField"]) 
 FROM root 
-WHERE (root["NumericField"] != 0) ]]></SqlQuery>
+WHERE (root["NumericField"] != 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -228,7 +228,7 @@ WHERE (root["NumericField"] != 0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE LOG(root["NumericField"], 2) 
 FROM root 
-WHERE (root["NumericField"] != 0) ]]></SqlQuery>
+WHERE (root["NumericField"] != 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -240,7 +240,7 @@ WHERE (root["NumericField"] != 0) ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE LOG10(root["NumericField"]) 
 FROM root 
-WHERE (root["NumericField"] != 0) ]]></SqlQuery>
+WHERE (root["NumericField"] != 0)]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -251,7 +251,7 @@ WHERE (root["NumericField"] != 0) ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE POWER(root["NumericField"], 1) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -262,7 +262,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE ROUND(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -273,7 +273,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE SIGN(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -284,7 +284,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE SIGN(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -296,7 +296,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE SIGN(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]]></SqlQuery>
+WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -307,7 +307,7 @@ WHERE ((root["NumericField"] > -1000000) AND (root["NumericField"] < 1000000)) ]
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE SIGN(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -318,7 +318,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE SIGN(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -330,7 +330,7 @@ FROM root ]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE SIGN(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -342,7 +342,7 @@ WHERE ((root["NumericField"] >= -128) AND (root["NumericField"] <= 127)) ]]></Sq
       <SqlQuery><![CDATA[
 SELECT VALUE SIGN(root["NumericField"]) 
 FROM root 
-WHERE ((root["NumericField"] >= -32768) AND (root["NumericField"] <= 32767)) ]]></SqlQuery>
+WHERE ((root["NumericField"] >= -32768) AND (root["NumericField"] <= 32767))]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -353,7 +353,7 @@ WHERE ((root["NumericField"] >= -32768) AND (root["NumericField"] <= 32767)) ]]>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE SIN(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -364,7 +364,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE SQRT(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -375,7 +375,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE TRUNC(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
   <Result>
@@ -386,7 +386,7 @@ FROM root ]]></SqlQuery>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE TRUNC(root["NumericField"]) 
-FROM root ]]></SqlQuery>
+FROM root]]></SqlQuery>
     </Output>
   </Result>
 </Results>

@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(4, spatialPath.SpatialTypes.Count); // All SpatialTypes are returned
 
             Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.IncludedPaths.Count());
-            Assert.AreEqual(1, responseProperties.ClientEncryptionPolicy.PolicyFormatVersion);
+            Assert.IsTrue(responseProperties.ClientEncryptionPolicy.PolicyFormatVersion <= 1);
             ClientEncryptionIncludedPath clientEncryptionIncludedPath = responseProperties.ClientEncryptionPolicy.IncludedPaths.First();
             Assert.IsTrue(this.VerifyClientEncryptionIncludedPath(clientEncryptionIncludedPath1, clientEncryptionIncludedPath));
         }
@@ -699,7 +699,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized' or 'Plaintext'."));
+                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'. "));
+            }
+
+            path1.EncryptionType = "Plaintext";
+
+            // Invalid EncryptionType
+            try
+            {
+                ContainerResponse containerResponse = await this.database.DefineContainer(containerName, partitionKeyPath)
+                    .WithClientEncryptionPolicy()
+                        .WithIncludedPath(path1)
+                        .Attach()
+                    .CreateAsync();
+
+                Assert.Fail("CreateCollection with invalid ClientEncryptionPolicy should have failed.");
+            }
+            catch (ArgumentException ex)
+            {
+                Assert.IsTrue(ex.Message.Contains("EncryptionType should be either 'Deterministic' or 'Randomized'. "));
             }
 
             path1.EncryptionType = "Deterministic";
@@ -717,7 +735,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             catch (ArgumentException ex)
             {
-                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'."));
+                Assert.IsTrue(ex.Message.Contains("EncryptionAlgorithm should be 'AEAD_AES_256_CBC_HMAC_SHA256'. "));
             }
         }
 

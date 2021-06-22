@@ -100,14 +100,15 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed = false;
 
         internal static int numberOfClientsCreated;
+        internal DateTime? DisposedDateTimeUtc { get; private set; } = null;
 
         static CosmosClient()
         {
-            #if PREVIEW
+#if PREVIEW
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2020_07_15;
-            #else
+#else
             HttpConstants.Versions.CurrentVersion = HttpConstants.Versions.v2018_12_31;
-            #endif
+#endif
             HttpConstants.Versions.CurrentVersionUTF8 = Encoding.UTF8.GetBytes(HttpConstants.Versions.CurrentVersion);
 
             // V3 always assumes assemblies exists
@@ -201,27 +202,10 @@ namespace Microsoft.Azure.Cosmos
             string accountEndpoint,
             string authKeyOrResourceToken,
             CosmosClientOptions clientOptions = null)
+             : this(accountEndpoint,
+                     AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken),
+                     clientOptions)
         {
-            if (string.IsNullOrEmpty(accountEndpoint))
-            {
-                throw new ArgumentNullException(nameof(accountEndpoint));
-            }
-
-            if (string.IsNullOrEmpty(authKeyOrResourceToken))
-            {
-                throw new ArgumentNullException(nameof(authKeyOrResourceToken));
-            }
-
-            this.Endpoint = new Uri(accountEndpoint);
-            this.AccountKey = authKeyOrResourceToken;
-            this.AuthorizationTokenProvider = AuthorizationTokenProvider.CreateWithResourceTokenOrAuthKey(authKeyOrResourceToken);
-
-            this.ClientContext = ClientContextCore.Create(
-                this,
-                clientOptions);
-
-            this.IncrementNumberOfClientsCreated();
-            this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
         /// <summary>
@@ -234,34 +218,37 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
         /// <param name="tokenCredential"><see cref="TokenCredential"/>The token to provide AAD token for authorization.</param>
         /// <param name="clientOptions">(Optional) client options</param>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClient(
+        public CosmosClient(
             string accountEndpoint,
             TokenCredential tokenCredential,
             CosmosClientOptions clientOptions = null)
+            : this(accountEndpoint,
+                    new AuthorizationTokenProviderTokenCredential(
+                        tokenCredential,
+                        new Uri(accountEndpoint),
+                        clientOptions?.TokenCredentialBackgroundRefreshInterval),
+                    clientOptions)
         {
-            if (accountEndpoint == null)
+        }
+
+        /// <summary>
+        /// Used by Compute
+        /// Creates a new CosmosClient with the AuthorizationTokenProvider
+        /// </summary>
+        internal CosmosClient(
+             string accountEndpoint,
+             AuthorizationTokenProvider authorizationTokenProvider,
+             CosmosClientOptions clientOptions)
+        {
+            if (string.IsNullOrEmpty(accountEndpoint))
             {
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
-            if (tokenCredential == null)
-            {
-                throw new ArgumentNullException(nameof(tokenCredential));
-            }
+            this.Endpoint = new Uri(accountEndpoint);
+            this.AuthorizationTokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
             clientOptions ??= new CosmosClientOptions();
-
-            this.Endpoint = new Uri(accountEndpoint);
-            this.AuthorizationTokenProvider = new AuthorizationTokenProviderTokenCredential(
-                tokenCredential,
-                this.Endpoint,
-                clientOptions.RequestTimeout,
-                clientOptions.TokenCredentialBackgroundRefreshInterval);
 
             this.ClientContext = ClientContextCore.Create(
                 this,
@@ -303,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint, 
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         string authKeyOrResourceToken,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
@@ -314,8 +301,8 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(containers));
             }
 
-            CosmosClient cosmosClient = new CosmosClient(accountEndpoint, 
-                                                         authKeyOrResourceToken, 
+            CosmosClient cosmosClient = new CosmosClient(accountEndpoint,
+                                                         authKeyOrResourceToken,
                                                          cosmosClientOptions);
 
             await cosmosClient.InitializeContainersAsync(containers, cancellationToken);
@@ -385,12 +372,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A CosmosClient object.
         /// </returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
+        public static async Task<CosmosClient> CreateAndInitializeAsync(string accountEndpoint,
                                                                         TokenCredential tokenCredential,
                                                                         IReadOnlyList<(string databaseId, string containerId)> containers,
                                                                         CosmosClientOptions cosmosClientOptions = null,
@@ -506,7 +488,10 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         public virtual Task<AccountProperties> ReadAccountAsync()
         {
-            return ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint);
+            return this.ClientContext.OperationHelperAsync(
+                nameof(ReadAccountAsync),
+                null,
+                (trace) => ((IDocumentClientInternal)this.DocumentClient).GetDatabaseAccountInternalAsync(this.Endpoint));
         }
 
         /// <summary>
@@ -522,7 +507,7 @@ namespace Microsoft.Azure.Cosmos
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// Database db = cosmosClient.GetDatabase("myDatabaseId"];
+        /// Database db = cosmosClient.GetDatabase("myDatabaseId");
         /// DatabaseResponse response = await db.ReadAsync();
         /// ]]>
         /// </code>
@@ -1190,7 +1175,7 @@ namespace Microsoft.Azure.Cosmos
                options: requestOptions);
         }
 
-        private Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers, 
+        private Task InitializeContainersAsync(IReadOnlyList<(string databaseId, string containerId)> containers,
                                           CancellationToken cancellationToken)
         {
             try
@@ -1262,20 +1247,14 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!this.isDisposed)
             {
+                this.DisposedDateTimeUtc = DateTime.UtcNow;
+
                 if (disposing)
                 {
                     this.ClientContext.Dispose();
                 }
 
                 this.isDisposed = true;
-            }
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (this.isDisposed)
-            {
-                throw new ObjectDisposedException($"Accessing {nameof(CosmosClient)} after it is disposed is invalid.");
             }
         }
     }

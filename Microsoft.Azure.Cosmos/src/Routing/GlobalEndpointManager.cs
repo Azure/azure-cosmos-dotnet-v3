@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
-    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -105,12 +104,14 @@ namespace Microsoft.Azure.Cosmos.Routing
         public static Task<AccountProperties> GetDatabaseAccountFromAnyLocationsAsync(
             Uri defaultEndpoint,
             IList<string>? locations,
-            Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
+            Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
+            CancellationToken cancellationToken)
         {
             GetAccountPropertiesHelper threadSafeGetAccountHelper = new GetAccountPropertiesHelper(
                defaultEndpoint,
                locations?.GetEnumerator(),
-               getDatabaseAccountFn);
+               getDatabaseAccountFn,
+               cancellationToken);
 
             return threadSafeGetAccountHelper.GetAccountPropertiesAsync();
         }
@@ -120,22 +121,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         private class GetAccountPropertiesHelper
         {
-            private readonly CancellationTokenSource CancellationTokenSource = new CancellationTokenSource();
+            private readonly CancellationTokenSource CancellationTokenSource;
             private readonly Uri DefaultEndpoint;
             private readonly IEnumerator<string>? Locations;
             private readonly Func<Uri, Task<AccountProperties>> GetDatabaseAccountFn;
+            private readonly List<Exception> TransientExceptions = new List<Exception>();
             private AccountProperties? AccountProperties = null;
             private Exception? NonRetriableException = null;
-            private Exception? LastTransientException = null;
 
             public GetAccountPropertiesHelper(
                 Uri defaultEndpoint,
                 IEnumerator<string>? locations,
-                Func<Uri, Task<AccountProperties>> getDatabaseAccountFn)
+                Func<Uri, Task<AccountProperties>> getDatabaseAccountFn,
+                CancellationToken cancellationToken)
             {
                 this.DefaultEndpoint = defaultEndpoint;
                 this.Locations = locations;
                 this.GetDatabaseAccountFn = getDatabaseAccountFn;
+                this.CancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             }
 
             public async Task<AccountProperties> GetAccountPropertiesAsync()
@@ -186,12 +189,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                     tasksToWaitOn.Remove(completedTask);
                 }
 
-                if (this.LastTransientException == null)
+                if (this.TransientExceptions.Count == 0)
                 {
-                    throw new ArgumentException("Account properties and NonRetriableException are null and there is no LastTransientException.");
+                    throw new ArgumentException("Account properties and NonRetriableException are null and there are no TransientExceptions.");
                 }
 
-                throw this.LastTransientException;
+                if (this.TransientExceptions.Count == 1)
+                {
+                    throw this.TransientExceptions[0];
+                }
+
+                throw new AggregateException(this.TransientExceptions);
             }
 
             private async Task<AccountProperties> GetOnlyGlobalEndpointAsync()
@@ -213,12 +221,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                     throw this.NonRetriableException;
                 }
 
-                if (this.LastTransientException != null)
+                if (this.TransientExceptions.Count == 0)
                 {
-                    throw this.LastTransientException;
+                    throw new ArgumentException("Account properties and NonRetriableException are null and there are no TransientExceptions.");
                 }
 
-                throw new ArgumentException("The account properties and exceptions are null");
+                if (this.TransientExceptions.Count == 1)
+                {
+                    throw this.TransientExceptions[0];
+                }
+
+                throw new AggregateException(this.TransientExceptions);
             }
 
             /// <summary>
@@ -275,6 +288,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (this.CancellationTokenSource.IsCancellationRequested)
                     {
+                        lock (this.TransientExceptions)
+                        {
+                            this.TransientExceptions.Add(new OperationCanceledException("GlobalEndpointManager: Get account information canceled"));
+                        }
+
                         return;
                     }
 
@@ -297,14 +315,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                     else
                     {
-                        this.LastTransientException = e;
+                        lock (this.TransientExceptions)
+                        {
+                            this.TransientExceptions.Add(e);
+                        }
                     }
                 }
             }
 
             private static bool IsNonRetriableException(Exception exception)
             {
-                if (exception is DocumentClientException dce && dce.StatusCode == HttpStatusCode.Unauthorized)
+                if (exception is DocumentClientException dce && 
+                    (dce.StatusCode == HttpStatusCode.Unauthorized || dce.StatusCode == HttpStatusCode.Forbidden))
                 {
                     return true;
                 }
@@ -435,6 +457,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 DefaultTrace.TraceInformation("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Invoking refresh");
 
+                if (this.cancellationTokenSource.IsCancellationRequested)
+                {
+                    return;
+                }
+
                 await this.RefreshDatabaseAccountInternalAsync(forceRefresh: false);
             }
             catch (Exception ex)
@@ -467,6 +494,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         private async Task RefreshDatabaseAccountInternalAsync(bool forceRefresh)
         {
+            if (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                return;
+            }
+
             if (this.SkipRefresh(forceRefresh))
             {
                 return;
@@ -498,7 +530,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                         this.defaultEndpoint,
                         this.connectionPolicy.PreferredLocations,
-                        this.GetDatabaseAccountAsync),
+                        this.GetDatabaseAccountAsync,
+                        this.cancellationTokenSource.Token),
                     cancellationToken: this.cancellationTokenSource.Token,
                     forceRefresh: true);
 

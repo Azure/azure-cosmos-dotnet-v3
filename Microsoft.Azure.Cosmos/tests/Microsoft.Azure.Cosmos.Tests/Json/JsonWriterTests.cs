@@ -33,6 +33,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -53,6 +54,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -73,6 +75,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
         #endregion
         #region Numbers
@@ -96,6 +99,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -118,6 +122,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -140,6 +145,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -162,6 +168,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -184,6 +191,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -206,6 +214,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -228,6 +237,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -253,6 +263,7 @@
 
             this.VerifyWriter(tokensToWrite, numberValueString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -288,6 +299,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -348,6 +360,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -370,6 +383,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -398,6 +412,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedString);
                 this.VerifyWriter(tokensToWrite, binaryOutput);
+                this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
                 systemStringId++;
             }
         }
@@ -423,6 +438,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -442,6 +468,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -461,6 +498,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -480,6 +528,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -499,6 +558,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -518,6 +588,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -537,6 +618,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + dateTimeString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(dateTimeString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
         }
 
@@ -561,6 +653,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + hexString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(hexString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -580,6 +683,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + hexString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(hexString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -600,6 +714,7 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload, null, false);
             }
         }
 
@@ -627,6 +742,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + compressedString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -650,6 +776,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + compressedString.Length),
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -676,6 +813,18 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        (byte) compressedString.Length
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -705,6 +854,18 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        (byte) compressedString.Length
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -755,6 +916,19 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        JsonBinaryEncoding.TypeMarker.String2ByteLength,
+                        14,
+                        1
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(compressedString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
         }
 
@@ -765,12 +939,17 @@
             {
                 // Empty Guid
                 string guidString = "00000000-0000-0000-0000-000000000000";
-                string stringPayload = $"\"{guidString}\"";
                 JsonToken[] tokensToWrite =
                 {
                     JsonToken.String(guidString)
                 };
 
+                {
+                    string stringPayload = $"\"{guidString}\"";
+                    this.VerifyWriter(tokensToWrite, stringPayload);
+                }
+
+                {
                 byte[] compressedBinaryPayload =
                 {
                     BinaryFormat,
@@ -779,8 +958,19 @@
                     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 };
 
-                this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+            }
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -802,6 +992,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -823,6 +1024,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -844,6 +1056,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -865,6 +1088,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -886,6 +1120,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -907,6 +1152,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -918,15 +1174,26 @@
                     JsonToken.String(guidString)
                 };
 
-                byte[] binaryPayload =
+                byte[] compressedBinaryPayload =
                 {
                     BinaryFormat,
                     (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length),
                 };
-                binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
+                compressedBinaryPayload = compressedBinaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
-                this.VerifyWriter(tokensToWrite, binaryPayload);
+                this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -948,6 +1215,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -969,6 +1247,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -989,6 +1278,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
 
             {
@@ -1010,6 +1310,17 @@
 
                 this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, compressedBinaryPayload);
+
+                {
+                    List<byte> binaryPayload = new List<byte>()
+                    {
+                        BinaryFormat,
+                        (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + guidString.Length)
+                    };
+
+                    binaryPayload.AddRange(Encoding.UTF8.GetBytes(guidString));
+                    this.VerifyWriter(tokensToWrite, binaryPayload.ToArray(), null, false);
+                }
             }
         }
 
@@ -1020,7 +1331,6 @@
             {
                 // 1 byte reference string
                 string stringValue = "hello";
-                string stringPayload = "[\"hello\",\"hello\"]";
                 JsonToken[] tokensToWrite =
                 {
                     JsonToken.ArrayStart(),
@@ -1029,6 +1339,10 @@
                     JsonToken.ArrayEnd()
                 };
 
+                string stringPayload = "[\"hello\",\"hello\"]";
+                this.VerifyWriter(tokensToWrite, stringPayload);
+
+                {
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
@@ -1040,8 +1354,23 @@
                     3,
                 };
 
-                this.VerifyWriter(tokensToWrite, stringPayload);
                 this.VerifyWriter(tokensToWrite, binaryPayload);
+            }
+
+                {
+                    byte[] binaryPayload =
+                    {
+                            BinaryFormat,
+                            JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                            12,
+                            (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "hello".Length),
+                            (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+                            (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "hello".Length),
+                            (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
+                    };
+
+                    this.VerifyWriter(tokensToWrite, binaryPayload, null, false);
+                }
             }
 
             {
@@ -1289,6 +1618,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1312,6 +1642,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1351,6 +1682,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1390,6 +1722,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1417,6 +1750,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1456,6 +1790,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1485,6 +1820,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1514,6 +1850,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1564,6 +1901,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1593,6 +1931,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1650,6 +1989,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
         #endregion Array
         #region Escaping
@@ -1739,6 +2079,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1762,6 +2103,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+            this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1808,6 +2150,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -1875,6 +2218,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, null, false);
         }
 
         [TestMethod]
@@ -2182,6 +2526,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2211,6 +2556,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2240,6 +2586,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2269,6 +2616,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2298,6 +2646,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2327,6 +2676,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2356,6 +2706,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2385,6 +2736,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
 
@@ -2413,6 +2765,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
 
             {
@@ -2438,6 +2791,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedStringOutput);
                 this.VerifyWriter(tokensToWrite, expectedBinaryOutput);
+                this.VerifyWriter(tokensToWrite, expectedBinaryOutput, null, false);
             }
         }
         #endregion
@@ -2489,11 +2843,11 @@
             }
         }
 
-        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, Exception expectedException = null)
+        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, Exception expectedException = null, bool enableEncodedStrings = true)
         {
             foreach (bool writeAsUtf8String in new bool[] { false, true })
             {
-                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, 256, enableEncodedStrings);
                 this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
             }
         }
