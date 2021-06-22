@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Data.Encryption.Cryptography;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
