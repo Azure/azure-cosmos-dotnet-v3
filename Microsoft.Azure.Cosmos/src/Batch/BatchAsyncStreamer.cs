@@ -133,6 +133,21 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        public void DispatchOnSignal()
+        {
+            BatchAsyncBatcher toDispatch = null;
+            lock (this.dispatchLimiter)
+            {
+                toDispatch = this.GetBatchToDispatchAndCreate();
+            }
+
+            if (toDispatch != null)
+            {
+                // Discarded for Fire & Forget
+                _ = toDispatch.DispatchAsync(this.partitionMetric, this.cancellationTokenSource.Token);
+            }
+        }
+
         public void Dispose()
         {
             this.cancellationTokenSource.Cancel();

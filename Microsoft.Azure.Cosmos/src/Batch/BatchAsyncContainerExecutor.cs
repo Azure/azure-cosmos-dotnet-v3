@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
 
             string resolvedPartitionKeyRangeId = await this.ResolvePartitionKeyRangeIdAsync(
                 operation, 
-                trace, 
+                trace,
                 cancellationToken).ConfigureAwait(false);
             BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(resolvedPartitionKeyRangeId);
             ItemBatchOperationContext context = new ItemBatchOperationContext(

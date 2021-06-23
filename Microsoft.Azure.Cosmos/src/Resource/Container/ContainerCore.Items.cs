@@ -546,6 +546,20 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
+        public IAsyncEnumerable<BulkOperationResponse<TContext>> ProcessBulkOperations<TContext>(
+                                    IAsyncEnumerable<BulkItemOperation<TContext>> inputOperations,
+                                    BulkRequestOptions requestOptions = null)
+        {
+            if (inputOperations == null)
+            {
+                throw new ArgumentNullException(nameof(inputOperations));
+            }
+
+            return new BulkAsyncEnumerable<TContext>(inputOperations,
+                                                       requestOptions,
+                                                       this);
+        }
+
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
