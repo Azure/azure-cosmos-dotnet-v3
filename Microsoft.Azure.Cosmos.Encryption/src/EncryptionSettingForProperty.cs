@@ -88,17 +88,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     {
                         return await this.BuildEncryptionAlgorithmForSettingAsync(
                            ifNoneMatchEtags: null,
-                           cancellationToken: cancellationToken,
                            shouldForceRefresh: true,
-                           forceRefreshGatewayCache: true);
+                           forceRefreshGatewayCache: true,
+                           cancellationToken: cancellationToken);
                     }
                     else
                     {
                         return await this.BuildEncryptionAlgorithmForSettingAsync(
                             ifNoneMatchEtags: clientEncryptionKeyProperties.ETag,
-                            cancellationToken: cancellationToken,
                             shouldForceRefresh: true,
-                            forceRefreshGatewayCache: false);
+                            forceRefreshGatewayCache: false,
+                            cancellationToken: cancellationToken);
                     }
                 }
                 else
