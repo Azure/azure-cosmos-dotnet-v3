@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string[] values = serialization.Split('|');
             Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}", values[0]);
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
-            Assert.AreEqual(CosmosClient.numberOfClientsCreated.ToString(), values[2]);
+            Assert.AreEqual(Math.Min(CosmosClient.numberOfClientsCreated, 10).ToString(), values[2]);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
             Assert.AreEqual(envInfo.OperatingSystem, values[4]);
             Assert.AreEqual(envInfo.RuntimeFramework, values[5]);
