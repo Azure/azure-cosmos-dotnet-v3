@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     internal class UserAgentContainer : Documents.UserAgentContainer
     {
         private const int MaxOperatingSystemString = 30;
+        private const int MaxClientId = 10;
         private readonly string cosmosBaseUserAgent;
 
         public UserAgentContainer(
@@ -38,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             clientVersion = environmentInformation.ClientVersion;
             directVersion = environmentInformation.DirectVersion;
-            clientId = CosmosClient.numberOfClientsCreated.ToString();
+            clientId = System.Math.Min(CosmosClient.numberOfClientsCreated, UserAgentContainer.MaxClientId).ToString();
             processArchitecture = environmentInformation.ProcessArchitecture;
             operatingSystem = environmentInformation.OperatingSystem;
             runtimeFramework = environmentInformation.RuntimeFramework;

@@ -181,12 +181,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void VerifyClientIDForUserAgentString()
         {
             CosmosClient.numberOfClientsCreated = 0; // reset
-            for (int i = 0; i < 10; i++)
+            const int max = 10;
+            for (int i = 0; i < max + 5; i++)
             {
                 using (CosmosClient client = TestCommon.CreateCosmosClient())
                 {
                     string userAgentString = client.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
-                    Assert.AreEqual(userAgentString.Split('|')[2], i.ToString());
+                    if (i <= max)
+                    {
+                        Assert.AreEqual(userAgentString.Split('|')[2], i.ToString());
+                    }
+                    else
+                    {
+                        Assert.AreEqual(userAgentString.Split('|')[2], max.ToString());
+                    }
                 }
             }
         }
