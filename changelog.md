@@ -392,7 +392,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#1613](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1613) Query FeedIterator: Adds IDisposable to fix memory leak. WARNING: This will require changes to fix static anlysis tools checking for dispose.
 - [#1550](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1550) CosmosOperationCanceledException: This enables users to access the diagnsotics when an operation is canceled via the cancellation token. The new type extends OperationCanceledException so it does not break current exception handling and includes the CosmosDiagnostic in the ToString().
 - [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Adds memory optimization to prevent coping the buffer
-- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Adds support for ignore case for [Contains](/azure/cosmos-db/sql-query-contains) and [StartsWith](/azure/cosmos-db/sql-query-startswith) functions.
+- [#1578](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1578) Query: Adds support for ignore case for Contains and StartsWith functions.
 - [#1602](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1602) Diagnostics: Adds CPU usage to all operations
 - [#1603](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/1603) Documentation: Adds new exception handling documentation
 
@@ -652,7 +652,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#100](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/100) Configurable Tcp settings to `CosmosClientOptions`.
 - [#615](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/615), [#775](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/775) Adds request diagnostics to response.
-- [#622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/622) Adds CRUD and query operations for users and permissions, which enables [ResourceToken](/azure/cosmos-db/secure-access-to-data#resource-tokens) support.
+- [#622](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/622) Adds CRUD and query operations for users and permissions, which enables ResourceToken support.
 - [#716](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/716) Added camel case serialization on LINQ query generation.
 - [#729](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/729), [#776](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/776) Adds aggregate (CountAsync/SumAsync etc.) extensions for LINQ query.
 - [#743](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/743) Adds `WebProxy` to `CosmosClientOptions`.
