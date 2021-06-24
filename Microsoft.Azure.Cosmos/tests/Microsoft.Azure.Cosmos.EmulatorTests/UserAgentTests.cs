@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             CosmosClient.numberOfClientsCreated = 0; // reset
             const int max = 10;
-            List<int> expected = new List<int>(max + 5);
+            List<int> expected = new List<int>();
             for (int i = 1; i < max + 5; i++)
             {
                 expected.Add(i > max ? max : i);
