@@ -19,13 +19,16 @@ namespace Microsoft.Azure.Cosmos
         private readonly ContainerInternal container;
         private readonly CancellationToken cancellationToken;
         private readonly ConcurrentDictionary<string, BatchAsyncStreamer> streamersByPartitionKeyRange = new ConcurrentDictionary<string, BatchAsyncStreamer>();
+        private readonly ConcurrentDictionary<string, SemaphoreSlim> limitersByPartitionkeyRange = new ConcurrentDictionary<string, SemaphoreSlim>();
         private readonly ConcurrentQueue<BulkOperationResponse<TContext>> outputBuffer;
+        private readonly SemaphoreSlim semaphore = new SemaphoreSlim(0);
 
         private readonly int maxPipelinedOperationsPossible = 1000;
         private readonly int maxMicroBatchSize = 100;
         private readonly int maxConcurrentOperationsPerPartition = 1;
         private readonly int defaultMaxDegreeOfConcurrency = 50;
-        private Task readInputTask;
+        private Task<bool> readInputTask;
+        private BulkOperationResponse<TContext> current;
 
         private int numberOfPipelinedOperations;
 
@@ -41,40 +44,60 @@ namespace Microsoft.Azure.Cosmos
             this.numberOfPipelinedOperations = 0;
         }
 
-        public BulkOperationResponse<TContext> Current => throw new System.NotImplementedException();
+        public BulkOperationResponse<TContext> Current => this.current;
 
         public ValueTask DisposeAsync()
         {
             return default;
         }
 
-        public ValueTask<bool> MoveNextAsync()
+        public async ValueTask<bool> MoveNextAsync()
         {
             if (this.readInputTask == null || this.readInputTask.IsCompleted)
             {
-                this.readInputTask = TaskHelper.InlineIfPossibleAsync(() => this.ReadInputOperationsAsync(this.inputOperationsEnumerator), null);
+                this.readInputTask = (Task<bool>)TaskHelper.InlineIfPossibleAsync(() => this.ReadInputOperationsAsync(this.inputOperationsEnumerator), null);
             }
 
-            // TODO : Return task of when first element to queue
-
-            Interlocked.Decrement(ref this.numberOfPipelinedOperations);
+            int decrementedValue = Interlocked.Decrement(ref this.numberOfPipelinedOperations);
+            Task taskForQueueNotEmpty = this.semaphore.WaitAsync(this.cancellationToken);
+            Task completedTask = await Task.WhenAny(taskForQueueNotEmpty, this.readInputTask);
+            if (completedTask == taskForQueueNotEmpty)
+            {
+                this.outputBuffer.TryDequeue(out this.current);
+                return true;
+            }
+            else
+            {
+                bool hasMoreOperations = this.readInputTask.Result;
+                if (!hasMoreOperations && decrementedValue == -1)
+                {
+                    this.current = null;
+                    return false;
+                }
+                else
+                {
+                    await this.semaphore.WaitAsync(this.cancellationToken);
+                    this.outputBuffer.TryDequeue(out this.current);
+                    return true;
+                }
+            }
+            
         }
 
         // To be called inside lock. Only one should be running at a time.
-        private async Task ReadInputOperationsAsync(IAsyncEnumerator<BulkItemOperation<TContext>> inputOperationsEnumerator)
+        private async Task<bool> ReadInputOperationsAsync(IAsyncEnumerator<BulkItemOperation<TContext>> inputOperationsEnumerator)
         {
             while (true)
             {
-                Interlocked.Increment(ref this.numberOfPipelinedOperations);
                 if (this.numberOfPipelinedOperations > this.maxPipelinedOperationsPossible)
                 {
-                    Interlocked.Decrement(ref this.numberOfPipelinedOperations);
-                    return;
+                    return true;
                 }
 
                 bool hasMoreOperations = await inputOperationsEnumerator.MoveNextAsync();
                 if (hasMoreOperations)
                 {
+                    Interlocked.Increment(ref this.numberOfPipelinedOperations);
                     PartitionKeyRange partitionKeyRange = await this.ResolvePartitionKeyRangeAsync(inputOperationsEnumerator.Current);
                     BatchAsyncStreamer streamer = this.GetOrAddStreamerForPartitionKeyRange(partitionKeyRange.Id);
                     BulkItemOperation<TContext> currentOperation = inputOperationsEnumerator.Current;
@@ -87,8 +110,11 @@ namespace Microsoft.Azure.Cosmos
                     itemBatchOperation.AttachContext(context);
                     streamer.Add(itemBatchOperation);
 
-                    _ = context.OperationTask.ContinueWith((operationTask) => 
-                    this.outputBuffer.Enqueue(this.CreateBulkResponse(operationTask.Result, currentOperation.OperationContext)));
+                    _ = context.OperationTask.ContinueWith((operationTask) =>
+                    {
+                        this.outputBuffer.Enqueue(this.CreateBulkResponse(operationTask.Result, currentOperation.OperationContext));
+                        this.semaphore.Release();
+                    });
                 }
                 else
                 {
@@ -96,6 +122,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         streamer.DispatchOnSignal();
                     }
+
+                    return false;
                 }
             }
         }
@@ -104,7 +132,8 @@ namespace Microsoft.Azure.Cosmos
         {
             return new BulkOperationResponse<TContext>(
                     transactionalBatchOperationResult,
-                    operationContext);
+                    operationContext,
+                    this.container);
         }
 
         private async Task<PartitionKeyRange> ResolvePartitionKeyRangeAsync(BulkItemOperation<TContext> operation)
@@ -142,7 +171,18 @@ namespace Microsoft.Azure.Cosmos
 
         private SemaphoreSlim GetOrAddLimiterForPartitionKeyRange(string partitionKeyRangeId)
         {
-            throw new NotImplementedException();
+            if (this.limitersByPartitionkeyRange.TryGetValue(partitionKeyRangeId, out SemaphoreSlim limiter))
+            {
+                return limiter;
+            }
+
+            SemaphoreSlim newLimiter = new SemaphoreSlim(1, this.defaultMaxDegreeOfConcurrency);
+            if (!this.limitersByPartitionkeyRange.TryAdd(partitionKeyRangeId, newLimiter))
+            {
+                newLimiter.Dispose();
+            }
+
+            return this.limitersByPartitionkeyRange[partitionKeyRangeId];
         }
     }
 }
