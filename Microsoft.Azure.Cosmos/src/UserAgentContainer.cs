@@ -13,13 +13,16 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxOperatingSystemString = 30;
         private const int MaxClientId = 10;
         private readonly string cosmosBaseUserAgent;
+        private readonly int clientId;
 
         public UserAgentContainer(
+            int clientId,
             string features = null,
             string regionConfiguration = "NS",
             string suffix = null) 
                : base()
         {
+            this.clientId = clientId;
             this.cosmosBaseUserAgent = this.CreateBaseUserAgentString(
                 features: features,
                 regionConfiguration: regionConfiguration);
@@ -39,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             clientVersion = environmentInformation.ClientVersion;
             directVersion = environmentInformation.DirectVersion;
-            clientId = System.Math.Min(CosmosClient.numberOfClientsCreated, UserAgentContainer.MaxClientId).ToString();
+            clientId = System.Math.Min(this.clientId, UserAgentContainer.MaxClientId).ToString();
             processArchitecture = environmentInformation.ProcessArchitecture;
             operatingSystem = environmentInformation.OperatingSystem;
             runtimeFramework = environmentInformation.RuntimeFramework;
