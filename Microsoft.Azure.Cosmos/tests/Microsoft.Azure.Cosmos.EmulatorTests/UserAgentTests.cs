@@ -374,7 +374,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             protected override void GetEnvironmentInformation(
                 out string clientVersion,
                 out string directVersion,
-                out string clientId,
                 out string processArchitecture,
                 out string operatingSystem,
                 out string runtimeFramework)
@@ -385,7 +384,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 base.GetEnvironmentInformation(
                     clientVersion: out clientVersion,
                     directVersion: out directVersion,
-                    clientId: out clientId,
                     processArchitecture: out processArchitecture,
                     operatingSystem: out _,
                     runtimeFramework: out runtimeFramework);
