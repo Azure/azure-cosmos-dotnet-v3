@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
 
             //Verify GetConnectionPolicy returns the correct values for default
-            ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
+            ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
             Assert.AreEqual(ConnectionMode.Direct, policy.ConnectionMode);
             Assert.AreEqual(Protocol.Tcp, policy.ConnectionProtocol);
             Assert.AreEqual(clientOptions.GatewayModeMaxConnectionLimit, policy.MaxConnectionLimit);
@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
 
             //Verify GetConnectionPolicy returns the correct values
-            policy = clientOptions.GetConnectionPolicy();
+            policy = clientOptions.GetConnectionPolicy(clientId: 0);
             Assert.AreEqual(region, policy.PreferredLocations[0]);
             Assert.AreEqual(ConnectionMode.Gateway, policy.ConnectionMode);
             Assert.AreEqual(Protocol.Https, policy.ConnectionProtocol);
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CollectionAssert.AreEqual(preferredLocations.ToArray(), clientOptions.ApplicationPreferredRegions.ToArray());
 
             //Verify GetConnectionPolicy returns the correct values
-            policy = clientOptions.GetConnectionPolicy();
+            policy = clientOptions.GetConnectionPolicy(clientId: 0);
             Assert.AreEqual(idleTcpConnectionTimeout, policy.IdleTcpConnectionTimeout);
             Assert.AreEqual(openTcpConnectionTimeout, policy.OpenTcpConnectionTimeout);
             Assert.AreEqual(maxRequestsPerTcpConnection, policy.MaxRequestsPerTcpConnection);
@@ -250,12 +250,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             string userAgentSuffix = "testSuffix";
             cosmosClientOptions.ApplicationName = userAgentSuffix;
             Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
-            Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures();
+            Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
             Assert.AreEqual(userAgentSuffix, userAgentContainer.Suffix);
             Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
             Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
 
-            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
             Assert.AreEqual(userAgentSuffix, connectionPolicy.UserAgentSuffix);
             Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
             Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettings()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = Regions.EastUS, LimitToEndpoint = true };
-            cosmosClientOptions.GetConnectionPolicy();
+            cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
         [TestMethod]
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, LimitToEndpoint = true };
-            cosmosClientOptions.GetConnectionPolicy();
+            cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
         [TestMethod]
@@ -405,7 +405,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyApplicationRegionSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
-            cosmosClientOptions.GetConnectionPolicy();
+            cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
         [TestMethod]
@@ -438,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientOptions clientOptions = cosmosClient.ClientOptions;
 
             Assert.AreEqual(clientOptions.HttpClientFactory, this.HttpClientFactoryDelegate);
-            ConnectionPolicy policy = clientOptions.GetConnectionPolicy();
+            ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
             Assert.AreEqual(policy.HttpClientFactory, this.HttpClientFactoryDelegate);
         }
 
@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosClientOptions cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsFalse(cosmosClientOptions.LimitToEndpoint);
 
-            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
             Assert.IsTrue(connectionPolicy.EnableEndpointDiscovery);
 
             cosmosClientBuilder
@@ -461,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             cosmosClientOptions = cosmosClientBuilder.Build(new MockDocumentClient()).ClientOptions;
             Assert.IsTrue(cosmosClientOptions.LimitToEndpoint);
 
-            connectionPolicy = cosmosClientOptions.GetConnectionPolicy();
+            connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
             Assert.IsFalse(connectionPolicy.EnableEndpointDiscovery);
         }
 
