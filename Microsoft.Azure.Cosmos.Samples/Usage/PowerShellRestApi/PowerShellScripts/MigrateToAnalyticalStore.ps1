@@ -36,7 +36,7 @@ Add-Type -AssemblyName System.Web
 
 # First, check if EnableAnalyticalStorage is true. If not, enable it.
 Write-Host "Checking if EnableAnalyticalStorage is true..."
-$result = Connect-AzAccount -Environment dogfood
+$result = Connect-AzAccount
 $result = Select-AzSubscription -Subscription $SubscriptionId
 $AccountInfo = Get-AzCosmosDBAccount -ResourceGroupName $ResourceGroupName -Name $AccountName
 if (!$AccountInfo.EnableAnalyticalStorage) {
