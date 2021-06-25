@@ -92,7 +92,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> itemResponse = await aadContainer.CreateItemAsync(
                 toDoActivity,
                 new PartitionKey(toDoActivity.id));
-            Assert.AreEqual(2, requestCount, "The barrier request was never called.");
+
+            // Gateway does the barrier requests so only direct mode needs to be validated.
+            if (connectionMode == ConnectionMode.Direct)
+            {
+                Assert.AreEqual(2, requestCount, "The barrier request was never called.");
+            }
 
             toDoActivity.cost = 42.42;
             await aadContainer.ReplaceItemAsync(
