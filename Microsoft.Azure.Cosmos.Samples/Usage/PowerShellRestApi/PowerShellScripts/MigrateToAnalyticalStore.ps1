@@ -36,7 +36,7 @@ Add-Type -AssemblyName System.Web
 
 # First, check if EnableAnalyticalStorage is true. If not, enable it.
 Write-Host "Checking if EnableAnalyticalStorage is true..."
-$result = Connect-AzAccount
+$result = Connect-AzAccount -Environment dogfood
 $result = Select-AzSubscription -Subscription $SubscriptionId
 $AccountInfo = Get-AzCosmosDBAccount -ResourceGroupName $ResourceGroupName -Name $AccountName
 if (!$AccountInfo.EnableAnalyticalStorage) {
@@ -51,6 +51,8 @@ $MasterKey = $result["PrimaryMasterKey"]
 
 $result = Get-AzCosmosDBAccount -ResourceGroupName $ResourceGroupName -Name $AccountName
 $Endpoint = $result.DocumentEndpoint
+$containerResourceLink = "dbs/" + $DatabaseName + "/colls/" + $ContainerName
+$requestUri = "$Endpoint$containerResourceLink"
 
 Function New-MasterKeyAuthorizationSignature {
 
@@ -76,64 +78,25 @@ Function New-MasterKeyAuthorizationSignature {
     return $key
 }
 
-# Step 1: Collection read to get the existing indexing policy.
-$KeyType = "master"
-$TokenVersion = "1.0"
-$date = Get-Date
-$utcDate = $date.ToUniversalTime()
-$xDate = $utcDate.ToString('r', [System.Globalization.CultureInfo]::InvariantCulture)
-$containerResourceType = "colls"
-$containerResourceId = "dbs/" + $DatabaseName + "/colls/" + $ContainerName
-$containerResourceLink = "dbs/" + $DatabaseName + "/colls/" + $ContainerName
-$requestUri = "$Endpoint$containerResourceLink"
-$verbMethod = "GET"
-$userAgent = "PowerShell-MigrateToAnalyticalStore"
-$authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion -ErrorAction Stop
-$header = @{
-    "authorization"                                      = "$authKey";
-    "x-ms-version"                                       = "2018-12-31";
-    "Cache-Control"                                      = "no-cache";
-    "x-ms-date"                                          = "$xDate";
-    "Accept"                                             = "application/json";
-    "User-Agent"                                         = "$userAgent";
-    "x-ms-cosmos-populate-analytical-migration-progress" = "true";
-}
+Function Get-Header {
 
-$result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable Headers
-$Progress = $Headers["x-ms-cosmos-analytical-migration-progress"]
-if($Progress -eq "100") {
-    Write-Host "Migration is already complete."
-    return
-}
-if($Progress -eq "-1") {
-    $result | Add-Member -MemberType NoteProperty -Name "analyticalStorageTtl" -Value $NewAnalyticalTTL -Force
-    $result = $result | ConvertTo-Json -Depth 20
-    
-    # Step 2: Collection replace to trigger analytical migration.
-    $verbMethod = "PUT"
-    $authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion
-    $header = @{
-        "authorization" = "$authKey";
-        "x-ms-version"  = "2018-12-31";
-        "Cache-Control" = "no-cache";
-        "x-ms-date"     = "$xDate";
-        "Accept"        = "application/json";
-        "User-Agent"    = "$userAgent"
-    }
-    
-    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -Body $result
-    Write-Host "Analytical migration has been triggered and is pending."
-}
+    [CmdletBinding()]
 
-# Step 3: Wait for analytical migration progress to reach 100%.
-Write-Host "Polling for progress..."
-$Progress = "0"
-while ($true) {
+    param (
+        [string] $Verb,
+        [string] $MasterKey,
+        [string] $DatabaseName,
+        [string] $ContainerName
+    )
     $date = Get-Date
     $utcDate = $date.ToUniversalTime()
     $xDate = $utcDate.ToString('r', [System.Globalization.CultureInfo]::InvariantCulture)
-    $verbMethod = "GET"
-    $authKey = New-MasterKeyAuthorizationSignature -Verb $verbMethod -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion
+    $KeyType = "master"
+    $TokenVersion = "1.0"
+    $containerResourceType = "colls"
+    $containerResourceId = "dbs/" + $DatabaseName + "/colls/" + $ContainerName
+    $userAgent = "PowerShell-MigrateToAnalyticalStore"
+    $authKey = New-MasterKeyAuthorizationSignature -Verb $Verb -ResourceId $containerResourceId -ResourceType $containerResourceType -Date $xDate -MasterKey $MasterKey -KeyType $KeyType -TokenVersion $TokenVersion -ErrorAction Stop
     $header = @{
         "authorization"                                      = "$authKey";
         "x-ms-version"                                       = "2018-12-31";
@@ -141,9 +104,41 @@ while ($true) {
         "x-ms-date"                                          = "$xDate";
         "Accept"                                             = "application/json";
         "User-Agent"                                         = "$userAgent";
-        "x-ms-cosmos-populate-analytical-migration-progress" = "true";
     }
+    return $header
+}
 
+# Step 1: Collection read to get the existing indexing policy.
+$verbMethod = "GET"
+$header = Get-Header -Verb $verbMethod -MasterKey $MasterKey -DatabaseName $DatabaseName -ContainerName $ContainerName
+$header.add("x-ms-cosmos-populate-analytical-migration-progress", "true")
+$result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable Headers
+
+if(!$result.analyticalStorageTtl) {
+    $result | Add-Member -MemberType NoteProperty -Name "analyticalStorageTtl" -Value $NewAnalyticalTTL -Force
+    $result = $result | ConvertTo-Json -Depth 20
+    
+    # Step 2: Collection replace to trigger analytical migration.
+    $verbMethod = "PUT"
+    $header = Get-Header -Verb $verbMethod -MasterKey $MasterKey -DatabaseName $DatabaseName -ContainerName $ContainerName
+    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -Body $result
+    Write-Host "Analytical migration has been triggered and is pending."
+} 
+else {
+    $Progress = $Headers["x-ms-cosmos-analytical-migration-progress"]
+    if($Progress -eq "100") {
+        Write-Host "Migration is already complete."
+        return
+    }
+}
+
+# Step 3: Wait for analytical migration progress to reach 100%.
+Write-Host "Polling for progress..."
+$Progress = "0"
+while ($true) {
+    $verbMethod = "GET"
+    $header = Get-Header -Verb $verbMethod -MasterKey $MasterKey -DatabaseName $DatabaseName -ContainerName $ContainerName
+    $header.add("x-ms-cosmos-populate-analytical-migration-progress", "true")
     $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable Headers
     $Progress = $Headers["x-ms-cosmos-analytical-migration-progress"]
     Write-Host "$(Get-Date) - Progress = $Progress%"
