@@ -37,13 +37,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "/id");
             }
 
+           
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = connectionMode,
                 ConnectionProtocol = connectionMode == ConnectionMode.Direct ? Protocol.Tcp : Protocol.Https,
-                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport, 
+            };
+
+            if (connectionMode == ConnectionMode.Direct)
+            {
+                long lsn = 2;
+                clientOptions.TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
                  interceptorAfterResult: (request, storeResponse) =>
                  {
                      // Force a barrier request on create item.
@@ -53,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                          if (requestCount == 0)
                          {
                              requestCount++;
+                             lsn = storeResponse.LSN;
                              storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
                              storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, "0");
                          }
@@ -67,13 +74,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                          {
                              requestCount++;
                              storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
-                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, "2");
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString(CultureInfo.InvariantCulture));
                          }
                      }
 
                      return storeResponse;
-                 }),
-            };
+                 });
+            }
 
             using CosmosClient aadClient = new CosmosClient(
                 endpoint,
