@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using global::Azure.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.IdentityModel.Tokens;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
     public class CosmosAadTests
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(ConnectionMode.Gateway)]
         public async Task AadMockTest(ConnectionMode connectionMode)
         {
+            int requestCount = 0;
             string databaseId = Guid.NewGuid().ToString();
             string containerId = Guid.NewGuid().ToString();
             using (CosmosClient cosmosClient = TestCommon.CreateCosmosClient())
@@ -40,7 +42,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = connectionMode,
-                ConnectionProtocol = connectionMode == ConnectionMode.Direct ? Protocol.Tcp : Protocol.Https
+                ConnectionProtocol = connectionMode == ConnectionMode.Direct ? Protocol.Tcp : Protocol.Https,
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport, 
+                 interceptorAfterResult: (request, storeResponse) =>
+                 {
+                     // Force a barrier request on create item.
+                     // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
+                     if (storeResponse.StatusCode == HttpStatusCode.Created)
+                     {
+                         if (requestCount == 0)
+                         {
+                             requestCount++;
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, "0");
+                         }
+                     }
+
+                     // Head request is the barrier request
+                     // The GlobalCommittedLSN is set to -1 because the local emulator doesn't have geo-dr so it has to be
+                     // overridden for the validation to succeed.
+                     if (request.OperationType == Documents.OperationType.Head)
+                     {
+                         if (requestCount == 1)
+                         {
+                             requestCount++;
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.NumberOfReadRegions, "2");
+                             storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, "2");
+                         }
+                     }
+
+                     return storeResponse;
+                 }),
             };
 
             using CosmosClient aadClient = new CosmosClient(
@@ -60,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ItemResponse<ToDoActivity> itemResponse = await aadContainer.CreateItemAsync(
                 toDoActivity,
                 new PartitionKey(toDoActivity.id));
+            Assert.AreEqual(2, requestCount, "The barrier request was never called.");
 
             toDoActivity.cost = 42.42;
             await aadContainer.ReplaceItemAsync(
