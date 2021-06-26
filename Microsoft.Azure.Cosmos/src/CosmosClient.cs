@@ -250,11 +250,11 @@ namespace Microsoft.Azure.Cosmos
 
             clientOptions ??= new CosmosClientOptions();
 
+            this.ClientId = this.IncrementNumberOfClientsCreated();
             this.ClientContext = ClientContextCore.Create(
                 this,
                 clientOptions);
-
-            this.IncrementNumberOfClientsCreated();
+  
             this.ClientConfigurationTraceDatum = new ClientConfigurationTraceDatum(this.ClientContext, DateTime.UtcNow);
         }
 
@@ -479,6 +479,7 @@ namespace Microsoft.Azure.Cosmos
         internal RequestInvokerHandler RequestHandler => this.ClientContext.RequestHandler;
         internal CosmosClientContext ClientContext { get; }
         internal ClientConfigurationTraceDatum ClientConfigurationTraceDatum { get; }
+        internal int ClientId { get; }
 
         /// <summary>
         /// Reads the <see cref="Microsoft.Azure.Cosmos.AccountProperties"/> for the Azure Cosmos DB account.
@@ -1195,9 +1196,9 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void IncrementNumberOfClientsCreated()
+        private int IncrementNumberOfClientsCreated()
         {
-            Interlocked.Increment(ref numberOfClientsCreated);
+            return Interlocked.Increment(ref numberOfClientsCreated);
         }
 
         private async Task InitializeContainerAsync(string databaseId, string containerId, CancellationToken cancellationToken = default)

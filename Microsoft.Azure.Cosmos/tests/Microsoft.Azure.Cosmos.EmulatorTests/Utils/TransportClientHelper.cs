@@ -139,18 +139,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             private readonly TransportClient baseClient;
             private readonly Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor;
             private readonly Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult;
+            private readonly Func<DocumentServiceRequest, StoreResponse, StoreResponse> interceptorAfterResult;
 
             internal TransportClientWrapper(
                 TransportClient client,
-                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor,
-                Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null)
+                Action<Uri, ResourceOperation, DocumentServiceRequest> interceptor = null,
+                Func<Uri, ResourceOperation, DocumentServiceRequest, StoreResponse> interceptorWithStoreResult = null,
+                Func<DocumentServiceRequest, StoreResponse, StoreResponse> interceptorAfterResult = null)
             {
                 Debug.Assert(client != null);
-                Debug.Assert(interceptor != null);
-
                 this.baseClient = client;
                 this.interceptor = interceptor;
                 this.interceptorWithStoreResult = interceptorWithStoreResult;
+                this.interceptorAfterResult = interceptorAfterResult;
             }
 
             internal TransportClientWrapper(
@@ -181,7 +182,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
 
-                return await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
+                StoreResponse result = await this.baseClient.InvokeStoreAsync(physicalAddress, resourceOperation, request);
+                if (this.interceptorAfterResult != null)
+                {
+                    return this.interceptorAfterResult(request, result);
+                }
+
+                return result;
             }
         }
     }
