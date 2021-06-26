@@ -36,7 +36,7 @@ Add-Type -AssemblyName System.Web
 
 # First, check if EnableAnalyticalStorage is true. If not, enable it.
 Write-Host "Checking if EnableAnalyticalStorage is true..."
-$result = Connect-AzAccount -Environment dogfood
+$result = Connect-AzAccount
 $result = Select-AzSubscription -Subscription $SubscriptionId
 $AccountInfo = Get-AzCosmosDBAccount -ResourceGroupName $ResourceGroupName -Name $AccountName
 if (!$AccountInfo.EnableAnalyticalStorage) {
@@ -112,7 +112,7 @@ Function Get-Header {
 $verbMethod = "GET"
 $header = Get-Header -Verb $verbMethod -MasterKey $MasterKey -DatabaseName $DatabaseName -ContainerName $ContainerName
 $header.add("x-ms-cosmos-populate-analytical-migration-progress", "true")
-$result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable Headers
+$result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable responseHeaders 
 
 if(!$result.analyticalStorageTtl) {
     $result | Add-Member -MemberType NoteProperty -Name "analyticalStorageTtl" -Value $NewAnalyticalTTL -Force
@@ -125,7 +125,7 @@ if(!$result.analyticalStorageTtl) {
     Write-Host "Analytical migration has been triggered and is pending."
 } 
 else {
-    $Progress = $Headers["x-ms-cosmos-analytical-migration-progress"]
+    $Progress = $responseHeaders["x-ms-cosmos-analytical-migration-progress"]
     if($Progress -eq "100") {
         Write-Host "Migration is already complete."
         return
@@ -134,13 +134,12 @@ else {
 
 # Step 3: Wait for analytical migration progress to reach 100%.
 Write-Host "Polling for progress..."
-$Progress = "0"
 while ($true) {
     $verbMethod = "GET"
     $header = Get-Header -Verb $verbMethod -MasterKey $MasterKey -DatabaseName $DatabaseName -ContainerName $ContainerName
     $header.add("x-ms-cosmos-populate-analytical-migration-progress", "true")
-    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable Headers
-    $Progress = $Headers["x-ms-cosmos-analytical-migration-progress"]
+    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable responseHeaders
+    $Progress = $responseHeaders["x-ms-cosmos-analytical-migration-progress"]
     Write-Host "$(Get-Date) - Progress = $Progress%"
     if ($Progress -eq "100") {
         Write-Host "Migration complete."
