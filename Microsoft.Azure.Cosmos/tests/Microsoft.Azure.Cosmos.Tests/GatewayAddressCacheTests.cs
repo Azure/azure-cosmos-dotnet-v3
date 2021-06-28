@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 SynchronizationContext.SetSynchronizationContext(syncContext);
                 syncContext.Post(_ =>
                 {
-                    UserAgentContainer container = new UserAgentContainer();
+                    UserAgentContainer container = new UserAgentContainer(clientId: 0);
                     FakeMessageHandler messageHandler = new FakeMessageHandler();
 
                     AccountProperties databaseAccount = new AccountProperties();
