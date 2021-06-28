@@ -13,6 +13,13 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.20.1"/> [3.20.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.20.1) - 2021-06-29
+### <a name="3.20.1-preview"/> [3.20.1-preview](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.20.1-preview) - 2021-06-29
+
+#### Fixed
+- [#2450](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2450) Query: Fixes c# parser grammar for recognizing string literal which will avoid falling back to gateway to get the query plan. 
+- [#2574](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2574) UserAgent: Fixes race condition in user agent string creation and limits client id to 10. Introduced in 3.20.0 PR [2552](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2552)
+
 ### <a name="3.20.0"/> [3.20.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.20.0) - 2021-06-21
 
 #### Added
