@@ -112,16 +112,17 @@ Function Get-Header {
 $verbMethod = "GET"
 $header = Get-Header -Verb $verbMethod -MasterKey $MasterKey -DatabaseName $DatabaseName -ContainerName $ContainerName
 $header.add("x-ms-cosmos-populate-analytical-migration-progress", "true")
+$responseHeaders = $null
 $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -ResponseHeadersVariable responseHeaders 
 
 if(!$result.analyticalStorageTtl) {
     $result | Add-Member -MemberType NoteProperty -Name "analyticalStorageTtl" -Value $NewAnalyticalTTL -Force
-    $result = $result | ConvertTo-Json -Depth 20
+    $body = $result | ConvertTo-Json -Depth 20
     
     # Step 2: Collection replace to trigger analytical migration.
     $verbMethod = "PUT"
     $header = Get-Header -Verb $verbMethod -MasterKey $MasterKey -DatabaseName $DatabaseName -ContainerName $ContainerName
-    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -Body $result
+    $result = Invoke-RestMethod -Uri $requestUri -Headers $header -Method $verbMethod -ContentType "application/json" -Body $body
     Write-Host "Analytical migration has been triggered and is pending."
 } 
 else {
