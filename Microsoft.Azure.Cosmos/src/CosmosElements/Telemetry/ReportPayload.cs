@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         public int? StatusCode { get; }
 
         [JsonProperty(PropertyName = "responseSizeInBytes")]
-        public int? ResponseSizeInBytes { get; }
+        public long? ResponseSizeInBytes { get; }
 
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         }
 
         internal ReportPayload(string regionsContacted, 
-            int? responseSizeInBytes, 
+            long? responseSizeInBytes, 
             Cosmos.ConsistencyLevel? consistency, 
             string databaseName, 
             string containerName, 
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         {
             this.RegionsContacted = regionsContacted;
             this.ResponseSizeInBytes = responseSizeInBytes;
-            if (responseSizeInBytes != 0)
+            if (responseSizeInBytes != null)
             {
                 this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
             }
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
             string resource, 
             string consistency, 
             int? statusCode, 
-            int? responseSizeInBytes, 
+            long? responseSizeInBytes, 
             MetricInfo metricInfo)
         {
             this.RegionsContacted = regionsContacted;
@@ -138,10 +138,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
             return isequal;
         }
 
-        internal ReportPayload SetAggregators(LongConcurrentHistogram histogram)
+        internal void SetAggregators(LongConcurrentHistogram histogram, int adjustment = 1)
         {
-            this.MetricInfo.SetAggregators(histogram);
-            return this;
+            this.MetricInfo.SetAggregators(histogram, adjustment);
         }
     }
 }

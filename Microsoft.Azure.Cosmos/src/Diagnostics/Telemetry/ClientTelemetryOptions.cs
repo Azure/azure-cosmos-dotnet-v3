@@ -15,7 +15,9 @@ namespace Microsoft.Azure.Cosmos
     internal class ClientTelemetryOptions
     {
         internal const String RequestKey = "telemetry";
-
+        internal const int PrecisionAdjustment = 1000;
+        
+        internal const int BytesToMb = 1024 * 1024;
         internal const int OneKbToBytes = 1024;
 
         internal const int RequestLatencyMaxMicroSec = 300000000;

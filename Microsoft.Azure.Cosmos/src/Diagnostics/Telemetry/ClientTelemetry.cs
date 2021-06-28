@@ -32,11 +32,14 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// This class collects and send all the telemetry information.
+    /// Multiplying Request Charge and CPU Usages with 1000 at the time of collection to preserve precision of upto 3 decimals. 
+    /// Dividing these same values with 1000 during Serialization.
+    /// This Class get initiated with the client and get disposed with client.
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
-                                                        ClientTelemetryOptions.CpuMax,
+        private readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1000,
+                                                        ClientTelemetryOptions.CpuMax * ClientTelemetryOptions.PrecisionAdjustment,
                                                         ClientTelemetryOptions.CpuPrecision);
         private readonly LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
                          ClientTelemetryOptions.MemoryMax,
@@ -54,8 +57,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
 
         private readonly CancellationTokenSource CancellationTokenSource;
-
-        private bool isDisposed = false;
 
         private Task telemetryTask;
 
@@ -215,7 +216,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="requestCharge"></param>
         internal void Collect(CosmosDiagnostics cosmosDiagnostics,
                             HttpStatusCode statusCode,
-                            int responseSizeInBytes,
+                            long responseSizeInBytes,
                             string containerId,
                             string databaseId,
                             OperationType operationType,
@@ -253,13 +254,13 @@ namespace Microsoft.Azure.Cosmos
                                                             ClientTelemetryOptions.RequestLatencySuccessPrecision :
                                                             ClientTelemetryOptions.RequestLatencyFailurePrecision),
                             requestcharge: new LongConcurrentHistogram(1,
-                                                        ClientTelemetryOptions.RequestChargeMax,
+                                                        ClientTelemetryOptions.RequestChargeMax * ClientTelemetryOptions.PrecisionAdjustment,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
             double totalElapsedTimeInMicroSeconds = cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000;
 
             latency.RecordValue((long)totalElapsedTimeInMicroSeconds);
-            requestcharge.RecordValue((long)requestCharge);
+            requestcharge.RecordValue((long)(requestCharge * ClientTelemetryOptions.PrecisionAdjustment));
         }
 
         /// <summary>
@@ -310,14 +311,14 @@ namespace Microsoft.Azure.Cosmos
                             float cpuValue = cpuLoad.Value;
                             if (!float.IsNaN(cpuValue))
                             {
-                                this.cpuHistogram.RecordValue((long)cpuValue);
+                                this.cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.PrecisionAdjustment));
                             }
 
                         }
 
-                        this.ClientTelemetryInfo.SystemInfo.Add(
-                            new ReportPayload(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit)
-                            .SetAggregators(this.cpuHistogram));
+                        ReportPayload systemInfoPayload = new ReportPayload(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+                        systemInfoPayload.SetAggregators(this.cpuHistogram, ClientTelemetryOptions.PrecisionAdjustment);
+                        this.ClientTelemetryInfo.SystemInfo.Add(systemInfoPayload);
                     }
 
                     MemoryLoadHistory memoryLoadHistory = systemUsageRecorder.MemoryUsage;
@@ -325,13 +326,13 @@ namespace Microsoft.Azure.Cosmos
                     {
                         foreach (MemoryLoad memoryLoad in memoryLoadHistory.MemoryLoad)
                         {
-                            long memoryLoadInMb = memoryLoad.Value / (1024 * 1024);
+                            long memoryLoadInMb = memoryLoad.Value / ClientTelemetryOptions.BytesToMb;
                             this.memoryHistogram.RecordValue(memoryLoadInMb);
                         }
 
-                        this.ClientTelemetryInfo.SystemInfo.Add(
-                            new ReportPayload(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit)
-                            .SetAggregators(this.memoryHistogram));
+                        ReportPayload memoryInfoPayload = new ReportPayload(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
+                        memoryInfoPayload.SetAggregators(this.memoryHistogram);
+                        this.ClientTelemetryInfo.SystemInfo.Add(memoryInfoPayload);
                     }
                 }
             }
@@ -434,29 +435,15 @@ namespace Microsoft.Azure.Cosmos
             this.ClientTelemetryInfo.SystemInfo.Clear();
         }
 
+        /// <summary>
+        /// Dispose of cosmos client.It will get disposed with client so not making it thread safe.
+        /// </summary>
         public void Dispose()
         {
-            this.Dispose(true);
-        }
+            this.CancellationTokenSource.Cancel();
+            this.CancellationTokenSource.Dispose();
 
-        /// <summary>
-        /// Dispose of cosmos client
-        /// </summary>
-        /// <param name="disposing">True if disposing</param>
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!this.isDisposed)
-            {
-                if (disposing && !this.CancellationTokenSource.IsCancellationRequested)
-                {
-                    this.CancellationTokenSource.Cancel();
-                    this.CancellationTokenSource.Dispose();
-
-                    this.telemetryTask = null;
-                }
-
-                this.isDisposed = true;
-            }
+            this.telemetryTask = null;
         }
 
         /// <summary>
@@ -470,13 +457,15 @@ namespace Microsoft.Azure.Cosmos
             foreach (KeyValuePair<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
             {
                 ReportPayload payloadForLatency = entry.Key;
-                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit)
-                    .SetAggregators(entry.Value.latency);
+                payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
+                payloadForLatency.SetAggregators(entry.Value.latency);
+
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 ReportPayload payloadForRequestCharge = payloadForLatency.Copy();
-                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit)
-                    .SetAggregators(entry.Value.requestcharge);
+                payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
+                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.PrecisionAdjustment);
+                
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
 

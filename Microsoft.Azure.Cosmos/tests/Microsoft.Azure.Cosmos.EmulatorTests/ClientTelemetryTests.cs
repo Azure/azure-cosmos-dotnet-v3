@@ -255,48 +255,48 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
 
-                Assert.AreEqual(2, telemetryInfo.SystemInfo.Count);
+                Assert.AreEqual(2, telemetryInfo.SystemInfo.Count, "System Information Count doesn't Match");
 
-                Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName);
-                Assert.IsNotNull(telemetryInfo.TimeStamp);
+                Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
+                Assert.IsNotNull(telemetryInfo.TimeStamp, "Timestamp is null");
             }
-            Assert.AreEqual(expectedOperationCount, actualOperationList.Count);
+            Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");
 
             // Asserting If operation list is as expected
             foreach (ReportPayload operation in actualOperationList)
             {
-                Assert.IsNotNull(operation.Operation);
-                Assert.IsNotNull(operation.Resource);
-                Assert.IsNotNull(operation.ResponseSizeInBytes);
-                Assert.IsNotNull(operation.StatusCode);
-                Assert.IsNotNull(operation.Consistency);
+                Assert.IsNotNull(operation.Operation, "Operation Type is null");
+                Assert.IsNotNull(operation.Resource, "Resource Type is null");
+                Assert.IsNotNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is null");
+                Assert.IsNotNull(operation.StatusCode, "StatusCode is null");
+                Assert.IsNotNull(operation.Consistency, "Consistency is null");
 
-                Assert.IsNotNull(operation.MetricInfo);
-                Assert.IsNotNull(operation.MetricInfo.MetricsName);
-                Assert.IsNotNull(operation.MetricInfo.UnitName);
-                Assert.IsNotNull(operation.MetricInfo.Percentiles);
-                Assert.IsTrue(operation.MetricInfo.Count > 0);
-                Assert.IsTrue(operation.MetricInfo.Mean >= 0);
-                Assert.IsTrue(operation.MetricInfo.Max >= 0);
-                Assert.IsTrue(operation.MetricInfo.Min >= 0);
+                Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
+                Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
+                Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");
+                Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
+                Assert.IsTrue(operation.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
+                Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
+                Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
+                Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
             }
 
             // Asserting If system information list is as expected
             foreach (ReportPayload operation in actualSystemInformation)
             {
-                Assert.IsNull(operation.Operation);
-                Assert.IsNull(operation.Resource);
-                Assert.IsNull(operation.ResponseSizeInBytes);
-                Assert.IsNull(operation.StatusCode);
+                Assert.IsNull(operation.Operation, "Operation Type is not null");
+                Assert.IsNull(operation.Resource, "Resource Type is not null");
+                Assert.IsNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is not null");
+                Assert.IsNull(operation.StatusCode, "StatusCode is not null");
 
-                Assert.IsNotNull(operation.MetricInfo);
-                Assert.IsNotNull(operation.MetricInfo.MetricsName);
-                Assert.IsNotNull(operation.MetricInfo.UnitName);
-                Assert.IsNotNull(operation.MetricInfo.Percentiles);
-                Assert.IsTrue(operation.MetricInfo.Count > 0);
-                Assert.IsTrue(operation.MetricInfo.Mean >= 0);
-                Assert.IsTrue(operation.MetricInfo.Max >= 0);
-                Assert.IsTrue(operation.MetricInfo.Min >= 0);
+                Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
+                Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
+                Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");
+                Assert.IsNotNull(operation.MetricInfo.Percentiles, "Percentiles is null");
+                Assert.IsTrue(operation.MetricInfo.Count > 0, "MetricInfo Count is not greater than 0");
+                Assert.IsTrue(operation.MetricInfo.Mean >= 0, "MetricInfo Mean is not greater than or equal to 0");
+                Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
+                Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
             }
         }
 
