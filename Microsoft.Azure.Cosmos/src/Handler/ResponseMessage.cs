@@ -18,7 +18,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     public class ResponseMessage : IDisposable
     {
+#if PREVIEW
         private CosmosDiagnostics diagnostics = null;
+#endif
 
         /// <summary>
         /// Create a <see cref="ResponseMessage"/>
@@ -130,6 +132,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public virtual RequestMessage RequestMessage { get; internal set; }
 
+#if PREVIEW
         /// <summary>
         /// Gets or sets the cosmos diagnostic information for the current request to Azure Cosmos DB service
         /// </summary>
@@ -138,6 +141,12 @@ namespace Microsoft.Azure.Cosmos
             get => this.diagnostics ?? new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
             set => this.diagnostics = value;
         }
+#else
+        /// <summary>
+        /// Gets the cosmos diagnostic information for the current request to Azure Cosmos DB service
+        /// </summary>
+        public virtual CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
+#endif
 
         internal ITrace Trace { get; set; }
 
