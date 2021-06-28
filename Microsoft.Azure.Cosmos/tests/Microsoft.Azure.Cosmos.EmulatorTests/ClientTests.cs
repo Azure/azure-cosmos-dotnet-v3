@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.Http;
     using System.Net.NetworkInformation;
     using System.Reflection;
+    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
@@ -61,6 +62,99 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Console.WriteLine("Expected exception while deserializing Resource: " + ex.Message);
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task BulkTest()
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient();
+            
+            Cosmos.Database database = (await client.CreateDatabaseIfNotExistsAsync("BulkDatabase")).Database;
+            ContainerCore container = (ContainerCore)(await database.CreateContainerIfNotExistsAsync("BulkContainer", "/pk", throughput: 20000)).Container;
+
+            BulkRequestOptions bulkRequestOptions = new BulkRequestOptions()
+            {
+                MaxConcurrencyPerPartition = 1,
+                MaxMicroBatchSize = 100,
+                MaxPipelinedOperations = 1000,
+                FlushBatchTimeout = TimeSpan.FromSeconds(1)
+            };
+
+            IAsyncEnumerable<BulkOperationResponse<OperationContext>> ouptputStream = container.ProcessBulkOperations(
+                                                                                        this.CreateBulkStreamFromFile(),
+                                                                                        bulkRequestOptions);
+
+            List<OperationContext> failedContexts = new List<OperationContext>();
+            await foreach (BulkOperationResponse<OperationContext> response in ouptputStream)
+            {
+                if (response.Exception != null || !response.IsSuccessStatusCode)
+                {
+                    failedContexts.Add(response.OperationContext);
+                }
+            }
+
+            // Retry failed Contexts
+            await database.DeleteAsync();
+        }
+
+        private async IAsyncEnumerable<BulkItemOperation<OperationContext>> CreateBulkStreamAsync()
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity($"pk{i}", $"id{i}");
+                BulkItemOperation<OperationContext> operation = BulkItemOperation<OperationContext>.GetCreateItemStreamOperation(
+                                                                                     TestCommon.SerializerCore.ToStream(toDoActivity),
+                                                                                     new Cosmos.PartitionKey($"pk{i}"),
+                                                                                     new ItemRequestOptions(),
+                                                                                     new OperationContext(i));
+
+                yield return await Task.FromResult(operation);
+            }
+        }
+
+        private async IAsyncEnumerable<BulkItemOperation<OperationContext>> CreateBulkStreamFromFile()
+        {
+            int i = 0;
+            using (StreamReader reader = new StreamReader("C:\\jsonForBulkIngestion"))
+            {
+                
+                while (true) 
+                {
+                    string jsonString = await reader.ReadLineAsync();
+                    if (jsonString == null) yield break;
+                    BulkItemOperation<OperationContext> operation = BulkItemOperation<OperationContext>.GetCreateItemStreamOperation(
+                                                                                         new MemoryStream(Encoding.UTF8.GetBytes(jsonString)),
+                                                                                         new Cosmos.PartitionKey($"pk{i}"),
+                                                                                         new ItemRequestOptions(),
+                                                                                         new OperationContext(i));
+                    i++;
+                    yield return operation;
+                }
+            }
+        }
+
+        [TestMethod]
+        public void BulkGenerateFileTest()
+        {
+            using (StreamWriter streamWriter = new StreamWriter("C:\\jsonForBulkIngestion"))
+            {
+                for(int i = 0; i < 100000; i++)
+                {
+                    ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity($"pk{i}", $"id{i}");
+                    string jsonString = JsonConvert.SerializeObject(toDoActivity);
+                    streamWriter.WriteLine(jsonString);
+                }
+            }
+        }
+
+        private class OperationContext
+        {
+            public OperationContext(int id)
+            {
+                this.Id = id;
+            }
+
+            public int Id { get; }
         }
 
         [TestMethod]

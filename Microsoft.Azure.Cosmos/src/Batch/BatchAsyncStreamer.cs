@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos
     internal class BatchAsyncStreamer : IDisposable
     {
         private static readonly TimeSpan congestionControllerDelay = TimeSpan.FromMilliseconds(1000);
-        private static readonly TimeSpan batchTimeout = TimeSpan.FromMilliseconds(100);
 
         private readonly object dispatchLimiter = new object();
         private readonly int maxBatchOperationCount;
@@ -49,6 +48,7 @@ namespace Microsoft.Azure.Cosmos
 
         private int congestionDegreeOfConcurrency = 1;
         private long congestionWaitTimeInMilliseconds = 1000;
+        private TimeSpan batchTimeout = TimeSpan.FromMilliseconds(1000);
 
         public BatchAsyncStreamer(
             int maxBatchOperationCount,
@@ -59,7 +59,8 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializerCore serializerCore,
             BatchAsyncBatcherExecuteDelegate executor,
             BatchAsyncBatcherRetryDelegate retrier,
-            CosmosClientContext clientContext)
+            CosmosClientContext clientContext,
+            TimeSpan? batchTimeout = null)
         {
             if (maxBatchOperationCount < 1)
             {
@@ -110,6 +111,10 @@ namespace Microsoft.Azure.Cosmos
             this.oldPartitionMetric = new BatchPartitionMetric();
             this.partitionMetric = new BatchPartitionMetric();
             this.maxDegreeOfConcurrency = maxDegreeOfConcurrency;
+            if (batchTimeout.HasValue)
+            {
+                this.batchTimeout = batchTimeout.Value;
+            }
 
             this.StartCongestionControlTimer();
         }
@@ -167,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void ResetTimer()
         {
-            this.currentTimer = this.timerWheel.CreateTimer(BatchAsyncStreamer.batchTimeout);
+            this.currentTimer = this.timerWheel.CreateTimer(this.batchTimeout);
             this.timerTask = this.GetTimerTaskAsync();
         }
 

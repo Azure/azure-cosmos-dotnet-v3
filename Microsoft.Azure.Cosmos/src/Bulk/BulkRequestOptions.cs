@@ -22,5 +22,11 @@ namespace Microsoft.Azure.Cosmos
         internal BulkRequestOptions()
         {
         }
+
+        internal int MaxConcurrencyPerPartition { get; set; }
+        internal int MaxPipelinedOperations { get; set; }
+        internal int MaxMicroBatchSize { get; set; }
+        internal TimeSpan FlushBatchTimeout { get; set; }
+
     }
 }

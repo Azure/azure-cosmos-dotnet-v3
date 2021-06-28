@@ -19,28 +19,38 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Response of Bulk Request
     /// </summary>
-    public class BulkOperationResponse<TContext>
+    public class BulkOperationResponse<TContext> : IDisposable
     {
         private readonly ResponseMessage responseMessage;
-        private readonly Container container;
+        private readonly ContainerInternal container;
 
         internal BulkOperationResponse(TransactionalBatchOperationResult transactionalBatchOperationResult, 
                                        TContext operationContext,
-                                       ContainerInternal container)
+                                       ContainerInternal container,
+                                       Exception ex)
         {
             this.responseMessage = transactionalBatchOperationResult.ToResponseMessage();
+            this.Exception = ex;
             this.OperationContext = operationContext;
             this.container = container;
         }
 
-        internal HttpStatusCode StatusCode { get; }
-        internal SubStatusCodes SubStatusCode { get; }
+        internal HttpStatusCode StatusCode => this.responseMessage.StatusCode;
         internal Stream ResourceStream => this.responseMessage.Content;
         internal TContext OperationContext { get; }
+        internal Exception Exception { get; }
+        internal bool IsSuccessStatusCode => this.StatusCode.IsSuccess();
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            this.responseMessage.Dispose();
+        }
 
         internal T GetResource<T>()
         {
-            throw new NotImplementedException();
+            this.responseMessage.EnsureSuccessStatusCode();
+            return this.container.ClientContext.SerializerCore.FromStream<T>(this.responseMessage.Content);
         }
 
         internal Stream GetResource()

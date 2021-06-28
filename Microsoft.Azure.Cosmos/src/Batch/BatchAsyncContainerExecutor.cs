@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
             await operation.MaterializeResourceAsync(this.cosmosClientContext.SerializerCore, cancellationToken);
         }
 
-        private static IDocumentClientRetryPolicy GetRetryPolicy(
+        internal static IDocumentClientRetryPolicy GetRetryPolicy(
             ContainerInternal containerInternal,
             OperationType operationType,
             RetryOptions retryOptions)
