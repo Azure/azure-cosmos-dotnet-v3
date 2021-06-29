@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (sqlQuery == null)
             {
-                throw new ArgumentNullException(nameof(sqlQuery));
+                return null;
             }
 
             QueryDefinition queryDefinition = new QueryDefinition(sqlQuery.QueryText);
