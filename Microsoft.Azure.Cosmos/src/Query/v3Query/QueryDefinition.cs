@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (sqlQuery == null)
             {
+                // It is to support scenarios where all the data needs to be read 
                 return null;
             }
 
