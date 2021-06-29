@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             PartitionController partitionController = new PartitionControllerCore(this.documentServiceLeaseStoreManager.LeaseContainer, this.documentServiceLeaseStoreManager.LeaseManager, partitionSuperviserFactory, synchronizer);
 
-            partitionController = new HealthMonitoringPartitionControllerDecorator(partitionController, new TraceHealthMonitor());
+            partitionController = new HealthMonitoringPartitionControllerDecorator(partitionController, this.changeFeedProcessorOptions.HealthMonitor);
             PartitionLoadBalancerCore partitionLoadBalancer = new PartitionLoadBalancerCore(
                 partitionController,
                 this.documentServiceLeaseStoreManager.LeaseContainer,

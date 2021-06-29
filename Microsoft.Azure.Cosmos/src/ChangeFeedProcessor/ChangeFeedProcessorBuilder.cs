@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
                 ChangeFeedProcessorOptions,
                 ContainerInternal> applyBuilderConfiguration;
 
-        private ChangeFeedProcessorOptions changeFeedProcessorOptions;
+        private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions = new ChangeFeedProcessorOptions();
 
         private ContainerInternal leaseContainer;
         private string InstanceName;
@@ -96,7 +96,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(pollInterval));
             }
 
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.FeedPollDelay = pollInterval;
             return this;
         }
@@ -114,7 +113,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         internal virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
         {
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartFromBeginning = true;
             return this;
         }
@@ -137,7 +135,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(startTime));
             }
 
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartTime = startTime;
             return this;
         }
@@ -154,7 +151,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(maxItemCount));
             }
 
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.MaxItemCount = maxItemCount;
             return this;
         }
@@ -214,6 +210,17 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Sets a health monitor to log events happening during the lifecycle of the processor.
+        /// </summary>
+        /// <param name="healthMonitor">An implementation of <see cref="ChangeFeedProcessorHealthMonitor"/> to log lifecycle events.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+        public ChangeFeedProcessorBuilder WithHealthMonitor(ChangeFeedProcessorHealthMonitor healthMonitor)
+        {
+            this.changeFeedProcessorOptions.HealthMonitor = healthMonitor;
+            return this;
+        }
+
+        /// <summary>
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>
@@ -239,16 +246,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException("Processor name not specified during creation.");
             }
 
-            this.InitializeDefaultOptions();
             this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;
-        }
-
-        private void InitializeDefaultOptions()
-        {
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
         }
     }
 }
