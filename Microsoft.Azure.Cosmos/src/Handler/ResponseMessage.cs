@@ -137,9 +137,9 @@ namespace Microsoft.Azure.Cosmos
         {
             get => this.diagnostics ?? new CosmosTraceDiagnostics(this.Trace ?? NoOpTrace.Singleton);
 #if !PREVIEW
-            private
+            internal
 #endif
-            set => this.diagnostics = value;
+            set => this.diagnostics = value ?? throw new ArgumentNullException(nameof(this.Diagnostics));
         }
 
         internal ITrace Trace { get; set; }
