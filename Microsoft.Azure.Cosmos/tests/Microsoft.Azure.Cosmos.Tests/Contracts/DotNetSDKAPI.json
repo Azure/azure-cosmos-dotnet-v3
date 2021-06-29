@@ -6109,7 +6109,7 @@
         "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics()": {
           "Type": "Method",
