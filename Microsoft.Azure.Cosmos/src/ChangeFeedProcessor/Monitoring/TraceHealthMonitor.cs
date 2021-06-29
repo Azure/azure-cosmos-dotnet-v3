@@ -4,24 +4,35 @@
 
 namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
 {
+    using System;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
-    /// A monitor which logs the errors only.
+    /// A monitor which logs the errors only as traces
     /// </summary>
-    internal sealed class TraceHealthMonitor : HealthMonitor
+    internal sealed class TraceHealthMonitor : ChangeFeedProcessorHealthMonitor
     {
-        /// <inheritdoc />
-        public override Task InspectAsync(HealthMonitoringRecord record)
+        public override Task NotifyErrorAsync(
+             ChangeFeedProcessorEvent changeFeedProcessorEvent,
+             string leaseToken,
+             Exception exception)
         {
-            if (record.Severity == HealthSeverity.Error)
-            {
-                Extensions.TraceException(record.Exception);
-                DefaultTrace.TraceError($"Unhealthiness detected in the operation {record.Operation} for {record.Lease}. ");
-            }
+            Extensions.TraceException(exception);
+            DefaultTrace.TraceError($"Unhealthiness detected in the operation {changeFeedProcessorEvent} for {leaseToken}. ");
 
-            return Task.FromResult(true);
+            return Task.CompletedTask;
+        }
+
+        public override Task NotifyCriticalAsync(
+             ChangeFeedProcessorEvent changeFeedProcessorEvent,
+             string leaseToken,
+             Exception exception)
+        {
+            Extensions.TraceException(exception);
+            DefaultTrace.TraceCritical($"Unhealthiness detected in the operation {changeFeedProcessorEvent} for {leaseToken}. ");
+
+            return Task.CompletedTask;
         }
     }
 }

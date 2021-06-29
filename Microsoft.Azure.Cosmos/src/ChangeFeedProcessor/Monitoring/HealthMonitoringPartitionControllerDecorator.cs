@@ -8,15 +8,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
     using Microsoft.Azure.Documents;
 
     internal class HealthMonitoringPartitionControllerDecorator : PartitionController
     {
         private readonly PartitionController inner;
-        private readonly HealthMonitor monitor;
+        private readonly ChangeFeedProcessorHealthMonitor monitor;
 
-        public HealthMonitoringPartitionControllerDecorator(PartitionController inner, HealthMonitor monitor)
+        public HealthMonitoringPartitionControllerDecorator(PartitionController inner, ChangeFeedProcessorHealthMonitor monitor)
         {
             this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
             this.monitor = monitor ?? throw new ArgumentNullException(nameof(monitor));
@@ -27,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             try
             {
                 await this.inner.AddOrUpdateLeaseAsync(lease);
-                await this.monitor.InspectAsync(new HealthMonitoringRecord(HealthSeverity.Informational, MonitoredOperation.AcquireLease, lease, null));
+                await this.monitor.NotifyInformationAsync(ChangeFeedProcessorEvent.AcquireLease, lease.CurrentLeaseToken);
             }
             catch (DocumentClientException)
             {
@@ -35,8 +34,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
             catch (Exception exception)
             {
-                await this.monitor.InspectAsync(new HealthMonitoringRecord(HealthSeverity.Error, MonitoredOperation.AcquireLease, lease, exception));
-
+                await this.monitor.NotifyErrorAsync(ChangeFeedProcessorEvent.AcquireLease, lease.CurrentLeaseToken, exception);
                 throw;
             }
         }
