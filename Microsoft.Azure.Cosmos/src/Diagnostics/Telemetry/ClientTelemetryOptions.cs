@@ -10,12 +10,14 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
     internal class ClientTelemetryOptions
     {
         internal const String RequestKey = "telemetry";
-        internal const int PrecisionAdjustment = 1000;
+
+        internal const long AdjustmentFactor = 100;
         
         internal const int BytesToMb = 1024 * 1024;
         internal const int OneKbToBytes = 1024;
@@ -27,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         internal const string RequestLatencyUnit = "MicroSec";
 
         internal const int RequestChargeMax = 10000;
-        internal const int RequestChargePrecision = 2;
+        internal const int RequestChargePrecision = 5;
         internal const string RequestChargeName = "RequestCharge";
         internal const string RequestChargeUnit = "RU";
 
@@ -36,8 +38,8 @@ namespace Microsoft.Azure.Cosmos
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
-        internal const int MemoryMax = Int32.MaxValue;
-        internal const int MemoryPrecision = 2;
+        internal const long MemoryMax = Int64.MaxValue;
+        internal const int MemoryPrecision = 5;
         internal const String MemoryName = "Memory Remaining";
         internal const String MemoryUnit = "MB";
 
@@ -60,6 +62,8 @@ namespace Microsoft.Azure.Cosmos
         {
             ResourceType.Document
         });
+
+        internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
         private static Uri vmMetadataUrl;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;

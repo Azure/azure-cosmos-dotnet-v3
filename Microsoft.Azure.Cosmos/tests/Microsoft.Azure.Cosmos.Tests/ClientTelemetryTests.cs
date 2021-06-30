@@ -51,5 +51,69 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("Standard_D2s_v3", metadata.VMSize);
         }
 
+        [TestMethod]
+        public void CheckMetricsAggregationLogic()
+        {
+            MetricInfo metrics = new MetricInfo("metricsName", "unitName");
+
+            LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
+                   Int64.MaxValue,
+                   5);
+
+            histogram.RecordValue((long)10);
+            histogram.RecordValue((long)20);
+            histogram.RecordValue((long)30);
+            histogram.RecordValue((long)40);
+
+            metrics.SetAggregators(histogram);
+
+            Assert.AreEqual(40, metrics.Max);
+            Assert.AreEqual(10, metrics.Min);
+            Assert.AreEqual(4, metrics.Count);
+            Assert.AreEqual(25, metrics.Mean);
+
+            Assert.AreEqual(20, metrics.Percentiles[ClientTelemetryOptions.Percentile50]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile90]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile95]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile99]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile999]);
+        }
+
+        [TestMethod]
+        public void CheckMetricsAggregationLogicWithAdjustment()
+        {
+            MetricInfo metrics = new MetricInfo("metricsName", "unitName");
+            long adjustmentFactor = 1000;
+
+           LongConcurrentHistogram histogram = new LongConcurrentHistogram(1,
+                         Int64.MaxValue,
+                         5);
+
+            histogram.RecordValue((long)(10 * adjustmentFactor));
+            histogram.RecordValue((long)(20 * adjustmentFactor));
+            histogram.RecordValue((long)(30 * adjustmentFactor));
+            histogram.RecordValue((long)(40 * adjustmentFactor));
+
+            metrics.SetAggregators(histogram, adjustmentFactor);
+
+            Assert.AreEqual(40, metrics.Max);
+            Assert.AreEqual(10, metrics.Min);
+            Assert.AreEqual(4, metrics.Count);
+
+            Assert.AreEqual(25, metrics.Mean);
+
+            Assert.AreEqual(20, metrics.Percentiles[ClientTelemetryOptions.Percentile50]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile90]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile95]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile99]);
+            Assert.AreEqual(40, metrics.Percentiles[ClientTelemetryOptions.Percentile999]);
+        }
+
+        [TestMethod]
+        public void CheckJsonSerializerContract()
+        {
+            string json = JsonConvert.SerializeObject(new ClientTelemetryInfo("clientId", "", null, ConnectionMode.Direct), ClientTelemetryOptions.JsonSerializerSettings);
+            Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"Direct\",\"systemInfo\":[]}",json);
+        }
     }
 }

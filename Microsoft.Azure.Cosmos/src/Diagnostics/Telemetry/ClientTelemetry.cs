@@ -38,8 +38,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1000,
-                                                        ClientTelemetryOptions.CpuMax * ClientTelemetryOptions.PrecisionAdjustment,
+        private readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
+                                                        ClientTelemetryOptions.CpuMax,
                                                         ClientTelemetryOptions.CpuPrecision);
         private readonly LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
                          ClientTelemetryOptions.MemoryMax,
@@ -192,6 +192,11 @@ namespace Microsoft.Azure.Cosmos
                     this.ClientTelemetryInfo.TimeStamp = DateTime.UtcNow.ToString(ClientTelemetryOptions.DateFormat);
 
                     this.RecordSystemUtilization();
+
+                    ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
+                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                    this.ClientTelemetryInfo.OperationInfo = ToListWithMetricsInfo(operationInfoSnapshot);
+
                     await this.SendAsync();
                 }
             }
@@ -253,14 +258,14 @@ namespace Microsoft.Azure.Cosmos
                                                         statusCode.IsSuccess() ?
                                                             ClientTelemetryOptions.RequestLatencySuccessPrecision :
                                                             ClientTelemetryOptions.RequestLatencyFailurePrecision),
-                            requestcharge: new LongConcurrentHistogram(1,
-                                                        ClientTelemetryOptions.RequestChargeMax * ClientTelemetryOptions.PrecisionAdjustment,
+                            requestcharge: new LongConcurrentHistogram(1 * ClientTelemetryOptions.AdjustmentFactor,
+                                                        ClientTelemetryOptions.RequestChargeMax * ClientTelemetryOptions.AdjustmentFactor,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
             double totalElapsedTimeInMicroSeconds = cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000;
 
             latency.RecordValue((long)totalElapsedTimeInMicroSeconds);
-            requestcharge.RecordValue((long)(requestCharge * ClientTelemetryOptions.PrecisionAdjustment));
+            requestcharge.RecordValue((long)(requestCharge * ClientTelemetryOptions.AdjustmentFactor));
         }
 
         /// <summary>
@@ -311,14 +316,14 @@ namespace Microsoft.Azure.Cosmos
                             float cpuValue = cpuLoad.Value;
                             if (!float.IsNaN(cpuValue))
                             {
-                                this.cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.PrecisionAdjustment));
+                                this.cpuHistogram.RecordValue((long)cpuValue);
                             }
 
                         }
 
-                        ReportPayload systemInfoPayload = new ReportPayload(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                        systemInfoPayload.SetAggregators(this.cpuHistogram, ClientTelemetryOptions.PrecisionAdjustment);
-                        this.ClientTelemetryInfo.SystemInfo.Add(systemInfoPayload);
+                        ReportPayload cpuInfoPayload = new ReportPayload(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+                        cpuInfoPayload.SetAggregators(this.cpuHistogram);
+                        this.ClientTelemetryInfo.SystemInfo.Add(cpuInfoPayload);
                     }
 
                     MemoryLoadHistory memoryLoadHistory = systemUsageRecorder.MemoryUsage;
@@ -354,16 +359,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
-                                = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
-
-                    this.ClientTelemetryInfo.OperationInfo = ToListWithMetricsInfo(operationInfoSnapshot);
-
-                    string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo,
-                      new JsonSerializerSettings
-                      {
-                          NullValueHandling = NullValueHandling.Ignore
-                      });
+                    string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
 
                     using HttpRequestMessage request = new HttpRequestMessage
                     {
@@ -464,7 +460,7 @@ namespace Microsoft.Azure.Cosmos
 
                 ReportPayload payloadForRequestCharge = payloadForLatency.Copy();
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.PrecisionAdjustment);
+                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.AdjustmentFactor);
                 
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
