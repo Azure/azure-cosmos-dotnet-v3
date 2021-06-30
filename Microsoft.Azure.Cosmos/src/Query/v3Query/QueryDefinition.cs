@@ -55,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (sqlQuery == null)
             {
-                throw new ArgumentNullException(nameof(sqlQuery));
+                // It is to support scenarios where all the data needs to be read 
+                return null;
             }
 
             QueryDefinition queryDefinition = new QueryDefinition(sqlQuery.QueryText);
