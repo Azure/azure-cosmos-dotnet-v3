@@ -49,7 +49,6 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            Uri containerUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
             IDocumentQuery<dynamic> query = this.documentClient.CreateDocumentQuery<dynamic>(
                 this.containerUri,
                 new SqlQuerySpec("select * from T where T.id = @id")
