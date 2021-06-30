@@ -12,7 +12,7 @@ namespace CosmosBenchmark
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Linq;
 
-    internal class QuerySinglePkStreamV2BenchmarkOperation : IBenchmarkOperation
+    internal class QueryTSinglePkV2BenchmarkOperation : IBenchmarkOperation
     {
         private readonly DocumentClient documentClient;
         private readonly string partitionKeyPath;
@@ -27,7 +27,7 @@ namespace CosmosBenchmark
         private readonly FeedOptions queryRequestOptions;
         private bool initialized = false;
 
-        public QuerySinglePkStreamV2BenchmarkOperation(
+        public QueryTSinglePkV2BenchmarkOperation(
             DocumentClient documentClient,
             string dbName,
             string containerName,
