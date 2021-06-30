@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class QuerySinglePkStreamV3BenchmarkOperation : IBenchmarkOperation
+    internal class QueryTSinglePkV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -26,7 +26,7 @@ namespace CosmosBenchmark
         private readonly QueryRequestOptions queryRequestOptions;
         private bool initialized = false;
 
-        public QuerySinglePkStreamV3BenchmarkOperation(
+        public QueryTSinglePkV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -51,8 +51,7 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            FeedIterator feedIterator = this.container
-                .GetItemQueryStreamIterator(
+            FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
                         queryDefinition: this.queryDefinition,
                         continuationToken: null,
                         requestOptions: this.queryRequestOptions);
@@ -61,15 +60,25 @@ namespace CosmosBenchmark
             CosmosDiagnostics lastDiagnostics = null;
             while (feedIterator.HasMoreResults)
             {
-                ResponseMessage feedResponse = await feedIterator.ReadNextAsync();
+                FeedResponse<Dictionary<string, object>> feedResponse = await feedIterator.ReadNextAsync();
                 totalCharge += feedResponse.Headers.RequestCharge;
                 lastDiagnostics = feedResponse.Diagnostics;
+
                 if (feedResponse.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"QuerySinglePkStreamV3BenchmarkOperation failed with {feedResponse.StatusCode}");
                 }
+
+                // Access the stream to catch any lazy logic
+                foreach (Dictionary<string, object> item in feedResponse)
+                {
+                    if (item == null)
+                    {
+                        throw new Exception("Null item was returned");
+                    }
+                }
             }
-            
+
             return new OperationResult()
             {
                 DatabseName = databsaeName,
