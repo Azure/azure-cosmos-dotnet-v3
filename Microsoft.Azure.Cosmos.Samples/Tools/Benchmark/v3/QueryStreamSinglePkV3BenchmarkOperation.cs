@@ -22,8 +22,6 @@ namespace CosmosBenchmark
 
         private readonly string executionItemPartitionKey;
         private readonly string executionItemId;
-        private readonly QueryDefinition queryDefinition;
-        private readonly QueryRequestOptions queryRequestOptions;
         private bool initialized = false;
 
         public QueryStreamSinglePkV3BenchmarkOperation(
@@ -41,21 +39,20 @@ namespace CosmosBenchmark
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
             this.executionItemPartitionKey = Guid.NewGuid().ToString();
-            this.queryRequestOptions = new QueryRequestOptions() { PartitionKey = new PartitionKey(this.executionItemPartitionKey) };
             this.executionItemId = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = this.executionItemId;
             this.sampleJObject[this.partitionKeyPath] = this.executionItemPartitionKey;
-
-            this.queryDefinition = new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", this.executionItemId);
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            FeedIterator feedIterator = this.container
-                .GetItemQueryStreamIterator(
-                        queryDefinition: this.queryDefinition,
-                        continuationToken: null,
-                        requestOptions: this.queryRequestOptions);
+            FeedIterator feedIterator = this.container.GetItemQueryStreamIterator(
+            queryDefinition: new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", this.executionItemId),
+            continuationToken: null,
+            requestOptions: new QueryRequestOptions()
+            {
+                PartitionKey = new PartitionKey(this.executionItemPartitionKey)
+            });
 
             double totalCharge = 0;
             CosmosDiagnostics lastDiagnostics = null;

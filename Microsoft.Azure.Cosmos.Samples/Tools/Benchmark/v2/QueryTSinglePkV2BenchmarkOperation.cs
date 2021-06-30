@@ -20,11 +20,10 @@ namespace CosmosBenchmark
 
         private readonly string databsaeName;
         private readonly string containerName;
+        private readonly Uri containerUri;
 
         private readonly string executionItemPartitionKey;
         private readonly string executionItemId;
-        private readonly SqlQuerySpec queryDefinition;
-        private readonly FeedOptions queryRequestOptions;
         private bool initialized = false;
 
         public QueryTSinglePkV2BenchmarkOperation(
@@ -39,43 +38,43 @@ namespace CosmosBenchmark
 
             this.documentClient = documentClient;
             this.partitionKeyPath = partitionKeyPath.Replace("/", "");
-
+            this.containerUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
             this.executionItemPartitionKey = Guid.NewGuid().ToString();
-            this.queryRequestOptions = new FeedOptions() { PartitionKey = new PartitionKey(this.executionItemPartitionKey) };
             this.executionItemId = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = this.executionItemId;
             this.sampleJObject[this.partitionKeyPath] = this.executionItemPartitionKey;
-
-            this.queryDefinition = new SqlQuerySpec("select * from T where T.id = @id")
-            {
-                Parameters = new SqlParameterCollection()
-                {
-                    new SqlParameter()
-                    {
-                        Name = "@id",
-                        Value = this.executionItemId
-                    }
-                }
-            };
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            Uri containerUri = UriFactory.CreateDocumentCollectionUri(this.databsaeName, this.containerName);
             IDocumentQuery<Dictionary<string, object>> query = this.documentClient.CreateDocumentQuery<Dictionary<string, object>>(
-                containerUri,
-                this.queryDefinition,
-                this.queryRequestOptions).AsDocumentQuery();
+                this.containerUri,
+                new SqlQuerySpec("select * from T where T.id = @id")
+                {
+                    Parameters = new SqlParameterCollection()
+                    {
+                        new SqlParameter()
+                        {
+                            Name = "@id",
+                            Value = this.executionItemId
+                        }
+                    }
+                },
+                new FeedOptions()
+                {
+                    PartitionKey = new PartitionKey(this.executionItemPartitionKey)
+                }).AsDocumentQuery();
 
             double totalCharge = 0;
             Func<string> lastDiagnostics = null;
             while (query.HasMoreResults)
             {
                 FeedResponse<Dictionary<string, object>> feedResponse = await query.ExecuteNextAsync<Dictionary<string, object>>();
-                foreach(Dictionary<string, object> item in feedResponse)
+                foreach (Dictionary<string, object> item in feedResponse)
                 {
-                    if(item == null)
+                    // No-op check that forces any lazy logic to be executed
+                    if (item == null)
                     {
                         throw new Exception("Null item was returned");
                     }

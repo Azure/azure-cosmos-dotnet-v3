@@ -41,20 +41,20 @@ namespace CosmosBenchmark
 
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
             this.executionItemPartitionKey = Guid.NewGuid().ToString();
-            this.queryRequestOptions = new QueryRequestOptions() { PartitionKey = new PartitionKey(this.executionItemPartitionKey) };
             this.executionItemId = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = this.executionItemId;
             this.sampleJObject[this.partitionKeyPath] = this.executionItemPartitionKey;
-
-            this.queryDefinition = new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", this.executionItemId);
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             FeedIterator<Dictionary<string, object>> feedIterator = this.container.GetItemQueryIterator<Dictionary<string, object>>(
-                        queryDefinition: this.queryDefinition,
+                        queryDefinition: new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", this.executionItemId),
                         continuationToken: null,
-                        requestOptions: this.queryRequestOptions);
+                        requestOptions: new QueryRequestOptions() 
+                        { 
+                            PartitionKey = new PartitionKey(this.executionItemPartitionKey) 
+                        });
 
             double totalCharge = 0;
             CosmosDiagnostics lastDiagnostics = null;
@@ -69,9 +69,9 @@ namespace CosmosBenchmark
                     throw new Exception($"QuerySinglePkStreamV3BenchmarkOperation failed with {feedResponse.StatusCode}");
                 }
 
-                // Access the stream to catch any lazy logic
                 foreach (Dictionary<string, object> item in feedResponse)
                 {
+                    // No-op check that forces any lazy logic to be executed
                     if (item == null)
                     {
                         throw new Exception("Null item was returned");
