@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 - [#2450](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2450) Query: Fixes c# parser grammar for recognizing string literal which will avoid falling back to gateway to get the query plan. 
 - [#2574](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2574) UserAgent: Fixes race condition in user agent string creation and limits client id to 10. Introduced in 3.20.0 PR [2552](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2552)
+- [#2580](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/2580) LINQ : Fixes ArgumentNullException while calling ToQueryDefinition() when no filters are applied.
 
 ### <a name="3.20.0"/> [3.20.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.20.0) - 2021-06-21
 
