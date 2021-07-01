@@ -19,7 +19,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             public static void WriteTrace(
                 IJsonWriter writer,
-                ITrace trace)
+                ITrace trace,
+                bool isRootTrace)
             {
                 if (writer == null)
                 {
@@ -32,6 +33,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 writer.WriteObjectStart();
+
+                if (isRootTrace)
+                {
+                    writer.WriteFieldName("Summary");
+                    WriteTraceDatum(writer, new SummaryDiagnosticsTraceDatum(trace));
+                }
 
                 writer.WriteFieldName("name");
                 writer.WriteStringValue(trace.Name);
@@ -89,7 +96,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                     foreach (ITrace child in trace.Children)
                     {
-                        WriteTrace(writer, child);
+                        WriteTrace(writer, 
+                            child, 
+                            isRootTrace: false);
                     }
 
                     writer.WriteArrayEnd();
@@ -370,6 +379,49 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 {
                     throw new NotImplementedException("Writing Raw Json directly to the buffer is currently only supported for text and not for binary, hybridrow");
                 }
+            }
+
+            public void Visit(SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum)
+            {
+                this.jsonWriter.WriteObjectStart();
+
+                if (summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode.Count > 0)
+                {
+                    this.jsonWriter.WriteFieldName("Direct Requests");
+                    this.jsonWriter.WriteObjectStart();
+                    foreach (KeyValuePair<StatusCodes, int> kvp in summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode)
+                    {
+                        this.jsonWriter.WriteFieldName(kvp.Key.ToString());
+                        this.jsonWriter.WriteStringValue(kvp.Value.ToString());
+                    }
+                    this.jsonWriter.WriteObjectEnd();
+
+                    this.jsonWriter.WriteFieldName("TotalTimeInMs");
+                    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.TotalTimeInMs);
+
+                    this.jsonWriter.WriteFieldName("MaxServiceProcessingTimesInMs");
+                    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs);
+
+                    this.jsonWriter.WriteFieldName("MaxNetworkingTimeInMs");
+                    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs);
+                }
+
+                if (summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode.Count > 0)
+                {
+                    this.jsonWriter.WriteFieldName("Gateway Requests");
+                    this.jsonWriter.WriteObjectStart();
+                    foreach (KeyValuePair<string, int> kvp in summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode)
+                    {
+                        this.jsonWriter.WriteFieldName(kvp.Key.ToString());
+                        this.jsonWriter.WriteStringValue(kvp.Value.ToString());
+                    }
+                    this.jsonWriter.WriteObjectEnd();
+
+                    this.jsonWriter.WriteFieldName("MaxGatewayRequestTimeInMs");
+                    this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs);
+                }
+
+                this.jsonWriter.WriteObjectEnd();
             }
 
             public void Visit(StoreResult storeResult)

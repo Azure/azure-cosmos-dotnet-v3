@@ -14,24 +14,20 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     {
         private const string TransitTimeEventName = "Transit Time";
 
-        public SummaryDiagnosticsTraceDatum()
+        public SummaryDiagnosticsTraceDatum(ITrace trace)
         {
             this.NumberOfRequestsPerStatusCode = new Dictionary<StatusCodes, int>();
-            this.NumberOfGateWayRequestsPerStatusCode = new Dictionary<HttpStatusCode, int>();
+            this.NumberOfGateWayRequestsPerStatusCode = new Dictionary<string, int>(); // string to capture exceptions
+            this.TotalTimeInMs = trace.Duration.TotalMilliseconds;
+            this.CollectSummaryFromTraceTree(trace);
         }
 
-        public double TotalTimeInMs { get; private set; }
+        public double TotalTimeInMs { get; }
         public double MaxServiceProcessingTimeInMs { get; private set; }
         public double MaxNetworkingTimeInMs { get; private set; }
         public double MaxGatewayRequestTimeInMs { get; private set; }
         public Dictionary<StatusCodes, int> NumberOfRequestsPerStatusCode { get; }
-        public Dictionary<HttpStatusCode, int> NumberOfGateWayRequestsPerStatusCode { get; }
-
-        public void CollectSummary(ITrace trace)
-        {
-            this.TotalTimeInMs = trace.Duration.TotalMilliseconds;
-            this.CollectSummaryFromTraceTree(trace);
-        }
+        public Dictionary<string, int> NumberOfGateWayRequestsPerStatusCode { get; }
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
@@ -56,7 +52,22 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in httpResponseStatisticsList)
             {
-                
+                string statusCodeOrException = (httpResponseStatistics.Exception != null) ? httpResponseStatistics.Exception.GetType().ToString() :
+                                                httpResponseStatistics.HttpResponseMessage.StatusCode.ToString();
+
+                if (this.NumberOfGateWayRequestsPerStatusCode.ContainsKey(statusCodeOrException))
+                {
+                    this.NumberOfGateWayRequestsPerStatusCode[statusCodeOrException]++;
+                }
+                else
+                {
+                    this.NumberOfGateWayRequestsPerStatusCode[statusCodeOrException] = 1;
+                }
+
+                if (httpResponseStatistics.Duration.TotalMilliseconds > this.MaxGatewayRequestTimeInMs)
+                {
+                    this.MaxGatewayRequestTimeInMs = httpResponseStatistics.Duration.TotalMilliseconds;
+                }
             }
         }
 
@@ -74,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.NumberOfRequestsPerStatusCode[statusCode] = 1;
                 }
 
-                long? transitTimeInMs = null;
+                double? transitTimeInMs = null;
                 TransportRequestStats transportRequestStats = storeResponseStatistics.StoreResult.TransportRequestStats;
                 if (transportRequestStats != null)
                 {
@@ -82,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     {
                         if (requestEvent.EventName == SummaryDiagnosticsTraceDatum.TransitTimeEventName)
                         {
-                            transitTimeInMs = requestEvent.DurationInMicroSec / 1000;
+                            transitTimeInMs = (double)requestEvent.DurationInMicroSec / 1000;
                         }
                     }
                 }
@@ -94,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                         this.MaxServiceProcessingTimeInMs = backendLatency;
                     }
 
-                    if (transitTimeInMs.HasValue && transitTimeInMs.Value - backendLatency > this.MaxNetworkingTimeInMs)
+                    if (transitTimeInMs.HasValue && (transitTimeInMs.Value - backendLatency > this.MaxNetworkingTimeInMs))
                     {
                         this.MaxNetworkingTimeInMs = transitTimeInMs.Value - backendLatency;
                     }
@@ -104,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
-            throw new NotImplementedException();
+            traceDatumVisitor.Visit(this);
         }
     }
 }

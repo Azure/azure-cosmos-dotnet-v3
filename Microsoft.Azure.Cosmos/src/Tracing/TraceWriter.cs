@@ -32,7 +32,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
             IJsonWriter writer,
             ITrace trace)
         {
-            TraceJsonWriter.WriteTrace(writer, trace);
+            TraceJsonWriter.WriteTrace(writer, 
+                trace,
+                isRootTrace: true);
         }
 
         public static string TraceToText(

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal static partial class TraceWriter
@@ -494,6 +495,29 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine($"{space}'rntbd': {clientConfigurationTraceDatum.RntbdConnectionConfig}");
                     stringBuilder.AppendLine($"{space}'other': {clientConfigurationTraceDatum.OtherConnectionConfig}");
                     stringBuilder.AppendLine($"Consistency Config: {clientConfigurationTraceDatum.ConsistencyConfig}");
+
+                    this.toStringValue = stringBuilder.ToString();
+                }
+
+                public void Visit(SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum)
+                {
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine("Summary Diagnostics");
+                    stringBuilder.AppendLine("Direct Requests:");
+                    foreach (KeyValuePair<StatusCodes, int> kvp in summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode)
+                    {
+                        stringBuilder.AppendLine($"{space}{kvp.Key}: {kvp.Value}");
+                    }
+                    stringBuilder.AppendLine($"TotalTimeInMs: {summaryDiagnosticsTraceDatum.TotalTimeInMs}");
+                    stringBuilder.AppendLine($"MaxServiceProcessingTimesInMs: {summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs}");
+                    stringBuilder.AppendLine($"MaxNetworkingTimeInMs: {summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs}");
+
+                    stringBuilder.AppendLine("Gateway Requests:");
+                    foreach (KeyValuePair<string, int> kvp in summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode)
+                    {
+                        stringBuilder.AppendLine($"{space}{kvp.Key}: {kvp.Value}");
+                    }
+                    stringBuilder.AppendLine($"MaxGatewayRequestTimeInMs: {summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs}");
 
                     this.toStringValue = stringBuilder.ToString();
                 }
