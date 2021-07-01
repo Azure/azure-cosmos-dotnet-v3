@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Handlers;
@@ -116,6 +118,10 @@ namespace Microsoft.Azure.Cosmos
                      connectionMode: connectionPolicy.ConnectionMode,
                      authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
                      diagnosticsHelper: DiagnosticsHandlerHelper.Instance());
+            } 
+            else
+            {
+                DefaultTrace.TraceInformation("Telemetry Disabled.");
             }
 
             if (requestInvokerHandler == null)

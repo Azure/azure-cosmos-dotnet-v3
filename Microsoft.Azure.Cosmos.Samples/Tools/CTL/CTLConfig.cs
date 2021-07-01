@@ -93,9 +93,6 @@ namespace CosmosCTL
         [Option("ctl_logging_context", Required = false, HelpText = "Defines a custom context to use on metrics")]
         public string LogginContext { get; set; } = string.Empty;
 
-        [Option("ctl_enable_telemetry", Required = false, HelpText = "Enable Telemetry")]
-        public string EnableTelemetry { get; set; }
-
         internal TimeSpan RunningTimeDurationAsTimespan { get; private set; } = TimeSpan.FromHours(10);
         internal TimeSpan DiagnosticsThresholdDurationAsTimespan { get; private set; } = TimeSpan.FromSeconds(60);
 
@@ -119,10 +116,7 @@ namespace CosmosCTL
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                ApplicationName = CTLConfig.UserAgentSuffix,
-#if PREVIEW
-                EnableClientTelemetry = CTLConfig.EnableTelemetry
-#endif
+                ApplicationName = CTLConfig.UserAgentSuffix
             };
 
             if (this.UseGatewayMode)

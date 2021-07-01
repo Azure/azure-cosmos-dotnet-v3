@@ -141,7 +141,4 @@ echo "Log file name is $log_filename"
 
 echo "$dotnetparameters" > $log_filename
 
-export "COSMOS.CLIENT_TELEMETRY_ENABLED"=true
-export "COSMOS.CLIENT_TELEMETRY_ENDPOINT"="https://tools-staging.cosmos.azure.com/api/clienttelemetry/trace"
-
 ./CosmosCTL $dotnetparameters 2>&1 | tee -a "$log_filename"

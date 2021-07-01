@@ -102,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Async Task</returns>
         private async Task SetAccountNameAsync()
         {
+            DefaultTrace.TraceInformation("Getting Account Information for Telemetry.");
             try
             {
                 if (this.documentClient.GlobalEndpointManager != null)
@@ -125,6 +126,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Async Task</returns>
         private async Task LoadAzureVmMetaDataAsync()
         {
+            DefaultTrace.TraceInformation("Getting VM Metadata Information for Telemetry.");
             try
             {
                 if (this.CancellationTokenSource.IsCancellationRequested)
@@ -171,6 +173,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
+            DefaultTrace.TraceInformation("Telemetry Started");
             try
             {
                 while (!this.CancellationTokenSource.IsCancellationRequested)
@@ -204,7 +207,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : " + ex.Message);
             }
-       
+
+            DefaultTrace.TraceInformation("Telemetry Stopped.");
         }
 
         /// <summary>
@@ -229,6 +233,8 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
+            DefaultTrace.TraceInformation("Collecting Operation data for Telemetry");
+
             if (cosmosDiagnostics == null)
             {
                 throw new ArgumentNullException(nameof(cosmosDiagnostics));
@@ -359,6 +365,8 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
+                    DefaultTrace.TraceInformation("Start sending Telemetry Data to " + this.EndpointUrl.AbsoluteUri);
+
                     string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
 
                     using HttpRequestMessage request = new HttpRequestMessage
@@ -401,6 +409,10 @@ namespace Microsoft.Azure.Cosmos
                     if (!response.IsSuccessStatusCode)
                     {
                         DefaultTrace.TraceError(response.ReasonPhrase);
+                    } 
+                    else
+                    {
+                        DefaultTrace.TraceInformation("Telemetry data sent successfully.");
                     }
 
                 }

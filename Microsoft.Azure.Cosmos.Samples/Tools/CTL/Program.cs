@@ -52,7 +52,9 @@ namespace CosmosCTL
 
 #if PREVIEW
                     if(client.ClientOptions.EnableClientTelemetry) {
-                        logger.LogInformation("Telemetry is enabled.");
+                        logger.LogInformation("Telemetry is enabled for CTL.");
+                    } else {
+                        logger.LogInformation("Telemetry is disabled for CTL.");
                     }
 #endif
                     List<Task> tasks = new List<Task>
