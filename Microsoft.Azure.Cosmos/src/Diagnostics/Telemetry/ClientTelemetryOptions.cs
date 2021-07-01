@@ -22,19 +22,18 @@ namespace Microsoft.Azure.Cosmos
         internal const int BytesToMb = 1024 * 1024;
         internal const int OneKbToBytes = 1024;
 
-        internal const int RequestLatencyMaxMicroSec = 300000000;
-        internal const int RequestLatencySuccessPrecision = 4;
-        internal const int RequestLatencyFailurePrecision = 2;
+        internal const int RequestLatencyMaxMicroSec = 99999;
+        internal const int RequestLatencySuccessPrecision = 5;
+        internal const int RequestLatencyFailurePrecision = 5;
         internal const string RequestLatencyName = "RequestLatency";
         internal const string RequestLatencyUnit = "MicroSec";
 
-        internal const int RequestChargeMax = 10000;
         internal const int RequestChargePrecision = 5;
         internal const string RequestChargeName = "RequestCharge";
         internal const string RequestChargeUnit = "RU";
 
         internal const int CpuMax = 100;
-        internal const int CpuPrecision = 2;
+        internal const int CpuPrecision = 3;
         internal const String CpuName = "CPU";
         internal const String CpuUnit = "Percentage";
 
@@ -64,6 +63,9 @@ namespace Microsoft.Azure.Cosmos
         });
 
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
+
+        internal static readonly int RequestChargeMax = 99999 * Convert.ToInt32(AdjustmentFactor);
+        internal static readonly int RequestChargeMin = 1 * Convert.ToInt32(AdjustmentFactor);
 
         private static Uri vmMetadataUrl;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;

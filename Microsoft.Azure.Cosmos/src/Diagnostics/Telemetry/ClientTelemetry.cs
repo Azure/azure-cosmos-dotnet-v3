@@ -258,8 +258,8 @@ namespace Microsoft.Azure.Cosmos
                                                         statusCode.IsSuccess() ?
                                                             ClientTelemetryOptions.RequestLatencySuccessPrecision :
                                                             ClientTelemetryOptions.RequestLatencyFailurePrecision),
-                            requestcharge: new LongConcurrentHistogram(1 * ClientTelemetryOptions.AdjustmentFactor,
-                                                        ClientTelemetryOptions.RequestChargeMax * ClientTelemetryOptions.AdjustmentFactor,
+                            requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
+                                                        ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
             double totalElapsedTimeInMicroSeconds = cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000;
