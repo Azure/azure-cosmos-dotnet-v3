@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal static partial class TraceWriter
     {
