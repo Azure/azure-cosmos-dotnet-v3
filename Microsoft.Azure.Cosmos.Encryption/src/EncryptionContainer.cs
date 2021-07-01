@@ -1014,7 +1014,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1089,7 +1089,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1163,7 +1163,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1239,7 +1239,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1377,7 +1377,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ReadManyRequestOptions clonedRequestOptions = readManyRequestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 if (readManyRequestOptions != null)
