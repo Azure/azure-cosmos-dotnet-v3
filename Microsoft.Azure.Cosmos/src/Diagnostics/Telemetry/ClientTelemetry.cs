@@ -233,7 +233,7 @@ namespace Microsoft.Azure.Cosmos
                             ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
-            DefaultTrace.TraceInformation("Collecting Operation data for Telemetry");
+            DefaultTrace.TraceInformation("Collecting Operation data for Telemetry.");
 
             if (cosmosDiagnostics == null)
             {
@@ -271,7 +271,10 @@ namespace Microsoft.Azure.Cosmos
             double totalElapsedTimeInMicroSeconds = cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000;
 
             latency.RecordValue((long)totalElapsedTimeInMicroSeconds);
+            DefaultTrace.TraceInformation("Latency Recorded by Telemetry.");
+
             requestcharge.RecordValue((long)(requestCharge * ClientTelemetryOptions.AdjustmentFactor));
+            DefaultTrace.TraceInformation("Request Charge Recorded by Telemetry.");
         }
 
         /// <summary>

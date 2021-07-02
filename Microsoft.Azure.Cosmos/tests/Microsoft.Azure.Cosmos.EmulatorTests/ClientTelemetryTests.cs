@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             this.actualInfo = new List<ClientTelemetryInfo>();
 
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
@@ -71,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            this.cosmosClient = cosmosClientBuilder.WithHttpClientFactory(() => new HttpClient(httpHandler)).Build();
+            this.cosmosClient = cosmosClientBuilder.WithTelemetryEnabled().WithHttpClientFactory(() => new HttpClient(httpHandler)).Build();
 
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             this.container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
@@ -244,7 +243,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Task.Delay(milliseconds).Wait();
 
-            Assert.IsNotNull(this.actualInfo);
+            Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
+            Assert.IsTrue(this.actualInfo.Count > 0, "Telemetry Information not available");
 
             List<ReportPayload> actualOperationList = new List<ReportPayload>();
             List<ReportPayload> actualSystemInformation = new List<ReportPayload>();
