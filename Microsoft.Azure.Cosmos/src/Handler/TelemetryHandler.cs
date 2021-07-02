@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Runtime.InteropServices;
@@ -35,24 +36,17 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                try
-                {
-                    this.telemetry
-                   .Collect(
-                         cosmosDiagnostics: response.Diagnostics,
-                         statusCode: response.StatusCode,
-                         responseSizeInBytes: this.GetPayloadSize(response),
-                         containerId: request.ContainerId,
-                         databaseId: request.DatabaseId,
-                         operationType: request.OperationType,
-                         resourceType: request.ResourceType,
-                         consistencyLevel: this.GetConsistencyLevel(request),
-                         requestCharge: response.Headers.RequestCharge);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceError("Telemetry Error - Not able to collect : " + ex.Message);
-                }
+                this.telemetry
+                .Collect(
+                        cosmosDiagnostics: response.Diagnostics,
+                        statusCode: response.StatusCode,
+                        responseSizeInBytes: this.GetPayloadSize(response),
+                        containerId: request.ContainerId,
+                        databaseId: request.DatabaseId,
+                        operationType: request.OperationType,
+                        resourceType: request.ResourceType,
+                        consistencyLevel: this.GetConsistencyLevel(request),
+                        requestCharge: response.Headers.RequestCharge);
                
             }
             return response;

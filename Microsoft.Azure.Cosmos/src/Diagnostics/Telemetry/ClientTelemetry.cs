@@ -5,30 +5,22 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
-    using System.Net.Http.Headers;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Timers;
     using Handler;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Util;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
     using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
-    using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
 
     /// <summary>
     /// This class collects and send all the telemetry information.
@@ -129,6 +121,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceInformation("Getting VM Metadata Information for Telemetry.");
             try
             {
+                // If task is cancelled the return from here.
                 if (this.CancellationTokenSource.IsCancellationRequested)
                 {
                     return;
@@ -147,11 +140,11 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 using HttpResponseMessage httpResponseMessage = await this.httpClient
-                    .SendHttpAsync(CreateRequestMessage, 
-                    ResourceType.Telemetry, 
-                    HttpTimeoutPolicyDefault.Instance, 
-                    null, 
-                    this.CancellationTokenSource.Token);
+                    .SendHttpAsync(createRequestMessageAsync: CreateRequestMessage, 
+                    resourceType: ResourceType.Telemetry, 
+                    timeoutPolicy: HttpTimeoutPolicyDefault.Instance, 
+                    clientSideRequestStatistics: null,
+                    cancellationToken: new CancellationToken()); // Do not want to cancel the whole process if this call fails
                    
                 AzureVMMetadata azMetadata = await ClientTelemetryOptions.ProcessResponseAsync(httpResponseMessage);
 
@@ -261,20 +254,30 @@ namespace Microsoft.Azure.Cosmos
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(1,
                                                         ClientTelemetryOptions.RequestLatencyMaxMicroSec,
-                                                        statusCode.IsSuccess() ?
-                                                            ClientTelemetryOptions.RequestLatencySuccessPrecision :
-                                                            ClientTelemetryOptions.RequestLatencyFailurePrecision),
+                                                        ClientTelemetryOptions.RequestLatencyPrecision),
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
-            double totalElapsedTimeInMicroSeconds = cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000;
+            long totalElapsedTimeInMicroSeconds = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds * 1000;
+            try
+            {
+                latency.RecordValue(totalElapsedTimeInMicroSeconds);
+            } 
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTimeInMicroSeconds + "  Exception : " + ex.Message);
+            }
 
-            latency.RecordValue((long)totalElapsedTimeInMicroSeconds);
-            DefaultTrace.TraceInformation("Latency Recorded by Telemetry.");
-
-            requestcharge.RecordValue((long)(requestCharge * ClientTelemetryOptions.AdjustmentFactor));
-            DefaultTrace.TraceInformation("Request Charge Recorded by Telemetry.");
+            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.AdjustmentFactor);
+            try
+            {
+                requestcharge.RecordValue(requestChargeToRecord);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : " + requestChargeToRecord + "  Exception : " + ex.Message);
+            }
         }
 
         /// <summary>
@@ -368,7 +371,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    DefaultTrace.TraceInformation("Start sending Telemetry Data to " + this.EndpointUrl.AbsoluteUri);
+                    DefaultTrace.TraceInformation("Sending Telemetry Data to " + this.EndpointUrl.AbsoluteUri);
 
                     string json = JsonConvert.SerializeObject(this.ClientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
 

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
@@ -22,9 +23,8 @@ namespace Microsoft.Azure.Cosmos
         internal const int BytesToMb = 1024 * 1024;
         internal const int OneKbToBytes = 1024;
 
-        internal const int RequestLatencyMaxMicroSec = 99999;
-        internal const int RequestLatencySuccessPrecision = 5;
-        internal const int RequestLatencyFailurePrecision = 5;
+        internal const int RequestLatencyMaxMicroSec = Int32.MaxValue;
+        internal const int RequestLatencyPrecision = 5;
         internal const string RequestLatencyName = "RequestLatency";
         internal const string RequestLatencyUnit = "MicroSec";
 
@@ -82,6 +82,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     vmMetadataUrl = new Uri(vmMetadataUrlProp);
                 }
+
+                DefaultTrace.TraceInformation("VM metadata URL for telemetry " + vmMetadataUrlProp);
             }
             return vmMetadataUrl;
         }
@@ -99,7 +101,10 @@ namespace Microsoft.Azure.Cosmos
                 {
                     throw new ArgumentException("Telemetry Scheduled time can not be less than or equal to 0.");
                 }
-                scheduledTimeSpan = TimeSpan.FromSeconds(scheduledTimeInSeconds); 
+                scheduledTimeSpan = TimeSpan.FromSeconds(scheduledTimeInSeconds);
+
+                DefaultTrace.TraceInformation("Telemetry Scheduled in Seconds " + scheduledTimeSpan.TotalSeconds);
+
             }
             return scheduledTimeSpan;
         }
@@ -133,6 +138,8 @@ namespace Microsoft.Azure.Cosmos
                 {
                     clientTelemetryEndpoint = new Uri(uriProp);
                 }
+
+                DefaultTrace.TraceInformation("Telemetry Endpoint URL is  " + uriProp);
             }
             return clientTelemetryEndpoint;
         }

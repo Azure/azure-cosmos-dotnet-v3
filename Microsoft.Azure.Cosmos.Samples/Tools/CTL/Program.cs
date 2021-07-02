@@ -24,6 +24,8 @@ namespace CosmosCTL
             
             ILogger logger = loggerFactory.CreateLogger<Program>();
 
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://tools-staging.cosmos.azure.com/api/clienttelemetry/trace");
+
             try
             {
                 CTLConfig config = CTLConfig.From(args);

@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
 #if PREVIEW
-         this.EnableClientTelemetry = CosmosConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
+            this.EnableClientTelemetry = CosmosConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
 #endif
     }
 
