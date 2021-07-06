@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Net.NetworkInformation;
     using System.Reflection;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
@@ -74,9 +76,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             BulkRequestOptions bulkRequestOptions = new BulkRequestOptions()
             {
-                MaxConcurrencyPerPartition = 1,
-                MaxMicroBatchSize = 100,
-                MaxPipelinedOperations = 1000,
+                MaxConcurrencyPerPartition = 1, // should we run congestion control and adjust this?
+                MaxMicroBatchSize = 100, // Fabian - Make it dynamic
+                MaxPipelinedOperations = 1000, // For backpressure
                 FlushBatchTimeout = TimeSpan.FromSeconds(1)
             };
 
@@ -93,7 +95,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            // Retry failed Contexts
+            // Option1: Retry failed Contexts in a new api
+            // Option2: Find a way to relay the failed contexts back into the input stream
             await database.DeleteAsync();
         }
 
@@ -117,8 +120,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             int i = 0;
             using (StreamReader reader = new StreamReader("C:\\jsonForBulkIngestion"))
             {
-                
-                while (true) 
+
+                while (true)
                 {
                     string jsonString = await reader.ReadLineAsync();
                     if (jsonString == null) yield break;
@@ -129,6 +132,116 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                                                          new OperationContext(i));
                     i++;
                     yield return operation;
+                }
+            }
+        }
+
+        private bool ShouldRetry(BulkOperationResponse<OperationContext> response)
+        {
+            throw new NotImplementedException();
+        }
+
+        [TestMethod]
+        public async Task BulkTest2()
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient();
+
+            Cosmos.Database database = (await client.CreateDatabaseIfNotExistsAsync("BulkDatabase")).Database;
+            ContainerCore container = (ContainerCore)(await database.CreateContainerIfNotExistsAsync("BulkContainer", "/pk", throughput: 20000)).Container;
+
+            BulkRequestOptions bulkRequestOptions = new BulkRequestOptions()
+            {
+                MaxConcurrencyPerPartition = 1,
+                MaxMicroBatchSize = 100,
+                MaxPipelinedOperations = 1000,
+                FlushBatchTimeout = TimeSpan.FromSeconds(1)
+            };
+
+            FileStreamEnumerable fileStreamEnumerable = new FileStreamEnumerable();
+            IAsyncEnumerable<BulkOperationResponse<OperationContext>> ouptputStream = container.ProcessBulkOperations(
+                                                                                        fileStreamEnumerable.CreateBulkStreamFromFile(),
+                                                                                        bulkRequestOptions);
+
+            await foreach (BulkOperationResponse<OperationContext> response in ouptputStream)
+            {
+                if (!this.ShouldRetry(response))
+                {
+                    fileStreamEnumerable.CompleteOperation(response.OperationContext);
+                }
+                else
+                {
+                    fileStreamEnumerable.RetryOperation(response.OperationContext);
+                }
+            }
+
+            await database.DeleteAsync();
+        }
+
+        private class FileStreamEnumerable
+        {
+            private ConcurrentQueue<OperationContext> contextsToRetry = new ConcurrentQueue<OperationContext>();
+            private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(0);
+            private int totalNumberOfOperations = 0;
+            private int totalCompletedOperations = 0;
+
+            public FileStreamEnumerable()
+            {
+            }
+
+            public void CompleteOperation(OperationContext operationContext)
+            {
+                this.totalCompletedOperations++;
+            }
+
+            internal void RetryOperation(OperationContext operationContext)
+            {
+                this.contextsToRetry.Enqueue(operationContext);
+                this.semaphoreSlim.Release();
+            }
+
+            private async IAsyncEnumerable<BulkItemOperation<OperationContext>> CreateBulkStreamFromFile()
+            {
+                int i = 0;
+                using (StreamReader reader = new StreamReader("C:\\jsonForBulkIngestion"))
+                {
+                    Task retryTask = this.semaphoreSlim.WaitAsync();
+                    while (true)
+                    {
+                        Task<string> readTask = reader.ReadLineAsync();
+                        Task completedTask = Task.WhenAny(retryTask, readTask);
+                        if (completedTask == readTask)
+                        {
+                            if (jsonString == null) break;
+                            BulkItemOperation<OperationContext> operation = BulkItemOperation<OperationContext>.GetCreateItemStreamOperation(
+                                                                                             new MemoryStream(Encoding.UTF8.GetBytes(jsonString)),
+                                                                                             new Cosmos.PartitionKey($"pk{i}"),
+                                                                                             new ItemRequestOptions(),
+                                                                                             new OperationContext(i));
+                            operation.OperationContext
+                            this.totalNumberOfOperations++;
+                            i++;
+                            yield return operation;
+                        }
+                        else
+                        {
+                            this.contextsToRetry.TryDequeue(out OperationContext context);
+                            retryTask = this.semaphoreSlim.WaitAsync();
+                            yield return context.Operation;
+                        }
+                    }
+
+                    while (true)
+                    {
+                        if (this.totalCompletedOperations == this.totalNumberOfOperations)
+                        {
+                            yield break;
+                        }
+
+                        await retryTask;
+                        this.contextsToRetry.TryDequeue(out OperationContext context);
+                        retryTask = this.semaphoreSlim.WaitAsync();
+                        yield return context.Operation;
+                    }
                 }
             }
         }
@@ -154,7 +267,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Id = id;
             }
 
+            public AttachOperation(BulkItemOperation<OperationContext> operation)
+            {
+                this.Operation = operation;
+            }
+
             public int Id { get; }
+            public BulkItemOperation<OperationContext> Operation { get; private set; }
         }
 
         [TestMethod]
