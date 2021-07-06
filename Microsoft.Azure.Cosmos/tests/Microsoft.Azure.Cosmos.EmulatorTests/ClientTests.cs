@@ -179,8 +179,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class FileStreamEnumerable
         {
-            private ConcurrentQueue<OperationContext> contextsToRetry = new ConcurrentQueue<OperationContext>();
-            private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(0);
+            private readonly ConcurrentQueue<OperationContext> contextsToRetry = new ConcurrentQueue<OperationContext>();
+            private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(0);
             private int totalNumberOfOperations = 0;
             private int totalCompletedOperations = 0;
 
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
             }
 
-            public void CompleteOperation(OperationContext operationContext)
+            public void CompleteOperation(OperationContext _)
             {
                 this.totalCompletedOperations++;
             }
@@ -199,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.semaphoreSlim.Release();
             }
 
-            private async IAsyncEnumerable<BulkItemOperation<OperationContext>> CreateBulkStreamFromFile()
+            public async IAsyncEnumerable<BulkItemOperation<OperationContext>> CreateBulkStreamFromFile()
             {
                 int i = 0;
                 using (StreamReader reader = new StreamReader("C:\\jsonForBulkIngestion"))
@@ -211,13 +211,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Task completedTask = Task.WhenAny(retryTask, readTask);
                         if (completedTask == readTask)
                         {
+                            string jsonString = readTask.Result;
                             if (jsonString == null) break;
                             BulkItemOperation<OperationContext> operation = BulkItemOperation<OperationContext>.GetCreateItemStreamOperation(
                                                                                              new MemoryStream(Encoding.UTF8.GetBytes(jsonString)),
                                                                                              new Cosmos.PartitionKey($"pk{i}"),
                                                                                              new ItemRequestOptions(),
                                                                                              new OperationContext(i));
-                            operation.OperationContext
+                            operation.OperationContext.AttachOperation(operation);
                             this.totalNumberOfOperations++;
                             i++;
                             yield return operation;
@@ -267,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 this.Id = id;
             }
 
-            public AttachOperation(BulkItemOperation<OperationContext> operation)
+            public void AttachOperation(BulkItemOperation<OperationContext> operation)
             {
                 this.Operation = operation;
             }
