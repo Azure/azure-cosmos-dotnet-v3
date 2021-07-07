@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
                         requestEnricher: requestMessage => BatchAsyncContainerExecutor.AddHeadersToRequestMessage(requestMessage, serverRequest.PartitionKeyRangeId),
                         trace: trace,
                         cancellationToken: cancellationToken).ConfigureAwait(false);
-                    
+
                     TransactionalBatchResponse serverResponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                         responseMessage,
                         serverRequest,

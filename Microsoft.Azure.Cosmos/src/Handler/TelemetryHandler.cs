@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
         private bool IsAllowed(RequestMessage request)
         { 
-            return ClientTelemetryOptions.AllowedResourceTypes.Contains(request.ResourceType);
+            return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
         private ConsistencyLevel? GetConsistencyLevel(RequestMessage request)

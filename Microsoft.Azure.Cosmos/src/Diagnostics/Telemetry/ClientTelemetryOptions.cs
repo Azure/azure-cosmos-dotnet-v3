@@ -57,10 +57,7 @@ namespace Microsoft.Azure.Cosmos
         internal const string EnvPropsClientTelemetryEndpoint = "COSMOS.CLIENT_TELEMETRY_ENDPOINT";
         internal const string EnvPropsClientTelemetryEnvironmentName = "COSMOS.ENVIRONMENT_NAME";
 
-        internal static readonly HashSet<ResourceType> AllowedResourceTypes = new HashSet<ResourceType>(new ResourceType[]
-        {
-            ResourceType.Document
-        });
+        internal static readonly ResourceType AllowedResourceTypes = ResourceType.Document;
 
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
@@ -121,10 +118,10 @@ namespace Microsoft.Azure.Cosmos
 
         internal static string GetHostInformation(AzureVMMetadata azMetadata) 
         {
-            return String.Concat(azMetadata?.OSType, "|",
-                    azMetadata?.SKU, "|",
-                    azMetadata?.VMSize, "|",
-                    azMetadata?.AzEnvironment);
+            return String.Concat(azMetadata?.Compute.OSType, "|",
+                    azMetadata?.Compute.SKU, "|",
+                    azMetadata?.Compute.VMSize, "|",
+                    azMetadata?.Compute.AzEnvironment);
         } 
 
         internal static Uri GetClientTelemetryEndpoint()

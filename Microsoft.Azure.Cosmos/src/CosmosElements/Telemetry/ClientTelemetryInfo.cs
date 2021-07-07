@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     internal sealed class ClientTelemetryInfo
     {
         [JsonProperty(PropertyName = "timeStamp")]
-        internal string TimeStamp { get; set; }
+        internal string DateTimeUtc { get; set; }
 
         [JsonProperty(PropertyName = "clientId")]
         private string ClientId { get; }
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.SystemInfo = new List<ReportPayload>();
         }
 
-        public ClientTelemetryInfo(string timeStamp,
+        public ClientTelemetryInfo(string dateTimeUtc,
             string clientId,
             string processId,
             string userAgent,
@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             List<ReportPayload> cacheRefreshInfo,
             List<ReportPayload> operationInfo)
         {
-            this.TimeStamp = timeStamp;
+            this.DateTimeUtc = dateTimeUtc;
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;

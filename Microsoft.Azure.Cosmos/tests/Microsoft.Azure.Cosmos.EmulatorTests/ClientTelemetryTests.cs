@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(2, telemetryInfo.SystemInfo.Count, "System Information Count doesn't Match");
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
-                Assert.IsNotNull(telemetryInfo.TimeStamp, "Timestamp is null");
+                Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
             }
             Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");
 

@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// Test that verifies that we do breath first while moving across partitions
         /// </summary>
         [TestMethod]
-        [Timeout(60000)]
+        [Timeout(30000)]
         public async Task StandByFeedIterator_BreathFirst()
         {
             int expected = 500;

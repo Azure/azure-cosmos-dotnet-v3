@@ -44,11 +44,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             AzureVMMetadata metadata = await ClientTelemetryOptions.ProcessResponseAsync(result);
 
-            Assert.AreEqual("eastus", metadata.Location);
-            Assert.AreEqual("18.04-LTS", metadata.SKU);
-            Assert.AreEqual("AzurePublicCloud", metadata.AzEnvironment);
-            Assert.AreEqual("Linux", metadata.OSType);
-            Assert.AreEqual("Standard_D2s_v3", metadata.VMSize);
+            Assert.AreEqual("eastus", metadata.Compute.Location);
+            Assert.AreEqual("18.04-LTS", metadata.Compute.SKU);
+            Assert.AreEqual("AzurePublicCloud", metadata.Compute.AzEnvironment);
+            Assert.AreEqual("Linux", metadata.Compute.OSType);
+            Assert.AreEqual("Standard_D2s_v3", metadata.Compute.VMSize);
         }
 
         [TestMethod]
@@ -114,6 +114,40 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string json = JsonConvert.SerializeObject(new ClientTelemetryInfo("clientId", "", null, ConnectionMode.Direct), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"Direct\",\"systemInfo\":[]}",json);
+        }
+
+        [TestMethod]
+        public void ShouldNotRunTelemetryJobMultipleTimes()
+        {
+            ClientTelemetry telemetry = new ClientTelemetry(new MockDocumentClient(),
+              "userAgent",
+              ConnectionMode.Direct,
+              new Mock<AuthorizationTokenProvider>().Object,
+              DiagnosticsHandlerHelper.Instance());
+
+            telemetry.StartObserverTask();
+
+            Assert.ThrowsException<InvalidOperationException>(() => telemetry.StartObserverTask());
+        }
+
+        [TestMethod]
+        public void ShouldDisableTelemetryJobIfAPICallsFail()
+        {
+
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.url.com");
+
+            ClientTelemetry telemetry = new ClientTelemetry(new MockDocumentClient(),
+              "userAgent",
+              ConnectionMode.Direct,
+              new Mock<AuthorizationTokenProvider>().Object,
+              DiagnosticsHandlerHelper.Instance());
+
+            telemetry.StartObserverTask();
+
+            Task.Delay(2000).Wait();
+
+            Assert.IsFalse(ClientTelemetry.IsObserverTaskEnabled());
         }
     }
 }
