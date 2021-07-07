@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -418,12 +417,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (e.DocumentServiceRequest != null)
                     {
-                        System.Diagnostics.Trace.TraceInformation($"{e.DocumentServiceRequest}");
+                        System.Diagnostics.Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
                     }
 
                     if (e.HttpRequest != null)
                     {
-                        System.Diagnostics.Trace.TraceInformation($"{e.HttpRequest}");
+                        System.Diagnostics.Trace.TraceInformation($"{e.HttpRequest.ToString()}");
                     }
 
                     if (e.IsHttpRequest()
@@ -2732,6 +2731,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(regionsContacted.Count, 1);
             Assert.AreEqual(regionsContacted[0].region, Regions.SouthCentralUS);
             Assert.IsNotNull(regionsContacted[0].uri);
+        }
+
+        [TestMethod]
+        public async Task HaLayerDoesNotThrowNullOnGoneExceptionTest()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                TransportClientHandlerFactory = (x) =>
+                    new TransportClientWrapper(client: x, interceptor: (uri, resource, dsr) =>
+                    {
+                        dsr.RequestContext.ClientRequestStatistics.GetType().GetProperty("IsCpuOverloaded").SetValue(
+                            dsr.RequestContext.ClientRequestStatistics, true);
+                        if (resource.operationType.IsReadOperation())
+                        {
+                            throw Documents.Rntbd.TransportExceptions.GetGoneException(
+                                uri,
+                                Guid.NewGuid());
+                        }
+                    })
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container container = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await container.CreateItemAsync<ToDoActivity>(testItem);
+
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(ex.StatusCode, HttpStatusCode.ServiceUnavailable);
+            }
         }
 
 #if PREVIEW
