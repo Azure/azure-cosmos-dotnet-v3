@@ -712,6 +712,30 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public async Task GatewayStatsDuarionTest()
+        {
+            static async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request)
+            {
+                await Task.Delay(1000);
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
+            }
+
+            HttpMessageHandler mockMessageHandler = new MockMessageHandler(sendFunc);
+            CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(mockMessageHandler),
+                                                                                    DocumentClientEventSource.Instance);
+            Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            
+            await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
+                                                  ResourceType.Document,
+                                                  HttpTimeoutPolicyDefault.Instance,
+                                                  clientSideRequestStatistics,
+                                                  CancellationToken.None);
+
+            Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 1);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 1000);
+        }
+
+        [TestMethod]
         [Owner("maquaran")]
         // Validates that if its a master resource, we don't update the Session Token, even though the status code would be one of the included ones
         public async Task GatewayStoreModel_Exceptionless_NotUpdateSessionTokenOnKnownFailedMasterResource()

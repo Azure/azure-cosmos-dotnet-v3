@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
-                            datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, DateTime.UtcNow);
+                            datum.RecordHttpResponse(requestMessage, responseMessage, resourceType, startDateTimeUtc);
                         }
 
                         return responseMessage;
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
-                            datum.RecordHttpException(requestMessage, e, resourceType, DateTime.UtcNow);
+                            datum.RecordHttpException(requestMessage, e, resourceType, startDateTimeUtc);
                         }
 
                         bool isOutOfRetries = (DateTime.UtcNow - startDateTimeUtc) > timeoutPolicy.MaximumRetryTimeLimit || // Maximum of time for all retries
