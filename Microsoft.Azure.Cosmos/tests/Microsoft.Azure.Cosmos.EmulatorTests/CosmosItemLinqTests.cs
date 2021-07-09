@@ -797,6 +797,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
+        [TestMethod]
+        public async Task LinqSelectEverythingWithoutQueryableTest()
+        {
+            await ToDoActivity.CreateRandomItems(this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            QueryDefinition queryDefinition = this.Container
+                 .GetItemLinqQueryable<ToDoActivity>()
+                 .ToQueryDefinition();
+
+            Assert.AreEqual(2, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
+        }
+
         private class NumberLinqItem
         {
             public string id;
