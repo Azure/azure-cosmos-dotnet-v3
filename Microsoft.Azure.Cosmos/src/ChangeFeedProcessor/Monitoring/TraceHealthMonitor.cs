@@ -14,23 +14,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
     internal sealed class TraceHealthMonitor : ChangeFeedProcessorHealthMonitor
     {
         public override Task NotifyErrorAsync(
-             ChangeFeedProcessorEvent changeFeedProcessorEvent,
              string leaseToken,
              Exception exception)
         {
             Extensions.TraceException(exception);
-            DefaultTrace.TraceError($"Unhealthiness detected in the operation {changeFeedProcessorEvent} for {leaseToken}. ");
-
-            return Task.CompletedTask;
-        }
-
-        public override Task NotifyCriticalAsync(
-             ChangeFeedProcessorEvent changeFeedProcessorEvent,
-             string leaseToken,
-             Exception exception)
-        {
-            Extensions.TraceException(exception);
-            DefaultTrace.TraceCritical($"Unhealthiness detected in the operation {changeFeedProcessorEvent} for {leaseToken}. ");
+            DefaultTrace.TraceError($"Error detected for lease {leaseToken}. ");
 
             return Task.CompletedTask;
         }

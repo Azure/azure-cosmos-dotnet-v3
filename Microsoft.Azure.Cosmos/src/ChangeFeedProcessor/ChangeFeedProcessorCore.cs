@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Monitoring;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -117,9 +116,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     EqualPartitionsBalancingStrategy.DefaultMaxLeaseCount,
                     this.changeFeedLeaseOptions.LeaseExpirationInterval);
 
-            PartitionController partitionController = new PartitionControllerCore(this.documentServiceLeaseStoreManager.LeaseContainer, this.documentServiceLeaseStoreManager.LeaseManager, partitionSuperviserFactory, synchronizer);
+            PartitionController partitionController = new PartitionControllerCore(
+                this.documentServiceLeaseStoreManager.LeaseContainer, 
+                this.documentServiceLeaseStoreManager.LeaseManager, 
+                partitionSuperviserFactory, 
+                synchronizer,
+                this.changeFeedProcessorOptions.HealthMonitor);
 
-            partitionController = new HealthMonitoringPartitionControllerDecorator(partitionController, this.changeFeedProcessorOptions.HealthMonitor);
             PartitionLoadBalancerCore partitionLoadBalancer = new PartitionLoadBalancerCore(
                 partitionController,
                 this.documentServiceLeaseStoreManager.LeaseContainer,
