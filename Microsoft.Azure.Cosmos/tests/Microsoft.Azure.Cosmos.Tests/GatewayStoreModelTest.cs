@@ -712,7 +712,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
-        public async Task GatewayStatsDuarionTest()
+        public async Task GatewayStatsDurationTest()
         {
             bool failedOnce = false;
             Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
