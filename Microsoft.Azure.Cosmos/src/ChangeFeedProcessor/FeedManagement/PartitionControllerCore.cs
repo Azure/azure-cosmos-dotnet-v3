@@ -65,7 +65,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
                     lease = updatedLease;
                 }
 
-                DefaultTrace.TraceInformation("Lease with token {0}: acquired", lease.CurrentLeaseToken);
                 await this.monitor.NotifyLeaseAcquireAsync(lease.CurrentLeaseToken);
             }
             catch (Exception ex)
@@ -110,7 +109,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 await this.leaseManager.ReleaseAsync(lease).ConfigureAwait(false);
 
-                DefaultTrace.TraceInformation("Lease with token {0}: released", lease.CurrentLeaseToken);
                 await this.monitor.NotifyLeaseReleaseAsync(lease.CurrentLeaseToken);
             }
             catch (Exception ex)

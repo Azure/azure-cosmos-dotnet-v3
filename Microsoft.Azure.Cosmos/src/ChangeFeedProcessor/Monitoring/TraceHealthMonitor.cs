@@ -9,10 +9,24 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
-    /// A monitor which logs the errors only as traces
+    /// A monitor which uses the default trace
     /// </summary>
     internal sealed class TraceHealthMonitor : ChangeFeedProcessorHealthMonitor
     {
+        public override Task NotifyLeaseAcquireAsync(string leaseToken)
+        {
+            DefaultTrace.TraceInformation("Lease with token {0}: acquired", leaseToken);
+
+            return Task.CompletedTask;
+        }
+
+        public override Task NotifyLeaseReleaseAsync(string leaseToken)
+        {
+            DefaultTrace.TraceInformation("Lease with token {0}: released", leaseToken);
+
+            return Task.CompletedTask;
+        }
+
         public override Task NotifyErrorAsync(
              string leaseToken,
              Exception exception)

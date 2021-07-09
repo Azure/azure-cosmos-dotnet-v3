@@ -55,8 +55,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.remainingWorkEstimator = remainingWorkEstimator;
         }
 
-        private ChangeFeedEstimatorRunner(
-            TimeSpan? estimatorPeriod)
+        private ChangeFeedEstimatorRunner(TimeSpan? estimatorPeriod)
         {
             if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
 
