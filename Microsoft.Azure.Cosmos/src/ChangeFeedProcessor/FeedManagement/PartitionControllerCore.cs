@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 await this.HandlePartitionGoneAsync(lease, ex.LastContinuation).ConfigureAwait(false);
             }
-            catch (TaskCanceledException)
+            catch (TaskCanceledException) when (this.shutdownCts.IsCancellationRequested)
             {
                 DefaultTrace.TraceVerbose("Lease with token {0}: processing canceled", lease.CurrentLeaseToken);
             }
