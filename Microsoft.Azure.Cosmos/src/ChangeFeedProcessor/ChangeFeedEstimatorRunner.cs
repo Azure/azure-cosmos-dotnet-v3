@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private const string EstimatorDefaultHostName = "Estimator";
         private readonly ChangesEstimationHandler initialEstimateDelegate;
         private readonly TimeSpan? estimatorPeriod;
+        private ChangeFeedProcessorHealthMonitor healthMonitor;
         private CancellationTokenSource shutdownCts;
         private ContainerInternal leaseContainer;
         private ContainerInternal monitoredContainer;
@@ -54,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.remainingWorkEstimator = remainingWorkEstimator;
         }
 
-        private ChangeFeedEstimatorRunner(TimeSpan? estimatorPeriod)
+        private ChangeFeedEstimatorRunner(
+            TimeSpan? estimatorPeriod)
         {
             if (estimatorPeriod.HasValue && estimatorPeriod.Value <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(estimatorPeriod));
 
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.monitoredContainer = monitoredContainer ?? throw new ArgumentNullException(nameof(monitoredContainer));
             this.changeFeedLeaseOptions = changeFeedLeaseOptions;
             this.documentServiceLeaseContainer = customDocumentServiceLeaseStoreManager?.LeaseContainer;
+            this.healthMonitor = changeFeedProcessorOptions.HealthMonitor;
         }
 
         public override async Task StartAsync()
@@ -128,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                    this.documentServiceLeaseContainer);
             }
 
-            return new FeedEstimatorRunner(this.initialEstimateDelegate, this.remainingWorkEstimator, this.estimatorPeriod);
+            return new FeedEstimatorRunner(this.initialEstimateDelegate, this.remainingWorkEstimator, this.healthMonitor, this.estimatorPeriod);
         }
 
         private async Task InitializeLeaseStoreAsync()
