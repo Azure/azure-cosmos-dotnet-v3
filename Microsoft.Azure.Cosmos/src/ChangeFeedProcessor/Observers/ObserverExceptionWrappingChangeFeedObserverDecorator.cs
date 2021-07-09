@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
-    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class ObserverExceptionWrappingChangeFeedObserverDecorator : ChangeFeedObserver
     {
@@ -20,32 +19,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             this.changeFeedObserver = changeFeedObserver ?? throw new ArgumentNullException(nameof(changeFeedObserver));
         }
 
-        public override async Task CloseAsync(string leaseToken, ChangeFeedObserverCloseReason reason)
+        public override Task CloseAsync(string leaseToken, ChangeFeedObserverCloseReason reason)
         {
-            try
-            {
-                await this.changeFeedObserver.CloseAsync(leaseToken, reason).ConfigureAwait(false);
-            }
-            catch (Exception userException)
-            {
-                Extensions.TraceException(userException);
-                DefaultTrace.TraceWarning("Exception happened on Observer.CloseAsync");
-                throw new ObserverException(userException);
-            }
+            return this.changeFeedObserver.CloseAsync(leaseToken, reason);
         }
 
-        public override async Task OpenAsync(string leaseToken)
+        public override Task OpenAsync(string leaseToken)
         {
-            try
-            {
-                await this.changeFeedObserver.OpenAsync(leaseToken).ConfigureAwait(false);
-            }
-            catch (Exception userException)
-            {
-                Extensions.TraceException(userException);
-                DefaultTrace.TraceWarning("Exception happened on Observer.OpenAsync");
-                throw new ObserverException(userException);
-            }
+            return this.OpenAsync(leaseToken);
         }
 
         public override async Task ProcessChangesAsync(ChangeFeedObserverContextCore context, Stream stream, CancellationToken cancellationToken)
@@ -56,9 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
             catch (Exception userException)
             {
-                Extensions.TraceException(userException);
-                DefaultTrace.TraceWarning("Exception happened on Observer.ProcessChangesAsync");
-                throw new ObserverException(userException);
+                throw new ChangeFeedProcessorUserException(userException);
             }
         }
     }

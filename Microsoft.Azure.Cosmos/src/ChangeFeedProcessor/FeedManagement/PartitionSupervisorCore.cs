@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             {
                 closeReason = ChangeFeedObserverCloseReason.Shutdown;
             }
-            catch (ObserverException)
+            catch (ChangeFeedProcessorUserException)
             {
                 closeReason = ChangeFeedObserverCloseReason.ObserverError;
                 throw;

@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             catch (Exception serializationException)
             {
                 // Error using custom serializer to parse stream
-                throw new ObserverException(serializationException);
+                throw new ChangeFeedProcessorUserException(serializationException);
             }
         }
     }
