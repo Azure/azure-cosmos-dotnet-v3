@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void ValidateConstructor()
         {
             Exception exception = new Exception("randomMessage");
-            ObserverException ex = new ObserverException(exception);
+            ChangeFeedProcessorUserException ex = new ChangeFeedProcessorUserException(exception);
             Assert.AreEqual(exception.Message, ex.InnerException.Message);
             Assert.AreEqual(exception, ex.InnerException);
         }
@@ -28,14 +28,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void ValidateSerialization_AllFields()
         {
             Exception exception = new Exception("randomMessage");
-            ObserverException originalException = new ObserverException(exception);
+            ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(exception);
             byte[] buffer = new byte[4096];
             BinaryFormatter formatter = new BinaryFormatter();
             MemoryStream stream1 = new MemoryStream(buffer);
             MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalException);
-            ObserverException deserializedException = (ObserverException)formatter.Deserialize(stream2);
+            ChangeFeedProcessorUserException deserializedException = (ChangeFeedProcessorUserException)formatter.Deserialize(stream2);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.AreEqual(originalException.InnerException.Message, deserializedException.InnerException.Message);
@@ -45,14 +45,14 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateSerialization_NullFields()
         {
-            ObserverException originalException = new ObserverException(null);
+            ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(null);
             byte[] buffer = new byte[4096];
             BinaryFormatter formatter = new BinaryFormatter();
             MemoryStream stream1 = new MemoryStream(buffer);
             MemoryStream stream2 = new MemoryStream(buffer);
 
             formatter.Serialize(stream1, originalException);
-            ObserverException deserializedException = (ObserverException)formatter.Deserialize(stream2);
+            ChangeFeedProcessorUserException deserializedException = (ChangeFeedProcessorUserException)formatter.Deserialize(stream2);
 
             Assert.AreEqual(originalException.Message, deserializedException.Message);
             Assert.IsNull(deserializedException.InnerException);

@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedObserverFactoryCore<dynamic> factory = new ChangeFeedObserverFactoryCore<dynamic>(handler, new CosmosSerializerCore(serializer));
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
-            ObserverException caughtException = await Assert.ThrowsExceptionAsync<ObserverException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            ChangeFeedProcessorUserException caughtException = await Assert.ThrowsExceptionAsync<ChangeFeedProcessorUserException>(() => processor.RunAsync(cancellationTokenSource.Token));
             Assert.IsInstanceOfType(caughtException.InnerException, typeof(CustomException));
         }
 

@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 await this.observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, stream, this.cancellationTokenSource.Token);
                 Assert.Fail("Should had thrown");
             }
-            catch (ObserverException ex)
+            catch (ChangeFeedProcessorUserException ex)
             {
                 Assert.IsInstanceOfType(ex.InnerException, typeof(Exception));
             }
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 await this.observerWrapper.ProcessChangesAsync(this.changeFeedObserverContext, stream, this.cancellationTokenSource.Token);
                 Assert.Fail("Should had thrown");
             }
-            catch (ObserverException ex)
+            catch (ChangeFeedProcessorUserException ex)
             {
                 Assert.IsInstanceOfType(ex.InnerException, typeof(Documents.DocumentClientException));
             }
