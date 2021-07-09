@@ -714,11 +714,18 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task GatewayStatsDuarionTest()
         {
-            static async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request)
+            bool failedOnce = false;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
             {
                 await Task.Delay(1000);
+                if (!failedOnce)
+                {
+                    failedOnce = true;
+                    throw new OperationCanceledException();
+                }
+
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
-            }
+            };
 
             HttpMessageHandler mockMessageHandler = new MockMessageHandler(sendFunc);
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(mockMessageHandler),
@@ -731,8 +738,11 @@ namespace Microsoft.Azure.Cosmos
                                                   clientSideRequestStatistics,
                                                   CancellationToken.None);
 
-            Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 1);
+            Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
             Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 1000);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 1000);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime < 
+                          clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
         }
 
         [TestMethod]
