@@ -10,10 +10,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using System.Text;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Newtonsoft.Json;
 
     [Serializable]
-    internal sealed class ClientTelemetryInfo
+    internal sealed class ClientTelemetryProperties
     {
         [JsonProperty(PropertyName = "timeStamp")]
         internal string DateTimeUtc { get; set; }
@@ -43,18 +44,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         private bool? AcceleratedNetworking { get; set; }
 
         [JsonProperty(PropertyName = "systemInfo")]
-        internal List<ReportPayload> SystemInfo { get; set; }
+        internal List<SystemInfo> SystemInfo { get; set; }
 
         [JsonProperty(PropertyName = "cacheRefreshInfo")]
-        private List<ReportPayload> CacheRefreshInfo { get; set; }
+        private List<OperationInfo> CacheRefreshInfo { get; set; }
 
         [JsonProperty(PropertyName = "operationInfo")]
-        internal List<ReportPayload> OperationInfo { get; set; }
+        internal List<OperationInfo> OperationInfo { get; set; }
 
         [JsonIgnore]
         private readonly ConnectionMode ConnectionModeEnum;
 
-        internal ClientTelemetryInfo(string clientId,
+        internal ClientTelemetryProperties(string clientId,
                                    string processId,
                                    string userAgent,
                                    ConnectionMode connectionMode)
@@ -64,10 +65,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             this.UserAgent = userAgent;
             this.ConnectionModeEnum = connectionMode;
             this.ConnectionMode = connectionMode.ToString();
-            this.SystemInfo = new List<ReportPayload>();
+            this.SystemInfo = new List<SystemInfo>();
         }
 
-        public ClientTelemetryInfo(string dateTimeUtc,
+        public ClientTelemetryProperties(string dateTimeUtc,
             string clientId,
             string processId,
             string userAgent,
@@ -76,9 +77,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             string applicationRegion,
             string hostEnvInfo,
             bool? acceleratedNetworking,
-            List<ReportPayload> systemInfo,
-            List<ReportPayload> cacheRefreshInfo,
-            List<ReportPayload> operationInfo)
+            List<SystemInfo> systemInfo,
+            List<OperationInfo> cacheRefreshInfo,
+            List<OperationInfo> operationInfo)
         {
             this.DateTimeUtc = dateTimeUtc;
             this.ClientId = clientId;

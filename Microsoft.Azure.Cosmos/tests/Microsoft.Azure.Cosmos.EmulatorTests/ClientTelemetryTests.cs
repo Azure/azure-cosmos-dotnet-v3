@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using System.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
@@ -31,11 +32,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private Container container;
 
-        private List<ClientTelemetryInfo> actualInfo;
+        private List<ClientTelemetryProperties> actualInfo;
         [TestInitialize]
         public async Task TestInitialize()
         {
-            this.actualInfo = new List<ClientTelemetryInfo>();
+            this.actualInfo = new List<ClientTelemetryProperties>();
 
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
@@ -52,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         
                         string jsonObject = request.Content.ReadAsStringAsync().GetAwaiter().GetResult();
 
-                        this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryInfo>(jsonObject));
+                        this.actualInfo.Add(JsonConvert.DeserializeObject<ClientTelemetryProperties>(jsonObject));
 
                         return Task.FromResult(result);
                     }
@@ -246,11 +247,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
             Assert.IsTrue(this.actualInfo.Count > 0, "Telemetry Information not available");
 
-            List<ReportPayload> actualOperationList = new List<ReportPayload>();
-            List<ReportPayload> actualSystemInformation = new List<ReportPayload>();
+            List<OperationInfo> actualOperationList = new List<OperationInfo>();
+            List<SystemInfo> actualSystemInformation = new List<SystemInfo>();
 
             // Asserting If basic client telemetry object is as expected
-            foreach (ClientTelemetryInfo telemetryInfo in this.actualInfo)
+            foreach (ClientTelemetryProperties telemetryInfo in this.actualInfo)
             {
                 actualOperationList.AddRange(telemetryInfo.OperationInfo);
                 actualSystemInformation.AddRange(telemetryInfo.SystemInfo);
@@ -263,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");
 
             // Asserting If operation list is as expected
-            foreach (ReportPayload operation in actualOperationList)
+            foreach (OperationInfo operation in actualOperationList)
             {
                 Assert.IsNotNull(operation.Operation, "Operation Type is null");
                 Assert.IsNotNull(operation.Resource, "Resource Type is null");
@@ -282,13 +283,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             // Asserting If system information list is as expected
-            foreach (ReportPayload operation in actualSystemInformation)
+            foreach (SystemInfo operation in actualSystemInformation)
             {
-                Assert.IsNull(operation.Operation, "Operation Type is not null");
-                Assert.IsNull(operation.Resource, "Resource Type is not null");
-                Assert.IsNull(operation.ResponseSizeInBytes, "ResponseSizeInBytes is not null");
-                Assert.IsNull(operation.StatusCode, "StatusCode is not null");
-
                 Assert.IsNotNull(operation.MetricInfo, "MetricInfo is null");
                 Assert.IsNotNull(operation.MetricInfo.MetricsName, "MetricsName is null");
                 Assert.IsNotNull(operation.MetricInfo.UnitName, "UnitName is null");

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -87,8 +88,17 @@ namespace Microsoft.Azure.Cosmos
             return azMetadata;
         }
 
-        internal static ReportPayload RecordMemoryUsage(CpuAndMemoryUsageRecorder systemUsageRecorder, LongConcurrentHistogram memoryHistogram)
+        /// <summary>
+        /// Record Memory Usage and return recorded memory metrics
+        /// </summary>
+        /// <param name="systemUsageRecorder"></param>
+        /// <returns>ReportPayload</returns>
+        internal static SystemInfo RecordMemoryUsage(CpuAndMemoryUsageRecorder systemUsageRecorder)
         {
+            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
+                                                            ClientTelemetryOptions.MemoryMax,
+                                                            ClientTelemetryOptions.MemoryPrecision);
+
             MemoryLoadHistory memoryLoadHistory = systemUsageRecorder.MemoryUsage;
             if (memoryLoadHistory == null)
             {
@@ -101,14 +111,23 @@ namespace Microsoft.Azure.Cosmos
                 memoryHistogram.RecordValue(memoryLoadInMb);
             }
 
-            ReportPayload memoryInfoPayload = new ReportPayload(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
+            SystemInfo memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
             memoryInfoPayload.SetAggregators(memoryHistogram);
 
             return memoryInfoPayload;
         }
 
-        internal static ReportPayload RecordCpuUsage(CpuAndMemoryUsageRecorder systemUsageRecorder, LongConcurrentHistogram cpuHistogram)
+        /// <summary>
+        /// Record CPU Usage and return recorded Cpu metrics
+        /// </summary>
+        /// <param name="systemUsageRecorder"></param>
+        /// <returns>ReportPayload</returns>
+        internal static SystemInfo RecordCpuUsage(CpuAndMemoryUsageRecorder systemUsageRecorder)
         {
+            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
+                                                        ClientTelemetryOptions.CpuMax,
+                                                        ClientTelemetryOptions.CpuPrecision);
+
             CpuLoadHistory cpuLoadHistory = systemUsageRecorder.CpuUsage;
             if (cpuLoadHistory == null)
             {
@@ -125,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
 
             }
 
-            ReportPayload cpuInfoPayload = new ReportPayload(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
+            SystemInfo cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
             cpuInfoPayload.SetAggregators(cpuHistogram);
 
             return cpuInfoPayload;
@@ -136,18 +155,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="metrics"></param>
         /// <returns>Collection of ReportPayload</returns>
-        internal static List<ReportPayload> ToListWithMetricsInfo(IDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
+        internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
         {
-            List<ReportPayload> payloadWithMetricInformation = new List<ReportPayload>();
-            foreach (KeyValuePair<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
+            List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
+            foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
             {
-                ReportPayload payloadForLatency = entry.Key;
+                OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
                 payloadForLatency.SetAggregators(entry.Value.latency);
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
-                ReportPayload payloadForRequestCharge = payloadForLatency.Copy();
+                OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
                 payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.AdjustmentFactor);
 

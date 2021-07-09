@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -30,20 +31,10 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ClientTelemetry : IDisposable
     {
-        private readonly LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
-                                                        ClientTelemetryOptions.CpuMax,
-                                                        ClientTelemetryOptions.CpuPrecision);
-        private readonly LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
-                         ClientTelemetryOptions.MemoryMax,
-                         ClientTelemetryOptions.MemoryPrecision);
-
         private static readonly Uri endpointUrl = ClientTelemetryOptions.GetClientTelemetryEndpoint();
         private static readonly TimeSpan observingWindow = ClientTelemetryOptions.GetScheduledTimeSpan();
 
-        private readonly ClientTelemetryInfo clientTelemetryInfo;
-
-        // enable/disable all the instances of telemetry
-        private static bool telemetryEnabled = true;
+        private readonly ClientTelemetryProperties clientTelemetryInfo;
 
         private readonly DocumentClient documentClient;
         private readonly CosmosHttpClient httpClient;
@@ -54,10 +45,36 @@ namespace Microsoft.Azure.Cosmos
 
         private Task telemetryTask;
 
-        private ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
-            = new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
+        private ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoMap 
+            = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
-        internal ClientTelemetry(
+        /// <summary>
+        /// Factory method to intiakize telemetry object and start observer task
+        /// </summary>
+        /// <param name="documentClient"></param>
+        /// <param name="userAgent"></param>
+        /// <param name="connectionMode"></param>
+        /// <param name="authorizationTokenProvider"></param>
+        /// <param name="diagnosticsHelper"></param>
+        /// <returns>ClientTelemetry</returns>
+        public static ClientTelemetry CreateAndStartBackgroundTelemetry(DocumentClient documentClient,
+            string userAgent,
+            ConnectionMode connectionMode,
+            AuthorizationTokenProvider authorizationTokenProvider,
+            DiagnosticsHandlerHelper diagnosticsHelper)
+        {
+            ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
+            userAgent,
+            connectionMode,
+            authorizationTokenProvider,
+            diagnosticsHelper);
+
+            clientTelemetry.StartObserverTask();
+
+            return clientTelemetry;
+        }
+
+        private ClientTelemetry(
             DocumentClient documentClient,
             string userAgent,
             ConnectionMode connectionMode,
@@ -68,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
             this.diagnosticsHelper = diagnosticsHelper ?? throw new ArgumentNullException(nameof(diagnosticsHelper));
             this.tokenProvider = authorizationTokenProvider ?? throw new ArgumentNullException(nameof(authorizationTokenProvider));
 
-            this.clientTelemetryInfo = new ClientTelemetryInfo(
+            this.clientTelemetryInfo = new ClientTelemetryProperties(
                 clientId: Guid.NewGuid().ToString(), 
                 processId: System.Diagnostics.Process.GetCurrentProcess().ProcessName, 
                 userAgent: userAgent, 
@@ -81,13 +98,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         ///  Start telemetry Process which Calculate and Send telemetry Information (never ending task)
         /// </summary>
-        internal void StartObserverTask()
+        private void StartObserverTask()
         {
-            if (this.telemetryTask != null)
-            {
-                throw new InvalidOperationException("Telemery job is already running");
-            }
-
             this.telemetryTask = Task.Run(this.EnrichAndSendAsync, this.cancellationTokenSource.Token);
         }
 
@@ -102,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceInformation("Telemetry Started");
             try
             {
-                while (!this.cancellationTokenSource.IsCancellationRequested && telemetryEnabled)
+                while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
                     // Load account information if not available, cache is already implemented
                     if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
@@ -130,8 +142,8 @@ namespace Microsoft.Azure.Cosmos
 
                     this.RecordSystemUtilization();
 
-                    ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
-                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<ReportPayload, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
+                    ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
+                        = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
 
                     await this.SendAsync();
@@ -183,7 +195,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Recording Request Latency and Request Charge
-            ReportPayload payloadKey = new ReportPayload(regionsContacted: regionsContacted?.ToString(),
+            OperationInfo payloadKey = new OperationInfo(regionsContacted: regionsContacted?.ToString(),
                                             responseSizeInBytes: responseSizeInBytes,
                                             consistency: consistencyLevel,
                                             databaseName: databaseId,
@@ -261,8 +273,17 @@ namespace Microsoft.Azure.Cosmos
 
                 if (systemUsageRecorder != null )
                 {
-                    this.clientTelemetryInfo.SystemInfo.Add(ClientTelemetryHelper.RecordCpuUsage(systemUsageRecorder, this.cpuHistogram));
-                    this.clientTelemetryInfo.SystemInfo.Add(ClientTelemetryHelper.RecordMemoryUsage(systemUsageRecorder, this.memoryHistogram));
+                    SystemInfo cpuUsagePayload = ClientTelemetryHelper.RecordCpuUsage(systemUsageRecorder);
+                    if (cpuUsagePayload != null)
+                    {
+                        this.clientTelemetryInfo.SystemInfo.Add(cpuUsagePayload);
+                    }
+
+                    SystemInfo memoryUsagePayload = ClientTelemetryHelper.RecordMemoryUsage(systemUsageRecorder);
+                    if (memoryUsagePayload != null)
+                    {
+                        this.clientTelemetryInfo.SystemInfo.Add(memoryUsagePayload);
+                    }
                 }
             }
             catch (Exception ex)
@@ -331,7 +352,6 @@ namespace Microsoft.Azure.Cosmos
                 if (!response.IsSuccessStatusCode)
                 {
                     DefaultTrace.TraceError(response.ReasonPhrase);
-                    telemetryEnabled = false;
                 } 
                 else
                 {
@@ -342,7 +362,6 @@ namespace Microsoft.Azure.Cosmos
             catch (Exception ex)
             {
                 DefaultTrace.TraceError(ex.Message);
-                telemetryEnabled = false;
             }
             finally
             {
@@ -356,14 +375,6 @@ namespace Microsoft.Azure.Cosmos
         private void Reset()
         {
             this.clientTelemetryInfo.SystemInfo.Clear();
-
-            this.cpuHistogram.Reset();
-            this.memoryHistogram.Reset();
-        }
-
-        internal static bool IsObserverTaskEnabled()
-        {
-            return telemetryEnabled;
         }
 
         /// <summary>

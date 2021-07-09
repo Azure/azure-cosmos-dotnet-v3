@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
     using Newtonsoft.Json;
 
     [Serializable]
-    internal sealed class ReportPayload
+    internal sealed class OperationInfo
     {
         [JsonProperty(PropertyName = "regionsContacted")]
         private string RegionsContacted { get; }
@@ -44,13 +44,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
         [JsonProperty(PropertyName = "metricInfo")]
         internal MetricInfo MetricInfo { get; set; }
 
-        internal ReportPayload(string metricsName, string unitName)
+        internal OperationInfo(string metricsName, string unitName)
         {
             this.MetricInfo = new MetricInfo(metricsName, unitName);
         }
 
-        internal ReportPayload(string regionsContacted, 
-            long? responseSizeInBytes, 
+        internal OperationInfo(string regionsContacted, 
+            long? responseSizeInBytes,            
             Cosmos.ConsistencyLevel? consistency, 
             string databaseName, 
             string containerName, 
@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
             this.StatusCode = statusCode;
         }
 
-        public ReportPayload(string regionsContacted, 
+        public OperationInfo(string regionsContacted, 
             bool? greaterThan1Kb, 
             string databaseName, 
             string containerName, 
@@ -95,9 +95,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
             this.MetricInfo = metricInfo;
         }
 
-        public ReportPayload Copy()
+        public OperationInfo Copy()
         {
-            return new ReportPayload(this.RegionsContacted,
+            return new OperationInfo(this.RegionsContacted,
             this.GreaterThan1Kb,
             this.DatabaseName,
             this.ContainerName,
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
 
         public override bool Equals(object obj)
         {
-            bool isequal = obj is ReportPayload payload &&
+            bool isequal = obj is OperationInfo payload &&
                    this.RegionsContacted != null && payload.RegionsContacted != null && this.RegionsContacted.Equals(payload.RegionsContacted) &&
                    this.GreaterThan1Kb != null && payload.GreaterThan1Kb != null && this.GreaterThan1Kb.Equals(payload.GreaterThan1Kb) &&
                    this.Consistency != null && payload.Consistency != null && this.Consistency.Equals(payload.Consistency) &&
