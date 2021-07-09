@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         public override Task OpenAsync(string leaseToken)
         {
-            return this.OpenAsync(leaseToken);
+            return this.changeFeedObserver.OpenAsync(leaseToken);
         }
 
         public override async Task ProcessChangesAsync(ChangeFeedObserverContextCore context, Stream stream, CancellationToken cancellationToken)

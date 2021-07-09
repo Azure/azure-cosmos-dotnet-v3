@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
                     .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContextCore>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Throws(new Documents.DocumentClientException("Some message", (HttpStatusCode) 429, Documents.SubStatusCodes.Unknown));
+                .Throws(new CosmosException("Some message", (HttpStatusCode) 429, (int)Documents.SubStatusCodes.Unknown, Guid.NewGuid().ToString(), 0));
 
             try
             {
@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
             catch (ChangeFeedProcessorUserException ex)
             {
-                Assert.IsInstanceOfType(ex.InnerException, typeof(Documents.DocumentClientException));
+                Assert.IsInstanceOfType(ex.InnerException, typeof(CosmosException));
             }
 
             Mock.Get(this.observer.Object)

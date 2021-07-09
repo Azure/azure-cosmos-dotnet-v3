@@ -111,7 +111,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             FeedProcessorCore processor = new FeedProcessorCore(mockObserver.Object, mockIterator.Object, FeedProcessorCoreTests.DefaultSettings, mockCheckpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<FeedNotFoundException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            Assert.AreEqual(statusCode, cosmosException.StatusCode);
+            Assert.AreEqual(subStatusCode, (int)cosmosException.Headers.SubStatusCode);
         }
 
         [DataRow(HttpStatusCode.NotFound, (int)Documents.SubStatusCodes.ReadSessionNotAvailable)]
@@ -133,7 +135,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 FeedProcessorCoreTests.DefaultSettings,
                 mockCheckpointer.Object);
 
-            await Assert.ThrowsExceptionAsync<FeedReadSessionNotAvailableException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            CosmosException cosmosException = await Assert.ThrowsExceptionAsync<CosmosException>(() => processor.RunAsync(cancellationTokenSource.Token));
+            Assert.AreEqual(statusCode, cosmosException.StatusCode);
+            Assert.AreEqual(subStatusCode, (int)cosmosException.Headers.SubStatusCode);
         }
 
         private static ResponseMessage GetResponse(HttpStatusCode statusCode, bool includeItem, int subStatusCode = 0)
