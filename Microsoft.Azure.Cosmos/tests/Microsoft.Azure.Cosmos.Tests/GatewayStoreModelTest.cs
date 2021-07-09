@@ -712,6 +712,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [TestMethod]
+        public async Task GatewayStatsDurationTest()
+        {
+            bool failedOnce = false;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            {
+                await Task.Delay(1000);
+                if (!failedOnce)
+                {
+                    failedOnce = true;
+                    throw new OperationCanceledException();
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
+            };
+
+            HttpMessageHandler mockMessageHandler = new MockMessageHandler(sendFunc);
+            CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(mockMessageHandler),
+                                                                                    DocumentClientEventSource.Instance);
+            Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            
+            await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
+                                                  ResourceType.Document,
+                                                  HttpTimeoutPolicyDefault.Instance,
+                                                  clientSideRequestStatistics,
+                                                  CancellationToken.None);
+
+            Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 1000);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 1000);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime < 
+                          clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
+        }
+
+        [TestMethod]
         [Owner("maquaran")]
         // Validates that if its a master resource, we don't update the Session Token, even though the status code would be one of the included ones
         public async Task GatewayStoreModel_Exceptionless_NotUpdateSessionTokenOnKnownFailedMasterResource()
