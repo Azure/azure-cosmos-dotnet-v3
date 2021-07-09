@@ -636,7 +636,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Flag to enable telemetry
         /// </summary>
-        internal bool? EnableClientTelemetry { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool? EnableClientTelemetry { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {

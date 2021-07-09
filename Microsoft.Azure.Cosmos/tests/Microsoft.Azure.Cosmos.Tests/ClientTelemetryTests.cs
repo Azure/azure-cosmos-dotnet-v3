@@ -112,42 +112,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryInfo("clientId", "", null, ConnectionMode.Direct), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"Direct\",\"systemInfo\":[]}",json);
         }
 
-        [TestMethod]
-        public void ShouldNotRunTelemetryJobMultipleTimes()
-        {
-            ClientTelemetry telemetry = new ClientTelemetry(new MockDocumentClient(),
-              "userAgent",
-              ConnectionMode.Direct,
-              new Mock<AuthorizationTokenProvider>().Object,
-              DiagnosticsHandlerHelper.Instance());
-
-            telemetry.StartObserverTask();
-
-            Assert.ThrowsException<InvalidOperationException>(() => telemetry.StartObserverTask());
-        }
-
-        [TestMethod]
-        public void ShouldDisableTelemetryJobIfAPICallsFail()
-        {
-
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "http://dummy.url.com");
-
-            ClientTelemetry telemetry = new ClientTelemetry(new MockDocumentClient(),
-              "userAgent",
-              ConnectionMode.Direct,
-              new Mock<AuthorizationTokenProvider>().Object,
-              DiagnosticsHandlerHelper.Instance());
-
-            telemetry.StartObserverTask();
-
-            Task.Delay(2000).Wait();
-
-            Assert.IsFalse(ClientTelemetry.IsObserverTaskEnabled());
-        }
     }
 }

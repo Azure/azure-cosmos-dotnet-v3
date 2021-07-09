@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public TelemetryHandler(ClientTelemetry telemetry)
         {
             this.telemetry = telemetry ?? throw new ArgumentNullException(nameof(telemetry));
-            telemetry.StartObserverTask();
         }
 
         public override async Task<ResponseMessage> SendAsync(
