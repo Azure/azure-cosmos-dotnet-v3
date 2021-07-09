@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
-    using Microsoft.Azure.Cosmos.Diagnostics;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -70,36 +69,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual(this.database, this.Container.Database);
             Assert.AreEqual(this.cosmosClient, this.Container.Database.Client);
-        }
-
-        [TestMethod]
-        public async Task SetDiagnosticsOnResponseMessageTest()
-        {
-            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-            using (Stream stream = TestCommon.SerializerCore.ToStream<ToDoActivity>(testItem))
-            {
-                using (ResponseMessage response = await this.Container.CreateItemStreamAsync(partitionKey: new Cosmos.PartitionKey(testItem.pk), streamPayload: stream))
-                {
-                    Assert.IsNotNull(response);
-                    string diagnosticsToString = response.Diagnostics.ToString();
-                    Assert.IsTrue(!string.IsNullOrEmpty(diagnosticsToString));
-
-                    CosmosTraceDiagnostics diagnostics = new CosmosTraceDiagnostics(NoOpTrace.Singleton);
-                    response.Diagnostics = diagnostics; // set Diagnostics
-                    string replacedDiagnosticsToString = response.Diagnostics.ToString();
-                    Assert.IsTrue(replacedDiagnosticsToString.Contains("NoOp"));
-                    Assert.AreNotEqual(replacedDiagnosticsToString, diagnosticsToString);
-
-                    try
-                    {
-                        response.Diagnostics = null;
-                        Assert.Fail("Diagnostics cannot be null");
-                    }
-                    catch (ArgumentNullException)
-                    {
-                    }
-                }
-            }
         }
 
         [TestMethod]
