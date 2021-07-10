@@ -67,12 +67,14 @@ namespace CosmosCTL
                     {
                         logger.LogInformation("Suceess: The number of new documents match the number of pre-created documents");
                     }
+
                     else
                     {
                         logger.LogError($"The prepopulated documents and the new documents don't match.  Preconfigured Docs = {config.PreCreatedDocuments}, New Documents = {documentTotal}");
                         logger.LogError(continuation);
                     }
                 }
+                
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Failure while looping through new documents");
