@@ -1346,12 +1346,21 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task<DocumentServiceResponse> ProcessRequestAsync(
+        internal Task<DocumentServiceResponse> ProcessRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
+            return this.ProcessRequestAsync(request, retryPolicyInstance, NoOpTrace.Singleton, cancellationToken);
+        }
+
+        internal async Task<DocumentServiceResponse> ProcessRequestAsync(
+            DocumentServiceRequest request,
+            IDocumentClientRetryPolicy retryPolicyInstance,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            await this.EnsureValidClientAsync(trace);
 
             retryPolicyInstance?.OnBeforeSendRequest(request);
 
