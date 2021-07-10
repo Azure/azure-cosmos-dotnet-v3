@@ -65,7 +65,7 @@ namespace CosmosCTL
                     }
                     if (config.PreCreatedDocuments == documentTotal)
                     {
-                        logger.LogInformation("Suceess: The number of new documents match the number of pre-created documents");
+                        logger.LogInformation($"Suceess: The number of new documents match the number of pre-created documents: {config.PreCreatedDocuments}");
                     }
 
                     else
