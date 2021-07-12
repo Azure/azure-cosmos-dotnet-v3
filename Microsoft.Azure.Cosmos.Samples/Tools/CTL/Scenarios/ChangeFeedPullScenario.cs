@@ -10,9 +10,7 @@ namespace CosmosCTL
     using System.Threading.Tasks;
     using System.Net;
     using System.Diagnostics;
-
     using App.Metrics;
-
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
 
@@ -62,7 +60,7 @@ namespace CosmosCTL
                             break;
                         }
                     }
-                    
+
                     if (config.PreCreatedDocuments == documentTotal)
                     {
                         logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {config.PreCreatedDocuments}");
