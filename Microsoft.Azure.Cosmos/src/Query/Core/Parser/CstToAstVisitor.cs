@@ -602,7 +602,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             SqlScalarExpression pattern = (SqlScalarExpression)this.Visit(context.binary_scalar_expression()[1]);
             bool not = context.K_NOT() != null;
             SqlStringLiteral escapeSequence = (context.escape_expression() != null) 
-                                                ? (SqlStringLiteral)this.Visit(context.escape_expression()) 
+                                                ? SqlStringLiteral.Create(CstToAstVisitor.GetStringValueFromNode(context.escape_expression().STRING_LITERAL())) 
                                                 : null;
             
             return SqlLikeScalarExpression.Create(expression, pattern, not, escapeSequence); 
@@ -896,7 +896,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         private static string GetStringValueFromNode(IParseTree parseTree)
         {
             string text = parseTree.GetText();
-            string textWithoutQuotes = text.Substring(1, text.Length - 2);
+            string textWithoutQuotes = text.Substring(1, text.Length - 2).Replace("\\\"", "\"");
             return textWithoutQuotes;
         }
 

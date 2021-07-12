@@ -1916,19 +1916,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             while (changeIterator.HasMoreResults)
             {
-                try
+                FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+                if (testDocs.StatusCode == HttpStatusCode.NotModified)
                 {
-                    FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                    Assert.AreEqual(testDocs.Count, 2);
-
-                    VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
-                    VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
-                }
-                catch (CosmosException ex)
-                {
-                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
                     break;
                 }
+
+                Assert.AreEqual(testDocs.Count, 2);
+
+                VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
+                VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
             }
         }
 
@@ -2042,12 +2039,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<TestDoc> changes,
-#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
-#else
-                    // Remove on next release
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-#endif
                     CancellationToken cancellationToken) =>
                 {
                     changeFeedReturnedDocs.AddRange(changes);
@@ -2151,12 +2143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     Stream changes,
-#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
-#else
-                    // Remove on next release
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-#endif
                     CancellationToken cancellationToken) =>
                 {
                     string changeFeed = string.Empty;
