@@ -1521,6 +1521,22 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.ResponseMessage;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics": {
+          "Type": 0,
+          "Attributes": null,
+          "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_Diagnostics(Microsoft.Azure.Cosmos.CosmosDiagnostics);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.TransactionalBatch;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {

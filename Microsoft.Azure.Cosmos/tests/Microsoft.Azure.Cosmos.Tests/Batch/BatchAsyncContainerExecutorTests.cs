@@ -351,6 +351,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                .Returns<string, RequestOptions, Func<ITrace, Task<object>>, TraceComponent, TraceLevel>(
                 (operationName, requestOptions, func, comp, level) => func(NoOpTrace.Singleton));
 
+            mockContext.Setup(x => x.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
+
             return mockContext;
         }
 

@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                apitype: clientOptions.ApiType,
                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
-               connectionPolicy: clientOptions.GetConnectionPolicy(),
+               connectionPolicy: clientOptions.GetConnectionPolicy(cosmosClient.ClientId),
                enableCpuMonitor: clientOptions.EnableCpuMonitor,
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
