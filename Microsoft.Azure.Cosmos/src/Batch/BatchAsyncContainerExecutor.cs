@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
             this.maxServerRequestBodyLength = maxServerRequestBodyLength;
             this.maxServerRequestOperationCount = maxServerRequestOperationCount;
             this.timerWheel = TimerWheel.CreateTimerWheel(BatchAsyncContainerExecutor.TimerWheelResolution, BatchAsyncContainerExecutor.TimerWheelBucketCount);
-            this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy().RetryOptions;
+            this.retryOptions = cosmosClientContext.ClientOptions.GetConnectionPolicy(cosmosClientContext.Client.ClientId).RetryOptions;
         }
 
         public virtual async Task<TransactionalBatchOperationResult> AddAsync(
