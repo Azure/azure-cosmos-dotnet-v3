@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly IDocumentClientRetryPolicy nextRetryPolicy;
         private readonly PartitionKeyRangeCache partitionKeyRangeCache;
         private readonly string collectionLink;
+        private readonly ITrace trace;
         private bool retried;
 
         public PartitionKeyRangeGoneRetryPolicy(
@@ -26,11 +27,22 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeCache partitionKeyRangeCache,
             string collectionLink,
             IDocumentClientRetryPolicy nextRetryPolicy)
+            : this(collectionCache, partitionKeyRangeCache, collectionLink, nextRetryPolicy, NoOpTrace.Singleton)
+        {
+        }
+
+        public PartitionKeyRangeGoneRetryPolicy(
+            CollectionCache collectionCache,
+            PartitionKeyRangeCache partitionKeyRangeCache,
+            string collectionLink,
+            IDocumentClientRetryPolicy nextRetryPolicy,
+            ITrace trace)
         {
             this.collectionCache = collectionCache;
             this.partitionKeyRangeCache = partitionKeyRangeCache;
             this.collectionLink = collectionLink;
             this.nextRetryPolicy = nextRetryPolicy;
+            this.trace = trace;
         }
 
         /// <summary> 
@@ -108,8 +120,8 @@ namespace Microsoft.Azure.Cosmos
                     null,
                     AuthorizationTokenType.PrimaryMasterKey))
                 {
-                    ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
-                    CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, cancellationToken, NoOpTrace.Singleton);
+                    ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, this.trace);
+                    CollectionRoutingMap routingMap = await this.partitionKeyRangeCache.TryLookupAsync(collection.ResourceId, null, request, cancellationToken, this.trace);
                     if (routingMap != null)
                     {
                         // Force refresh.
@@ -118,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                                 routingMap,
                                 request,
                                 cancellationToken,
-                                NoOpTrace.Singleton);
+                                this.trace);
                     }
                 }
 

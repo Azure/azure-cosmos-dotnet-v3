@@ -584,7 +584,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ConnectionPolicy policy = new ConnectionPolicy();
             policy.UserAgentSuffix = suffix;
 
-            string expectedUserAgent = new Cosmos.UserAgentContainer().BaseUserAgent + suffix;
+            string expectedUserAgent = new Cosmos.UserAgentContainer(clientId: 0).BaseUserAgent + suffix;
             string actualUserAgent = policy.UserAgentContainer.UserAgent;
             int startIndexOfClientCounter = expectedUserAgent.IndexOfNth('|', 2) + 1;
 

@@ -646,7 +646,7 @@ namespace Microsoft.Azure.Cosmos
             return cloneConfiguration;
         }
 
-        internal virtual ConnectionPolicy GetConnectionPolicy()
+        internal virtual ConnectionPolicy GetConnectionPolicy(int clientId)
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
@@ -657,7 +657,7 @@ namespace Microsoft.Azure.Cosmos
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
                 ConnectionProtocol = this.ConnectionProtocol,
-                UserAgentContainer = this.CreateUserAgentContainerWithFeatures(),
+                UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
@@ -808,7 +808,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal UserAgentContainer CreateUserAgentContainerWithFeatures()
+        internal UserAgentContainer CreateUserAgentContainerWithFeatures(int clientId)
         {
             CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
             if (this.AllowBulkExecution)
@@ -830,6 +830,7 @@ namespace Microsoft.Azure.Cosmos
             string regionConfiguration = this.GetRegionConfiguration();
 
             return new UserAgentContainer(
+                        clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
                         suffix: this.ApplicationName);
