@@ -157,6 +157,8 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Collection of ReportPayload</returns>
         internal static List<OperationInfo> ToListWithMetricsInfo(IDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> metrics)
         {
+            DefaultTrace.TraceInformation("Aggregating operation information to list started");
+
             List<OperationInfo> payloadWithMetricInformation = new List<OperationInfo>();
             foreach (KeyValuePair<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> entry in metrics)
             {
@@ -172,6 +174,8 @@ namespace Microsoft.Azure.Cosmos
 
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
+
+            DefaultTrace.TraceInformation("Aggregating operation information to list done");
 
             return payloadWithMetricInformation;
         }

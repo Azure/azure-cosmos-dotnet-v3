@@ -63,6 +63,8 @@ namespace Microsoft.Azure.Cosmos
             AuthorizationTokenProvider authorizationTokenProvider,
             DiagnosticsHandlerHelper diagnosticsHelper)
         {
+            DefaultTrace.TraceInformation("Initiating telemetry with background task.");
+
             ClientTelemetry clientTelemetry = new ClientTelemetry(documentClient,
             userAgent,
             connectionMode,
@@ -111,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Async Task</returns>
         private async Task EnrichAndSendAsync()
         {
-            DefaultTrace.TraceInformation("Telemetry Started");
+            DefaultTrace.TraceInformation("Telemetry Job Started with Observing window : " + observingWindow);
             try
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
@@ -126,8 +128,9 @@ namespace Microsoft.Azure.Cosmos
                     // Load host information if not available (it caches the information)
                     AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient);
 
-                    this.clientTelemetryInfo.ApplicationRegion = azMetadata?.Compute.Location;
-                    this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(azMetadata);
+                    Compute vmInformation = azMetadata?.Compute;
+                    this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
+                    this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
                     //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
 
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
@@ -135,6 +138,7 @@ namespace Microsoft.Azure.Cosmos
                     // If cancellation is requested after the delay then return from here.
                     if (this.cancellationTokenSource.IsCancellationRequested)
                     {
+                        DefaultTrace.TraceInformation("Observer Task Cancelled.");
                         return;
                     }
 
@@ -154,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : " + ex.Message);
             }
 
-            DefaultTrace.TraceInformation("Telemetry Stopped.");
+            DefaultTrace.TraceInformation("Telemetry Job Stopped.");
         }
 
         /// <summary>
@@ -269,6 +273,8 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
+                DefaultTrace.TraceInformation("Started Recording System Usage for telemetry.");
+
                 CpuAndMemoryUsageRecorder systemUsageRecorder = this.diagnosticsHelper.GetUsageRecorder(DiagnosticsHandlerHelper.Telemetrykey);
 
                 if (systemUsageRecorder != null )
@@ -278,17 +284,19 @@ namespace Microsoft.Azure.Cosmos
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(cpuUsagePayload);
                     }
+                    DefaultTrace.TraceInformation("Recorded CPU Usage for telemetry.");
 
                     SystemInfo memoryUsagePayload = ClientTelemetryHelper.RecordMemoryUsage(systemUsageRecorder);
                     if (memoryUsagePayload != null)
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(memoryUsagePayload);
                     }
+                    DefaultTrace.TraceInformation("Recorded Memory Usage for telemetry.");
                 }
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError(ex.Message);
+                DefaultTrace.TraceError("System Usage Recording Error : " + ex.Message);
             }
         }
 
@@ -351,7 +359,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    DefaultTrace.TraceError(response.ReasonPhrase);
+                    DefaultTrace.TraceError("Juno API response not successful : " + response.ReasonPhrase);
                 } 
                 else
                 {
@@ -361,7 +369,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError(ex.Message);
+                DefaultTrace.TraceError("Exception while sending telemetry data : " + ex.Message);
             }
             finally
             {
