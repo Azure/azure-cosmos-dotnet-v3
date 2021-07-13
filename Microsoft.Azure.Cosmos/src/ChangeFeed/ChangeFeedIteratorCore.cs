@@ -180,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         additionalHeaders = null;
                     }
 
-                    var paginationOptions = new ChangeFeedPaginationOptions(
+                    ChangeFeedPaginationOptions paginationOptions = new ChangeFeedPaginationOptions(
                             changeFeedMode,
                             changeFeedRequestOptions?.PageSizeHint,
                             changeFeedRequestOptions?.JsonSerializationFormatOptions?.JsonSerializationFormat,
@@ -191,7 +191,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             feedRangeState,
                             paginationOptions,
                             cancellationToken);
-                    var splitStrategy = changeFeedMode.CreateSplitStrategy(documentContainer, partitionRangeEnumeratorCreator);
+                    ISplitStrategy<Pagination.ChangeFeedPage, ChangeFeedState> splitStrategy =
+                        changeFeedMode.CreateSplitStrategy(documentContainer, partitionRangeEnumeratorCreator,
+                        this.clientContext);
 
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,

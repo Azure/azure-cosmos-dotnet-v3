@@ -18,16 +18,19 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
         private readonly ChangeFeedPaginationOptions changeFeedPaginationOptions;
         private readonly ChangeFeedCrossFeedRangeState state;
         private readonly JsonSerializationFormatOptions jsonSerializationFormatOptions;
+        private readonly CosmosClientContext clientContext;
 
         public ChangeFeedCrossFeedRangeAsyncEnumerable(
             IDocumentContainer documentContainer,
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            CosmosClientContext clientContext,
             JsonSerializationFormatOptions jsonSerializationFormatOptions = null)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
             this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? ChangeFeedPaginationOptions.Default;
             this.state = state;
+            this.clientContext = clientContext;
             this.jsonSerializationFormatOptions = jsonSerializationFormatOptions;
         }
 
@@ -44,7 +47,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                         this.documentContainer,
                         feedRangeState,
                         this.changeFeedPaginationOptions,
-                        cancellationToken)),
+                        cancellationToken),
+                    this.clientContext),
                 cancellationToken);
 
             return new ChangeFeedCrossFeedRangeAsyncEnumerator(

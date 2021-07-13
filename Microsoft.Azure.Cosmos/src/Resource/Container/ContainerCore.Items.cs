@@ -686,6 +686,7 @@ namespace Microsoft.Azure.Cosmos
                 documentContainer,
                 state,
                 changeFeedPaginationOptions,
+                this.ClientContext,
                 changeFeedRequestOptions?.JsonSerializationFormatOptions);
         }
 

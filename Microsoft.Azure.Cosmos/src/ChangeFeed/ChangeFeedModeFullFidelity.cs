@@ -24,9 +24,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             CreateSplitStrategy(
                 CosmosPagination.IFeedRangeProvider feedRangeProvider,
                 CosmosPagination.CreatePartitionRangePageAsyncEnumerator<
-                    ChangeFeedPagination.ChangeFeedPage, ChangeFeedPagination.ChangeFeedState> partitionRangeEnumeratorCreator)
+                    ChangeFeedPagination.ChangeFeedPage, ChangeFeedPagination.ChangeFeedState> partitionRangeEnumeratorCreator,
+                CosmosClientContext clientContext)
         {
-            return new FullFidelityChangeFeedSplitStrategy(feedRangeProvider, partitionRangeEnumeratorCreator);
+            return new FullFidelityChangeFeedSplitStrategy(feedRangeProvider, partitionRangeEnumeratorCreator, clientContext);
         }
     }
 }

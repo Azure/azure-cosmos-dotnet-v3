@@ -32,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract ISplitStrategy<ChangeFeedPage, ChangeFeedState> CreateSplitStrategy(
             IFeedRangeProvider feedRangeProvider,
-            CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> partitionRangeEnumeratorCreator);
+            CreatePartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> partitionRangeEnumeratorCreator,
+            CosmosClientContext clientContext);
 
         /// <summary>
         /// Creates a <see cref="ChangeFeedMode"/> to receive incremental item changes.
