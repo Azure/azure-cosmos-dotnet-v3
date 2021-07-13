@@ -11,7 +11,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
     /// Exception occurred when an operation in an IChangeFeedObserver is running and throws by user code
     /// </summary>
     [Serializable]
-    public class ChangeFeedProcessorUserException : Exception
+
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class ChangeFeedProcessorUserException : Exception
     {
         private static readonly string DefaultMessage = "Exception has been thrown by the change feed processor delegate.";
 

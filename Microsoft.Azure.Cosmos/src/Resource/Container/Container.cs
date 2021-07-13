@@ -1588,6 +1588,30 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+
+        /// <summary>
+        /// Delegate to notify errors during change feed operations.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <param name="exception">The exception that happened.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        public delegate Task ChangeFeedMonitorErrorDelegate(
+            string leaseToken,
+            Exception exception);
+
+        /// <summary>
+        /// Delegate to notify events of leases being acquired by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+
+        /// <summary>
+        /// Delegate to notify events of leases being releases by a change feed processor.
+        /// </summary>
+        /// <param name="leaseToken">A unique identifier for the lease.</param>
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
 #endif
     }
 }

@@ -83,6 +83,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Configuration
         /// <seealso cref="ChangeFeedOptions.StartFromBeginning"/>
         public bool StartFromBeginning { get; set; }
 
-        public ChangeFeedProcessorHealthMonitor HealthMonitor { get; set; } = new TraceHealthMonitor();
+        public ChangeFeedProcessorHealthMonitorCore HealthMonitor { get; set; } = new ChangeFeedProcessorHealthMonitorCore();
     }
 }

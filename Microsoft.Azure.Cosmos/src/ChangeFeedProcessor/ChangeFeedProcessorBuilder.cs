@@ -7,6 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+#if PREVIEW
+    using static Microsoft.Azure.Cosmos.Container;
+#else
+    using static Microsoft.Azure.Cosmos.ContainerInternal;
+#endif
 
     /// <summary>
     /// Provides a flexible way to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
@@ -210,13 +215,65 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Sets a health monitor to log events happening during the lifecycle of the processor.
+        /// Defines a delegate to receive notifications on errors that occur during change feed processor execution.
         /// </summary>
-        /// <param name="healthMonitor">An implementation of <see cref="ChangeFeedProcessorHealthMonitor"/> to log lifecycle events.</param>
+        /// <param name="errorDelegate">A delegate to receive notifications for change feed processor related errors.</param>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
-        public ChangeFeedProcessorBuilder WithHealthMonitor(ChangeFeedProcessorHealthMonitor healthMonitor)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithErrorNotification(ChangeFeedMonitorErrorDelegate errorDelegate)
         {
-            this.changeFeedProcessorOptions.HealthMonitor = healthMonitor;
+            if (errorDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(errorDelegate));
+            }
+
+            this.changeFeedProcessorOptions.HealthMonitor.SetDelegate(errorDelegate);
+            return this;
+        }
+
+        /// <summary>
+        /// Defines a delegate to receive notifications on lease acquires that occur during change feed processor execution.
+        /// </summary>
+        /// <param name="acquireDelegate">A delegate to receive notifications when a change feed processor acquires a lease.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithLeaseAcquireNotification(ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate)
+        {
+            if (acquireDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(acquireDelegate));
+            }
+
+            this.changeFeedProcessorOptions.HealthMonitor.SetDelegate(acquireDelegate);
+            return this;
+        }
+
+        /// <summary>
+        /// Defines a delegate to receive notifications on lease releases that occur during change feed processor execution.
+        /// </summary>
+        /// <param name="releaseDelegate">A delegate to receive notifications when a change feed processor releases a lease.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithLeaseReleaseNotification(ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate)
+        {
+            if (releaseDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(releaseDelegate));
+            }
+
+            this.changeFeedProcessorOptions.HealthMonitor.SetDelegate(releaseDelegate);
             return this;
         }
 
