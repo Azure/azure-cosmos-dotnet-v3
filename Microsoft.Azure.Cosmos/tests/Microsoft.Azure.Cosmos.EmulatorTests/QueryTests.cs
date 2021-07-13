@@ -1825,7 +1825,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         // Ignore until backend index utilization is on by default and other query metrics test are completed
-        [TestMethod]
+        [Ignore][TestMethod]
         public async Task TestIndexUtilizationParsing()
         {
             Database database = await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
