@@ -116,12 +116,12 @@ namespace Microsoft.Azure.Cosmos
             return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
         }
 
-        internal static string GetHostInformation(AzureVMMetadata azMetadata) 
+        internal static string GetHostInformation(Compute vmInformation) 
         {
-            return String.Concat(azMetadata?.Compute.OSType, "|",
-                    azMetadata?.Compute.SKU, "|",
-                    azMetadata?.Compute.VMSize, "|",
-                    azMetadata?.Compute.AzEnvironment);
+            return String.Concat(vmInformation?.OSType, "|",
+                    vmInformation?.SKU, "|",
+                    vmInformation?.VMSize, "|",
+                    vmInformation?.AzEnvironment);
         } 
 
         internal static Uri GetClientTelemetryEndpoint()
