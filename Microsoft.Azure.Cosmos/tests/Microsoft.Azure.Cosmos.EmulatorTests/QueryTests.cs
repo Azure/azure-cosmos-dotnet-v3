@@ -1824,11 +1824,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             });
         }
 
-        [Ignore] // Ignore until backend index utilization is on by default and other query metrics test are completed
+        // Ignore until backend index utilization is on by default and other query metrics test are completed
         [TestMethod]
         public async Task TestIndexUtilizationParsing()
         {
-
             Database database = await this.client.CreateDatabaseAsync(new Database() { Id = Guid.NewGuid().ToString() });
 
             DocumentCollection collection;
