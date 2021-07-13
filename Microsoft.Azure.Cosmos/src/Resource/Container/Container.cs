@@ -1595,6 +1595,27 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="leaseToken">A unique identifier for the lease.</param>
         /// <param name="exception">The exception that happened.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken, Exception exception) =>
+        /// {
+        ///     if (exception is ChangeFeedProcessorUserException userException)
+        ///     {
+        ///         Console.WriteLine($"Current instance's delegate had an unhandled when processing lease {leaseToken}.");
+        ///         Console.WriteLine(userException.ToString());
+        ///     }
+        ///     else 
+        ///     {
+        ///         Console.WriteLine($"Current instance faced an exception when processing lease {leaseToken}.");
+        ///         Console.WriteLine(exception.ToString());
+        ///     }
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public delegate Task ChangeFeedMonitorErrorDelegate(
             string leaseToken,
             Exception exception);
@@ -1604,6 +1625,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="leaseToken">A unique identifier for the lease.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance released lease {leaseToken} and stopped processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public delegate Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
 
         /// <summary>
@@ -1611,6 +1644,18 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="leaseToken">A unique identifier for the lease.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the notification.</returns>
+        /// <example>
+        /// <code language="c#">
+        /// <![CDATA[
+        /// (string leaseToken) =>
+        /// {
+        ///     Console.WriteLine($"Current instance acquired lease {leaseToken} and will start processing it.");
+        ///     
+        ///     return Task.CompletedTask;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public delegate Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
 #endif
     }
