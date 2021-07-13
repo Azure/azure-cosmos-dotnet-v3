@@ -986,12 +986,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 });
         }
 
-        public override async Task<ResponseMessage> ReadManyItemsStreamAsync(
+        public override Task<ResponseMessage> ReadManyItemsStreamAsync(
             IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.ReadManyItemsHelperAsync(
+            return this.ReadManyItemsHelperAsync(
                 items,
                 readManyRequestOptions,
                 cancellationToken);

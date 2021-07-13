@@ -851,12 +851,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 });
         }
 
-        public override async Task<ResponseMessage> ReadManyItemsStreamAsync(
+        public override Task<ResponseMessage> ReadManyItemsStreamAsync(
             IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return await this.ReadManyItemsHelperAsync(
+            return this.ReadManyItemsHelperAsync(
                 items,
                 readManyRequestOptions,
                 cancellationToken);
@@ -897,7 +897,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-            JArray results = new JArray();
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
             {
@@ -908,7 +907,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             {
                 if (value is not JObject document)
                 {
-                    results.Add(value);
                     continue;
                 }
 
@@ -918,8 +916,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         document,
                         encryptionSettings,
                         cancellationToken);
-
-                    results.Add(decryptedDocument);
                 }
 
                 // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
@@ -936,25 +932,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         document,
                         encryptionSettings,
                         cancellationToken);
-
-                    results.Add(decryptedDocument);
                 }
             }
 
-            JObject decryptedResponse = new JObject();
-            foreach (JProperty property in contentJObj.Properties())
-            {
-                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
-                {
-                    decryptedResponse.Add(property.Name, (JToken)results);
-                }
-                else
-                {
-                    decryptedResponse.Add(property.Name, property.Value);
-                }
-            }
-
-            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
+            // the contents get decrypted in place by DecryptAsync.
+            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
         }
 
         /// <summary>
