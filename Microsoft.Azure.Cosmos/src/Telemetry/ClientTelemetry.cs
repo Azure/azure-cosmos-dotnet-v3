@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    DefaultTrace.TraceError("Juno API response not successful : " + response.ReasonPhrase);
+                    DefaultTrace.TraceError("Juno API response not successful. Status Code : " + response.StatusCode + ", Message : " + response.ReasonPhrase);
                 } 
                 else
                 {

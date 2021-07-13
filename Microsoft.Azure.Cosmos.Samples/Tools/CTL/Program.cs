@@ -24,11 +24,12 @@ namespace CosmosCTL
             
             ILogger logger = loggerFactory.CreateLogger<Program>();
 
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, "https://tools-staging.cosmos.azure.com/api/clienttelemetry/trace");
-
             try
             {
                 CTLConfig config = CTLConfig.From(args);
+
+                SetEnvironmentVariables(config);
+              
                 if (config.OutputEventTraces)
                 {
                     EnableTraceSourcesToConsole();
@@ -144,6 +145,12 @@ namespace CosmosCTL
             {
                 logger.LogError(ex, "Unhandled exception during execution");
             }
+        }
+
+        private static void SetEnvironmentVariables(CTLConfig config)
+        {
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, config.TelemetryEndpoint);
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, config.TelemetryScheduleInSeconds);
         }
 
         private static IMetricsRoot ConfigureReporting(
