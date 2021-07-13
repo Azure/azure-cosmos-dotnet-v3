@@ -22,17 +22,17 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
         private ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate;
         private ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate;
 
-        public void SetDelegate(ChangeFeedMonitorErrorDelegate delegateCallback)
+        public void SetErrorDelegate(ChangeFeedMonitorErrorDelegate delegateCallback)
         {
             this.errorDelegate = delegateCallback;
         }
 
-        public void SetDelegate(ChangeFeedMonitorLeaseAcquireDelegate delegateCallback)
+        public void SetLeaseAcquireDelegate(ChangeFeedMonitorLeaseAcquireDelegate delegateCallback)
         {
             this.acquireDelegate = delegateCallback;
         }
 
-        public void SetDelegate(ChangeFeedMonitorLeaseReleaseDelegate delegateCallback)
+        public void SetLeaseReleaseDelegate(ChangeFeedMonitorLeaseReleaseDelegate delegateCallback)
         {
             this.releaseDelegate = delegateCallback;
         }

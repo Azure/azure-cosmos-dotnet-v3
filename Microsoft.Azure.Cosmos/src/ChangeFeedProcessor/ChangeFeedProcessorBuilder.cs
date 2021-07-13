@@ -231,7 +231,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(errorDelegate));
             }
 
-            this.changeFeedProcessorOptions.HealthMonitor.SetDelegate(errorDelegate);
+            this.changeFeedProcessorOptions.HealthMonitor.SetErrorDelegate(errorDelegate);
             return this;
         }
 
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(acquireDelegate));
             }
 
-            this.changeFeedProcessorOptions.HealthMonitor.SetDelegate(acquireDelegate);
+            this.changeFeedProcessorOptions.HealthMonitor.SetLeaseAcquireDelegate(acquireDelegate);
             return this;
         }
 
@@ -273,7 +273,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(releaseDelegate));
             }
 
-            this.changeFeedProcessorOptions.HealthMonitor.SetDelegate(releaseDelegate);
+            this.changeFeedProcessorOptions.HealthMonitor.SetLeaseReleaseDelegate(releaseDelegate);
             return this;
         }
 
