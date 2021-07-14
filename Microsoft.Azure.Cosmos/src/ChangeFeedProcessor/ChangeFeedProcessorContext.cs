@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Context that is related to the set of delivered changes.
     /// </summary>
+
 #if PREVIEW
     public
 #else
