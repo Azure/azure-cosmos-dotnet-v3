@@ -504,19 +504,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine("Summary Diagnostics");
                     stringBuilder.AppendLine("Direct Requests:");
-                    foreach (KeyValuePair<StatusCodes, int> kvp in summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode)
-                    {
-                        stringBuilder.AppendLine($"{space}{kvp.Key}: {kvp.Value}");
-                    }
                     stringBuilder.AppendLine($"TotalTimeInMs: {summaryDiagnosticsTraceDatum.TotalTimeInMs}");
                     stringBuilder.AppendLine($"MaxServiceProcessingTimesInMs: {summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs}");
                     stringBuilder.AppendLine($"MaxNetworkingTimeInMs: {summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs}");
 
                     stringBuilder.AppendLine("Gateway Requests:");
-                    foreach (KeyValuePair<string, int> kvp in summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode)
-                    {
-                        stringBuilder.AppendLine($"{space}{kvp.Key}: {kvp.Value}");
-                    }
                     stringBuilder.AppendLine($"MaxGatewayRequestTimeInMs: {summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs}");
 
                     this.toStringValue = stringBuilder.ToString();

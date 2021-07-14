@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using Microsoft.Azure.Documents;
 
     internal sealed class SummaryDiagnosticsTraceDatum : TraceDatum
@@ -16,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public SummaryDiagnosticsTraceDatum(ITrace trace)
         {
-            this.NumberOfRequestsPerStatusCode = new Dictionary<StatusCodes, int>();
-            this.NumberOfGateWayRequestsPerStatusCode = new Dictionary<string, int>(); // string to capture exceptions
+            this.DirectRequestsSummary = new RequestSummary();
+            this.GatewayRequestsSummary = new GatewayRequestSummary();
             this.TotalTimeInMs = trace.Duration.TotalMilliseconds;
             this.CollectSummaryFromTraceTree(trace);
         }
@@ -26,8 +27,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         public double MaxServiceProcessingTimeInMs { get; private set; }
         public double MaxNetworkingTimeInMs { get; private set; }
         public double MaxGatewayRequestTimeInMs { get; private set; }
-        public Dictionary<StatusCodes, int> NumberOfRequestsPerStatusCode { get; }
-        public Dictionary<string, int> NumberOfGateWayRequestsPerStatusCode { get; }
+        public RequestSummary DirectRequestsSummary { get; }
+        public GatewayRequestSummary GatewayRequestsSummary { get; }
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
@@ -52,17 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         {
             foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics in httpResponseStatisticsList)
             {
-                string statusCodeOrException = (httpResponseStatistics.Exception != null) ? httpResponseStatistics.Exception.GetType().ToString() :
-                                                httpResponseStatistics.HttpResponseMessage.StatusCode.ToString();
-
-                if (this.NumberOfGateWayRequestsPerStatusCode.ContainsKey(statusCodeOrException))
-                {
-                    this.NumberOfGateWayRequestsPerStatusCode[statusCodeOrException]++;
-                }
-                else
-                {
-                    this.NumberOfGateWayRequestsPerStatusCode[statusCodeOrException] = 1;
-                }
+                this.GatewayRequestsSummary.RecordHttpResponse(httpResponseStatistics);
 
                 if (httpResponseStatistics.Duration.TotalMilliseconds > this.MaxGatewayRequestTimeInMs)
                 {
@@ -76,14 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             foreach (ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics storeResponseStatistics in storeResponseStatisticsList)
             {
                 StatusCodes statusCode = storeResponseStatistics.StoreResult.StatusCode;
-                if (this.NumberOfRequestsPerStatusCode.ContainsKey(statusCode))
-                {
-                    this.NumberOfRequestsPerStatusCode[statusCode]++;
-                }
-                else
-                {
-                    this.NumberOfRequestsPerStatusCode[statusCode] = 1;
-                }
+                this.DirectRequestsSummary.RecordStatusCode((int)statusCode);
 
                 double? transitTimeInMs = null;
                 TransportRequestStats transportRequestStats = storeResponseStatistics.StoreResult.TransportRequestStats;
@@ -116,6 +100,85 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
         {
             traceDatumVisitor.Visit(this);
+        }
+
+        public class RequestSummary
+        {
+            public int TotalCalls { get; protected set; }
+            public int NumberOf429s { get; private set; }
+            public int NumberOf410s { get; private set; }
+            public int NumberOf408s { get; private set; }
+            public int NumberOf449s { get; private set; }
+            public int NumberOf404s { get; private set; }
+            public int OtherErrors { get; private set; }
+            public int SuccessfullCalls { get; private set; }
+
+            public void RecordStatusCode(int statusCode)
+            {
+                this.TotalCalls++;
+                if (statusCode >= 200 && statusCode <= 299)
+                {
+                    this.SuccessfullCalls++;
+                    return;
+                }
+
+                switch ((int)statusCode)
+                {
+                    case 429:
+                        this.NumberOf429s++;
+                        break;
+                    case 410:
+                        this.NumberOf410s++;
+                        break;
+                    case 408:
+                        this.NumberOf408s++;
+                        break;
+                    case 449:
+                        this.NumberOf449s++;
+                        break;
+                    case 404:
+                        this.NumberOf404s++;
+                        break;
+                    default:
+                        this.OtherErrors++;
+                        break;
+                }
+            }
+        }
+
+        public class GatewayRequestSummary : RequestSummary
+        {
+            public int NumberOfOperationCancelledExceptions { get; private set; }
+            public int NumberOfWebExceptions { get; private set; }
+            public int NumberOfHttpRequestExceptions { get; private set; }
+            public int OtherExceptions { get; private set; }
+
+            public void RecordHttpResponse(ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics httpResponseStatistics)
+            {
+                this.TotalCalls++;
+                if (httpResponseStatistics.Exception != null)
+                {
+                    switch (httpResponseStatistics.Exception)
+                    {
+                        case OperationCanceledException operationCanceledException:
+                            this.NumberOfOperationCancelledExceptions++;
+                            break;
+                        case WebException webException:
+                            this.NumberOfWebExceptions++;
+                            break;
+                        case HttpRequestException httpRequestException:
+                            this.NumberOfHttpRequestExceptions++;
+                            break;
+                        default:
+                            this.OtherExceptions++;
+                            break;
+                    }
+                }
+                else if (httpResponseStatistics.HttpResponseMessage != null)
+                {
+                    base.RecordStatusCode((int)httpResponseStatistics.HttpResponseMessage.StatusCode);
+                }
+            }
         }
     }
 }

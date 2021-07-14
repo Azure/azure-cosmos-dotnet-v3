@@ -385,15 +385,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             {
                 this.jsonWriter.WriteObjectStart();
 
-                if (summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode.Count > 0)
+                if (summaryDiagnosticsTraceDatum.DirectRequestsSummary.TotalCalls > 0)
                 {
                     this.jsonWriter.WriteFieldName("Direct Requests");
                     this.jsonWriter.WriteObjectStart();
-                    foreach (KeyValuePair<StatusCodes, int> kvp in summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode)
-                    {
-                        this.jsonWriter.WriteFieldName(kvp.Key.ToString());
-                        this.jsonWriter.WriteStringValue(kvp.Value.ToString());
-                    }
+                    this.WriteRequestSummaryObject(summaryDiagnosticsTraceDatum.DirectRequestsSummary);
                     this.jsonWriter.WriteObjectEnd();
 
                     this.jsonWriter.WriteFieldName("TotalTimeInMs");
@@ -406,15 +402,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     this.jsonWriter.WriteNumber64Value(summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs);
                 }
 
-                if (summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode.Count > 0)
+                if (summaryDiagnosticsTraceDatum.GatewayRequestsSummary.TotalCalls > 0)
                 {
                     this.jsonWriter.WriteFieldName("Gateway Requests");
                     this.jsonWriter.WriteObjectStart();
-                    foreach (KeyValuePair<string, int> kvp in summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode)
-                    {
-                        this.jsonWriter.WriteFieldName(kvp.Key.ToString());
-                        this.jsonWriter.WriteStringValue(kvp.Value.ToString());
-                    }
+                    this.WriteGatewayRequestSummaryObject(summaryDiagnosticsTraceDatum.GatewayRequestsSummary);
                     this.jsonWriter.WriteObjectEnd();
 
                     this.jsonWriter.WriteFieldName("MaxGatewayRequestTimeInMs");
@@ -422,6 +414,79 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 }
 
                 this.jsonWriter.WriteObjectEnd();
+            }
+
+            private void WriteGatewayRequestSummaryObject(SummaryDiagnosticsTraceDatum.GatewayRequestSummary gatewayRequestSummary)
+            {
+                this.WriteRequestSummaryObject(gatewayRequestSummary);
+                if (gatewayRequestSummary.NumberOfOperationCancelledExceptions > 0)
+                {
+                    this.jsonWriter.WriteFieldName("OperationCancelledException");
+                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfOperationCancelledExceptions);
+                }
+
+                if (gatewayRequestSummary.NumberOfWebExceptions > 0)
+                {
+                    this.jsonWriter.WriteFieldName("WebExceptions");
+                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfWebExceptions);
+                }
+
+                if (gatewayRequestSummary.NumberOfHttpRequestExceptions > 0)
+                {
+                    this.jsonWriter.WriteFieldName("HttpRequestExceptions");
+                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.NumberOfHttpRequestExceptions);
+                }
+
+                if (gatewayRequestSummary.OtherExceptions > 0)
+                {
+                    this.jsonWriter.WriteFieldName("Other Exceptions");
+                    this.jsonWriter.WriteNumber64Value(gatewayRequestSummary.OtherExceptions);
+                }
+            }
+
+            private void WriteRequestSummaryObject(SummaryDiagnosticsTraceDatum.RequestSummary requestSummary)
+            {
+                if (requestSummary.SuccessfullCalls > 0)
+                {
+                    this.jsonWriter.WriteFieldName("SuccessfullCalls");
+                    this.jsonWriter.WriteNumber64Value(requestSummary.SuccessfullCalls);
+                }
+
+                if (requestSummary.NumberOf404s > 0)
+                {
+                    this.jsonWriter.WriteFieldName("404");
+                    this.jsonWriter.WriteNumber64Value(requestSummary.NumberOf404s);
+                }
+
+                if (requestSummary.NumberOf408s > 0)
+                {
+                    this.jsonWriter.WriteFieldName("408");
+                    this.jsonWriter.WriteNumber64Value(requestSummary.NumberOf408s);
+                }
+
+                if (requestSummary.NumberOf410s > 0)
+                {
+                    this.jsonWriter.WriteFieldName("410");
+                    this.jsonWriter.WriteNumber64Value(requestSummary.NumberOf410s);
+                }
+
+                if (requestSummary.NumberOf429s > 0)
+                {
+                    this.jsonWriter.WriteFieldName("429");
+                    this.jsonWriter.WriteNumber64Value(requestSummary.NumberOf429s);
+                }
+
+                if (requestSummary.NumberOf449s > 0)
+                {
+                    this.jsonWriter.WriteFieldName("449");
+                    this.jsonWriter.WriteNumber64Value(requestSummary.NumberOf449s);
+                }
+
+                if (requestSummary.OtherErrors > 0)
+                {
+                    this.jsonWriter.WriteFieldName("OtherStatusCodes");
+                    this.jsonWriter.WriteNumber64Value(requestSummary.OtherErrors);
+                }
             }
 
             public void Visit(StoreResult storeResult)

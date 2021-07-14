@@ -42,17 +42,15 @@
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode.Count, 1);
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode[Documents.StatusCodes.Created], 1);
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode.Count > 0); // calls for initalizing caches
+            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 1);
+            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.NumberOf429s, 0);
 
             response = await this.Container.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode.Count, 1);
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode[Documents.StatusCodes.Ok], 1);
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode.Count, 0);
+            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 1);
+            Assert.AreEqual(summaryDiagnosticsTraceDatum.GatewayRequestsSummary.SuccessfullCalls, 0);
             Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs > 0);
             Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs > 0);
         }
@@ -69,15 +67,15 @@
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode.Count, 0);
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode.Count > 0);
+            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 0);
+            Assert.IsTrue(summaryDiagnosticsTraceDatum.GatewayRequestsSummary.SuccessfullCalls > 0);
 
             response = await container.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
             trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
             summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(trace);
 
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode.Count, 0);
-            Assert.AreEqual(summaryDiagnosticsTraceDatum.NumberOfGateWayRequestsPerStatusCode["Created"], 1);
+            Assert.AreEqual(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls, 0);
+            Assert.IsTrue(summaryDiagnosticsTraceDatum.GatewayRequestsSummary.SuccessfullCalls > 0);
             Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxGatewayRequestTimeInMs > 0);
         }
 
@@ -95,7 +93,7 @@
             }
 
             SummaryDiagnosticsTraceDatum summaryDiagnosticsTraceDatum = new SummaryDiagnosticsTraceDatum(TraceJoiner.JoinTraces(traces));
-            Assert.IsTrue(summaryDiagnosticsTraceDatum.NumberOfRequestsPerStatusCode[Documents.StatusCodes.Ok] > 1);
+            Assert.IsTrue(summaryDiagnosticsTraceDatum.DirectRequestsSummary.SuccessfullCalls > 1);
             Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxServiceProcessingTimeInMs > 0);
             Assert.IsTrue(summaryDiagnosticsTraceDatum.MaxNetworkingTimeInMs > 0);
         }
