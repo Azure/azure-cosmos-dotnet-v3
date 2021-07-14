@@ -4,10 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
+
     /// <summary>
     /// Context that is related to the set of delivered changes.
     /// </summary>
-
 #if PREVIEW
     public
 #else

@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             Mock.Get(this.partitionProcessor)
                 .Setup(processor => processor.RunAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new ChangeFeedProcessorUserException(new Exception()));
+                .ThrowsAsync(new ChangeFeedProcessorUserException(new Exception(), Mock.Of<ChangeFeedProcessorContext>()));
 
             await Assert.ThrowsExceptionAsync<ChangeFeedProcessorUserException>(() => this.sut.RunAsync(this.shutdownToken.Token)).ConfigureAwait(false);
 

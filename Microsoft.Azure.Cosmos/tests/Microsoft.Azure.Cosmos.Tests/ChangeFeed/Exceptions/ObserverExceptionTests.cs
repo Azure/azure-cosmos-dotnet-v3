@@ -8,7 +8,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System.IO;
     using System.Runtime.Serialization.Formatters.Binary;
     using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
+    using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     [TestCategory("ChangeFeed")]
@@ -17,18 +19,25 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateConstructor()
         {
+            ResponseMessage responseMessage = new ResponseMessage();
+            ChangeFeedObserverContextCore observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedProcessorContextCore changeFeedProcessorContext = new ChangeFeedProcessorContextCore(observerContext);
             Exception exception = new Exception("randomMessage");
-            ChangeFeedProcessorUserException ex = new ChangeFeedProcessorUserException(exception);
+            ChangeFeedProcessorUserException ex = new ChangeFeedProcessorUserException(exception, changeFeedProcessorContext);
             Assert.AreEqual(exception.Message, ex.InnerException.Message);
             Assert.AreEqual(exception, ex.InnerException);
+            Assert.ReferenceEquals(changeFeedProcessorContext, ex.ExceptionContext);
         }
 
         // Tests the GetObjectData method and the serialization ctor.
         [TestMethod]
         public void ValidateSerialization_AllFields()
         {
+            ResponseMessage responseMessage = new ResponseMessage();
+            ChangeFeedObserverContextCore observerContext = new ChangeFeedObserverContextCore(Guid.NewGuid().ToString(), feedResponse: responseMessage, Mock.Of<PartitionCheckpointer>());
+            ChangeFeedProcessorContextCore changeFeedProcessorContext = new ChangeFeedProcessorContextCore(observerContext);
             Exception exception = new Exception("randomMessage");
-            ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(exception);
+            ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(exception, changeFeedProcessorContext);
             byte[] buffer = new byte[4096];
             BinaryFormatter formatter = new BinaryFormatter();
             MemoryStream stream1 = new MemoryStream(buffer);
@@ -45,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         [TestMethod]
         public void ValidateSerialization_NullFields()
         {
-            ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(null);
+            ChangeFeedProcessorUserException originalException = new ChangeFeedProcessorUserException(null, null);
             byte[] buffer = new byte[4096];
             BinaryFormatter formatter = new BinaryFormatter();
             MemoryStream stream1 = new MemoryStream(buffer);

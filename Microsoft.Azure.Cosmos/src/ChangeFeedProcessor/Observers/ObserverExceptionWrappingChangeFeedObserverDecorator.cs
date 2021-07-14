@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
             }
             catch (Exception userException)
             {
-                throw new ChangeFeedProcessorUserException(userException);
+                throw new ChangeFeedProcessorUserException(userException, context);
             }
         }
     }

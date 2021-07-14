@@ -134,8 +134,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                 .WithErrorNotification((string leaseToken, Exception exception) =>
                 {
                     errorCount++;
-                    Assert.IsTrue(exception is ChangeFeedProcessorUserException cfpException);
+                    ChangeFeedProcessorUserException cfpException = exception as ChangeFeedProcessorUserException;
+                    Assert.IsNotNull(cfpException);
                     Assert.ReferenceEquals(exceptionToPropagate, exception.InnerException);
+                    Assert.IsNotNull(cfpException.ExceptionContext.Diagnostics);
+                    Assert.IsNotNull(cfpException.ExceptionContext.Headers);
                     return Task.CompletedTask;
                 })
                 .WithLeaseContainer(this.LeaseContainer).Build();

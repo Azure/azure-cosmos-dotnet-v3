@@ -1603,6 +1603,8 @@ namespace Microsoft.Azure.Cosmos
         ///     if (exception is ChangeFeedProcessorUserException userException)
         ///     {
         ///         Console.WriteLine($"Current instance's delegate had an unhandled when processing lease {leaseToken}.");
+        ///         Console.WriteLine($"Diagnostics {userException.ExceptionContext.Diagnostics}");
+        ///         Console.WriteLine($"Headers {userException.ExceptionContext.Headers}");
         ///         Console.WriteLine(userException.ToString());
         ///     }
         ///     else 
