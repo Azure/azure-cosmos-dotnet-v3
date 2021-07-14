@@ -742,6 +742,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionReadManyItemAsync()
+        {
+            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+            {
+                (testDoc.Id, new PartitionKey(testDoc.PK)),
+                (testDoc2.Id, new PartitionKey(testDoc2.PK))
+            };
+
+            FeedResponse<TestDoc> response = await encryptionContainer.ReadManyItemsAsync<TestDoc>(itemList);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+            VerifyExpectedDocResponse(testDoc, response.Resource.ElementAt(0));
+            VerifyExpectedDocResponse(testDoc2, response.Resource.ElementAt(1));
+
+            // stream test.
+            ResponseMessage responseStream = await encryptionContainer.ReadManyItemsStreamAsync(itemList);
+
+            Assert.IsTrue(responseStream.IsSuccessStatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            JObject contentJObjects = TestCommon.FromStream<JObject>(responseStream.Content);
+
+            if(contentJObjects.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents)
+            {
+                VerifyExpectedDocResponse(testDoc, documents.ElementAt(0).ToObject<TestDoc>());
+                VerifyExpectedDocResponse(testDoc2, documents.ElementAt(1).ToObject<TestDoc>());
+            }
+            else
+            {
+                Assert.Fail("ResponseMessage from ReadManyItemsStreamAsync did not have a valid response. ");
+            }
+        }
+
+        [TestMethod]
         public async Task EncryptionChangeFeedDecryptionSuccessful()
         {
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainerForChangeFeed);
@@ -1916,19 +1954,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             while (changeIterator.HasMoreResults)
             {
-                try
+                FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+                if (testDocs.StatusCode == HttpStatusCode.NotModified)
                 {
-                    FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                    Assert.AreEqual(testDocs.Count, 2);
-
-                    VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
-                    VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
-                }
-                catch (CosmosException ex)
-                {
-                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
                     break;
                 }
+
+                Assert.AreEqual(testDocs.Count, 2);
+
+                VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
+                VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
             }
         }
 
@@ -2042,12 +2077,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<TestDoc> changes,
-#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
-#else
-                    // Remove on next release
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-#endif
                     CancellationToken cancellationToken) =>
                 {
                     changeFeedReturnedDocs.AddRange(changes);
@@ -2151,12 +2181,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     Stream changes,
-#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
-#else
-                    // Remove on next release
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-#endif
                     CancellationToken cancellationToken) =>
                 {
                     string changeFeed = string.Empty;

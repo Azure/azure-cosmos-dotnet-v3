@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Data.Encryption.Cryptography;
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
@@ -789,12 +788,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 async (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<JObject> documents,
-#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
-#else
-                    // Remove on next release
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-#endif
                     CancellationToken cancellationToken) =>
                 {
                     List<T> decryptedItems = await this.DecryptChangeFeedDocumentsAsync<T>(
@@ -840,12 +834,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 async (
                     ChangeFeedProcessorContext context,
                     Stream changes,
-#if SDKPROJECTREF
                     Func<Task> tryCheckpointAsync,
-#else
-                    // Remove on next release
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
-#endif
                     CancellationToken cancellationToken) =>
                 {
                     EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
@@ -867,15 +856,23 @@ namespace Microsoft.Azure.Cosmos.Encryption
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return this.ReadManyItemsHelperAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
         }
 
-        public override Task<FeedResponse<T>> ReadManyItemsAsync<T>(
+        public override async Task<FeedResponse<T>> ReadManyItemsAsync<T>(
             IReadOnlyList<(string id, PartitionKey partitionKey)> items,
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            ResponseMessage responseMessage = await this.ReadManyItemsHelperAsync(
+                items,
+                readManyRequestOptions,
+                cancellationToken);
+
+            return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
         public async Task<EncryptionSettings> GetOrUpdateEncryptionSettingsFromCacheAsync(
@@ -887,6 +884,59 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 obsoleteValue: obsoleteEncryptionSettings,
                 singleValueInitFunc: () => EncryptionSettings.CreateAsync(this, cancellationToken),
                 cancellationToken: cancellationToken);
+        }
+
+        internal async Task<Stream> DeserializeAndDecryptResponseAsync(
+           Stream content,
+           EncryptionSettings encryptionSettings,
+           CancellationToken cancellationToken)
+        {
+            if (!encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                return content;
+            }
+
+            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
+
+            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            {
+                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
+            }
+
+            foreach (JToken value in documents)
+            {
+                if (value is not JObject document)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptionSettings,
+                        cancellationToken);
+                }
+
+                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
+                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
+                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
+                catch (Exception)
+                {
+                    // most likely the encryption policy has changed.
+                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                        obsoleteEncryptionSettings: encryptionSettings,
+                        cancellationToken: cancellationToken);
+
+                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                        document,
+                        encryptionSettings,
+                        cancellationToken);
+                }
+            }
+
+            // the contents get decrypted in place by DecryptAsync.
+            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
         }
 
         /// <summary>
@@ -936,7 +986,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1011,7 +1061,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1085,7 +1135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1161,7 +1211,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
 
-            // only clone it on the first try.
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
             if (!isRetry)
             {
                 clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
@@ -1279,75 +1329,65 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return decryptedItems;
         }
 
-        internal async Task<Stream> DeserializeAndDecryptResponseAsync(
-            Stream content,
-            EncryptionSettings encryptionSettings,
-            CancellationToken cancellationToken)
+        private async Task<ResponseMessage> ReadManyItemsHelperAsync(
+            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
+            ReadManyRequestOptions readManyRequestOptions = null,
+            CancellationToken cancellationToken = default,
+            bool isRetry = false)
         {
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+               obsoleteEncryptionSettings: null,
+               cancellationToken: cancellationToken);
+
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
-                return content;
+                return await this.container.ReadManyItemsStreamAsync(
+                    items,
+                    readManyRequestOptions,
+                    cancellationToken);
             }
 
-            JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-            JArray results = new JArray();
+            ReadManyRequestOptions clonedRequestOptions = readManyRequestOptions;
 
-            if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+            // Clone(once) the request options since we modify it to set AddRequestHeaders to add additional headers.
+            if (!isRetry)
             {
-                throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
-            }
-
-            foreach (JToken value in documents)
-            {
-                if (value is not JObject document)
+                if (readManyRequestOptions != null)
                 {
-                    results.Add(value);
-                    continue;
-                }
-
-                try
-                {
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                        document,
-                        encryptionSettings,
-                        cancellationToken);
-
-                    results.Add(decryptedDocument);
-                }
-
-                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
-                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
-                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
-                catch (Exception)
-                {
-                    // most likely the encryption policy has changed.
-                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                        obsoleteEncryptionSettings: encryptionSettings,
-                        cancellationToken: cancellationToken);
-
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                        document,
-                        encryptionSettings,
-                        cancellationToken);
-
-                    results.Add(decryptedDocument);
-                }
-            }
-
-            JObject decryptedResponse = new JObject();
-            foreach (JProperty property in contentJObj.Properties())
-            {
-                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
-                {
-                    decryptedResponse.Add(property.Name, (JToken)results);
+                    clonedRequestOptions = (ReadManyRequestOptions)readManyRequestOptions.ShallowCopy();
                 }
                 else
                 {
-                    decryptedResponse.Add(property.Name, property.Value);
+                    clonedRequestOptions = new ReadManyRequestOptions();
                 }
             }
 
-            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
+            encryptionSettings.SetRequestHeaders(clonedRequestOptions);
+
+            ResponseMessage responseMessage = await this.container.ReadManyItemsStreamAsync(
+                items,
+                clonedRequestOptions,
+                cancellationToken);
+
+            if (!isRetry &&
+                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
+                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            {
+                // get the latest encryption settings.
+                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    cancellationToken: cancellationToken);
+
+                return await this.ReadManyItemsHelperAsync(
+                    items,
+                    clonedRequestOptions,
+                    cancellationToken,
+                    isRetry: true);
+            }
+
+            Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(responseMessage.Content, encryptionSettings, cancellationToken);
+
+            return new DecryptedResponseMessage(responseMessage, decryptedContent);
         }
     }
 }
