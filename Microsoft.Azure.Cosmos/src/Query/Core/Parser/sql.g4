@@ -27,7 +27,7 @@ select_item : scalar_expression (K_AS IDENTIFIER)? ;
 /*--------------------------------------------------------------------------------*/
 from_clause : K_FROM collection_expression ;
 collection_expression
-	: collection (K_AS IDENTIFIER)? #AliasedCollectionExpression
+	: collection (K_AS? IDENTIFIER)? #AliasedCollectionExpression
 	| IDENTIFIER K_IN collection #ArrayIteratorCollectionExpression 
 	| collection_expression K_JOIN collection_expression #JoinCollectionExpression
 	;
