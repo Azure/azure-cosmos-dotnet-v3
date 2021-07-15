@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
-    public sealed class QueryOptimizedIterator : FeedIteratorInternal
+    internal sealed class QueryOptimizedIterator : FeedIteratorInternal
     {
         private readonly ContainerInternal container;
         private readonly QueryDefinition queryDefinition;
