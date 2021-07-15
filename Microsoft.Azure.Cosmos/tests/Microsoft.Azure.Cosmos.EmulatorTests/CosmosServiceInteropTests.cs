@@ -91,5 +91,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(System.Net.HttpStatusCode.OK, response.StatusCode);
             }
         }
+
+        [DataTestMethod]
+        public async Task QuerySinglePartitionItemStreamTest2()
+        {
+            IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
+                this.Container,
+                pkCount: 1,
+                perPKItemCount: 200,
+                randomPartitionKey: true);
+
+            ToDoActivity find = deleteList.First();
+
+            QueryDefinition sql = new QueryDefinition("select * from r");
+
+            FeedIterator queryOptimizedIterator = this.Container.GetItemOptimizedQueryStreamIterator(
+                sql,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 100,
+                    PartitionKey = new Cosmos.PartitionKey(find.pk),
+                });
+
+            while (queryOptimizedIterator.HasMoreResults)
+            {
+                using ResponseMessage response = await queryOptimizedIterator.ReadNextAsync();
+                Assert.AreEqual(System.Net.HttpStatusCode.OK, response.StatusCode);
+            }
+        }
     }
 }

@@ -11,7 +11,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class QueryOptimizedStreamSinglePkV3BenchmarkOperation : IBenchmarkOperation
+    internal class QueryAntlrStreamSinglePkV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -24,7 +24,7 @@ namespace CosmosBenchmark
         private readonly string executionItemId;
         private bool initialized = false;
 
-        public QueryOptimizedStreamSinglePkV3BenchmarkOperation(
+        public QueryAntlrStreamSinglePkV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -51,6 +51,7 @@ namespace CosmosBenchmark
                 continuationToken: null,
                 requestOptions: new QueryRequestOptions()
                 {
+                    ForceAntlrQueryPlan = true,
                     PartitionKey = new PartitionKey(this.executionItemPartitionKey)
                 });
 

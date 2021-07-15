@@ -8,10 +8,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
+    using static Microsoft.Azure.Cosmos.Query.Core.ExecutionContext.CosmosQueryExecutionContextFactory;
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal sealed class QueryOptimizedIterator : FeedIteratorInternal
@@ -56,7 +59,26 @@ namespace Microsoft.Azure.Cosmos
             if (this.partitionedQueryExecutionInfo == null &&
                 this.hasMoreResults)
             {
-                if (this.queryRequestOptions.ForceGatewayQueryPlan)
+                if (this.queryRequestOptions.ForceAntlrQueryPlan)
+                {
+                    bool parsed = SqlQueryParser.TryParse(this.queryDefinition.QueryText, out SqlQuery sqlQuery);
+
+                    if (parsed)
+                    {
+                        bool hasDistinct = sqlQuery.SelectClause.HasDistinct;
+                        bool hasGroupBy = sqlQuery.GroupByClause != default;
+                        bool hasAggregates = AggregateProjectionDetector.HasAggregate(sqlQuery.SelectClause.SelectSpec);
+                        bool createPassthroughQuery = !hasAggregates && !hasDistinct && !hasGroupBy;
+
+                        if (createPassthroughQuery)
+                        {
+                            // Only thing that matters is that we target the correct range.
+                            ContainerProperties containerProperties = await this.container.GetCachedContainerPropertiesAsync(false, trace, cancellationToken);
+                            this.partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo();
+                        }
+                    }
+                }
+                else if (this.queryRequestOptions.ForceGatewayQueryPlan)
                 {
                     using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                         resourceUri: this.container.LinkUri,
