@@ -49,6 +49,39 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void HandlerOrderIfTelemetryIsEnabled()
+        {
+
+#if PREVIEW
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+#else
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(enableTelemetry: true);
+#endif
+            Type[] types = new Type[]
+            {
+                typeof(RequestInvokerHandler),
+                typeof(DiagnosticsHandler),
+                typeof(RetryHandler),
+                typeof(TelemetryHandler),
+                typeof(RouterHandler)
+            };
+
+            RequestHandler handler = client.RequestHandler;
+            foreach (Type type in types)
+            {
+                Assert.IsTrue(type.Equals(handler.GetType()));
+                handler = handler.InnerHandler;
+            }
+            Assert.IsNull(handler);
+
+#if PREVIEW
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+#endif   
+
+        }
+
+        [TestMethod]
         public async Task TestPreProcessingHandler()
         {
             RequestHandler preProcessHandler = new PreProcessingTestHandler();

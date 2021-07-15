@@ -27,11 +27,16 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             Action<CosmosClientBuilder> customizeClientBuilder = null,
-            Cosmos.ConsistencyLevel? accountConsistencyLevel = null)
+            Cosmos.ConsistencyLevel? accountConsistencyLevel = null,
+            bool enableTelemetry = false)
         {
             DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value) : new MockDocumentClient();
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
+            if(enableTelemetry)
+            {
+                cosmosClientBuilder.WithTelemetryEnabled();
+            }
 
             return cosmosClientBuilder.Build(documentClient);
         }

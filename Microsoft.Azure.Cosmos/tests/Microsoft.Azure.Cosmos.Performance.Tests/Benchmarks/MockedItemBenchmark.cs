@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         OfT = 1,
         OfTCustom = 2,
         OfTWithDiagnosticsToString = 3,
+        OfTWithClientTelemetryEnabled = 4
     }
 
     [Config(typeof(SdkBenchmarkConfiguration))]
@@ -24,11 +25,26 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 new MockedItemStreamBenchmark(),
                 new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
-                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: true) },
-                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: true) },
+                new MockedItemOfTBenchmark() { 
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: true) },
+                new MockedItemOfTBenchmark() { 
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false, 
+                        includeDiagnosticsToString: true) },
+                new MockedItemOfTBenchmark() { 
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false, 
+                        includeDiagnosticsToString: false,
+                        isClientTelemetryEnabled: true) }
             };
 
-        [Params(ScenarioType.Stream, ScenarioType.OfT, ScenarioType.OfTWithDiagnosticsToString, ScenarioType.OfTCustom)]
+        [Params(
+            ScenarioType.Stream, 
+            ScenarioType.OfT, 
+            ScenarioType.OfTWithDiagnosticsToString, 
+            ScenarioType.OfTCustom,
+            ScenarioType.OfTWithClientTelemetryEnabled)]
         public ScenarioType Type
         {
             get;

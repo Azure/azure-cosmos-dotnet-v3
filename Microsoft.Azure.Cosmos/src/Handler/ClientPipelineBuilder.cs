@@ -17,13 +17,16 @@ namespace Microsoft.Azure.Cosmos
         private readonly DiagnosticsHandler diagnosticsHandler;
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
+        private readonly TelemetryHandler telemetryHandler;
+
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
 
         public ClientPipelineBuilder(
             CosmosClient client,
             ConsistencyLevel? requestedClientConsistencyLevel,
-            IReadOnlyCollection<RequestHandler> customHandlers)
+            IReadOnlyCollection<RequestHandler> customHandlers,
+            ClientTelemetry telemetry)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
@@ -39,6 +42,11 @@ namespace Microsoft.Azure.Cosmos
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
 
+            if (telemetry != null)
+            {
+                this.telemetryHandler = new TelemetryHandler(telemetry);
+                Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
+            }
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
         }
@@ -80,7 +88,23 @@ namespace Microsoft.Azure.Cosmos
         ///                                                 |
         ///                                    +-----------------------------+
         ///                                    |                             |
+        ///                                    |       DiagnosticHandler     |
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
         ///                                    |       RetryHandler          |-> RetryPolicy -> ResetSessionTokenRetryPolicyFactory -> ClientRetryPolicy -> ResourceThrottleRetryPolicy
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
+        ///                                    |       Telemetry Handler     |-> Trigger a thread to monitor system usage/operation information and send it to juno
         ///                                    |                             |
         ///                                    +-----------------------------+
         ///                                                 |
@@ -140,6 +164,12 @@ namespace Microsoft.Azure.Cosmos
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
             current = current.InnerHandler;
+
+            if (this.telemetryHandler != null)
+            {
+                current.InnerHandler = this.telemetryHandler;
+                current = current.InnerHandler;
+            }
 
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();

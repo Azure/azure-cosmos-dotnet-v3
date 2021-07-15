@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Security.AccessControl;
     using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
     using Newtonsoft.Json;
@@ -632,6 +633,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal bool? EnableCpuMonitor { get; set; }
 
+        /// <summary>
+        /// Flag to enable telemetry
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool? EnableClientTelemetry { get; set; }
+
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
         {
             if (this.serializerInternal == null)
@@ -667,8 +678,13 @@ namespace Microsoft.Azure.Cosmos
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
-                HttpClientFactory = this.httpClientFactory,
+                HttpClientFactory = this.httpClientFactory
             };
+
+            if (this.EnableClientTelemetry.HasValue)
+            {
+                connectionPolicy.EnableClientTelemetry = this.EnableClientTelemetry.Value;
+            }
 
             if (this.ApplicationRegion != null)
             {
