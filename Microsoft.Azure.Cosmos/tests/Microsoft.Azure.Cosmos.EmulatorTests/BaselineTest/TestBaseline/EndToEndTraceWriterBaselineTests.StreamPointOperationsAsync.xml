@@ -35,6 +35,7 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "CreateItemStreamAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -136,6 +137,7 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ReadItemStreamAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -245,6 +247,7 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ReplaceItemStreamAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -349,6 +352,7 @@
                                 )
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "DeleteItemStreamAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {

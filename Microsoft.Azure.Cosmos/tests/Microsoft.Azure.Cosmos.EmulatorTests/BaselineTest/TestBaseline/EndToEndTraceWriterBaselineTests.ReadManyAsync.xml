@@ -112,6 +112,7 @@
                         └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ReadManyItemsStreamAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {
@@ -1025,6 +1026,7 @@
                         └── Get Cosmos Element Response(00000000-0000-0000-0000-000000000000)  Json-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
+  "Summary": {},
   "name": "ReadManyItemsAsync",
   "id": "00000000-0000-0000-0000-000000000000",
   "caller info": {

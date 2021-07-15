@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal static partial class TraceWriter
     {
@@ -31,7 +32,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
             IJsonWriter writer,
             ITrace trace)
         {
-            TraceJsonWriter.WriteTrace(writer, trace);
+            TraceJsonWriter.WriteTrace(writer, 
+                trace,
+                isRootTrace: true);
         }
 
         public static string TraceToText(
