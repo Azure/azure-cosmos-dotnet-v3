@@ -1275,6 +1275,8 @@
 
             public ITrace Parent { get; }
 
+            public ITrace RootTrace { get; }
+
             public IReadOnlyList<ITrace> Children => this.children;
 
             public IReadOnlyDictionary<string, object> Data => this.data;

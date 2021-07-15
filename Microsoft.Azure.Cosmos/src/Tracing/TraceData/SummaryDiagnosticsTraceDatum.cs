@@ -43,10 +43,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
             }
 
-            foreach (ITrace childTrace in currentTrace.Children)
-            {
-                this.CollectSummaryFromTraceTree(childTrace);
-            }
+            //foreach (ITrace childTrace in currentTrace.Children)
+            //{
+            //    this.CollectSummaryFromTraceTree(childTrace);
+            //}
         }
 
         private void AgrregateGatewayStatistics(IReadOnlyList<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> httpResponseStatisticsList)

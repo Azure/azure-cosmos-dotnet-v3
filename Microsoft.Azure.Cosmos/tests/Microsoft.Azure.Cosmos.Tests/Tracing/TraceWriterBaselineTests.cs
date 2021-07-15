@@ -894,6 +894,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
+                this.RootTrace = null;
                 this.children = new List<ITrace>();
                 this.data = new Dictionary<string, object>();
             }
@@ -913,6 +914,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             public TraceComponent Component { get; }
 
             public ITrace Parent { get; }
+
+            public ITrace RootTrace { get; }
 
             public IReadOnlyList<ITrace> Children => this.children;
 

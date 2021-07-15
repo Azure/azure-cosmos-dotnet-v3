@@ -59,6 +59,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
         ITrace Parent { get; }
 
         /// <summary>
+        /// Gets the Root Trace of this trace.
+        /// </summary>
+        ITrace RootTrace { get; }
+
+        /// <summary>
         /// Gets the children of this trace.
         /// </summary>
         IReadOnlyList<ITrace> Children { get; }

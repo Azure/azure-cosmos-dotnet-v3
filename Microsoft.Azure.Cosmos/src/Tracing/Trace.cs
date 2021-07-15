@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal sealed class Trace : ITrace
     {
@@ -20,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
             CallerInfo callerInfo,
             TraceLevel level,
             TraceComponent component,
-            Trace parent)
+            Trace parent,
+            ITrace rootTrace)
         {
             this.Name = name ?? throw new ArgumentNullException(nameof(name));
             this.Id = Guid.NewGuid();
@@ -30,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Level = level;
             this.Component = component;
             this.Parent = parent;
+            this.RootTrace = rootTrace;
             this.children = new List<ITrace>();
             this.data = new Dictionary<string, object>();
         }
@@ -49,6 +52,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
         public TraceComponent Component { get; }
 
         public ITrace Parent { get; }
+
+        public ITrace RootTrace { get; }
 
         public IReadOnlyList<ITrace> Children => this.children;
 
@@ -87,7 +92,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: this);
+                parent: this,
+                rootTrace: this.RootTrace ?? this);
 
             this.AddChild(child);
 
@@ -123,12 +129,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 callerInfo: new CallerInfo(memberName, sourceFilePath, sourceLineNumber),
                 level: level,
                 component: component,
-                parent: null);
+                parent: null,
+                rootTrace: null);
         }
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
             this.data.Add(key, traceDatum);
+            if (traceDatum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+            {
+                this.RootTrace?.AddDatum(Guid.NewGuid().ToString(), clientSideRequestStatisticsTraceDatum);
+            }
         }
 
         public void AddDatum(string key, object value)
