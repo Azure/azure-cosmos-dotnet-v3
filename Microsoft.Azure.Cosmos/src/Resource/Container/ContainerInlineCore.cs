@@ -341,6 +341,18 @@ namespace Microsoft.Azure.Cosmos
                     this.ClientContext);
         }
 
+        public override FeedIterator GetItemOptimizedQueryStreamIterator(
+                  QueryDefinition queryDefinition,
+                  string continuationToken = null,
+                  QueryRequestOptions requestOptions = null)
+        {
+            return new FeedIteratorInlineCore(base.GetItemOptimizedQueryStreamIterator(
+                    queryDefinition,
+                    continuationToken,
+                    requestOptions),
+                    this.ClientContext);
+        }
+
         public override FeedIterator<T> GetItemQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,

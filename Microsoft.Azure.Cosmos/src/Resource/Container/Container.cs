@@ -1080,6 +1080,18 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
+        /// Test
+        /// </summary>
+        /// <param name="queryDefinition"></param>
+        /// <param name="continuationToken"></param>
+        /// <param name="requestOptions"></param>
+        /// <returns>Iterator</returns>
+        public abstract FeedIterator GetItemOptimizedQueryStreamIterator(
+            QueryDefinition queryDefinition,
+            string continuationToken = null,
+            QueryRequestOptions requestOptions = null);
+
+        /// <summary>
         /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
         /// IQueryable extension method ToFeedIterator() should be use for asynchronous execution with FeedIterator, please refer to example 2.
         /// </summary>

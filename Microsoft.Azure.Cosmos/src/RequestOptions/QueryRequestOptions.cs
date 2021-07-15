@@ -142,6 +142,11 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         public string SessionToken { get; set; }
 
+        /// <summary>
+        /// Force gateway query plan
+        /// </summary>
+        public bool ForceGatewayQueryPlan { get; set; }
+
         /// <summary> 
         /// Gets or sets the <see cref="DedicatedGatewayRequestOptions"/> for requests against the dedicated gateway. Learn more about dedicated gateway <a href="https://azure.microsoft.com/en-us/services/cosmos-db/">here</a>. 
         /// These options are only exercised when <see cref="ConnectionMode"/> is set to ConnectionMode.Gateway and the dedicated gateway endpoint is used for sending requests. 

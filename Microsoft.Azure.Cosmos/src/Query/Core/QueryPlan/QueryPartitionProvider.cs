@@ -125,11 +125,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 return TryCatch<PartitionedQueryExecutionInfo>.FromException(tryGetInternalQueryInfo.Exception);
             }
 
-            PartitionedQueryExecutionInfo queryInfo = this.ConvertPartitionedQueryExecutionInfo(tryGetInternalQueryInfo.Result, partitionKeyDefinition);
+            PartitionedQueryExecutionInfo queryInfo = QueryPartitionProvider.ConvertPartitionedQueryExecutionInfo(tryGetInternalQueryInfo.Result, partitionKeyDefinition);
             return TryCatch<PartitionedQueryExecutionInfo>.FromResult(queryInfo);
         }
 
-        internal PartitionedQueryExecutionInfo ConvertPartitionedQueryExecutionInfo(
+        internal static PartitionedQueryExecutionInfo ConvertPartitionedQueryExecutionInfo(
             PartitionedQueryExecutionInfoInternal queryInfoInternal,
             PartitionKeyDefinition partitionKeyDefinition)
         {
