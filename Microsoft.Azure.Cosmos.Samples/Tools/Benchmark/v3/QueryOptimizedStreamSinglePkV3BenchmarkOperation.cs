@@ -56,13 +56,16 @@ namespace CosmosBenchmark
                 });
 
             double totalCharge = 0;
-            CosmosDiagnostics lastDiagnostics = null;
+            CosmosDiagnostics firstDiagnostics = null;
             while (feedIterator.HasMoreResults)
             {
                 using (ResponseMessage feedResponse = await feedIterator.ReadNextAsync())
                 {
                     totalCharge += feedResponse.Headers.RequestCharge;
-                    lastDiagnostics = feedResponse.Diagnostics;
+                    if (firstDiagnostics == null)
+                    {
+                        firstDiagnostics = feedResponse.Diagnostics;
+                    }
 
                     if (feedResponse.StatusCode != HttpStatusCode.OK)
                     {
@@ -73,14 +76,14 @@ namespace CosmosBenchmark
                     using Stream stream = feedResponse.Content;
                 }
             }
-            
+
             return new OperationResult()
             {
                 DatabseName = databsaeName,
                 ContainerName = containerName,
                 RuCharges = totalCharge,
-                CosmosDiagnostics = lastDiagnostics,
-                LazyDiagnostics = () => lastDiagnostics?.ToString(),
+                CosmosDiagnostics = firstDiagnostics,
+                LazyDiagnostics = () => firstDiagnostics?.ToString(),
             };
         }
 
