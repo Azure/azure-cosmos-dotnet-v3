@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity find = deleteList.First();
 
-            QueryDefinition sql = new QueryDefinition("select * from r where r.id = @id").WithParameter("@id", find.id);
+            QueryDefinition sql = new QueryDefinition("select * from r ");
 
             FeedIterator queryOptimizedIterator = this.Container.GetItemOptimizedQueryStreamIterator(
                 sql,

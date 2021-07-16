@@ -54,7 +54,10 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            ResponseMessage responseMessage = await this.ExecuteQueryAsync(trace, cancellationToken);
+            ResponseMessage responseMessage = await this.ExecuteQueryAsync(
+                !this.queryRequestOptions.ForceAntlrQueryPlan && !this.queryRequestOptions.ForceGatewayQueryPlan,
+                trace, 
+                cancellationToken);
 
             if (this.partitionedQueryExecutionInfo == null &&
                 this.hasMoreResults)
@@ -130,7 +133,10 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
-        private async Task<ResponseMessage> ExecuteQueryAsync(ITrace trace, CancellationToken cancellationToken)
+        private async Task<ResponseMessage> ExecuteQueryAsync(
+            bool includeQueryPlan,
+            ITrace trace, 
+            CancellationToken cancellationToken)
         {
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
                              this.container.LinkUri,
@@ -148,6 +154,11 @@ namespace Microsoft.Azure.Cosmos
 
                                  cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
                                  cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+
+                                 if (includeQueryPlan)
+                                 {
+                                     cosmosRequestMessage.Headers.Set(HttpConstants.HttpHeaders.A_IM, bool.TrueString);
+                                 }
                              },
                              trace: trace,
                              cancellationToken: cancellationToken);
