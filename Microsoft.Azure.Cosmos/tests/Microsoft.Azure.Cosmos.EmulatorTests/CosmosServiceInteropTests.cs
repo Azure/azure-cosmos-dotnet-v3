@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
                 this.containerSettings,
+                throughput: 70000,
                 cancellationToken: this.cancellationToken);
             Assert.IsNotNull(response);
             Assert.IsNotNull(response.Container);
@@ -103,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ToDoActivity find = deleteList.First();
 
-            QueryDefinition sql = new QueryDefinition("select * from r");
+            QueryDefinition sql = new QueryDefinition("select * from r where r.id = @id").WithParameter("@id", find.id);
 
             FeedIterator queryOptimizedIterator = this.Container.GetItemOptimizedQueryStreamIterator(
                 sql,
@@ -111,12 +112,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     MaxItemCount = 100,
                     PartitionKey = new Cosmos.PartitionKey(find.pk),
+                    ForceGatewayQueryPlan = true,
                 });
 
             while (queryOptimizedIterator.HasMoreResults)
             {
                 using ResponseMessage response = await queryOptimizedIterator.ReadNextAsync();
                 Assert.AreEqual(System.Net.HttpStatusCode.OK, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
             }
         }
     }

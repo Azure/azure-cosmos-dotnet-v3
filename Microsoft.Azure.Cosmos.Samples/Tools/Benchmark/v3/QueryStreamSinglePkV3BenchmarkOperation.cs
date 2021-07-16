@@ -47,11 +47,12 @@ namespace CosmosBenchmark
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             FeedIterator feedIterator = this.container.GetItemQueryStreamIterator(
-            queryDefinition: new QueryDefinition("select * from T where T.id = @id").WithParameter("@id", this.executionItemId),
+            queryDefinition: new QueryDefinition("select * from T where T.playerId = @id").WithParameter("@id", "a067ff"),
             continuationToken: null,
             requestOptions: new QueryRequestOptions()
             {
-                PartitionKey = new PartitionKey(this.executionItemPartitionKey)
+                PartitionKey = new PartitionKey(this.executionItemPartitionKey),
+                MaxItemCount = 1,
             });
 
             double totalCharge = 0;
@@ -90,6 +91,21 @@ namespace CosmosBenchmark
                 return;
             }
 
+            using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
+            {
+                using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(
+                        inputStream,
+                        new Microsoft.Azure.Cosmos.PartitionKey(this.executionItemPartitionKey));
+
+                System.Buffers.ArrayPool<byte>.Shared.Return(inputStream.GetBuffer());
+
+                if (itemResponse.StatusCode != HttpStatusCode.Created)
+                {
+                    throw new Exception($"Create failed with statuscode: {itemResponse.StatusCode}");
+                }
+            }
+
+            this.sampleJObject["id"] = Guid.NewGuid().ToString();
             using (MemoryStream inputStream = JsonHelper.ToStream(this.sampleJObject))
             {
                 using ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(

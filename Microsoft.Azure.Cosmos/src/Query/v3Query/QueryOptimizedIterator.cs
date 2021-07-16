@@ -61,7 +61,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.queryRequestOptions.ForceAntlrQueryPlan)
                 {
-                    bool parsed = SqlQueryParser.TryParse(this.queryDefinition.QueryText, out SqlQuery sqlQuery);
+                    bool parsed;
+                    SqlQuery sqlQuery;
+                    using (trace.StartChild("Antlr Parser"))
+                    {
+                        parsed = SqlQueryParser.TryParse(this.queryDefinition.QueryText, out sqlQuery);
+                    }
 
                     if (parsed)
                     {
@@ -106,16 +111,19 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    string queryPlanString = responseMessage.Headers.Get(WFConstants.BackendHeaders.IndexUtilization);
-                    PartitionedQueryExecutionInfoInternal queryExecutionInfoInternal = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
-                       queryPlanString,
-                       new JsonSerializerSettings
-                       {
-                           DateParseHandling = DateParseHandling.None
-                       });
+                    using (trace.StartChild("BackendHeaders Headers"))
+                    {
+                        string queryPlanString = responseMessage.Headers.Get(WFConstants.BackendHeaders.IndexUtilization);
+                        PartitionedQueryExecutionInfoInternal queryExecutionInfoInternal = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
+                           queryPlanString,
+                           new JsonSerializerSettings
+                           {
+                               DateParseHandling = DateParseHandling.None
+                           });
 
-                    ContainerProperties containerProperties = await this.container.GetCachedContainerPropertiesAsync(false, trace, cancellationToken);
-                    this.partitionedQueryExecutionInfo = QueryPartitionProvider.ConvertPartitionedQueryExecutionInfo(queryExecutionInfoInternal, containerProperties.PartitionKey);
+                        ContainerProperties containerProperties = await this.container.GetCachedContainerPropertiesAsync(false, trace, cancellationToken);
+                        this.partitionedQueryExecutionInfo = QueryPartitionProvider.ConvertPartitionedQueryExecutionInfo(queryExecutionInfoInternal, containerProperties.PartitionKey);
+                    }
                 }
             }
 
