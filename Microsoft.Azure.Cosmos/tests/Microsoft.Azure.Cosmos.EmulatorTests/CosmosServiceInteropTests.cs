@@ -74,10 +74,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             ToDoActivity find = deleteList.First();
 
             QueryDefinition sql = new QueryDefinition("select * from r");
-            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+            ContainerCore containerInternal = (ContainerCore)this.Container;
 
             QueryOptimizedIterator queryOptimizedIterator = new QueryOptimizedIterator(
                 containerInternal,
+                containerInternal.queryClient,
                 sql,
                 new QueryRequestOptions()
                 {
@@ -99,25 +100,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(
                 this.Container,
                 pkCount: 1,
-                perPKItemCount: 200,
+                perPKItemCount: 5,
                 randomPartitionKey: true);
 
             ToDoActivity find = deleteList.First();
 
-            QueryDefinition sql = new QueryDefinition("select * from r ");
-
-            FeedIterator queryOptimizedIterator = this.Container.GetItemOptimizedQueryStreamIterator(
+            QueryDefinition sql = new QueryDefinition(@"SELECT COUNT(1) AS Count
+                FROM child IN Families.children");
+            using FeedIterator queryIterator = this.Container.GetItemQueryStreamIterator(
                 sql,
                 requestOptions: new QueryRequestOptions()
                 {
                     MaxItemCount = 100,
                     PartitionKey = new Cosmos.PartitionKey(find.pk),
-                    ForceGatewayQueryPlan = true,
+                    //ForceGatewayQueryPlan = true,
+                });
+
+            while (queryIterator.HasMoreResults)
+            {
+                using ResponseMessage response = await queryIterator.ReadNextAsync();
+                using StreamReader streamReader = new StreamReader(response.Content);
+                string result = await streamReader.ReadToEndAsync();
+                Assert.AreEqual(System.Net.HttpStatusCode.OK, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
+            }
+
+            using FeedIterator queryOptimizedIterator = this.Container.GetItemOptimizedQueryStreamIterator(
+                sql,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 100,
+                    PartitionKey = new Cosmos.PartitionKey(find.pk),
+                    //ForceGatewayQueryPlan = true,
                 });
 
             while (queryOptimizedIterator.HasMoreResults)
             {
                 using ResponseMessage response = await queryOptimizedIterator.ReadNextAsync();
+                using StreamReader streamReader = new StreamReader(response.Content);
+                string result = await streamReader.ReadToEndAsync();
                 Assert.AreEqual(System.Net.HttpStatusCode.OK, response.StatusCode);
                 string diagnostics = response.Diagnostics.ToString();
             }

@@ -5,10 +5,14 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ExecutionContext;
     using Microsoft.Azure.Cosmos.Query.Core.Parser;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SqlObjects;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -23,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly QueryDefinition queryDefinition;
         private readonly QueryRequestOptions queryRequestOptions;
         private readonly CosmosClientContext clientContext;
+        private readonly CosmosQueryClient queryClient;
 
         private bool hasMoreResults = true;
         private string continuationToken = null;
@@ -30,11 +35,13 @@ namespace Microsoft.Azure.Cosmos
 
         public QueryOptimizedIterator(
             ContainerInternal container,
+            CosmosQueryClient queryClient,
             QueryDefinition queryDefinition,
             QueryRequestOptions requestOptions,
             CosmosClientContext clientContext)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
+            this.queryClient = queryClient ?? throw new ArgumentNullException(nameof(queryClient));
             this.queryDefinition = queryDefinition;
             this.queryRequestOptions = requestOptions;
             this.clientContext = clientContext ?? throw new ArgumentNullException(nameof(clientContext));
@@ -56,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         {
             ResponseMessage responseMessage = await this.ExecuteQueryAsync(
                 !this.queryRequestOptions.ForceAntlrQueryPlan && !this.queryRequestOptions.ForceGatewayQueryPlan,
-                trace, 
+                trace,
                 cancellationToken);
 
             if (this.partitionedQueryExecutionInfo == null &&
@@ -82,7 +89,20 @@ namespace Microsoft.Azure.Cosmos
                         {
                             // Only thing that matters is that we target the correct range.
                             ContainerProperties containerProperties = await this.container.GetCachedContainerPropertiesAsync(false, trace, cancellationToken);
-                            this.partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo();
+                            List<Documents.PartitionKeyRange> targetRanges = await this.queryClient.GetTargetPartitionKeyRangesByEpkStringAsync(
+                                    this.container.LinkUri,
+                                    containerProperties.ResourceId,
+                                    this.queryRequestOptions.PartitionKey.Value.InternalKey.GetEffectivePartitionKeyString(containerProperties.PartitionKey),
+                                    forceRefresh: false,
+                                    trace);
+
+                            this.partitionedQueryExecutionInfo = new PartitionedQueryExecutionInfo()
+                            {
+                                QueryInfo = new QueryInfo()
+                                {
+                                    RewrittenQuery = this.queryDefinition.QueryText,
+                                }
+                            };
                         }
                     }
                 }
@@ -135,33 +155,33 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<ResponseMessage> ExecuteQueryAsync(
             bool includeQueryPlan,
-            ITrace trace, 
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             ResponseMessage responseMessage = await this.clientContext.ProcessResourceOperationStreamAsync(
-                             this.container.LinkUri,
-                             resourceType: Documents.ResourceType.Document,
-                             operationType: Documents.OperationType.Query,
-                             this.queryRequestOptions,
-                             this.container,
-                             feedRange: new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value),
-                             streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.queryDefinition.ToSqlQuerySpec(), Documents.ResourceType.Document),
-                             requestEnricher: (cosmosRequestMessage) =>
-                             {
-                                 QueryRequestOptions.FillContinuationToken(
-                                    cosmosRequestMessage,
-                                    this.continuationToken);
+                this.container.LinkUri,
+                resourceType: Documents.ResourceType.Document,
+                operationType: Documents.OperationType.Query,
+                this.queryRequestOptions,
+                this.container,
+                feedRange: new FeedRangePartitionKey(this.queryRequestOptions.PartitionKey.Value),
+                streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(this.queryDefinition.ToSqlQuerySpec(), Documents.ResourceType.Document),
+                requestEnricher: (cosmosRequestMessage) =>
+                {
+                    QueryRequestOptions.FillContinuationToken(
+                    cosmosRequestMessage,
+                    this.continuationToken);
 
-                                 cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
-                                 cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, MediaTypes.QueryJson);
+                    cosmosRequestMessage.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
 
-                                 if (includeQueryPlan)
-                                 {
-                                     cosmosRequestMessage.Headers.Set(HttpConstants.HttpHeaders.A_IM, bool.TrueString);
-                                 }
-                             },
-                             trace: trace,
-                             cancellationToken: cancellationToken);
+                    if (includeQueryPlan)
+                    {
+                        cosmosRequestMessage.Headers.Set(HttpConstants.HttpHeaders.A_IM, bool.TrueString);
+                    }
+                },
+                trace: trace,
+                cancellationToken: cancellationToken);
 
             this.continuationToken = responseMessage.Headers.ContinuationToken;
             this.hasMoreResults = this.continuationToken != null;

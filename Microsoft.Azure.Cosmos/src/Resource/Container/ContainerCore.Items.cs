@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         private string cachedUriSegmentWithoutId { get; }
 
-        private readonly CosmosQueryClient queryClient;
+        internal readonly CosmosQueryClient queryClient;
 
         public async Task<ResponseMessage> CreateItemStreamAsync(
             Stream streamPayload,
@@ -276,6 +276,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return new QueryOptimizedIterator(
                 this,
+                this.queryClient,
                 queryDefinition,
                 requestOptions,
                 this.ClientContext);
