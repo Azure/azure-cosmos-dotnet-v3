@@ -10,11 +10,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -264,11 +262,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
                                 }
                             }
                         }
+                        else if (feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+                        {
+                            request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId);
+                        }
                         else
                         {
-                            request.PartitionKeyRangeId = feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange
-                                ? new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId)
-                                : throw new InvalidOperationException($"Unknown feed range type: '{feedRange.GetType()}'.");
+                            throw new InvalidOperationException($"Unknown feed range type: '{feedRange.GetType()}'.");
                         }
                     }
 
@@ -281,13 +281,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
                     }
 
-                    if (cosmosContainerCore != null)
-                    {
-                        request.ContainerId = cosmosContainerCore?.Id;
-                        request.DatabaseId = cosmosContainerCore?.Database.Id;
-                    }
                     requestEnricher?.Invoke(request);
-
                     return await this.SendAsync(request, cancellationToken);
                 }
                 finally
