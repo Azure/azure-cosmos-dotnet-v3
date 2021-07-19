@@ -37,6 +37,18 @@ namespace Microsoft.Azure.Cosmos
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
         }
 
+        internal ItemResponse(
+            HttpStatusCode httpStatusCode,
+            Headers headers,
+            T item,
+            CosmosDiagnostics diagnostics)
+        {
+            this.StatusCode = httpStatusCode;
+            this.Headers = headers;
+            this.Resource = item;
+            this.Diagnostics = diagnostics;
+        }
+
         /// <inheritdoc/>
         public override Headers Headers { get; }
 
