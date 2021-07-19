@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Util
     {
         public static long GetMinValue(this HistogramBase histogram)
         {
-            var min = histogram.RecordedValues().FirstOrDefault().ValueIteratedTo;
+            var min = histogram.RecordedValues().Select(hiv => hiv.ValueIteratedTo).FirstOrDefault();
             return histogram.LowestEquivalentValue(min);
         }
     }
