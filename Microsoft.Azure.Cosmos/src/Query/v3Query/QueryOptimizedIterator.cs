@@ -62,12 +62,13 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             ResponseMessage responseMessage = await this.ExecuteQueryAsync(
-                !this.queryRequestOptions.ForceAntlrQueryPlan && !this.queryRequestOptions.ForceGatewayQueryPlan,
+                !this.queryRequestOptions.ForceAntlrQueryPlan && !this.queryRequestOptions.ForceGatewayQueryPlan && !this.queryRequestOptions.ForceNoQueryPlan,
                 trace,
                 cancellationToken);
 
             if (this.partitionedQueryExecutionInfo == null &&
-                this.hasMoreResults)
+                this.hasMoreResults &&
+                !this.queryRequestOptions.ForceNoQueryPlan)
             {
                 if (this.queryRequestOptions.ForceAntlrQueryPlan)
                 {
