@@ -26,6 +26,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "connectionMode")]
         private string ConnectionMode { get; }
 
+        [JsonProperty(PropertyName = "preferredRegions")]
+        internal IReadOnlyList<string> PreferredRegions { get; }
+
+        [JsonProperty(PropertyName = "timeIntervalAggregationInSeconds")]
+        internal double TimeIntervalAggregationInSeconds { get; set; }
+
         [JsonProperty(PropertyName = "globalDatabaseAccountName")]
         internal string GlobalDatabaseAccountName { get; set; }
 
@@ -53,7 +59,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal ClientTelemetryProperties(string clientId,
                                    string processId,
                                    string userAgent,
-                                   ConnectionMode connectionMode)
+                                   ConnectionMode connectionMode,
+                                   IReadOnlyList<string> preferredRegions)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
@@ -61,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ConnectionModeEnum = connectionMode;
             this.ConnectionMode = connectionMode.ToString();
             this.SystemInfo = new List<SystemInfo>();
+            this.PreferredRegions = preferredRegions;
         }
 
         public ClientTelemetryProperties(string dateTimeUtc,
@@ -72,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string applicationRegion,
             string hostEnvInfo,
             bool? acceleratedNetworking,
+            List<string> preferredRegions,
             List<SystemInfo> systemInfo,
             List<OperationInfo> cacheRefreshInfo,
             List<OperationInfo> operationInfo)
@@ -85,6 +94,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ApplicationRegion = applicationRegion;
             this.HostEnvInfo = hostEnvInfo;
             this.AcceleratedNetworking = acceleratedNetworking;
+            this.PreferredRegions = preferredRegions;
             this.SystemInfo = systemInfo;
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
