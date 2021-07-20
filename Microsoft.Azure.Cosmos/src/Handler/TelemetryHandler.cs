@@ -35,18 +35,24 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
             if (this.IsAllowed(request))
             {
-                this.telemetry
-                .Collect(
-                        cosmosDiagnostics: response.Diagnostics,
-                        statusCode: response.StatusCode,
-                        responseSizeInBytes: this.GetPayloadSize(response),
-                        containerId: request.ContainerId,
-                        databaseId: request.DatabaseId,
-                        operationType: request.OperationType,
-                        resourceType: request.ResourceType,
-                        consistencyLevel: this.GetConsistencyLevel(request),
-                        requestCharge: response.Headers.RequestCharge);
-               
+                try
+                {
+                    this.telemetry
+                        .Collect(
+                                cosmosDiagnostics: response.Diagnostics,
+                                statusCode: response.StatusCode,
+                                responseSizeInBytes: this.GetPayloadSize(response),
+                                containerId: request.ContainerId,
+                                databaseId: request.DatabaseId,
+                                operationType: request.OperationType,
+                                resourceType: request.ResourceType,
+                                consistencyLevel: this.GetConsistencyLevel(request),
+                                requestCharge: response.Headers.RequestCharge);
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError("Error while collecting telemetry information : " + ex.Message);
+                }
             }
             return response;
         }
@@ -70,17 +76,20 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// <returns>Size of Payload</returns>
         private long GetPayloadSize(ResponseMessage response)
         {
-            if (response.Content == null)
+            if (response != null)
             {
-                return 0;
+                if (response.Content != null && response.Content is MemoryStream)
+                {
+                    return response.Content.Length;
+                }
+
+                if (response.Headers != null && response.Headers.ContentLength != null)
+                {
+                    return long.Parse(response.Headers.ContentLength);
+                }
             }
 
-            if (response.Content is MemoryStream)
-            {
-                return response.Content.Length;
-            }
-
-            return long.Parse(response.Headers.ContentLength);
+            return 0;
         }
     }
 }
