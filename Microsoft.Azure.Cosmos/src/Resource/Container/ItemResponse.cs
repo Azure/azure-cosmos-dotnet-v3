@@ -29,18 +29,6 @@ namespace Microsoft.Azure.Cosmos
             HttpStatusCode httpStatusCode,
             Headers headers,
             T item,
-            ITrace trace)
-        {
-            this.StatusCode = httpStatusCode;
-            this.Headers = headers;
-            this.Resource = item;
-            this.Diagnostics = new CosmosTraceDiagnostics(trace);
-        }
-
-        internal ItemResponse(
-            HttpStatusCode httpStatusCode,
-            Headers headers,
-            T item,
             CosmosDiagnostics diagnostics)
         {
             this.StatusCode = httpStatusCode;
