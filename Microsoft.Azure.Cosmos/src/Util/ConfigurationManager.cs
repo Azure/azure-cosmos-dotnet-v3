@@ -5,10 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
 
-    internal static class CosmosConfigurationManager
+    internal static class ConfigurationManager
     { 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {

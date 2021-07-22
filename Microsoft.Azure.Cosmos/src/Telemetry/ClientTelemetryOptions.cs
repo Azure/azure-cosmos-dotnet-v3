@@ -1,15 +1,12 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using System.Collections.Generic;
     using System.Net.Http;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -73,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (vmMetadataUrl == null)
             {
-                string vmMetadataUrlProp = CosmosConfigurationManager.GetEnvironmentVariable<string>(
+                string vmMetadataUrlProp = ConfigurationManager.GetEnvironmentVariable<string>(
                    EnvPropsClientTelemetryVmMetadataUrl, DefaultVmMetadataUrL);
                 if (!String.IsNullOrEmpty(vmMetadataUrlProp))
                 {
@@ -89,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (scheduledTimeSpan.Equals(TimeSpan.Zero))
             {
-                double scheduledTimeInSeconds = CosmosConfigurationManager
+                double scheduledTimeInSeconds = ConfigurationManager
                 .GetEnvironmentVariable<double>(
                     ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds,
                     ClientTelemetryOptions.DefaultTimeStampInSeconds);
@@ -128,7 +125,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (clientTelemetryEndpoint == null)
             {
-                string uriProp = CosmosConfigurationManager
+                string uriProp = ConfigurationManager
                     .GetEnvironmentVariable<string>(
                         ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
                 if (!String.IsNullOrEmpty(uriProp))
@@ -145,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (String.IsNullOrEmpty(environmentName))
             {
-                environmentName = CosmosConfigurationManager
+                environmentName = ConfigurationManager
                 .GetEnvironmentVariable<string>(
                     ClientTelemetryOptions.EnvPropsClientTelemetryEnvironmentName,
                     String.Empty);

@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Concurrent;
@@ -15,9 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Handler;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Rntbd;
@@ -180,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                             string databaseId,
                             OperationType operationType,
                             ResourceType resourceType,
-                            ConsistencyLevel? consistencyLevel,
+                            Cosmos.ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
             DefaultTrace.TraceInformation("Collecting Operation data for Telemetry.");

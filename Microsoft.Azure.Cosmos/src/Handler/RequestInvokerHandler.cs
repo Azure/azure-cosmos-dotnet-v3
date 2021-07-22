@@ -10,12 +10,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;

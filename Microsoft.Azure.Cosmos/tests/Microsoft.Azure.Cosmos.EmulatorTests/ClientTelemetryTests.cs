@@ -8,22 +8,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Text;
     using System.Threading.Tasks;
-    using HdrHistogram;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
     using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Threading;
     using System.Net;
-    using System.Linq;
     using Newtonsoft.Json.Linq;
     using System.Net.Http;
-    using Moq.Protected;
-    using Moq;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Tracing;
-    using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
 
     [TestClass]

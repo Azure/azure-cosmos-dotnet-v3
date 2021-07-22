@@ -14,6 +14,7 @@ namespace CosmosCTL
     using App.Metrics.Gauge;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     public sealed class Program
     {

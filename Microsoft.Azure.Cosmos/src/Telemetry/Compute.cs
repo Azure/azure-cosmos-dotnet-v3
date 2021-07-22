@@ -2,11 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Text;
     using Newtonsoft.Json;
 
     internal class Compute

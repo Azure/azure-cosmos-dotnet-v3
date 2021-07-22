@@ -5,19 +5,11 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
-    using System.Net.Http;
-    using System.Runtime.InteropServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Handler;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     internal class TelemetryHandler : RequestHandler
     {

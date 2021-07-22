@@ -2,15 +2,14 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.CosmosElements.Telemetry
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
     using HdrHistogram;
     using Microsoft.Azure.Cosmos.Util;
     using Newtonsoft.Json;
-    
+
     [Serializable]
     internal sealed class MetricInfo
     {

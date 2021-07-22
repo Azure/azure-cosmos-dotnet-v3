@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -46,8 +47,9 @@ namespace Microsoft.Azure.Cosmos
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
 #if PREVIEW
-            this.EnableClientTelemetry = CosmosConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
+            this.EnableClientTelemetry = ConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
 #endif
+
     }
 
         /// <summary>

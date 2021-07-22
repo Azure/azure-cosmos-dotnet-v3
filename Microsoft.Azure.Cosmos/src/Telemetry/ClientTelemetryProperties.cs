@@ -2,15 +2,10 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.CosmosElements
+namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
-    using System.Text;
-    using HdrHistogram;
-    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using Newtonsoft.Json;
 
     [Serializable]

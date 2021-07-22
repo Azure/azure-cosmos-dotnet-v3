@@ -5,25 +5,14 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
     using HdrHistogram;
     using System.Net.Http;
-    using Handler;
     using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.CosmosElements.Telemetry;
-    using static Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler;
-    using Moq;
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using System.Threading;
+    using Microsoft.Azure.Cosmos.Telemetry;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
