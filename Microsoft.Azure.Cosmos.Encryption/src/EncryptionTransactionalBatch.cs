@@ -246,7 +246,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
             IReadOnlyList<PatchOperation> patchOperations,
             TransactionalBatchPatchItemRequestOptions requestOptions = null)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (patchOperations == null ||
+                !patchOperations.Any())
+            {
+                throw new ArgumentNullException(nameof(patchOperations));
+            }
+
+            EncryptionSettings encryptionSettings = this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: default)
+                .ConfigureAwait(false)
+                .GetAwaiter()
+                .GetResult();
+
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("PatchItem"))
+            {
+                List<PatchOperation> encryptedPatchOperations = this.encryptionContainer.PatchItemHelperAsync(
+                    patchOperations,
+                    encryptionSettings,
+                    cancellationToken: default)
+                    .ConfigureAwait(false)
+                    .GetAwaiter()
+                    .GetResult();
+
+                this.transactionalBatch = this.transactionalBatch.PatchItem(
+                    id,
+                    encryptedPatchOperations,
+                    requestOptions);
+
+                return this;
+            }
         }
 
         private async Task<TransactionalBatchResponse> DecryptTransactionalBatchResponseAsync(
@@ -262,10 +297,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
-            for (int index = 0; index < response.Count; index++)
+            foreach (TransactionalBatchOperationResult result in response)
             {
-                TransactionalBatchOperationResult result = response[index];
-
                 if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
                     Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
@@ -274,10 +307,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         diagnosticsContext,
                         cancellationToken);
 
-                    result = new EncryptionTransactionalBatchOperationResult(response[index], decryptedStream);
+                    decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
                 }
-
-                decryptedTransactionalBatchOperationResults.Add(result);
+                else
+                {
+                    decryptedTransactionalBatchOperationResults.Add(result);
+                }
             }
 
             return new EncryptionTransactionalBatchResponse(

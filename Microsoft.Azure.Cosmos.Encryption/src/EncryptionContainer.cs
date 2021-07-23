@@ -673,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        private async Task<List<PatchOperation>> PatchItemHelperAsync(
+        public async Task<List<PatchOperation>> PatchItemHelperAsync(
             IReadOnlyList<PatchOperation> patchOperations,
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken = default)

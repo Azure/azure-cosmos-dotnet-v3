@@ -671,6 +671,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             TestDoc docToDelete = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer, partitionKey);
 
+            TestDoc docToPatch = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer, partitionKey);
+            docToPatch.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            docToPatch.Sensitive_DecimalFormat = 11.11m;
+
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.Replace("/Sensitive_StringFormat", docToPatch.Sensitive_StringFormat),
+                PatchOperation.Replace("/Sensitive_DecimalFormat", docToPatch.Sensitive_DecimalFormat),
+            };
+
             TransactionalBatchResponse batchResponse = await MdeEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
                 .CreateItem(doc1ToCreate)
                 .CreateItemStream(doc2ToCreate.ToStream())
@@ -681,6 +691,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .UpsertItem(doc1ToUpsert)
                 .DeleteItem(docToDelete.Id)
                 .UpsertItemStream(doc2ToUpsert.ToStream())
+                //.PatchItem(docToPatch.Id, patchOperations)
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -709,6 +720,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TransactionalBatchOperationResult<TestDoc> doc8 = batchResponse.GetOperationResultAtIndex<TestDoc>(8);
             VerifyExpectedDocResponse(doc2ToUpsert, doc8.Resource);
 
+            TransactionalBatchOperationResult<TestDoc> doc9 = batchResponse.GetOperationResultAtIndex<TestDoc>(9);
+            VerifyExpectedDocResponse(docToPatch, doc9.Resource);
+            
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc1ToCreate);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc2ToCreate);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc3ToCreate);
@@ -717,10 +731,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc2ToReplace);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc1ToUpsert);
             await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, doc2ToUpsert);
+            await MdeEncryptionTests.VerifyItemByReadAsync(MdeEncryptionTests.encryptionContainer, docToPatch);
 
             ResponseMessage readResponseMessage = await MdeEncryptionTests.encryptionContainer.ReadItemStreamAsync(docToDelete.Id, new PartitionKey(docToDelete.PK));
             Assert.AreEqual(HttpStatusCode.NotFound, readResponseMessage.StatusCode);
-            
         }
 
         [TestMethod]
