@@ -26,32 +26,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     [TestClass]
     public class PartitionRoutingHelperTest
     {
-        private static readonly Dictionary<string, object> DefaultQueryEngineConfiguration = new Dictionary<string, object>()
-        {
-            {"maxSqlQueryInputLength", 262144},
-            {"maxJoinsPerSqlQuery", 5},
-            {"maxLogicalAndPerSqlQuery", 2000},
-            {"maxLogicalOrPerSqlQuery", 2000},
-            {"maxUdfRefPerSqlQuery", 10},
-            {"maxInExpressionItemsCount", 16000},
-            {"queryMaxGroupByTableCellCount", 500000 },
-            {"queryMaxInMemorySortDocumentCount", 500},
-            {"maxQueryRequestTimeoutFraction", 0.90},
-            {"sqlAllowNonFiniteNumbers", false},
-            {"sqlAllowAggregateFunctions", true},
-            {"sqlAllowSubQuery", true},
-            {"sqlAllowScalarSubQuery", true},
-            {"allowNewKeywords", true},
-            {"sqlAllowLike", true},
-            {"sqlAllowGroupByClause", true},
-            {"maxSpatialQueryCells", 12},
-            {"spatialMaxGeometryPointCount", 256},
-            {"sqlDisableQueryILOptimization", false},
-            {"sqlDisableFilterPlanOptimization", false}
-        };
-
-        private static readonly QueryPartitionProvider QueryPartitionProvider = new QueryPartitionProvider(DefaultQueryEngineConfiguration);
-
         private readonly PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
 
         /// <summary>
@@ -337,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         allowDCount: false,
                         allowNonValueAggregates: true,
                         partitionKeyDefinition: new PartitionKeyDefinition { Paths = new Collection<string> { testcase.PartitionKey }, Kind = PartitionKind.Hash },
-                        queryPartitionProvider: PartitionRoutingHelperTest.QueryPartitionProvider,
+                        queryPartitionProvider: QueryPartitionProviderTestInstance.Object,
                         clientApiVersion: testcase.ClientApiVersion,
                         out QueryInfo info);
 
