@@ -13,16 +13,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly IReadOnlyList<TransactionalBatchOperationResult> results;
         private readonly TransactionalBatchResponse response;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly CosmosDiagnostics diagnostics;
         private bool isDisposed = false;
 
         public EncryptionTransactionalBatchResponse(
             IReadOnlyList<TransactionalBatchOperationResult> results,
             TransactionalBatchResponse response,
-            CosmosSerializer cosmosSerializer)
+            CosmosSerializer cosmosSerializer,
+            CosmosDiagnostics diagnostics = null)
         {
             this.results = results;
             this.response = response;
             this.cosmosSerializer = cosmosSerializer;
+            this.diagnostics = diagnostics;
         }
 
         public override TransactionalBatchOperationResult this[int index] => this.results[index];
@@ -61,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override int Count => this.results?.Count ?? 0;
 
-        public override CosmosDiagnostics Diagnostics => this.response.Diagnostics;
+        public override CosmosDiagnostics Diagnostics => this.diagnostics ?? this.response.Diagnostics;
 
         protected override void Dispose(bool disposing)
         {

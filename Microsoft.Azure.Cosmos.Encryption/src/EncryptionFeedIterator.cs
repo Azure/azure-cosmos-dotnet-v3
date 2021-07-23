@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
@@ -30,42 +31,51 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public override async Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
-            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(options: null);
-            using (diagnosticsContext.CreateScope("FeedIterator.ReadNext"))
+            EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+            encryptionSettings.SetRequestHeaders(this.requestOptions);
+
+            ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
+
+            // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
+            if (responseMessage.StatusCode == HttpStatusCode.BadRequest
+                && string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
             {
-                EncryptionSettings encryptionSettings = await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
-                encryptionSettings.SetRequestHeaders(this.requestOptions);
+                await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                    obsoleteEncryptionSettings: encryptionSettings,
+                    cancellationToken: cancellationToken);
 
-                ResponseMessage responseMessage = await this.feedIterator.ReadNextAsync(cancellationToken);
-
-                // check for Bad Request and Wrong RID intended and update the cached RID and Client Encryption Policy.
-                if (responseMessage.StatusCode == HttpStatusCode.BadRequest
-                    && string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
-                {
-                    await this.encryptionContainer.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                       obsoleteEncryptionSettings: encryptionSettings,
-                       cancellationToken: cancellationToken);
-
-                    throw new CosmosException(
-                        "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
-                        responseMessage.StatusCode,
-                        int.Parse(Constants.IncorrectContainerRidSubStatus),
-                        responseMessage.Headers.ActivityId,
-                        responseMessage.Headers.RequestCharge);
-                }
-
-                if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
-                {
-                    Stream decryptedContent = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
-                        responseMessage.Content,
-                        encryptionSettings,
-                        cancellationToken);
-
-                    return new DecryptedResponseMessage(responseMessage, decryptedContent);
-                }
-
-                return responseMessage;
+                throw new CosmosException(
+                    "Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. " + responseMessage.ErrorMessage,
+                    responseMessage.StatusCode,
+                    int.Parse(Constants.IncorrectContainerRidSubStatus),
+                    responseMessage.Headers.ActivityId,
+                    responseMessage.Headers.RequestCharge);
             }
+
+            if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
+            {
+                JObject diagnostics = new JObject();
+                JObject decryptionOperationDiagnostics = new JObject();
+                DateTime startTime = DateTime.UtcNow;
+                decryptionOperationDiagnostics.Add(Constants.DiagnosticsStartTime, startTime);
+
+                Stream decryptedContent = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
+                    responseMessage.Content,
+                    encryptionSettings,
+                    cancellationToken);
+
+                decryptionOperationDiagnostics.Add(Constants.DiagnosticsDuration, DateTime.UtcNow.Millisecond - startTime.Millisecond);
+                diagnostics.Add(Constants.DecryptOperation, decryptionOperationDiagnostics);
+                EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
+                    responseMessage.Diagnostics,
+                    diagnostics);
+
+                responseMessage.Diagnostics = encryptionDiagnostics;
+
+                return new DecryptedResponseMessage(responseMessage, decryptedContent);
+            }
+
+            return responseMessage;
         }
     }
 }

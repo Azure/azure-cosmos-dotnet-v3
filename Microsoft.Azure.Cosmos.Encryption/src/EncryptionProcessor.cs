@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
+            JObject diagnostics,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -54,7 +54,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(input));
             }
 
-            Debug.Assert(diagnosticsContext != null);
+            JObject encryptionOperationDiagnostics = new JObject();
+            DateTime startTime = DateTime.UtcNow;
+            encryptionOperationDiagnostics.Add(Constants.DiagnosticsStartTime, startTime);
+            int propertiesEncryptedCount = 0;
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
 
@@ -78,10 +81,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     propertyToEncrypt.Value,
                     settingforProperty,
                     cancellationToken);
+
+                propertiesEncryptedCount++;
             }
 
+            Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+
+            encryptionOperationDiagnostics.Add(Constants.DiagnosticsPropertiesEncryptedCount, propertiesEncryptedCount);
+            encryptionOperationDiagnostics.Add(Constants.DiagnosticsDuration, DateTime.UtcNow.Millisecond - startTime.Millisecond);
+            diagnostics?.Add(Constants.EncryptOperation, encryptionOperationDiagnostics);
+
+            return result;
         }
 
         /// <remarks>
@@ -92,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<Stream> DecryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
+            JObject diagnostics,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -101,23 +112,30 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             Debug.Assert(input.CanSeek);
-            Debug.Assert(diagnosticsContext != null);
+
+            JObject decryptionOperationDiagnostics = new JObject();
+            DateTime startTime = DateTime.UtcNow;
+            decryptionOperationDiagnostics.Add(Constants.DiagnosticsStartTime, startTime);
 
             JObject itemJObj = RetrieveItem(input);
 
             await DecryptObjectAsync(
                 itemJObj,
                 encryptionSettings,
-                diagnosticsContext,
+                decryptionOperationDiagnostics,
                 cancellationToken);
 
+            Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            decryptionOperationDiagnostics.Add(Constants.DiagnosticsDuration, DateTime.UtcNow.Millisecond - startTime.Millisecond);
+            diagnostics?.Add(Constants.DecryptOperation, decryptionOperationDiagnostics);
+            return result;
         }
 
         public static async Task<JObject> DecryptAsync(
             JObject document,
             EncryptionSettings encryptionSettings,
+            JObject diagnostics,
             CancellationToken cancellationToken)
         {
             Debug.Assert(document != null);
@@ -125,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             await DecryptObjectAsync(
                 document,
                 encryptionSettings,
-                CosmosDiagnosticsContext.Create(null),
+                diagnostics,
                 cancellationToken);
 
             return document;
@@ -320,11 +338,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private static async Task DecryptObjectAsync(
             JObject document,
             EncryptionSettings encryptionSettings,
-            CosmosDiagnosticsContext diagnosticsContext,
+            JObject diagnostics,
             CancellationToken cancellationToken)
         {
-            Debug.Assert(diagnosticsContext != null);
-
+            int propertiesDecryptedCount = 0;
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
                 JProperty propertyToDecrypt = document.Property(propertyName);
@@ -341,8 +358,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         propertyToDecrypt.Value,
                         settingsForProperty,
                         cancellationToken);
+
+                    propertiesDecryptedCount++;
                 }
             }
+
+            diagnostics?.Add(Constants.DiagnosticsPropertiesDecryptedCount, propertiesDecryptedCount);
 
             return;
         }

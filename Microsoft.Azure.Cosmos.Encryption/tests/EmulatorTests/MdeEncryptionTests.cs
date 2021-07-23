@@ -684,6 +684,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+            VerifyDiagnostics(batchResponse.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 8); // delete operation wont be counted in decryption
 
             TransactionalBatchOperationResult<TestDoc> doc1 = batchResponse.GetOperationResultAtIndex<TestDoc>(0);
             VerifyExpectedDocResponse(doc1ToCreate, doc1.Resource);
@@ -720,7 +721,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ResponseMessage readResponseMessage = await MdeEncryptionTests.encryptionContainer.ReadItemStreamAsync(docToDelete.Id, new PartitionKey(docToDelete.PK));
             Assert.AreEqual(HttpStatusCode.NotFound, readResponseMessage.StatusCode);
-            
         }
 
         [TestMethod]
@@ -755,6 +755,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             };
 
             FeedResponse<TestDoc> response = await encryptionContainer.ReadManyItemsAsync<TestDoc>(itemList);
+            VerifyDiagnostics(response.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 0);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
             Assert.AreEqual(2, response.Count);
@@ -763,6 +764,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             // stream test.
             ResponseMessage responseStream = await encryptionContainer.ReadManyItemsStreamAsync(itemList);
+            VerifyDiagnostics(responseStream.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 0);
 
             Assert.IsTrue(responseStream.IsSuccessStatusCode);
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -858,6 +860,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             while (feedIterator.HasMoreResults)
             {
                 ResponseMessage response = await feedIterator.ReadNextAsync();
+                VerifyDiagnostics(response.Diagnostics, encryptOperation: false, expectedPropertiesDecryptedCount: 0);
                 Assert.IsTrue(response.IsSuccessStatusCode);
                 Assert.IsNull(response.ErrorMessage);
             }
@@ -1612,6 +1615,37 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionDiagnosticsTest()
+        {
+            ItemResponse<TestDoc> createResponse = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            VerifyDiagnostics(createResponse.Diagnostics);
+
+            TestDoc testDoc = createResponse.Resource;
+
+            ResponseMessage readResponse = await MdeEncryptionTests.encryptionContainer.ReadItemStreamAsync(testDoc.Id, new PartitionKey(testDoc.PK));
+            VerifyDiagnostics(readResponse.Diagnostics, encryptOperation: false, decryptOperation: true);
+
+            TestDoc testDoc1 = TestDoc.Create();
+            testDoc1.NonSensitive = Guid.NewGuid().ToString();
+            testDoc1.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            ItemResponse<TestDoc> upsertResponse = await MdeEncryptionTests.MdeUpsertItemAsync(
+                MdeEncryptionTests.encryptionContainer,
+                testDoc1,
+                HttpStatusCode.Created);
+            TestDoc upsertedDoc = upsertResponse.Resource;
+            VerifyDiagnostics(upsertResponse.Diagnostics);
+
+            upsertedDoc.NonSensitive = Guid.NewGuid().ToString();
+            upsertedDoc.Sensitive_StringFormat = Guid.NewGuid().ToString();
+
+            ItemResponse<TestDoc> replaceResponse = await MdeEncryptionTests.MdeReplaceItemAsync(
+                MdeEncryptionTests.encryptionContainer,
+                upsertedDoc,
+                upsertResponse.ETag);
+            VerifyDiagnostics(replaceResponse.Diagnostics);
+        }
+
+        [TestMethod]
         public async Task EncryptionRudItem()
         {
             TestDoc testDoc = await MdeEncryptionTests.MdeUpsertItemAsync(
@@ -1675,11 +1709,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 PatchOperation.Replace("/Sensitive_FloatFormat", docPostPatching.Sensitive_FloatFormat),
             };
 
-            await MdeEncryptionTests.MdePatchItemAsync(
+            ItemResponse<TestDoc> patchResponse = await MdeEncryptionTests.MdePatchItemAsync(
                 MdeEncryptionTests.encryptionContainer,
                 patchOperations,
                 docPostPatching,
                 HttpStatusCode.OK);
+
+            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 8);
 
             docPostPatching.Sensitive_ArrayFormat = new TestDoc.Sensitive_ArrayData[]
             {
@@ -1741,11 +1777,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             patchOperations.Add(PatchOperation.Remove("/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2"));
             patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0]));
 
-            await MdeEncryptionTests.MdePatchItemAsync(
+            patchResponse = await MdeEncryptionTests.MdePatchItemAsync(
                 MdeEncryptionTests.encryptionContainer,
                 patchOperations,
                 docPostPatching,
                 HttpStatusCode.OK);
+
+            VerifyDiagnostics(patchResponse.Diagnostics, expectedPropertiesEncryptedCount: 4);
 
             patchOperations.Add(PatchOperation.Increment("/Sensitive_IntFormat", 1));
             try
@@ -2491,6 +2529,46 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(expectedDoc.Sensitive_BoolFormat, verifyDoc.Sensitive_BoolFormat);
             Assert.AreEqual(expectedDoc.NonSensitive, verifyDoc.NonSensitive);
             Assert.AreEqual(expectedDoc.NonSensitiveInt, verifyDoc.NonSensitiveInt);
+        }
+
+        private static void VerifyDiagnostics(
+            CosmosDiagnostics diagnostics, 
+            bool encryptOperation = true, 
+            bool decryptOperation = true,
+            int expectedPropertiesEncryptedCount = 12,
+            int expectedPropertiesDecryptedCount = 12)
+        {
+            Assert.IsNotNull(diagnostics);
+            JObject diagnosticsObject = JObject.Parse(diagnostics.ToString());
+
+            JObject coreDiagnostics = diagnosticsObject.Value<JObject>(Constants.CoreDiagnostics);
+            Assert.IsNotNull(coreDiagnostics);
+            
+            JObject encryptionDiagnostics = diagnosticsObject.Value<JObject>(Constants.EncryptionDiagnostics);
+            Assert.IsNotNull(encryptionDiagnostics);
+
+            if (encryptOperation)
+            {
+                JObject encryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.EncryptOperation);
+                Assert.IsNotNull(encryptOperationDiagnostics);
+                Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
+                Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
+                int propertiesEncrypted = encryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesEncryptedCount);
+                Assert.AreEqual(expectedPropertiesEncryptedCount, propertiesEncrypted);
+            }
+
+            if (decryptOperation)
+            {
+                JObject decryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DecryptOperation);
+                Assert.IsNotNull(decryptOperationDiagnostics);
+                Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
+                Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
+                if (expectedPropertiesDecryptedCount > 0)
+                {
+                    int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
+                    Assert.AreEqual(expectedPropertiesDecryptedCount, propertiesDecrypted);
+                }
+            }
         }
 
         public class TestDoc
