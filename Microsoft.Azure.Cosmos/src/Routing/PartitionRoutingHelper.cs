@@ -32,32 +32,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool isContinuationExpected,
             bool hasLogicalPartitionKey,
             bool allowDCount,
-            PartitionKeyDefinition partitionKeyDefinition,
-            QueryPartitionProvider queryPartitionProvider,
-            string clientApiVersion,
-            out QueryInfo queryInfo)
-        {
-            return PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
-                querySpec: querySpec,
-                enableCrossPartitionQuery: enableCrossPartitionQuery,
-                parallelizeCrossPartitionQuery: parallelizeCrossPartitionQuery,
-                isContinuationExpected: isContinuationExpected,
-                hasLogicalPartitionKey: hasLogicalPartitionKey,
-                allowDCount: allowDCount,
-                allowNonValueAggregates: false,
-                partitionKeyDefinition: partitionKeyDefinition,
-                queryPartitionProvider: queryPartitionProvider,
-                clientApiVersion: clientApiVersion,
-                out queryInfo);
-        }
-
-        public static IReadOnlyList<Range<string>> GetProvidedPartitionKeyRanges(
-            SqlQuerySpec querySpec,
-            bool enableCrossPartitionQuery,
-            bool parallelizeCrossPartitionQuery,
-            bool isContinuationExpected,
-            bool hasLogicalPartitionKey,
-            bool allowDCount,
             bool allowNonValueAggregates,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryPartitionProvider queryPartitionProvider,
