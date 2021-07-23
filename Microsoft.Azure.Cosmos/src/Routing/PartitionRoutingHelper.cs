@@ -37,6 +37,33 @@ namespace Microsoft.Azure.Cosmos.Routing
             string clientApiVersion,
             out QueryInfo queryInfo)
         {
+            return PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
+                querySpec: querySpec,
+                enableCrossPartitionQuery: enableCrossPartitionQuery,
+                parallelizeCrossPartitionQuery: parallelizeCrossPartitionQuery,
+                isContinuationExpected: isContinuationExpected,
+                hasLogicalPartitionKey: hasLogicalPartitionKey,
+                allowDCount: allowDCount,
+                allowNonValueAggregates: false,
+                partitionKeyDefinition: partitionKeyDefinition,
+                queryPartitionProvider: queryPartitionProvider,
+                clientApiVersion: clientApiVersion,
+                out queryInfo);
+        }
+
+        public static IReadOnlyList<Range<string>> GetProvidedPartitionKeyRanges(
+            SqlQuerySpec querySpec,
+            bool enableCrossPartitionQuery,
+            bool parallelizeCrossPartitionQuery,
+            bool isContinuationExpected,
+            bool hasLogicalPartitionKey,
+            bool allowDCount,
+            bool allowNonValueAggregates,
+            PartitionKeyDefinition partitionKeyDefinition,
+            QueryPartitionProvider queryPartitionProvider,
+            string clientApiVersion,
+            out QueryInfo queryInfo)
+        {
             if (querySpec == null)
             {
                 throw new ArgumentNullException(nameof(querySpec));
@@ -57,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
-                allowNonValueAggregateQuery: false,
+                allowNonValueAggregateQuery: allowNonValueAggregates,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount);
             if (!tryGetPartitionQueryExecutionInfo.Succeeded)
@@ -157,8 +184,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     DocumentClientException exception = new DocumentClientException(
                         RMResources.UnsupportedCrossPartitionQuery,
                         HttpStatusCode.BadRequest,
-                        SubStatusCodes.Unknown);
+                        SubStatusCodes.CrossPartitionQueryNotServable);
 
+                    exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
                     throw exception;
                 }
             }

@@ -16,6 +16,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using System.Collections.ObjectModel;
+    using System.Net;
 
     /// <summary>
     /// Tests for <see cref="PartitionRoutingHelper"/> class.
@@ -23,11 +26,33 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     [TestClass]
     public class PartitionRoutingHelperTest
     {
-        PartitionRoutingHelper partitionRoutingHelper;
-        public PartitionRoutingHelperTest()
+        private static readonly Dictionary<string, object> DefaultQueryEngineConfiguration = new Dictionary<string, object>()
         {
-            this.partitionRoutingHelper = new PartitionRoutingHelper();
-        }
+            {"maxSqlQueryInputLength", 262144},
+            {"maxJoinsPerSqlQuery", 5},
+            {"maxLogicalAndPerSqlQuery", 2000},
+            {"maxLogicalOrPerSqlQuery", 2000},
+            {"maxUdfRefPerSqlQuery", 10},
+            {"maxInExpressionItemsCount", 16000},
+            {"queryMaxGroupByTableCellCount", 500000 },
+            {"queryMaxInMemorySortDocumentCount", 500},
+            {"maxQueryRequestTimeoutFraction", 0.90},
+            {"sqlAllowNonFiniteNumbers", false},
+            {"sqlAllowAggregateFunctions", true},
+            {"sqlAllowSubQuery", true},
+            {"sqlAllowScalarSubQuery", true},
+            {"allowNewKeywords", true},
+            {"sqlAllowLike", true},
+            {"sqlAllowGroupByClause", true},
+            {"maxSpatialQueryCells", 12},
+            {"spatialMaxGeometryPointCount", 256},
+            {"sqlDisableQueryILOptimization", false},
+            {"sqlDisableFilterPlanOptimization", false}
+        };
+
+        private static readonly QueryPartitionProvider QueryPartitionProvider = new QueryPartitionProvider(DefaultQueryEngineConfiguration);
+
+        private readonly PartitionRoutingHelper partitionRoutingHelper = new PartitionRoutingHelper();
 
         /// <summary>
         /// Tests for <see cref="PartitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken"/> method.
@@ -247,6 +272,104 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 }
             }
         }
+
+        [TestMethod]
+        public void TestCrossPartitionAggregateQueries()
+        {
+            PartitionRoutingHelperTestCase[] testcases = new[]
+            {
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = "SELECT AVG(r.key) FROM r WHERE IS_NUMBER(r.key)",
+                    PartitionKey = "/key",
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = "SELECT COUNT(1), MAX(r.key) FROM r",
+                    PartitionKey = "/key",
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = "SELECT c.age, COUNT(1) as count FROM c GROUP BY c.age",
+                    PartitionKey = "/key",
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT
+                                c.age,
+                                AVG(c.doesNotExist) as undefined_avg,
+                                MIN(c.doesNotExist) as undefined_min,
+                                MAX(c.doesNotExist) as undefined_max,
+                                COUNT(c.doesNotExist) as undefined_count,
+                                SUM(c.doesNotExist) as undefined_sum
+                              FROM c
+                              GROUP BY c.age",
+                    PartitionKey = "/key",
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                }
+            };
+
+            foreach(PartitionRoutingHelperTestCase testcase in testcases)
+            {
+                try
+                {
+                    IReadOnlyList<Range<string>> _ = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
+                        querySpec: new Cosmos.Query.Core.SqlQuerySpec(testcase.Query),
+                        enableCrossPartitionQuery: true,
+                        parallelizeCrossPartitionQuery: false,
+                        isContinuationExpected: true,
+                        hasLogicalPartitionKey: testcase.HasLogicalPartitionKey,
+                        allowDCount: false,
+                        allowNonValueAggregates: true,
+                        partitionKeyDefinition: new PartitionKeyDefinition { Paths = new Collection<string> { testcase.PartitionKey }, Kind = PartitionKind.Hash },
+                        queryPartitionProvider: PartitionRoutingHelperTest.QueryPartitionProvider,
+                        clientApiVersion: testcase.ClientApiVersion,
+                        out QueryInfo info);
+
+                    Assert.Fail();
+                }
+                catch(DocumentClientException dce)
+                {
+                    Assert.AreEqual(testcase.StatusCode, dce.StatusCode);
+                    Assert.AreEqual(testcase.SubStatusCode, dce.GetSubStatus());
+                    Assert.IsTrue(dce.Message.Contains(testcase.Message));
+                    Assert.IsFalse(string.IsNullOrEmpty(dce.Error.AdditionalErrorInfo));
+                }
+            }
+        }
+
+        internal struct PartitionRoutingHelperTestCase
+        {
+            internal string Query { get; set; }
+
+            internal string PartitionKey { get; set; }
+
+            internal string ClientApiVersion { get; set; }
+
+            internal bool HasLogicalPartitionKey { get; set; }
+
+            internal HttpStatusCode StatusCode { get; set;}
+
+            internal SubStatusCodes SubStatusCode { get; set; }
+
+            internal string Message { get; set; }
+        }
+
 
         private class RoutingMapProvider : IRoutingMapProvider
         {
