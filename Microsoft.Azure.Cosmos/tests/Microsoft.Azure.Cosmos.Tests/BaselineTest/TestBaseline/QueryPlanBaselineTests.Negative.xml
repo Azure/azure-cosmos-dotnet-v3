@@ -15,7 +15,13 @@
   <Result>
     <Input>
       <Description>Max UDF Calls</Description>
-      <Query>SELECT udf.func1(r.a), udf.func2(r.b), udf.func3(r.c), udf.func1(r.d), udf.func2(r.e), udf.func3(r.f) FROM Root r</Query>
+      <Query>
+                    SELECT
+                        udf.func1(r.a), udf.func2(r.b), udf.func3(r.c),
+                        udf.func1(r.d), udf.func2(r.e), udf.func3(r.f),
+                        udf.func1(r.g), udf.func2(r.h), udf.func3(r.i),
+                        udf.func1(r.j), udf.func2(r.k), udf.func3(r.l),
+                    FROM Root r</Query>
       <PartitionKeys>
         <Key>/key</Key>
       </PartitionKeys>
