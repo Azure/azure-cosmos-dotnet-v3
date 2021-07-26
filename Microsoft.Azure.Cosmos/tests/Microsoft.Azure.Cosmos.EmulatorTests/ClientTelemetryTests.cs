@@ -83,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
 
             await base.TestCleanup();
@@ -265,7 +264,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
                 Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
 
-                Console.WriteLine(telemetryInfo.TimeIntervalAggregationInSeconds);
                 Assert.AreNotEqual(0, telemetryInfo.TimeIntervalAggregationInSeconds);
             }
             Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");

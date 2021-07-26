@@ -106,7 +106,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private void StartObserverTask()
         {
-            this.timer.Start();
             this.telemetryTask = Task.Run(this.EnrichAndSendAsync, this.cancellationTokenSource.Token);
         }
 
@@ -138,11 +137,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     // Load host information if not available (it caches the information)
                     AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient);
 
-                    Compute vmInformation = azMetadata?.Compute;
-                    this.clientTelemetryInfo.ApplicationRegion = vmInformation?.Location;
-                    this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
-                    
-                    //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
+                    if (azMetadata != null)
+                    {
+                        Compute vmInformation = azMetadata.Compute;
+                        if (vmInformation != null)
+                        {
+                            this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
+                            this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
+                            //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
+                        }
+                    }
 
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
 
@@ -160,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
                     
-                    this.clientTelemetryInfo.TimeIntervalAggregationInSeconds = this.timer.Elapsed.TotalSeconds;
+                    this.clientTelemetryInfo.TimeIntervalAggregationInSeconds = Math.Round(this.timer.Elapsed.TotalSeconds, 2);
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
                     
@@ -233,7 +237,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             long totalElapsedTimeInMilliSeconds = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
             try
             {
-                latency.RecordValue(totalElapsedTimeInMilliSeconds);
+                latency.RecordValue(totalElapsedTimeInMilliSeconds * ClientTelemetryOptions.AdjustmentFactor);
             } 
             catch (Exception ex)
             {
