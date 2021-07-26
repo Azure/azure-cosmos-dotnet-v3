@@ -101,30 +101,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             new CosmosClientBuilder(endpoint, key);
         }
 
-        [DataTestMethod]
-        [DataRow(AccountEndpoint, "425Mcv8CXQqzRNCgFNjIhT424GK88ckJvASowTnq15Vt8LeahXTcN5wt3342vQ==")]
-        public async Task InvalidKey_ExceptionFullStacktrace(string endpoint, string key)
-        {
-            CosmosClient client = new CosmosClient(endpoint, key);
-
-            string sqlQueryText = "SELECT * FROM c";
-
-            try {
-                QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-                FeedIterator<object> queryResultSetIterator = client.GetContainer(new Guid().ToString(), new Guid().ToString()).GetItemQueryIterator<object>(queryDefinition);
-
-                while (queryResultSetIterator.HasMoreResults)
-                {
-                    await queryResultSetIterator.ReadNextAsync();
-                }
-            } 
-            catch(Exception ex)
-            {
-                Assert.IsTrue(ex.StackTrace.Contains("GatewayStoreClient.ParseResponseAsync"));
-            }
-            
-        }
-
         [TestMethod]
         public void InvalidConnectionString()
         {
