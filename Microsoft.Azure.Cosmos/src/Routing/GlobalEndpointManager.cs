@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (this.TransientExceptions.Count == 1)
                 {
-                    throw this.TransientExceptions[0];
+                    ExceptionDispatchInfo.Capture(this.TransientExceptions[0]).Throw();
                 }
 
                 throw new AggregateException(this.TransientExceptions);

@@ -120,7 +120,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             } 
             catch(Exception ex)
             {
-                Assert.IsTrue(ex.StackTrace.Length > 3431);
                 Assert.IsTrue(ex.StackTrace.Contains("GatewayStoreClient.ParseResponseAsync"));
             }
             
