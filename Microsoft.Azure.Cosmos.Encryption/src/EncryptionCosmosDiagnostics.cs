@@ -15,10 +15,27 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionCosmosDiagnostics(
             CosmosDiagnostics coreDiagnostics,
-            JObject encryptionDiagnostics)
+            EncryptionDiagnosticsContent encryptContent = null,
+            EncryptionDiagnosticsContent decryptContent = null)
         {
             this.coreDiagnostics = coreDiagnostics ?? throw new ArgumentNullException(nameof(coreDiagnostics));
-            this.encryptionDiagnostics = encryptionDiagnostics ?? throw new ArgumentNullException(nameof(encryptionDiagnostics));
+            this.encryptionDiagnostics = new JObject();
+            if (encryptContent != null)
+            {
+                this.AddChild(Constants.DiagnosticsEncryptOperation, encryptContent);
+            }
+
+            if (decryptContent != null)
+            {
+                this.AddChild(Constants.DiagnosticsDecryptOperation, decryptContent);
+            }
+        }
+
+        public void AddChild(
+            string operation,
+            EncryptionDiagnosticsContent operationContent)
+        {
+            this.encryptionDiagnostics.Add(operation, operationContent.Content);
         }
 
         public override IReadOnlyList<(string regionName, Uri uri)> GetContactedRegions()
@@ -32,8 +49,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject coreDiagnostics = JObject.Parse(coreDiagnosticsString);
             JObject diagnostics = new JObject
             {
-                { Constants.EncryptionDiagnostics, this.encryptionDiagnostics },
-                { Constants.CoreDiagnostics, coreDiagnostics },
+                { Constants.DiagnosticsCoreDiagnostics, coreDiagnostics },
+                { Constants.DiagnosticsEncryptionDiagnostics, this.encryptionDiagnostics },
             };
 
             return diagnostics.ToString();

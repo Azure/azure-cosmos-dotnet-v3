@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
@@ -54,21 +55,19 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
-                JObject diagnostics = new JObject();
-                JObject decryptionOperationDiagnostics = new JObject();
+                Stopwatch stopwatch = Stopwatch.StartNew();
                 DateTime startTime = DateTime.UtcNow;
-                decryptionOperationDiagnostics.Add(Constants.DiagnosticsStartTime, startTime);
 
                 Stream decryptedContent = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
                     cancellationToken);
 
-                decryptionOperationDiagnostics.Add(Constants.DiagnosticsDuration, DateTime.UtcNow.Millisecond - startTime.Millisecond);
-                diagnostics.Add(Constants.DecryptOperation, decryptionOperationDiagnostics);
+                stopwatch.Stop();
+                EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds);
                 EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                     responseMessage.Diagnostics,
-                    diagnostics);
+                    decryptContent: decryptDiagnostics);
 
                 responseMessage.Diagnostics = encryptionDiagnostics;
 

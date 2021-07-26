@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -52,10 +53,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                streamPayload = EncryptionProcessor.EncryptAsync(
+                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
-                    diagnostics: null,
                     cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
@@ -115,10 +115,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                streamPayload = EncryptionProcessor.EncryptAsync(
+                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
-                    diagnostics: null,
                     default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
@@ -154,10 +153,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                streamPayload = EncryptionProcessor.EncryptAsync(
+                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
-                    diagnostics: null,
                     cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
@@ -245,10 +243,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
-            JObject diagnostics = new JObject();
-            JObject decryptionOperationDiagnostics = new JObject();
+            Stopwatch stopwatch = Stopwatch.StartNew();
             DateTime startTime = DateTime.UtcNow;
-            decryptionOperationDiagnostics.Add(Constants.DiagnosticsStartTime, startTime);
             int propertiesDecryptedCount = 0;
 
             for (int index = 0; index < response.Count; index++)
@@ -257,10 +253,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
-                    Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
+                    (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
                         result.ResourceStream,
                         encryptionSettings,
-                        diagnostics: null,
                         cancellationToken);
 
                     result = new EncryptionTransactionalBatchOperationResult(response[index], decryptedStream);
@@ -270,13 +265,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 decryptedTransactionalBatchOperationResults.Add(result);
             }
 
-            decryptionOperationDiagnostics.Add(Constants.DiagnosticsDuration, DateTime.UtcNow.Millisecond - startTime.Millisecond);
-            decryptionOperationDiagnostics.Add(Constants.DiagnosticsPropertiesDecryptedCount, propertiesDecryptedCount);
-            diagnostics.Add(Constants.DecryptOperation, decryptionOperationDiagnostics);
-
+            stopwatch.Stop();
+            EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds, propertiesDecryptedCount);
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
-                diagnostics);
+                decryptContent: decryptDiagnostics);
 
             return new EncryptionTransactionalBatchResponse(
                 decryptedTransactionalBatchOperationResults,

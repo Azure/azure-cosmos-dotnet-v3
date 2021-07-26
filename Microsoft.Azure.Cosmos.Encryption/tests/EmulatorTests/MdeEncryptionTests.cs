@@ -2541,31 +2541,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.IsNotNull(diagnostics);
             JObject diagnosticsObject = JObject.Parse(diagnostics.ToString());
 
-            JObject coreDiagnostics = diagnosticsObject.Value<JObject>(Constants.CoreDiagnostics);
+            JObject coreDiagnostics = diagnosticsObject.Value<JObject>(Constants.DiagnosticsCoreDiagnostics);
             Assert.IsNotNull(coreDiagnostics);
             
-            JObject encryptionDiagnostics = diagnosticsObject.Value<JObject>(Constants.EncryptionDiagnostics);
+            JObject encryptionDiagnostics = diagnosticsObject.Value<JObject>(Constants.DiagnosticsEncryptionDiagnostics);
             Assert.IsNotNull(encryptionDiagnostics);
 
             if (encryptOperation)
             {
-                JObject encryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.EncryptOperation);
+                JObject encryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsEncryptOperation);
                 Assert.IsNotNull(encryptOperationDiagnostics);
                 Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
                 Assert.IsNotNull(encryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
-                int propertiesEncrypted = encryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesEncryptedCount);
+                int propertiesEncrypted = encryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesCount);
                 Assert.AreEqual(expectedPropertiesEncryptedCount, propertiesEncrypted);
             }
 
             if (decryptOperation)
             {
-                JObject decryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DecryptOperation);
+                JObject decryptOperationDiagnostics = encryptionDiagnostics.Value<JObject>(Constants.DiagnosticsDecryptOperation);
                 Assert.IsNotNull(decryptOperationDiagnostics);
                 Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsStartTime));
                 Assert.IsNotNull(decryptOperationDiagnostics.GetValue(Constants.DiagnosticsDuration));
                 if (expectedPropertiesDecryptedCount > 0)
                 {
-                    int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesDecryptedCount);
+                    int propertiesDecrypted = decryptOperationDiagnostics.Value<int>(Constants.DiagnosticsPropertiesCount);
                     Assert.AreEqual(expectedPropertiesDecryptedCount, propertiesDecrypted);
                 }
             }
