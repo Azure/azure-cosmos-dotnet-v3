@@ -691,7 +691,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 .UpsertItem(doc1ToUpsert)
                 .DeleteItem(docToDelete.Id)
                 .UpsertItemStream(doc2ToUpsert.ToStream())
-                //.PatchItem(docToPatch.Id, patchOperations)
+                .PatchItem(docToPatch.Id, patchOperations)
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
