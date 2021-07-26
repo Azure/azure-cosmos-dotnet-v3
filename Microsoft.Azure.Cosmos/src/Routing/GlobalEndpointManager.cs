@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Specialized;
     using System.Linq;
     using System.Net;
+    using System.Runtime.ExceptionServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -161,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (this.NonRetriableException != null)
                 {
-                    throw this.NonRetriableException;
+                    ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
                 }
 
                 // Start 2 additional tasks to try to get the account information
@@ -183,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     if (this.NonRetriableException != null)
                     {
-                        throw this.NonRetriableException;
+                        ExceptionDispatchInfo.Capture(this.NonRetriableException).Throw();
                     }
 
                     tasksToWaitOn.Remove(completedTask);
