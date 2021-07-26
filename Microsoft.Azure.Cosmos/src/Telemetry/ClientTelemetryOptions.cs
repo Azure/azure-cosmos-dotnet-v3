@@ -115,10 +115,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static string GetHostInformation(Compute vmInformation) 
         {
-            return String.Concat(vmInformation?.OSType, "|",
-                    vmInformation?.SKU, "|",
-                    vmInformation?.VMSize, "|",
-                    vmInformation?.AzEnvironment);
+            return String.Concat(vmInformation.OSType, "|",
+                    vmInformation.SKU, "|",
+                    vmInformation.VMSize, "|",
+                    vmInformation.AzEnvironment);
         } 
 
         internal static Uri GetClientTelemetryEndpoint()
