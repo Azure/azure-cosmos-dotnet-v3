@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public async Task<StoreResponse> RequestAsync(
             DocumentServiceRequest request, TransportAddressUri physicalAddress,
-            ResourceOperation resourceOperation, Guid activityId)
+            ResourceOperation resourceOperation, Guid activityId, TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
             Task initTask = null;
@@ -161,6 +161,9 @@ namespace Microsoft.Azure.Documents.Rntbd
                 await initTask;
             }
 
+            // Waiting for channel initialization to move to Pipelined stage
+            transportRequestStats.RecordState(TransportRequestStats.RequestStage.Pipelined);
+
             // Ideally, we would set up a timer here, and then hand off the rest of the work
             // to the dispatcher. In practice, additional constraints force the interaction to
             // be chattier:
@@ -170,7 +173,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             try
             {
                 callArguments.PreparedCall = this.dispatcher.PrepareCall(
-                    request, physicalAddress, resourceOperation, activityId);
+                    request, physicalAddress, resourceOperation, activityId, transportRequestStats);
             }
             catch (DocumentClientException e)
             {
@@ -190,7 +193,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             PooledTimer timer = this.timerPool.GetPooledTimer(this.requestTimeoutSeconds);
             Task[] tasks = new Task[2];
             tasks[0] = timer.StartTimerAsync();
-            Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments);
+            Task<StoreResponse> dispatcherCall = this.dispatcher.CallAsync(callArguments, transportRequestStats);
             TransportClient.GetTransportPerformanceCounters().LogRntbdBytesSentCount(resourceOperation.resourceType, resourceOperation.operationType, callArguments.PreparedCall?.SerializedRequest.Count);
             tasks[1] = dispatcherCall;
             Task completedTask = await Task.WhenAny(tasks);

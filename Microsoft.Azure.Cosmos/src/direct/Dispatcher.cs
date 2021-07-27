@@ -251,8 +251,11 @@ namespace Microsoft.Azure.Documents.Rntbd
         // PrepareCall assigns a request ID to the request, serializes it, and
         // returns the result. The caller must treat PrepareCallResult as an
         // opaque handle.
-        public PrepareCallResult PrepareCall(DocumentServiceRequest request, TransportAddressUri physicalAddress,
-            ResourceOperation resourceOperation, Guid activityId)
+        public PrepareCallResult PrepareCall(DocumentServiceRequest request, 
+                                             TransportAddressUri physicalAddress,
+                                             ResourceOperation resourceOperation, 
+                                             Guid activityId, 
+                                             TransportRequestStats transportRequestStats)
         {
             uint requestId = unchecked((uint) Interlocked.Increment(ref this.nextRequestId));
 
@@ -273,13 +276,17 @@ namespace Microsoft.Azure.Documents.Rntbd
                     resourceOperation,
                     activityId,
                     this.connection.BufferProvider,
-                    out headerSize, out bodySize);
+                    out headerSize, 
+                    out bodySize);
+
+                transportRequestStats.RequestBodySizeInBytes = bodySize;
+                transportRequestStats.RequestSizeInBytes = serializedRequest.Buffer.Count;
 
                 return new PrepareCallResult(requestId, physicalAddress.Uri, serializedRequest);
             }
         }
 
-        public async Task<StoreResponse> CallAsync(ChannelCallArguments args)
+        public async Task<StoreResponse> CallAsync(ChannelCallArguments args, TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
             // The current task scheduler must be used for correctness and to
@@ -287,7 +294,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             using (CallInfo callInfo = new CallInfo(
                 args.CommonArguments.ActivityId,
                 args.PreparedCall.Uri,
-                TaskScheduler.Current))
+                TaskScheduler.Current,
+                transportRequestStats))
             {
                 uint requestId = args.PreparedCall.RequestId;
                 Debug.Assert(!Monitor.IsEntered(this.callLock));
@@ -311,6 +319,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         await this.connection.WriteRequestAsync(
                             args.CommonArguments,
                             args.PreparedCall.SerializedRequest);
+                        transportRequestStats.RecordState(TransportRequestStats.RequestStage.Sent);
                     }
                     catch (Exception e)
                     {
@@ -778,6 +787,9 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 Debug.Assert(this.serverProperties != null);
                 Debug.Assert(this.serverProperties.Version != null);
+                call.TransportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
+                call.TransportRequestStats.ResponseMetadataSizeInBytes = responseMd.Metadata.Count;
+                call.TransportRequestStats.ResponsetBodySizeInBytes = responseBody?.Length;
                 call.SetResponse(responseMd, rntbdResponse, responseHeader, responseBody, this.serverProperties.Version);
             }
             else
@@ -911,15 +923,19 @@ namespace Microsoft.Azure.Documents.Rntbd
             private readonly object stateLock = new object();
             private State state;
 
-            public CallInfo(Guid activityId, Uri uri, TaskScheduler scheduler)
+            public TransportRequestStats TransportRequestStats { get; }
+
+            public CallInfo(Guid activityId, Uri uri, TaskScheduler scheduler, TransportRequestStats transportRequestStats)
             {
                 Debug.Assert(activityId != Guid.Empty);
                 Debug.Assert(uri != null);
                 Debug.Assert(scheduler != null);
+                Debug.Assert(transportRequestStats != null);
 
                 this.activityId = activityId;
                 this.uri = uri;
                 this.scheduler = scheduler;
+                this.TransportRequestStats = transportRequestStats;
             }
 
             public Task<StoreResponse> ReadResponseAsync(ChannelCallArguments args)

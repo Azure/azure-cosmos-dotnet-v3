@@ -252,6 +252,12 @@ namespace Microsoft.Azure.Documents
             {
                 return this.consistencyWriter.WriteAsync(request, timeout, forceRefresh, cancellationToken);
             }
+#if !COSMOSCLIENT
+            else if (request.OperationType == OperationType.GetStorageAuthToken)
+            {
+                return this.HandleGetStorageAuthTokenAsync(request, forceRefresh);
+            }
+#endif
             else if (request.OperationType.IsReadOperation())
             {
                 return this.consistencyReader.ReadAsync(request, timeout, isInRetry, forceRefresh, cancellationToken);
@@ -268,6 +274,14 @@ namespace Microsoft.Azure.Documents
             {
                 throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "Unexpected operation type {0}", request.OperationType));
             }
+        }
+
+        private async Task<StoreResponse> HandleGetStorageAuthTokenAsync(DocumentServiceRequest request, bool forceRefresh)
+        {
+            PartitionAddressInformation addressInfo = await this.addressResolver.ResolveAsync(request, forceRefresh, CancellationToken.None);
+            Uri primaryUri = addressInfo.GetPrimaryUri(request, this.protocol);
+
+            return await this.transportClient.InvokeResourceOperationAsync(primaryUri, request);
         }
 
         private async Task<StoreResponse> HandleThrottlePreCreateOrOfferPreGrowAsync(DocumentServiceRequest request, bool forceRefresh)

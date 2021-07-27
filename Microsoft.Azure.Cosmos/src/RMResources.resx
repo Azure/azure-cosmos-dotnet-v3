@@ -696,6 +696,9 @@
   <data name="InvalidOfferIsRUPerMinuteThroughputEnabled" xml:space="preserve">
     <value>The value of offer IsRUPerMinuteThroughputEnabled specified is invalid. Please specify a boolean value.</value>
   </data>
+  <data name="InvalidBackgroundTaskMaxAllowedThroughputPercent" xml:space="preserve">
+    <value>The value of BackgroundTaskMaxAllowedThroughputPercent specified is invalid. Please specify a valid percentage.</value>
+  </data>
   <data name="WriteRegionAutomaticFailoverNotEnabled" xml:space="preserve">
     <value>Cannot offline write region when automatic failover is not enabled</value>
   </data>
@@ -1125,5 +1128,8 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="AadLocalAuthDisabled" xml:space="preserve">
     <value>Local Authorization is disabled. Use an AAD token to authorize all requests.</value>
+  </data>
+  <data name="InvalidTotalThroughputLimitUpdate" xml:space="preserve">
+    <value>The potential total throughput of this operation exceeds the total throughput limit set for this account. Aborting request.</value>
   </data>
 </root>

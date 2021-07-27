@@ -192,6 +192,22 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets the LSN of the snapshot resource.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.SnapshotProperties.LSN)]
+        internal long LSN
+        {
+            get
+            {
+                return base.GetValue<long>(Constants.SnapshotProperties.LSN);
+            }
+            set
+            {
+                base.SetValue(Constants.SnapshotProperties.LSN, value);
+            }
+        }
+
+        /// <summary>
         /// Content of the Snapshot
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.Content)]
@@ -249,6 +265,7 @@ namespace Microsoft.Azure.Documents
             base.GetValue<double>(Constants.SnapshotProperties.SnapshotTimestamp);
             base.GetValue<string>(Constants.Properties.OwnerResourceId);
             base.GetValue<ulong>(Constants.Properties.SizeInKB);
+            base.GetValue<long>(Constants.SnapshotProperties.LSN);
             base.GetValue<ulong>(Constants.Properties.CompressedSizeInKB);
             base.GetValue<string>(Constants.Properties.ParentResourceId);
 

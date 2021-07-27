@@ -123,6 +123,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
 
             StoreResponse storeResponse = null;
+            TransportRequestStats transportRequestStats = new TransportRequestStats();
             string operation = "Unknown operation";
             DateTime requestStartTime = DateTime.UtcNow;
             int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
@@ -140,7 +141,9 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 operation = "RequestAsync";
                 storeResponse = await channel.RequestAsync(request, physicalAddress,
-                    resourceOperation, activityId);
+                    resourceOperation, activityId, transportRequestStats);
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
+                storeResponse.TransportRequestStats = transportRequestStats;
             }
             catch (TransportException ex)
             {
@@ -173,6 +176,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     ex.SetCpuLoad(this.cpuMonitor.GetCpuLoad());
                 }
 
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 transportResponseStatusCode = (int) ex.ErrorCode;
                 ex.RequestStartTime = requestStartTime;
                 ex.RequestEndTime = DateTime.UtcNow;
@@ -190,23 +194,23 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
                     throw TransportExceptions.GetGoneException(
-                        physicalAddress.Uri, activityId, ex);
+                        physicalAddress.Uri, activityId, ex, transportRequestStats);
                 }
                 if (!ex.UserRequestSent)
                 {
                     DefaultTrace.TraceInformation("Converting to Gone (write request, not sent)");
                     throw TransportExceptions.GetGoneException(
-                        physicalAddress.Uri, activityId, ex);
+                        physicalAddress.Uri, activityId, ex, transportRequestStats);
                 }
                 if (TransportException.IsTimeout(ex.ErrorCode))
                 {
                     DefaultTrace.TraceInformation("Converting to RequestTimeout");
                     throw TransportExceptions.GetRequestTimeoutException(
-                        physicalAddress.Uri, activityId, ex);
+                        physicalAddress.Uri, activityId, ex, transportRequestStats);
                 }
                 DefaultTrace.TraceInformation("Converting to ServiceUnavailable");
                 throw TransportExceptions.GetServiceUnavailableException(
-                    physicalAddress.Uri, activityId, ex);
+                    physicalAddress.Uri, activityId, ex, transportRequestStats);
             }
             catch (DocumentClientException ex)
             {
@@ -214,6 +218,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                                               "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
                     physicalAddress, ex);
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
+                ex.TransportRequestStats = transportRequestStats;
                 throw;
             }
             catch (Exception ex)

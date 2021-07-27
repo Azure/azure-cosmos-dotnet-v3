@@ -55,13 +55,13 @@ namespace Microsoft.Azure.Documents
                 // dbs/{id}/colls/{collid}/
                 string collectionLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
                 barrierLsnRequest = DocumentServiceRequest.CreateFromName(
-                    OperationType.Head, 
-                    collectionLink, 
-                    ResourceType.Collection, 
-                    originalRequestTokenType, 
+                    OperationType.Head,
+                    collectionLink,
+                    ResourceType.Collection,
+                    originalRequestTokenType,
                     null);
             }
-            else // RID based Server request 
+            else // RID based Server request
             {
                 barrierLsnRequest = DocumentServiceRequest.Create(
                     OperationType.Head,
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Documents
             }
 
             barrierLsnRequest.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture);
-            
+
             if (targetLsn.HasValue && targetLsn.Value > 0)
             {
                 barrierLsnRequest.Headers[HttpConstants.HttpHeaders.TargetLsn] = targetLsn.Value.ToString(CultureInfo.InvariantCulture);
@@ -111,12 +111,13 @@ namespace Microsoft.Azure.Documents
                         resourceId: null);
                     break;
 
+                case AuthorizationTokenType.AadToken:
                 case AuthorizationTokenType.ResourceToken:
                     barrierLsnRequest.Headers[HttpConstants.HttpHeaders.Authorization] = request.Headers[HttpConstants.HttpHeaders.Authorization];
                     break;
 
                 default:
-                    string unknownAuthToken = "Unknown authorization token kind for read request";
+                    string unknownAuthToken = $"Unknown authorization token kind [{originalRequestTokenType}] for read request";
                     Debug.Assert(false, unknownAuthToken);
                     DefaultTrace.TraceCritical(unknownAuthToken);
                     throw new InternalServerErrorException(RMResources.InternalServerError);
@@ -150,12 +151,12 @@ namespace Microsoft.Azure.Documents
 
                 barrierLsnRequest.Properties[WFConstants.BackendHeaders.EffectivePartitionKeyString] = request.Properties[WFConstants.BackendHeaders.EffectivePartitionKeyString];
             }
-            
+
             return barrierLsnRequest;
         }
 
         internal static bool IsCollectionHeadBarrierRequest(ResourceType resourceType, OperationType operationType)
-        { 
+        {
             switch(resourceType)
             {
                 case ResourceType.Attachment:

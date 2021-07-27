@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Documents
             TransportControlCommand = 0x002B,
             AuthPolicyElement = 0x002C,
             StorageAuthToken = 0x002D,
+            RetriableWriteCachedResponse = 0x002E,
         }
 
         public enum RntbdOperationType : ushort
@@ -443,6 +444,9 @@ namespace Microsoft.Azure.Documents
             RbacUserId = 0x00AD,
             RbacAction = 0x00AE,
             RbacResource = 0x00AF,
+            CorrelatedActivityId = 0x00B0,
+            IsThroughputCapRequest = 0x00B1,
+            ChangeFeedWireFormatVersion = 0x00B2,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -606,6 +610,9 @@ namespace Microsoft.Azure.Documents
             public RntbdToken rbacUserId;
             public RntbdToken rbacAction;
             public RntbdToken rbacResource;
+            public RntbdToken correlatedActivityId;
+            public RntbdToken isThroughputCapRequest;
+            public RntbdToken changeFeedWireFormatVersion;
 
             public Request()
             {
@@ -768,6 +775,9 @@ namespace Microsoft.Azure.Documents
                 this.rbacUserId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacUserId);
                 this.rbacAction = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacAction);
                 this.rbacResource = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.RbacResource);
+                this.correlatedActivityId = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.CorrelatedActivityId);
+                this.isThroughputCapRequest = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IsThroughputCapRequest);
+                this.changeFeedWireFormatVersion = new RntbdToken(false, RntbdTokenTypes.String, (ushort)RequestIdentifiers.ChangeFeedWireFormatVersion);
                 base.SetTokens(new RntbdToken[]
                 {
                     this.resourceId,
@@ -929,6 +939,9 @@ namespace Microsoft.Azure.Documents
                     this.rbacUserId,
                     this.rbacAction,
                     this.rbacResource,
+                    this.correlatedActivityId,
+                    this.isThroughputCapRequest,
+                    this.changeFeedWireFormatVersion,
                 });
             }
         }
@@ -1013,6 +1026,7 @@ namespace Microsoft.Azure.Documents
             CollectionUniqueIndexReIndexProgress = 0x0057,
             CollectionUniqueKeysUnderReIndex = 0x0058,
             AnalyticalMigrationProgress = 0x0059,
+            TotalAccountThroughput = 0x005A,
         }
 
         public sealed class Response : RntbdTokenStream<ResponseIdentifiers>
@@ -1088,6 +1102,7 @@ namespace Microsoft.Azure.Documents
             public RntbdToken collectionUniqueIndexReIndexProgress;
             public RntbdToken collectionUniqueKeysUnderReIndex;
             public RntbdToken analyticalMigrationProgress;
+            public RntbdToken totalAccountThroughput;
 
             public Response()
             {
@@ -1162,6 +1177,7 @@ namespace Microsoft.Azure.Documents
                 this.collectionUniqueIndexReIndexProgress = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ResponseIdentifiers.CollectionUniqueIndexReIndexProgress);
                 this.collectionUniqueKeysUnderReIndex = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ResponseIdentifiers.CollectionUniqueKeysUnderReIndex);
                 this.analyticalMigrationProgress = new RntbdToken(false, RntbdTokenTypes.ULong, (ushort)ResponseIdentifiers.AnalyticalMigrationProgress);
+                this.totalAccountThroughput = new RntbdToken(false, RntbdTokenTypes.LongLong, (ushort)ResponseIdentifiers.TotalAccountThroughput);
 
                 base.SetTokens(new RntbdToken[]
                 {
@@ -1234,7 +1250,8 @@ namespace Microsoft.Azure.Documents
                     this.aadAppliedRoleAssignmentId,
                     this.collectionUniqueIndexReIndexProgress,
                     this.collectionUniqueKeysUnderReIndex,
-                    this.analyticalMigrationProgress
+                    this.analyticalMigrationProgress,
+                    this.totalAccountThroughput,
                 });
             }
         }

@@ -376,13 +376,17 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return this.OperationType == Documents.OperationType.Read
+                return (this.OperationType == Documents.OperationType.Read
                     || this.OperationType == Documents.OperationType.ReadFeed
                     || this.OperationType == Documents.OperationType.Head
                     || this.OperationType == Documents.OperationType.HeadFeed
                     || this.OperationType == Documents.OperationType.Query
                     || this.OperationType == Documents.OperationType.SqlQuery
-                    || this.OperationType == Documents.OperationType.QueryPlan;
+                    || this.OperationType == Documents.OperationType.QueryPlan
+#if !COSMOSCLIENT
+                    || this.OperationType == Documents.OperationType.GetStorageAuthToken
+#endif
+                    );
             }
         }
 
@@ -400,6 +404,16 @@ namespace Microsoft.Azure.Documents
                     return this.OperationType == Documents.OperationType.ExecuteJavaScript
                         && isReadOnlyScript.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase);
                 }
+            }
+        }
+
+        public bool IsChangeFeedRequest
+        {
+            get
+            {
+                string aimKey = this.Headers.Get(HttpConstants.HttpHeaders.A_IM);
+
+                return !string.IsNullOrWhiteSpace(aimKey);
             }
         }
 

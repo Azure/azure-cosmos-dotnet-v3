@@ -9,8 +9,11 @@ namespace Microsoft.Azure.Documents.Rntbd
     internal interface IChannel
     {
         Task<StoreResponse> RequestAsync(
-            DocumentServiceRequest request, TransportAddressUri physicalAddress,
-            ResourceOperation resourceOperation, Guid activityId);
+            DocumentServiceRequest request, 
+            TransportAddressUri physicalAddress,
+            ResourceOperation resourceOperation, 
+            Guid activityId,
+            TransportRequestStats transportRequestStats);
 
         bool Healthy { get; }
 

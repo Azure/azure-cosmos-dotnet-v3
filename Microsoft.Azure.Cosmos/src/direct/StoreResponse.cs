@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Documents
 
         public Stream ResponseBody { get; set; }
 
+        public TransportRequestStats TransportRequestStats { get; set; }
+
         public long LSN
         {
             get

@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Globalization;
 
-    internal struct CpuLoad
+    internal struct MemoryLoad
     {
-        public DateTime Timestamp;
-        public float Value;
+        public readonly DateTime Timestamp;
+        public readonly long Value;
 
-        public CpuLoad(DateTime timestamp, float value)
+        public MemoryLoad(DateTime timestamp, long value)
         {
             this.Timestamp = timestamp;
             this.Value = value;

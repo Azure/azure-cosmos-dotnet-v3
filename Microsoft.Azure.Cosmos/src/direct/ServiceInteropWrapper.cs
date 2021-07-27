@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Reflection;
     using System.Runtime.InteropServices;
@@ -12,51 +13,115 @@ namespace Microsoft.Azure.Documents
 
     internal static class ServiceInteropWrapper
     {
-        internal static Lazy<bool> AssembliesExist = new Lazy<bool>(() => {
-            if (!ServiceInteropWrapper.IsGatewayAllowedToParseQueries())
+        internal static Lazy<bool> AssembliesExist = new Lazy<bool>(() =>
+        {
+            return ServiceInteropWrapper.CheckIfAssembliesExist(out string _);
+        });
+
+        static ServiceInteropWrapper()
+        {
+            ServiceInteropWrapper.Is64BitProcess = IntPtr.Size == 8;
+
+#if NETFX
+            // Framework only works on Windows
+            ServiceInteropWrapper.IsWindowsOSPlatform = true;
+#else
+            ServiceInteropWrapper.IsWindowsOSPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#endif
+        }
+
+        internal static readonly bool Is64BitProcess;
+
+        internal static readonly bool IsWindowsOSPlatform;
+
+        // ServiceInterop is client level option based on ConnectionPolicy.QueryPlanGenerationMode
+        internal static bool UseServiceInterop(QueryPlanGenerationMode queryPlanRetrievalMode)
+        {
+            switch (queryPlanRetrievalMode)
             {
-                // Gateway is not allowed, skip valiation and let runtime fail in-case of interop DLL non-existence
-                return true;
+                case QueryPlanGenerationMode.GatewayOnly:
+                    return false;
+                case QueryPlanGenerationMode.WindowsX64NativeOnly:
+                    return true;
+                case QueryPlanGenerationMode.DefaultWindowsX64NativeWithFallbackToGateway:
+                    return !CustomTypeExtensions.ByPassQueryParsing();
+                default:
+                    Debug.Fail($"Unexpected {nameof(QueryPlanGenerationMode)}: {queryPlanRetrievalMode}");
+                    return !CustomTypeExtensions.ByPassQueryParsing();
             }
+        }
+
+        /// <summary>
+        /// Use AssembliesExist for all code paths. 
+        /// This function is used in testing to validate different overrides.
+        /// </summary>
+        internal static bool CheckIfAssembliesExist(out string validationMessage)
+        {
+            validationMessage = string.Empty;
+            try
+            {
+                if (!ServiceInteropWrapper.IsGatewayAllowedToParseQueries())
+                {
+                    // Gateway is not allowed, skip validation and let runtime fail in-case of interop DLL non-existence
+                    validationMessage = $"The environment variable {ServiceInteropWrapper.AllowGatewayToParseQueries} is overriding the service interop if exists validation.";
+                    return true;
+                }
 
 #if !NETSTANDARD16
-            DefaultTrace.TraceInformation($"Assembly location: {Assembly.GetExecutingAssembly().Location}");
-            if (Assembly.GetExecutingAssembly().IsDynamic)
-            {
-                return true;
-            }
-            string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-#else
-            DefaultTrace.TraceInformation($"Assembly location: {(typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.Location)}");
-            if (typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.IsDynamic)
-            {
-                return true;
-            }
-            
-            // For NetCore check the entry assembly's path first (if available) since the interop DLL is copied to the application output directory
-            // (as specified in the Nuget package's target)
-            Assembly assembly = System.Reflection.Assembly.GetEntryAssembly() ?? typeof(ServiceInteropWrapper).GetTypeInfo().Assembly;
-            string binDir = Path.GetDirectoryName(assembly.Location);
-#endif
-            string[] nativeDll = new string[]{
-#if COSMOSCLIENT
-                "Microsoft.Azure.Cosmos.ServiceInterop.dll"
-#else
-                "Microsoft.Azure.Documents.ServiceInterop.dll"
-#endif
-            };
+                DefaultTrace.TraceInformation($"Assembly location: {Assembly.GetExecutingAssembly().Location}");
+                if (Assembly.GetExecutingAssembly().IsDynamic)
+                {
+                    validationMessage = $"The service interop if exists validation skipped because Assembly.GetExecutingAssembly().IsDynamic is true";
+                    return true;
+                }
 
-            foreach (string dll in nativeDll)
-            {
+                string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+#else
+                DefaultTrace.TraceInformation($"Assembly location: {(typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.Location)}");
+                if (typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.IsDynamic)
+                {
+                    validationMessage = $"The service interop if exists validation skipped because typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.IsDynamic is true";
+                    return true;
+                }
+            
+                // For NetCore check the entry assembly's path first (if available) since the interop DLL is copied to the application output directory
+                // (as specified in the Nuget package's target)
+                Assembly assembly = System.Reflection.Assembly.GetEntryAssembly() ?? typeof(ServiceInteropWrapper).GetTypeInfo().Assembly;
+                string binDir = Path.GetDirectoryName(assembly.Location);
+#endif
+
+                string dll = 
+#if COSMOSCLIENT
+                "Microsoft.Azure.Cosmos.ServiceInterop.dll";
+#else
+                "Microsoft.Azure.Documents.ServiceInterop.dll";
+#endif
+
                 string dllPath = Path.Combine(binDir, dll);
+                validationMessage = $"The service interop location checked at {dllPath}";
+
                 if (!File.Exists(dllPath))
                 {
-                    DefaultTrace.TraceVerbose($"ServiceInteropWrapper assembly not found at {dllPath}");
+                    DefaultTrace.TraceInformation($"ServiceInteropWrapper assembly not found at {dllPath}");
                     return false;
                 }
+
+                return true;
             }
-            return true;
-        });
+            catch (Exception e)
+            {
+                // There has been certain environments where attempting to find the ServiceInterop has resulted in an exception.
+                // Instead of failing the SDK trace the exception and fall back to gateway mode.
+                DefaultTrace.TraceWarning($"ServiceInteropWrapper: Falling back to gateway. Finding ServiceInterop dll threw an exception {e}");
+            }
+
+            if (string.IsNullOrEmpty(validationMessage))
+            {
+                validationMessage = $"An unexpected exception occurred while checking the file location";
+            }
+            
+            return false;
+        }
 
 #if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
@@ -69,13 +134,13 @@ namespace Microsoft.Azure.Documents
         public static extern
         uint GetPartitionKeyRangesFromQuery(
                 [In] IntPtr serviceProvider,
-                [MarshalAs(UnmanagedType.LPWStr)] [In] string query,
+                [MarshalAs(UnmanagedType.LPWStr)][In] string query,
                 [In] bool requireFormattableOrderByQuery,
                 [In] bool isContinuationExpected,
                 [In] bool allowNonValueAggregateQuery,
                 [In] bool hasLogicalPartitionKey,
-                [MarshalAs(UnmanagedType.LPArray, ArraySubType=UnmanagedType.LPWStr)] [In] string[] partitionKeyDefinitionPathTokens,
-                [MarshalAs(UnmanagedType.LPArray)] [In] uint[] partitionKeyDefinitionPathTokenLengths,
+                [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
+                [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
                 [In] uint partitionKeyDefinitionPathCount,
                 [In] PartitionKind partitionKind,
                 [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
@@ -117,7 +182,7 @@ namespace Microsoft.Azure.Documents
 #endif
         public static extern
         uint CreateServiceProvider(
-                [MarshalAs(UnmanagedType.LPStr)] [In] string configJsonString,
+                [MarshalAs(UnmanagedType.LPStr)][In] string configJsonString,
                 [Out] out IntPtr serviceProvider);
 
 #if !NETSTANDARD16
@@ -131,11 +196,11 @@ namespace Microsoft.Azure.Documents
         public static extern
         uint UpdateServiceProvider(
                 [In] IntPtr serviceProvider,
-                [MarshalAs(UnmanagedType.LPStr)] [In] string configJsonString);
+                [MarshalAs(UnmanagedType.LPStr)][In] string configJsonString);
 
         private const string DisableSkipInterop = "DisableSkipInterop"; // Used by V2 SDK Only
         private const string AllowGatewayToParseQueries = "AllowGatewayToParseQueries"; // Used by V3 SDK Only
-        internal  static bool IsGatewayAllowedToParseQueries()
+        internal static bool IsGatewayAllowedToParseQueries()
         {
             bool? allowGatewayToParseQueries = ServiceInteropWrapper.GetSetting(ServiceInteropWrapper.AllowGatewayToParseQueries);
 
@@ -176,7 +241,7 @@ namespace Microsoft.Azure.Documents
                 }
 
                 bool parsedBoolValue = false;
-                if (!Boolean.TryParse(boolValueString, out parsedBoolValue))
+                if (Boolean.TryParse(boolValueString, out parsedBoolValue))
                 {
                     return parsedBoolValue;
                 }

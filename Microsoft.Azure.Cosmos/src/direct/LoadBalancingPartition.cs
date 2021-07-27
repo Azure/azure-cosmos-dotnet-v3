@@ -50,7 +50,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             DocumentServiceRequest request,
             TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation,
-            Guid activityId)
+            Guid activityId,
+            TransportRequestStats transportRequestStats)
         {
             int currentPending = Interlocked.Increment(
                 ref this.requestsPending);
@@ -65,6 +66,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                             "of requests per connection", this.serverUri),
                         SubStatusCodes.ClientTcpChannelFull);
                 }
+
+                transportRequestStats.RecordState(TransportRequestStats.RequestStage.ChannelAcquisitionStarted);
 
                 while (true)
                 {
@@ -110,7 +113,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                                     request,
                                     physicalAddress,
                                     resourceOperation,
-                                    activityId);
+                                    activityId,
+                                    transportRequestStats);
                             }
 
                             // Unhealthy channel

@@ -304,6 +304,8 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         internal string StatusDescription { get; set; }
 
+        internal TransportRequestStats TransportRequestStats { get; set; }
+
         /// <summary>
         /// Cost of the request in the Azure Cosmos DB service.
         /// </summary>

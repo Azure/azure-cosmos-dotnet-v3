@@ -116,6 +116,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddTruncateMergeLogRequest(request, rntbdRequest);
             TransportSerialization.AddRetriableWriteRequestMetadata(request, rntbdRequest);
             TransportSerialization.AddRequestedCollectionType(request, rntbdRequest);
+            TransportSerialization.AddIsThroughputCapRequest(request, rntbdRequest);
 
             // "normal" headers (strings, ULongs, etc.,)
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest);
@@ -155,6 +156,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.SchemaHash, rntbdRequest.schemaHash, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.SchemaId, rntbdRequest.schemaId, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IsClientEncrypted, rntbdRequest.isClientEncrypted, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.CorrelatedActivityId, rntbdRequest.correlatedActivityId, rntbdRequest);
 
             TransportSerialization.AddReturnPreferenceIfPresent(request, rntbdRequest);
             TransportSerialization.AddBinaryIdIfPresent(request, rntbdRequest);
@@ -185,6 +187,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacUserId, rntbdRequest.rbacUserId, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacAction, rntbdRequest.rbacAction, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.RbacResource, rntbdRequest.rbacResource, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, rntbdRequest.rbacResource, rntbdRequest);
 
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
@@ -402,6 +405,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             responseHeaders.CollectionUniqueIndexReIndexProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionUniqueIndexReIndexProgress);
             responseHeaders.CollectionUniqueKeysUnderReIndex = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.collectionUniqueKeysUnderReIndex);
             responseHeaders.AnalyticalMigrationProgress = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.analyticalMigrationProgress);
+            responseHeaders.TotalAccountThroughput = TransportSerialization.GetStringFromRntbdTokenIfPresent(response.totalAccountThroughput);
 
             if (response.requestCharge.isPresent)
             {
@@ -654,6 +658,8 @@ namespace Microsoft.Azure.Documents.Rntbd
                 return RntbdConstants.RntbdResourceType.InteropUser;
             case ResourceType.AuthPolicyElement:
                 return RntbdConstants.RntbdResourceType.AuthPolicyElement;
+            case ResourceType.RetriableWriteCachedResponse:
+                return RntbdConstants.RntbdResourceType.RetriableWriteCachedResponse;
 #if !COSMOSCLIENT
             case ResourceType.Module:
                 return RntbdConstants.RntbdResourceType.Module;
@@ -1131,6 +1137,18 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
         }
 
+        private static void AddIsThroughputCapRequest(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
+        {
+            if (!string.IsNullOrEmpty(request.Headers[HttpConstants.HttpHeaders.IsThroughputCapRequest]))
+            {
+                rntbdRequest.isThroughputCapRequest.value.valueByte = (request.Headers[HttpConstants.HttpHeaders.IsThroughputCapRequest].
+                    Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase))
+                    ? (byte)0x01
+                    : (byte)0x00;
+                rntbdRequest.isThroughputCapRequest.isPresent = true;
+            }
+        }
+
         private static void AddIsFanout(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {
             if (!string.IsNullOrEmpty(request.Headers[WFConstants.BackendHeaders.IsFanoutRequest]))
@@ -1422,7 +1440,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 rntbdRequest.canOfferReplaceComplete.isPresent = true;
             }
         }
-
 
         private static void AddIgnoreSystemLoweringMaxThroughput(DocumentServiceRequest request, RntbdConstants.Request rntbdRequest)
         {

@@ -5,7 +5,9 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Globalization;
+    using System.Net.Http;
     using System.Text;
 
     internal sealed class ClientSideRequestStatistics : IClientSideRequestStatistics
@@ -16,10 +18,12 @@ namespace Microsoft.Azure.Documents
         private DateTime requestEndTime;
 
         private object lockObject = new object();
+        private object requestEndTimeLock = new object();
 
         private List<StoreResponseStatistics> responseStatisticsList;
         private List<StoreResponseStatistics> supplementalResponseStatisticsList;
         private Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
+        private Lazy<List<HttpResponseStatistics>> httpResponseStatisticsList;
 
         public ClientSideRequestStatistics()
         {
@@ -31,6 +35,7 @@ namespace Microsoft.Azure.Documents
             this.ContactedReplicas = new List<Uri>();
             this.FailedReplicas = new HashSet<Uri>();
             this.RegionsContacted = new HashSet<Uri>();
+            this.httpResponseStatisticsList = new Lazy<List<HttpResponseStatistics>>();
         }
 
         public List<Uri> ContactedReplicas { get; set; }
@@ -76,7 +81,7 @@ namespace Microsoft.Azure.Documents
 
         public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
         {
-            DateTime responseTime = DateTime.UtcNow;
+            DateTime responseTime = this.GetAndUpdateRequestEndTime();
 
             StoreResponseStatistics responseStatistics;
             responseStatistics.RequestResponseTime = responseTime;
@@ -88,11 +93,6 @@ namespace Microsoft.Azure.Documents
 
             lock (this.lockObject)
             {
-                if (responseTime > this.requestEndTime)
-                {
-                    this.requestEndTime = responseTime;
-                }
-
                 if (locationEndpoint != null)
                 {
                     this.RegionsContacted.Add(locationEndpoint);
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Documents
                 return;
             }
 
-            DateTime responseTime = DateTime.UtcNow;
+            DateTime responseTime = this.GetAndUpdateRequestEndTime();
             lock (this.lockObject)
             {
                 if (!this.addressResolutionStatistics.ContainsKey(identifier))
@@ -142,13 +142,58 @@ namespace Microsoft.Azure.Documents
                     throw new ArgumentException("Identifier {0} does not exist. Please call start before calling end.", identifier);
                 }
 
-                if (responseTime > this.requestEndTime)
-                {
-                    this.requestEndTime = responseTime;
-                }
-
                 this.addressResolutionStatistics[identifier].EndTime = responseTime;
             }
+        }
+
+        public void RecordHttpResponse(HttpRequestMessage request,
+                               HttpResponseMessage response,
+                               ResourceType resourceType,
+                               DateTime requestStartTimeUtc)
+        {
+            lock (this.httpResponseStatisticsList)
+            {
+                DateTime requestEndTimeUtc = this.GetAndUpdateRequestEndTime();
+                this.httpResponseStatisticsList.Value.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                                                                           requestEndTimeUtc,
+                                                                           request.RequestUri,
+                                                                           request.Method,
+                                                                           resourceType,
+                                                                           response,
+                                                                           exception: null));
+            }
+        }
+
+        public void RecordHttpException(HttpRequestMessage request,
+                                       Exception exception,
+                                       ResourceType resourceType,
+                                       DateTime requestStartTimeUtc)
+        {
+            lock (this.httpResponseStatisticsList)
+            {
+                DateTime requestEndTimeUtc = this.GetAndUpdateRequestEndTime();
+                this.httpResponseStatisticsList.Value.Add(new HttpResponseStatistics(requestStartTimeUtc,
+                                                                           requestEndTimeUtc,
+                                                                           request.RequestUri,
+                                                                           request.Method,
+                                                                           resourceType,
+                                                                           responseMessage: null,
+                                                                           exception: exception));
+            }
+        }
+
+        private DateTime GetAndUpdateRequestEndTime()
+        {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            lock (this.requestEndTimeLock)
+            {
+                if (requestEndTimeUtc > this.requestEndTime)
+                {
+                    this.requestEndTime = requestEndTimeUtc;
+                }
+            }
+
+            return requestEndTimeUtc;
         }
 
         public override string ToString()
@@ -193,6 +238,19 @@ namespace Microsoft.Azure.Documents
                 {
                     item.AppendToBuilder(stringBuilder);
                     stringBuilder.AppendLine();
+                }
+
+                //take all responses here - this should be limited in number and each one is important.
+                lock (this.httpResponseStatisticsList)
+                {
+                    if (this.httpResponseStatisticsList.IsValueCreated)
+                    {
+                        foreach (HttpResponseStatistics item in this.httpResponseStatisticsList.Value)
+                        {
+                            item.AppendToBuilder(stringBuilder);
+                            stringBuilder.AppendLine();
+                        }
+                    }
                 }
 
                 //only take last 10 responses from this list - this has potential of having large number of entries. 
@@ -282,6 +340,77 @@ namespace Microsoft.Azure.Documents
                     .Append("TargetEndpoint: ")
                     .Append(this.TargetEndpoint);
 
+            }
+        }
+
+        public readonly struct HttpResponseStatistics
+        {
+            public HttpResponseStatistics(
+                DateTime requestStartTime,
+                DateTime requestEndTime,
+                Uri requestUri,
+                HttpMethod httpMethod,
+                ResourceType resourceType,
+                HttpResponseMessage responseMessage,
+                Exception exception)
+            {
+                this.RequestStartTime = requestStartTime;
+                this.Duration = requestEndTime - requestStartTime;
+                this.HttpResponseMessage = responseMessage;
+                this.Exception = exception;
+                this.ResourceType = resourceType;
+                this.HttpMethod = httpMethod;
+                this.RequestUri = requestUri;
+                this.ActivityId = Trace.CorrelationManager.ActivityId.ToString();
+            }
+
+            public DateTime RequestStartTime { get; }
+            public TimeSpan Duration { get; }
+            public HttpResponseMessage HttpResponseMessage { get; }
+            public Exception Exception { get; }
+            public ResourceType ResourceType { get; }
+            public HttpMethod HttpMethod { get; }
+            public Uri RequestUri { get; }
+            public string ActivityId { get; }
+
+            public void AppendToBuilder(StringBuilder stringBuilder)
+            {
+                if (stringBuilder == null)
+                {
+                    throw new ArgumentNullException(nameof(stringBuilder));
+                }
+
+                stringBuilder
+                    .Append("HttpResponseStatistics - ")
+                    .Append("RequestStartTime: ")
+                    .Append(this.RequestStartTime.ToString("o", CultureInfo.InvariantCulture))
+                    .Append(", DurationInMs: ")
+                    .Append(this.Duration.TotalMilliseconds)
+                    .Append(", RequestUri: ")
+                    .Append(this.RequestUri)
+                    .Append(", ResourceType: ")
+                    .Append(this.ResourceType)
+                    .Append(", HttpMethod: ")
+                    .Append(this.HttpMethod);
+
+                if (this.Exception != null)
+                {
+                    stringBuilder.Append(", ExceptionType: ")
+                                 .Append(this.Exception.GetType())
+                                 .Append(", ExceptionMessage: ")
+                                 .Append(this.Exception.Message);
+                }
+
+                if (this.HttpResponseMessage != null)
+                {
+                    stringBuilder.Append(", StatusCode: ")
+                                 .Append(this.HttpResponseMessage.StatusCode);
+                    if (!this.HttpResponseMessage.IsSuccessStatusCode)
+                    {
+                        stringBuilder.Append(", ReasonPhrase: ")
+                                     .Append(this.HttpResponseMessage.ReasonPhrase);
+                    }
+                }
             }
         }
     }

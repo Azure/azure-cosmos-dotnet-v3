@@ -333,6 +333,10 @@ namespace Microsoft.Azure.Documents
         /// Name of the Azure Sweden South region in the Azure Cosmos DB service.
         /// </summary>
         public const string SwedenSouth = "Sweden South";
+
+        /// <summary>
+        /// Name of the Azure Qatar Central region in the Azure Cosmos DB service.
+        /// </summary>
+        internal const string QatarCentral = "Qatar Central";
     }
 }
-

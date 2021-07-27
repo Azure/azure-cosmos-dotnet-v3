@@ -139,6 +139,18 @@ namespace Microsoft.Azure.Documents
             // handle name based operation
             if (uriSegmentsCount >= 2)
             {
+                if (segments[segments.Length - 1].Equals(Paths.RetriableWriteCachedResponsePathSegment, StringComparison.OrdinalIgnoreCase))
+                {
+                    isNameBased = true;
+                    isFeed = false;
+                    resourcePath = segments[segments.Length - 1];
+                    StringSegment trimmedSegment = resourceUrl;
+                    resourceIdOrFullName = Uri.UnescapeDataString(UrlUtility.RemoveTrailingSlashes(UrlUtility.RemoveLeadingSlashes(trimmedSegment)).GetString());
+                    PathsHelper.ParseDatabaseNameAndCollectionAndDocumentNameFromUrlSegments(segments, out databaseName, out collectionName, out _);
+
+                    return true;
+                }
+
                 // parse the databaseId or snapshotId as RID. If failed, it is name based routing
                 // mediaId is special, we will treat it always as RID based.
                 ResourceId rid;
@@ -584,6 +596,9 @@ namespace Microsoft.Azure.Documents
 
                 case ResourceType.AuthPolicyElement:
                     return Paths.AuthPolicyElementsPathSegment;
+
+                case ResourceType.RetriableWriteCachedResponse:
+                    return Paths.RetriableWriteCachedResponsePathSegment;
 
 #if !COSMOSCLIENT
                 case ResourceType.MasterPartition:
@@ -1423,7 +1438,8 @@ namespace Microsoft.Azure.Documents
                    resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.InteropUsersPathSegment, StringComparison.OrdinalIgnoreCase) ||
                    resourcePathSegment.Equals(Paths.AuthPolicyElementsPathSegment, StringComparison.OrdinalIgnoreCase) ||
-                   resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase);
+                   resourcePathSegment.Equals(Paths.SystemDocumentsPathSegment, StringComparison.OrdinalIgnoreCase) ||
+                   resourcePathSegment.Equals(Paths.RetriableWriteCachedResponsePathSegment, StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool IsRootOperation(in StringSegment operationSegment, in StringSegment operationTypeSegment)

@@ -111,6 +111,9 @@ namespace Microsoft.Azure.Documents
         private ChangeFeedPolicy changeFeedPolicy;
         private CollectionBackupPolicy collectionBackupPolicy;
         private MaterializedViewDefinition materializedViewDefinition;
+        private ByokConfig byokConfig;
+        private ClientEncryptionPolicy clientEncryptionPolicy;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -188,6 +191,31 @@ namespace Microsoft.Azure.Documents
             {
                 this.materializedViewDefinition = value;
                 base.SetObject<MaterializedViewDefinition>(Constants.Properties.MaterializedViewDefinition, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the <see cref="ByokConfig"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// Byok status of collection i.e. None or Active 
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.ByokConfig)]
+        internal ByokConfig ByokConfig
+        {
+            get
+            {
+                if (this.byokConfig == null)
+                {
+                    this.byokConfig = base.GetObject<ByokConfig>(Constants.Properties.ByokConfig) ?? new ByokConfig();
+                }
+
+                return this.byokConfig;
+            }
+            set
+            {
+                this.byokConfig = value;
+                base.SetObject<ByokConfig>(Constants.Properties.ByokConfig, value);
             }
         }
 
@@ -812,6 +840,36 @@ namespace Microsoft.Azure.Documents
             return this.MaterializedViewDefinition.SourceCollectionRid != null;
         }
 
+        /// <summary>
+        /// Gets the <see cref="ClientEncryptionPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// The ClientEncryptionPolicy associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.ClientEncryptionPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal ClientEncryptionPolicy ClientEncryptionPolicy
+        {
+            get
+            {
+                if (this.clientEncryptionPolicy == null)
+                {
+                    this.clientEncryptionPolicy = base.GetObject<ClientEncryptionPolicy>(Constants.Properties.ClientEncryptionPolicy);
+                }
+
+                return this.clientEncryptionPolicy;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(ClientEncryptionPolicy)));
+                }
+
+                this.clientEncryptionPolicy = value;
+                base.SetObject<ClientEncryptionPolicy>(Constants.Properties.ClientEncryptionPolicy, value);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
@@ -869,10 +927,20 @@ namespace Microsoft.Azure.Documents
                 base.SetObject(Constants.Properties.GeospatialConfig, this.geospatialConfig);
             }
 
+            if(this.byokConfig != null)
+            {
+                base.SetObject(Constants.Properties.ByokConfig, this.byokConfig);
+            }
+
             if (this.uniqueIndexReIndexContext != null)
             {
                 this.uniqueIndexReIndexContext.OnSave();
                 base.SetObject(Constants.Properties.UniqueIndexReIndexContext, this.uniqueIndexReIndexContext);
+            }
+
+            if (this.clientEncryptionPolicy != null)
+            {
+                base.SetObject(Constants.Properties.ClientEncryptionPolicy, this.clientEncryptionPolicy);
             }
         }
     }

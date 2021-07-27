@@ -26,6 +26,10 @@ namespace Microsoft.Azure.Documents
         private IList<string> partitionKeyRangeResourceIds;
         private IList<string> dataDirectories;
 
+        // If Snapshot contains ClientEncryptionKeys this will be set
+        private IList<string> serializedClientEncryptionKeys;
+        private IList<ClientEncryptionKey> clientEncryptionKeysList;
+
         [JsonConstructor]
         public SnapshotContent()
         {
@@ -344,6 +348,46 @@ namespace Microsoft.Azure.Documents
             {
                 this.partitionKeyRanges = value;
                 base.SetValue(Constants.SnapshotProperties.PartitionKeyRanges, value);
+            }
+        }
+
+        /// <summary>
+        /// Gets the list of serialized ClientEncryptionKeys.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.SnapshotProperties.ClientEncryptionKeyResources)]
+        public IList<string> SerializedClientEncryptionKeyResources
+        {
+            get
+            {
+                if (this.serializedClientEncryptionKeys == null)
+                {
+                    this.serializedClientEncryptionKeys = base.GetValue<IList<string>>(Constants.SnapshotProperties.ClientEncryptionKeyResources);
+                }
+
+                return this.serializedClientEncryptionKeys;
+            }
+            internal set
+            {
+                this.serializedClientEncryptionKeys = value;
+                base.SetValue(Constants.SnapshotProperties.ClientEncryptionKeyResources, value);
+            }
+        }
+
+        [JsonIgnore]
+        public IList<ClientEncryptionKey> ClientEncryptionKeysList
+        {
+            get
+            {
+                if (this.clientEncryptionKeysList == null && this.SerializedClientEncryptionKeyResources != null)
+                {
+                    this.clientEncryptionKeysList = new List<ClientEncryptionKey>();
+                    foreach (string clientEncryptionKey in this.SerializedClientEncryptionKeyResources)
+                    {
+                        this.clientEncryptionKeysList.Add(this.GetResourceIfDeserialized<ClientEncryptionKey>(clientEncryptionKey));
+                    }
+                }
+
+                return this.clientEncryptionKeysList;
             }
         }
 

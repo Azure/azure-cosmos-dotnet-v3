@@ -369,6 +369,11 @@ namespace Microsoft.Azure.Documents
                 HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CanOfferReplaceComplete, request.Headers[HttpConstants.HttpHeaders.CanOfferReplaceComplete]);
             }
 
+            if (request.Headers[HttpConstants.HttpHeaders.IsThroughputCapRequest] != null)
+            {
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsThroughputCapRequest, request.Headers[HttpConstants.HttpHeaders.IsThroughputCapRequest]);
+            }
+
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsAutoScaleRequest, request);
 
             //Query
@@ -426,6 +431,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ChangeFeedStartFullFidelityIfNoneMatch, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsMaterializedViewBuild, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UseArchivalPartition, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ChangeFeedWireFormatVersion, request);
 
             if (resourceOperation.operationType == OperationType.Batch)
             {

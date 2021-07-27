@@ -122,7 +122,8 @@ namespace Microsoft.Azure.Documents
                     sessionToken: sessionToken,
                     usingLocalLSN: useLocalLSNBasedHeaders,
                     activityId: activityId,
-                    backendRequestDurationInMs: backendRequestDurationMilliseconds);
+                    backendRequestDurationInMs: backendRequestDurationMilliseconds,
+                    transportRequestStats: storeResponse.TransportRequestStats);
             }
             else
             {
@@ -221,7 +222,8 @@ namespace Microsoft.Azure.Documents
                         sessionToken: sessionToken,
                         usingLocalLSN: useLocalLSNBasedHeaders,
                         activityId: documentClientException.ActivityId,
-                        backendRequestDurationInMs: documentClientException.Headers[HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds]);
+                        backendRequestDurationInMs: documentClientException.Headers[HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds],
+                        transportRequestStats: documentClientException.TransportRequestStats);
                 }
                 else
                 {
@@ -243,7 +245,8 @@ namespace Microsoft.Azure.Documents
                         sessionToken: null,
                         usingLocalLSN: useLocalLSNBasedHeaders,
                         activityId: null,
-                        backendRequestDurationInMs: null);
+                        backendRequestDurationInMs: null,
+                        transportRequestStats: null);
                 }
             }
         }
@@ -265,7 +268,8 @@ namespace Microsoft.Azure.Documents
             ISessionToken sessionToken,
             bool usingLocalLSN,
             string activityId,
-            string backendRequestDurationInMs)
+            string backendRequestDurationInMs,
+            TransportRequestStats transportRequestStats)
         {
             if (storeResponse == null && exception == null)
             {
@@ -290,6 +294,7 @@ namespace Microsoft.Azure.Documents
             this.UsingLocalLSN = usingLocalLSN;
             this.ActivityId = activityId;
             this.BackendRequestDurationInMs = backendRequestDurationInMs;
+            this.TransportRequestStats = transportRequestStats;
 
             this.StatusCode = (StatusCodes) (this.storeResponse != null ? this.storeResponse.StatusCode :
                 ((this.Exception != null && this.Exception.StatusCode.HasValue) ? this.Exception.StatusCode : 0));
@@ -333,6 +338,8 @@ namespace Microsoft.Azure.Documents
         public string ActivityId { get; private set; }
 
         public string BackendRequestDurationInMs { get; private set;}
+
+        public TransportRequestStats TransportRequestStats { get; private set; }
 
         public bool IsClientCpuOverloaded
         {
@@ -418,6 +425,35 @@ namespace Microsoft.Azure.Documents
                 this.Exception?.InnerException is TransportException ? this.Exception.InnerException.Message : "null",
                 this.BackendRequestDurationInMs,
                 this.ActivityId);
+
+            if (this.TransportRequestStats != null)
+            {
+                stringBuilder.Append(", TransportRequestTimeline: [");
+                foreach (TransportRequestStats.RequestEvent requestEvent in this.TransportRequestStats.GetRequestTimeline())
+                {
+                    stringBuilder.Append("(");
+                    requestEvent.AppendToBuilder(stringBuilder);
+                    stringBuilder.Append("),");
+                }
+                stringBuilder.Append("], ");
+
+                if (this.TransportRequestStats.RequestSizeInBytes.HasValue)
+                {
+                    stringBuilder.Append($"RequestSizeInBytes: {this.TransportRequestStats.RequestSizeInBytes.Value}, ");
+                }
+                if (this.TransportRequestStats.RequestBodySizeInBytes.HasValue)
+                {
+                    stringBuilder.Append($"RequestBodySizeInBytes: {this.TransportRequestStats.RequestBodySizeInBytes.Value}, ");
+                }
+                if (this.TransportRequestStats.ResponseMetadataSizeInBytes.HasValue)
+                {
+                    stringBuilder.Append($"ResponseMetadataSizeInBytes: {this.TransportRequestStats.ResponseMetadataSizeInBytes.Value}, ");
+                }
+                if (this.TransportRequestStats.ResponsetBodySizeInBytes.HasValue)
+                {
+                    stringBuilder.Append($"ResponsetBodySizeInBytes: {this.TransportRequestStats.ResponsetBodySizeInBytes.Value},");
+                }
+            }
         }
 
         private static void SetRequestCharge(StoreResponse response, DocumentClientException documentClientException, double totalRequestCharge)

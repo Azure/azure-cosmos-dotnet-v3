@@ -87,7 +87,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             DocumentServiceRequest request,
             TransportAddressUri physicalAddress,
             ResourceOperation resourceOperation,
-            Guid activityId)
+            Guid activityId,
+            TransportRequestStats transportRequestStats)
         {
             this.ThrowIfDisposed();
             Debug.Assert(this.serverUri.IsBaseOf(physicalAddress.Uri),
@@ -100,7 +101,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 Debug.Assert(this.partitions == null);
                 return this.singlePartition.RequestAsync(
-                    request, physicalAddress, resourceOperation, activityId);
+                    request, physicalAddress, resourceOperation, activityId, transportRequestStats);
             }
 
             Debug.Assert(this.partitions != null);
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             LoadBalancingPartition partition = this.partitions[
                 (h & 0x8FFFFFFF) % this.partitions.Length];
             return partition.RequestAsync(
-                request, physicalAddress, resourceOperation, activityId);
+                request, physicalAddress, resourceOperation, activityId, transportRequestStats);
         }
 
         public void Close()

@@ -1,6 +1,9 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+using System;
+using System.Collections.Generic;
+
 namespace Microsoft.Azure.Documents
 {
     internal enum StatusCodes
@@ -68,6 +71,7 @@ namespace Microsoft.Azure.Documents
         SharedThroughputDatabaseCountExceeded = 1020,
         ComputeInternalError = 1021,
         ThroughputCapQuotaExceeded = 1028,
+        InvalidThroughputCapValue = 1029,
 
         // 404: LSN in session token is higher
         ReadSessionNotAvailable = 1002,
@@ -167,4 +171,43 @@ namespace Microsoft.Azure.Documents
         // 200 OK. List feed throttled response.
         ListResourceFeedThrottled = 5500
     }
+
+    internal static class StatusCodesExtensions
+    {
+        private static readonly Dictionary<int, string> CodeNameMap = new Dictionary<int, string>();
+
+        static StatusCodesExtensions()
+        {
+            StatusCodesExtensions.CodeNameMap[default(int)] = string.Empty;
+            foreach (StatusCodes code in Enum.GetValues(typeof(StatusCodes)))
+            {
+                StatusCodesExtensions.CodeNameMap[(int)code] = code.ToString();
+            }
+        }
+
+        public static string ToStatusCodeString(this StatusCodes code)
+        {
+            return StatusCodesExtensions.CodeNameMap.TryGetValue((int)code, out string value) ? value : code.ToString();
+        }
+    }
+
+    internal static class SubStatusCodesExtensions
+    {
+        private static readonly Dictionary<int, string> CodeNameMap = new Dictionary<int, string>();
+
+        static SubStatusCodesExtensions()
+        {
+            SubStatusCodesExtensions.CodeNameMap[default(int)] = string.Empty;
+            foreach (SubStatusCodes code in Enum.GetValues(typeof(SubStatusCodes)))
+            {
+                SubStatusCodesExtensions.CodeNameMap[(int)code] = code.ToString();
+            }
+        }
+
+        public static string ToSubStatusCodeString(this SubStatusCodes code)
+        {
+            return SubStatusCodesExtensions.CodeNameMap.TryGetValue((int)code, out string value) ? value : code.ToString();
+        }
+    }
+
 }

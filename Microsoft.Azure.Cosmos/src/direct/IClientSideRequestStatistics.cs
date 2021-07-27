@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Net.Http;
     using System.Text;
 
     internal interface IClientSideRequestStatistics
@@ -28,6 +29,18 @@ namespace Microsoft.Azure.Documents
         TimeSpan RequestLatency { get; }
 
         void AppendToBuilder(StringBuilder stringBuilder);
+
+        void RecordHttpResponse(HttpRequestMessage request,
+                                HttpResponseMessage response,
+                                ResourceType resourceType,
+                                DateTime requestStartTimeUtc);
+
+        void RecordHttpException(HttpRequestMessage request,
+                                Exception exception,
+                                ResourceType resourceType,
+                                DateTime requestStartTimeUtc);
+
+
     }
 }
 

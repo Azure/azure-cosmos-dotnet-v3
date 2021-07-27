@@ -307,5 +307,9 @@ namespace Microsoft.Azure.Documents
         // /emulator/defaultIdentity
         public const string LocalEmulatorManagedIdentityPathSegment = "managedIdentity";
         public const string LocalEmulatorManagedIdentity_Root = LocalEmulator_Root + "/" + LocalEmulatorManagedIdentityPathSegment + "/";
+
+        // /retriablewritecachedresponse
+        public const string RetriableWriteCachedResponsePathSegment = "retriablewritecachedresponse";
+        public const string RetriableWriteCachedResponse_Root = Root + "/" + RetriableWriteCachedResponsePathSegment + "/";
     }
 }

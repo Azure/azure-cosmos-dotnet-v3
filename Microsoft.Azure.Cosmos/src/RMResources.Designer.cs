@@ -1325,6 +1325,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The value of offer BackgroundTaskMaxAllowedThroughputPercent specified is invalid. Please specify a double value..
+        /// </summary>
+        internal static string InvalidBackgroundTaskMaxAllowedThroughputPercent
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidBackgroundTaskMaxAllowedThroughputPercent", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The value of offer throughput specified is invalid. Please enter valid positive integer..
         /// </summary>
         internal static string InvalidOfferThroughput
@@ -3763,6 +3774,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("RevokeRegrantNotAllowed", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to The potential total throughput of this operation exceeds the total throughput limit set for this account. Aborting request.
+        /// </summary>
+        internal static string InvalidTotalThroughputLimitUpdate
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidTotalThroughputLimitUpdate", resourceCulture);
             }
         }
     }

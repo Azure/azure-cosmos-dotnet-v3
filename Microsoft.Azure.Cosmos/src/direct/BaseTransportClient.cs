@@ -1103,6 +1103,7 @@ namespace Microsoft.Azure.Documents
             exception.LSN = storeResponse.LSN;
             exception.PartitionKeyRangeId = storeResponse.PartitionKeyRangeId;
             exception.ResourceAddress = resourceAddress;
+            exception.TransportRequestStats = storeResponse.TransportRequestStats;
             throw exception;
         }
 

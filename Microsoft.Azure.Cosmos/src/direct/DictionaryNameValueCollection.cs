@@ -82,13 +82,14 @@ namespace Microsoft.Azure.Documents.Collections
         {
             if (key == null)
             {
-                if (this.nullValue == null)
+                CompositeValue nullValueSnapshot;
+                if ((nullValueSnapshot = this.nullValue) == null)
                 {
                     this.nullValue = new CompositeValue(value);
                 }
                 else
                 {
-                    this.nullValue.Add(value);
+                    nullValueSnapshot.Add(value);
                 }
                 return;
             }
@@ -123,13 +124,16 @@ namespace Microsoft.Azure.Documents.Collections
                     }
                     this.dictionary[key].Add(dictionaryNvc.dictionary[key]);
                 }
-                if (dictionaryNvc.nullValue != null)
+
+                CompositeValue dictionaryNvcNullValueSnapshot;
+                if ((dictionaryNvcNullValueSnapshot = dictionaryNvc.nullValue) != null)
                 {
-                    if (this.nullValue == null)
+                    CompositeValue thisNullValueSnapshot;
+                    if ((thisNullValueSnapshot = this.nullValue) == null)
                     {
-                        this.nullValue = new CompositeValue();
+                        thisNullValueSnapshot = this.nullValue = new CompositeValue();
                     }
-                    this.nullValue.Add(dictionaryNvc.nullValue);
+                    thisNullValueSnapshot.Add(dictionaryNvcNullValueSnapshot);
                 }
             }
             else
@@ -148,12 +152,13 @@ namespace Microsoft.Azure.Documents.Collections
         {
             if (key == null)
             {
-                if (this.nullValue == null)
+                CompositeValue nullValueSnapshot;
+                if ((nullValueSnapshot = this.nullValue) == null)
                 {
                     this.nullValue = new CompositeValue(value);
                 } else
                 {
-                    this.nullValue.Reset(value);
+                    nullValueSnapshot.Reset(value);
                 }
                 return;
             }

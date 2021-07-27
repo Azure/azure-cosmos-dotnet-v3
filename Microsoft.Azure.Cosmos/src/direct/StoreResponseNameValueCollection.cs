@@ -96,6 +96,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string SubStatus { get; set; }
         public string TentativeStoreChecksum { get; set; }
         public string TimeToLiveInSeconds { get; set; }
+        public string TotalAccountThroughput { get; set; }
         public string TransportRequestID { get; set; }
         public string UnflushedMergLogEntryCount { get; set; }
         public string VectorClockLocalProgress { get; set; }
@@ -204,6 +205,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.SubStatus = null;
             this.TentativeStoreChecksum = null;
             this.TimeToLiveInSeconds = null;
+            this.TotalAccountThroughput = null;
             this.TransportRequestID = null;
             this.UnflushedMergLogEntryCount = null;
             this.VectorClockLocalProgress = null;
@@ -286,6 +288,7 @@ namespace Microsoft.Azure.Documents.Collections
                 SubStatus = this.SubStatus,
                 TentativeStoreChecksum = this.TentativeStoreChecksum,
                 TimeToLiveInSeconds = this.TimeToLiveInSeconds,
+                TotalAccountThroughput = this.TotalAccountThroughput,
                 TransportRequestID = this.TransportRequestID,
                 UnflushedMergLogEntryCount = this.UnflushedMergLogEntryCount,
                 VectorClockLocalProgress = this.VectorClockLocalProgress,
@@ -584,6 +587,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.AnalyticalMigrationProgress;
             }
+            if (this.TotalAccountThroughput != null)
+            {
+                yield return HttpConstants.HttpHeaders.TotalAccountThroughput;
+            }
 
             if(this.lazyNotCommonHeaders.IsValueCreated)
             {
@@ -869,6 +876,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.AnalyticalMigrationProgress != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.AnalyticalMigrationProgress, this.AnalyticalMigrationProgress);
+                        }
+                        if (this.TotalAccountThroughput != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.TotalAccountThroughput, this.TotalAccountThroughput);
                         }
                         if(this.lazyNotCommonHeaders.IsValueCreated)
                         {
@@ -1375,6 +1386,13 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.CollectionSecurityIdentifier, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.CollectionSecurityIdentifier;
+                    }
+
+                    break;
+                case 36:
+                    if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.TotalAccountThroughput;
                     }
 
                     break;
@@ -2532,6 +2550,18 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.CollectionSecurityIdentifier = value;
+                        return;
+                    }
+                    break;
+                case 36:
+                    if (string.Equals(HttpConstants.HttpHeaders.TotalAccountThroughput, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.TotalAccountThroughput != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.TotalAccountThroughput = value;
                         return;
                     }
                     break;
