@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             catch (Exception ex)
             {
-                Assert.IsTrue(ex.StackTrace.Contains("GatewayStoreClient.ParseResponseAsync"), ex.StackTrace);
+                Assert.IsTrue(ex.StackTrace.Contains("GatewayAccountReader.GetDatabaseAccountAsync"), ex.StackTrace);
             }
         }
 
