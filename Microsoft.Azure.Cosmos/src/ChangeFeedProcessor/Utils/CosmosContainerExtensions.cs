@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         response.StatusCode, 
                         response.Headers, 
                         item, 
-                        response.Trace);
+                        response.Diagnostics);
                 }
             }
         }
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Utils
                         response.StatusCode, 
                         response.Headers,
                         item, 
-                        response.Trace);
+                        response.Diagnostics);
                 }
             }
         }
