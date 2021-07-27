@@ -1278,33 +1278,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (JObject document in documents)
             {
-                try
-                {
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                        document,
-                        encryptionSettings,
-                        cancellationToken);
+                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                    document,
+                    encryptionSettings,
+                    cancellationToken);
 
-                    decryptedItems.Add(decryptedDocument.ToObject<T>());
-                }
-
-                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
-                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
-                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
-                catch (Exception)
-                {
-                    // most likely the encryption policy has changed.
-                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                        obsoleteEncryptionSettings: encryptionSettings,
-                        cancellationToken: cancellationToken);
-
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                           document,
-                           encryptionSettings,
-                           cancellationToken);
-
-                    decryptedItems.Add(decryptedDocument.ToObject<T>());
-                }
+                decryptedItems.Add(decryptedDocument.ToObject<T>());
             }
 
             return decryptedItems;
