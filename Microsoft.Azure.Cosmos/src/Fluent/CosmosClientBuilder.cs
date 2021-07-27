@@ -525,12 +525,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Disable Telemetry if enabled using environment properties
         /// </summary>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        CosmosClientBuilder WithTelemetryDisabled()
+        internal CosmosClientBuilder WithTelemetryDisabled()
         {
             this.clientOptions.EnableClientTelemetry = false;
             return this;
