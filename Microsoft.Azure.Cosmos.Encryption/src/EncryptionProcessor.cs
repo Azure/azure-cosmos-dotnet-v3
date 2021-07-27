@@ -43,9 +43,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public static async Task<(Stream, EncryptionDiagnosticsContent)> EncryptAsync(
+        public static async Task<Stream> EncryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
+            EncryptionDiagnosticsContent operationDiagnostics,
             CancellationToken cancellationToken)
         {
             if (input == null)
@@ -53,8 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(input));
             }
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            DateTime startTime = DateTime.UtcNow;
+            operationDiagnostics?.Begin();
             int propertiesEncryptedCount = 0;
 
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
@@ -86,10 +86,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
 
-            stopwatch.Stop();
-            EncryptionDiagnosticsContent operationDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds, propertiesEncryptedCount);
-
-            return (result, operationDiagnostics);
+            operationDiagnostics?.End();
+            operationDiagnostics?.AddMember(Constants.DiagnosticsPropertiesCount, propertiesEncryptedCount);
+            return result;
         }
 
         /// <remarks>
@@ -97,21 +96,20 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Else input stream will be disposed, and a new stream is returned.
         /// In case of an exception, input stream won't be disposed, but position will be end of stream.
         /// </remarks>
-        public static async Task<(Stream, EncryptionDiagnosticsContent)> DecryptAsync(
+        public static async Task<Stream> DecryptAsync(
             Stream input,
             EncryptionSettings encryptionSettings,
+            EncryptionDiagnosticsContent operationDiagnostics,
             CancellationToken cancellationToken)
         {
             if (input == null)
             {
-                return (null, null);
+                return input;
             }
 
             Debug.Assert(input.CanSeek);
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            DateTime startTime = DateTime.UtcNow;
-
+            operationDiagnostics?.Begin();
             JObject itemJObj = RetrieveItem(input);
 
             int propertiesDecryptedCount = await DecryptObjectAsync(
@@ -121,10 +119,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             Stream result = EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
             input.Dispose();
-            stopwatch.Stop();
-            EncryptionDiagnosticsContent operationDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds, propertiesDecryptedCount);
 
-            return (result, operationDiagnostics);
+            operationDiagnostics?.End();
+            operationDiagnostics?.AddMember(Constants.DiagnosticsPropertiesCount, propertiesDecryptedCount);
+
+            return result;
         }
 
         public static async Task<JObject> DecryptAsync(

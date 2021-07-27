@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -607,9 +606,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 obsoleteEncryptionSettings: null,
                 cancellationToken: cancellationToken);
 
-            (List<PatchOperation> encryptedPatchOperations, EncryptionDiagnosticsContent encryptOperationDiagnosticsContent) = await this.PatchItemHelperAsync(
+            EncryptionDiagnosticsContent encryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            List<PatchOperation> encryptedPatchOperations = await this.PatchItemHelperAsync(
                 patchOperations,
                 encryptionSettings,
+                encryptOperationDiagnosticsContent,
                 cancellationToken);
 
             ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
@@ -619,24 +620,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 requestOptions,
                 cancellationToken);
 
-            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent;
-            (responseMessage.Content, decryptOperationDiagnosticsContent) = await EncryptionProcessor.DecryptAsync(
+            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
+                decryptOperationDiagnosticsContent,
                 cancellationToken);
 
             this.AddEncryptionDiagnostics(responseMessage, encryptOperationDiagnosticsContent, decryptOperationDiagnosticsContent);
             return responseMessage;
         }
 
-        private async Task<(List<PatchOperation>, EncryptionDiagnosticsContent)> PatchItemHelperAsync(
+        private async Task<List<PatchOperation>> PatchItemHelperAsync(
             IReadOnlyList<PatchOperation> patchOperations,
             EncryptionSettings encryptionSettings,
+            EncryptionDiagnosticsContent operationDiagnostics,
             CancellationToken cancellationToken = default)
         {
             List<PatchOperation> encryptedPatchOperations = new List<PatchOperation>(patchOperations.Count);
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            DateTime startTime = DateTime.UtcNow;
+            operationDiagnostics.Begin();
             int propertiesEncryptedCount = 0;
 
             foreach (PatchOperation patchOperation in patchOperations)
@@ -698,9 +700,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 }
             }
 
-            stopwatch.Stop();
-            EncryptionDiagnosticsContent operationDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds, propertiesEncryptedCount);
-            return (encryptedPatchOperations, operationDiagnostics);
+            operationDiagnostics?.End();
+            operationDiagnostics?.AddMember(Constants.DiagnosticsPropertiesCount, propertiesEncryptedCount);
+            return encryptedPatchOperations;
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
@@ -942,10 +944,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
             }
 
-            EncryptionDiagnosticsContent encryptOperationDiagnosticsContent;
-            (streamPayload, encryptOperationDiagnosticsContent) = await EncryptionProcessor.EncryptAsync(
+            EncryptionDiagnosticsContent encryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
+                encryptOperationDiagnosticsContent,
                 cancellationToken);
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
@@ -994,10 +997,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                        isRetry: true);
             }
 
-            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent;
-            (responseMessage.Content, decryptOperationDiagnosticsContent) = await EncryptionProcessor.DecryptAsync(
+            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
+                decryptOperationDiagnosticsContent,
                 cancellationToken);
 
             this.AddEncryptionDiagnostics(responseMessage, encryptOperationDiagnosticsContent, decryptOperationDiagnosticsContent);
@@ -1054,10 +1058,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     isRetry: true);
             }
 
-            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent;
-            (responseMessage.Content, decryptOperationDiagnosticsContent) = await EncryptionProcessor.DecryptAsync(
+            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
+                decryptOperationDiagnosticsContent,
                 cancellationToken);
 
             this.AddEncryptionDiagnostics(responseMessage, decryptContent: decryptOperationDiagnosticsContent);
@@ -1088,10 +1093,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
             }
 
-            EncryptionDiagnosticsContent encryptOperationDiagnosticsContent;
-            (streamPayload, encryptOperationDiagnosticsContent) = await EncryptionProcessor.EncryptAsync(
+            EncryptionDiagnosticsContent encryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
+                encryptOperationDiagnosticsContent,
                 cancellationToken);
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
@@ -1130,10 +1136,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     isRetry: true);
             }
 
-            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent;
-            (responseMessage.Content, decryptOperationDiagnosticsContent) = await EncryptionProcessor.DecryptAsync(
+            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
+                decryptOperationDiagnosticsContent,
                 cancellationToken);
 
             this.AddEncryptionDiagnostics(responseMessage, encryptOperationDiagnosticsContent, decryptOperationDiagnosticsContent);
@@ -1162,10 +1169,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     cancellationToken);
             }
 
-            EncryptionDiagnosticsContent encryptOperationDiagnosticsContent;
-            (streamPayload, encryptOperationDiagnosticsContent) = await EncryptionProcessor.EncryptAsync(
+            EncryptionDiagnosticsContent encryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 encryptionSettings,
+                encryptOperationDiagnosticsContent,
                 cancellationToken);
 
             ItemRequestOptions clonedRequestOptions = requestOptions;
@@ -1202,10 +1210,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     isRetry: true);
             }
 
-            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent;
-            (responseMessage.Content, decryptOperationDiagnosticsContent) = await EncryptionProcessor.DecryptAsync(
+            EncryptionDiagnosticsContent decryptOperationDiagnosticsContent = new EncryptionDiagnosticsContent();
+            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
                 responseMessage.Content,
                 encryptionSettings,
+                decryptOperationDiagnosticsContent,
                 cancellationToken);
 
             this.AddEncryptionDiagnostics(responseMessage, encryptOperationDiagnosticsContent, decryptOperationDiagnosticsContent);
@@ -1227,10 +1236,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
            EncryptionSettings encryptionSettings,
            CancellationToken cancellationToken)
         {
-            EncryptionDiagnosticsContent diagnosticsContent;
-            (streamPayload, diagnosticsContent) = await EncryptionProcessor.DecryptAsync(
+            EncryptionDiagnosticsContent diagnosticsContent = new EncryptionDiagnosticsContent();
+            streamPayload = await EncryptionProcessor.DecryptAsync(
                 streamPayload,
                 encryptionSettings,
+                diagnosticsContent,
                 cancellationToken);
 
             // get the latest encryption settings.
@@ -1343,17 +1353,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     isRetry: true);
             }
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            DateTime startTime = DateTime.UtcNow;
+            EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent();
+            decryptDiagnostics.Begin();
 
             Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
                 responseMessage.Content,
                 encryptionSettings,
                 cancellationToken);
 
-            stopwatch.Stop();
-            EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds);
-
+            decryptDiagnostics.End();
             this.AddEncryptionDiagnostics(responseMessage, decryptContent: decryptDiagnostics);
             return new DecryptedResponseMessage(responseMessage, decryptedContent);
         }

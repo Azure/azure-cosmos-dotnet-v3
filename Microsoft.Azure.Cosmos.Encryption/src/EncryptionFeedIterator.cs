@@ -5,12 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionFeedIterator : FeedIterator
     {
@@ -55,16 +53,15 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
             {
-                Stopwatch stopwatch = Stopwatch.StartNew();
-                DateTime startTime = DateTime.UtcNow;
+                EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent();
+                decryptDiagnostics.Begin();
 
                 Stream decryptedContent = await this.encryptionContainer.DeserializeAndDecryptResponseAsync(
                     responseMessage.Content,
                     encryptionSettings,
                     cancellationToken);
 
-                stopwatch.Stop();
-                EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds);
+                decryptDiagnostics.End();
                 EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                     responseMessage.Diagnostics,
                     decryptContent: decryptDiagnostics);

@@ -6,14 +6,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Newtonsoft.Json.Linq;
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Avoid problematic synchronous waits", Justification = "To be fixed, tracked in issue #1575")]
     internal sealed class EncryptionTransactionalBatch : TransactionalBatch
@@ -53,9 +51,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
+                streamPayload = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
+                    operationDiagnostics: null,
                     cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
@@ -115,10 +114,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
+                streamPayload = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
-                    default)
+                    operationDiagnostics: null,
+                    cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
                     .GetResult();
@@ -153,9 +153,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             if (encryptionSettings.PropertiesToEncrypt.Any())
             {
-                (streamPayload, _) = EncryptionProcessor.EncryptAsync(
+                streamPayload = EncryptionProcessor.EncryptAsync(
                     streamPayload,
                     encryptionSettings,
+                    operationDiagnostics: null,
                     cancellationToken: default)
                     .ConfigureAwait(false)
                     .GetAwaiter()
@@ -243,8 +244,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
 
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            DateTime startTime = DateTime.UtcNow;
+            EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent();
+            decryptDiagnostics.Begin();
             int propertiesDecryptedCount = 0;
 
             for (int index = 0; index < response.Count; index++)
@@ -253,9 +254,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
                 if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
-                    (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
+                    Stream decryptedStream = await EncryptionProcessor.DecryptAsync(
                         result.ResourceStream,
                         encryptionSettings,
+                        operationDiagnostics: null,
                         cancellationToken);
 
                     result = new EncryptionTransactionalBatchOperationResult(response[index], decryptedStream);
@@ -265,8 +267,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 decryptedTransactionalBatchOperationResults.Add(result);
             }
 
-            stopwatch.Stop();
-            EncryptionDiagnosticsContent decryptDiagnostics = new EncryptionDiagnosticsContent(startTime, stopwatch.ElapsedMilliseconds, propertiesDecryptedCount);
+            decryptDiagnostics.End();
+            decryptDiagnostics.AddMember(Constants.DiagnosticsPropertiesCount, propertiesDecryptedCount);
             EncryptionCosmosDiagnostics encryptionDiagnostics = new EncryptionCosmosDiagnostics(
                 response.Diagnostics,
                 decryptContent: decryptDiagnostics);
