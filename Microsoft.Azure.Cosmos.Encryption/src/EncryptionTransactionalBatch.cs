@@ -267,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("PatchItem"))
             {
-                List<PatchOperation> encryptedPatchOperations = this.encryptionContainer.PatchItemHelperAsync(
+                List<PatchOperation> encryptedPatchOperations = this.encryptionContainer.EncryptPatchOperationsAsync(
                     patchOperations,
                     encryptionSettings,
                     cancellationToken: default)
