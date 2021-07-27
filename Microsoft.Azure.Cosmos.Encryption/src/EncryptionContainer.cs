@@ -815,7 +815,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         obsoleteEncryptionSettings: null,
                         cancellationToken: cancellationToken);
 
-                    // Fixme: Decryption can fail if the encryption policy has changed, this can happen if the container has been recreated with same id and different policy.
                     Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
                         changes,
                         encryptionSettings,
@@ -842,7 +841,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                         obsoleteEncryptionSettings: null,
                         cancellationToken: cancellationToken);
 
-                    // Fixme: Decryption can fail if the encryption policy has changed, this can happen if the container has been recreated with same id and different policy.
                     Stream decryptedChanges = await this.DeserializeAndDecryptResponseAsync(
                         changes,
                         encryptionSettings,
