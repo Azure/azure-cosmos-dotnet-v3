@@ -24,30 +24,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     [TestClass]
     public class FullPipelineTests
     {
-        private static readonly Dictionary<string, object> DefaultQueryEngineConfiguration = new Dictionary<string, object>()
-        {
-            {"maxSqlQueryInputLength", 30720},
-            {"maxJoinsPerSqlQuery", 5},
-            {"maxLogicalAndPerSqlQuery", 200},
-            {"maxLogicalOrPerSqlQuery", 200},
-            {"maxUdfRefPerSqlQuery", 2},
-            {"maxInExpressionItemsCount", 8000},
-            {"queryMaxInMemorySortDocumentCount", 500},
-            {"maxQueryRequestTimeoutFraction", 0.90},
-            {"sqlAllowNonFiniteNumbers", false},
-            {"sqlAllowAggregateFunctions", true},
-            {"sqlAllowSubQuery", true},
-            {"sqlAllowScalarSubQuery", false},
-            {"allowNewKeywords", true},
-            {"sqlAllowLike", false},
-            {"sqlAllowGroupByClause", false},
-            {"maxSpatialQueryCells", 12},
-            {"spatialMaxGeometryPointCount", 256},
-            {"sqlDisableQueryILOptimization", false},
-            {"sqlDisableFilterPlanOptimization", false}
-        };
-
-        private static readonly QueryPartitionProvider queryPartitionProvider = new QueryPartitionProvider(DefaultQueryEngineConfiguration);
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
             Paths = new Collection<string>()
@@ -57,6 +33,46 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Kind = PartitionKind.Hash,
             Version = PartitionKeyDefinitionVersion.V2,
         };
+
+        [TestMethod]
+        public async Task TestMerge()
+        {
+            List<CosmosObject> documents = Enumerable
+                .Range(0, 100)
+                .Select(x => CosmosObject.Parse($"{{\"pk\" : {x} }}"))
+                .ToList();
+
+            MergeTestUtil mergeTest = new MergeTestUtil();
+            mergeTest.DocumentContainer = await CreateDocumentContainerAsync(
+                documents: documents,
+                numPartitions: 2,
+                failureConfigs: new FlakyDocumentContainer.FailureConfigs(
+                    inject429s: false,
+                    injectEmptyPages: false,
+                    shouldReturnFailure: mergeTest.ShouldReturnFailure));
+
+            string query = "SELECT * FROM c ORDER BY c._ts";
+            int pageSize = 10;
+            IQueryPipelineStage pipelineStage = CreatePipeline(mergeTest.DocumentContainer, query, pageSize);
+
+            List<CosmosElement> elements = new List<CosmosElement>();
+            int iteration = 0;
+            while (await pipelineStage.MoveNextAsync())
+            {
+                TryCatch<QueryPage> tryGetQueryPage = pipelineStage.Current;
+                tryGetQueryPage.ThrowIfFailed();
+
+                elements.AddRange(tryGetQueryPage.Result.Documents);
+                ++iteration;
+
+                if (iteration == 1)
+                {
+                    mergeTest.ShouldMerge = MergeTestUtil.TriState.Ready;
+                }
+            }
+
+            Assert.AreEqual(expected: documents.Count, actual: elements.Count);
+        }
 
         [TestMethod]
         public async Task SelectStar()
@@ -231,9 +247,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static async Task<List<CosmosElement>> ExecuteQueryAsync(
             string query,
             IReadOnlyList<CosmosObject> documents,
+            IDocumentContainer documentContainer = null,
             int pageSize = 10)
         {
-            IDocumentContainer documentContainer = await CreateDocumentContainerAsync(documents);
+            if (documentContainer == null)
+            {
+                documentContainer = await CreateDocumentContainerAsync(documents);
+            }
 
             List<CosmosElement> resultsFromDrainWithoutState = await DrainWithoutStateAsync(query, documentContainer, pageSize);
             List<CosmosElement> resultsFromDrainWithState = await DrainWithStateAsync(query, documentContainer, pageSize);
@@ -303,6 +323,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(
             IReadOnlyList<CosmosObject> documents,
+            int numPartitions = 3,
             FlakyDocumentContainer.FailureConfigs failureConfigs = null)
         {
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
@@ -313,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < numPartitions; i++)
             {
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
                     trace: NoOpTrace.Singleton,
@@ -352,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 documentContainer.GetFeedRangesAsync(NoOpTrace.Singleton, cancellationToken: default).Result,
                 partitionKey: null,
                 GetQueryPlan(query),
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: pageSize),
                 maxConcurrency: 10,
                 requestCancellationToken: default,
                 requestContinuationToken: state);
@@ -364,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static QueryInfo GetQueryPlan(string query)
         {
-            TryCatch<PartitionedQueryExecutionInfoInternal> info = queryPartitionProvider.TryGetPartitionedQueryExecutionInfoInternal(
+            TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 new SqlQuerySpec(query),
                 partitionKeyDefinition,
                 requireFormattableOrderByQuery: true,
@@ -375,6 +396,40 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             info.ThrowIfFailed();
             return info.Result.QueryInfo;
+        }
+
+        private class MergeTestUtil
+        {
+            public enum TriState { NotReady, Ready, Done };
+
+            public IDocumentContainer DocumentContainer { get; set; }
+
+            public TriState ShouldMerge { get; set; }
+
+            public async Task<Exception> ShouldReturnFailure()
+            {
+                if (this.ShouldMerge == TriState.Ready)
+                {
+                    await this.DocumentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
+                    List<FeedRangeEpk> ranges = await this.DocumentContainer.GetFeedRangesAsync(
+                        trace: NoOpTrace.Singleton,
+                        cancellationToken: default);
+
+                    await this.DocumentContainer.MergeAsync(ranges[0], ranges[1], default);
+                    this.ShouldMerge = TriState.Done;
+
+                    return new CosmosException(
+                        message: "PKRange was split/merged",
+                        statusCode: System.Net.HttpStatusCode.Gone,
+                        subStatusCode: (int)Documents.SubStatusCodes.PartitionKeyRangeGone,
+                        activityId: "BC0CCDA5-D378-4922-B8B0-D51D745B9139",
+                        requestCharge: 0.0);
+                }
+                else
+                {
+                    return null;
+                }
+            }
         }
     }
 }

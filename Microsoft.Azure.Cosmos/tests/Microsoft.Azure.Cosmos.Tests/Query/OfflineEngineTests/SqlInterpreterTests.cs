@@ -644,6 +644,38 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[] { array, obj }, orderByUndefinedArrayObject, undefinedArrayObject);
 
+            // Order by Object
+            CosmosElement objA = CosmosElement.Parse(@"{""id"": {""a"": ""a""}, ""_rid"": ""iDdHAJ74DSoEAAAAAAAAAA=="" }");
+            CosmosElement objB = CosmosElement.Parse(@"{""id"": {""a"": ""b""}, ""_rid"": ""iDdHAJ74DSoFAAAAAAAAAA==""}");
+            CosmosElement objC = CosmosElement.Parse(@"{""id"": {""a"": ""c""}, ""_rid"": ""iDdHAJ74DSoGAAAAAAAAAA==""}");
+            CosmosElement[] objectData = new CosmosElement[]
+            {
+                obj,
+                objA,
+                objB,
+                objC,
+            };
+
+            SqlQuery orderByObject = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+                SqlOrderByItem.Create(cDotId, isDescending: false)));
+            AssertEvaluation(new CosmosElement[] { objA, obj, objB, objC }, orderByObject, objectData);
+
+            // Order by Array
+            CosmosElement arrayA = CosmosElement.Parse(@"{""id"": [""a""], ""_rid"": ""iDdHAJ74DSoEAAAAAAAAAA=="" }");
+            CosmosElement arrayAB = CosmosElement.Parse(@"{""id"": [""a"", ""b""], ""_rid"": ""iDdHAJ74DSoFAAAAAAAAAA==""}");
+            CosmosElement arrayABC = CosmosElement.Parse(@"{""id"": [""a"", ""b"", ""c""], ""_rid"": ""iDdHAJ74DSoGAAAAAAAAAA==""}");
+            CosmosElement[] arrayData = new CosmosElement[]
+            {
+                array,
+                arrayA,
+                arrayAB,
+                arrayABC,
+            };
+
+            SqlQuery orderByArray = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+                SqlOrderByItem.Create(cDotId, isDescending: false)));
+            AssertEvaluation(new CosmosElement[] { arrayA, array, arrayABC, arrayAB }, orderByArray, arrayData);
+
             // Rid Tie Break Within a Partition
             CosmosObject rid1 = CosmosObject.Parse(@"{""id"": ""A"", ""_rid"": ""iDdHAJ74DSoBAAAAAAAAAA=="" }");
             CosmosObject rid2 = CosmosObject.Parse(@"{""id"": ""A"", ""_rid"": ""iDdHAJ74DSoCAAAAAAAAAA==""}");

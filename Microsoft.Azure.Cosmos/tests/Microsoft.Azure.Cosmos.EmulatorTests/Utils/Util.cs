@@ -120,10 +120,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            if (requestChargeHelper != null)
-            {
-                requestChargeHelper.CompareRequestCharge(testName);
-            }
+            requestChargeHelper?.CompareRequestCharge(testName);
         }
 
         /// <summary>
@@ -162,10 +159,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 client.Dispose();
             }
 
-            if (requestChargeHelper != null)
-            {
-                requestChargeHelper.CompareRequestCharge(testName);
-            }
+            requestChargeHelper?.CompareRequestCharge(testName);
         }
 
         private static void RunTestForClient(

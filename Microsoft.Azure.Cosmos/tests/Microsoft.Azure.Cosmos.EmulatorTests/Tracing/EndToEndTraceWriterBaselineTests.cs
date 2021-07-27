@@ -26,22 +26,17 @@
         public static Container container;
 
         [ClassInitialize()]
-        public static void ClassInit(TestContext context)
+        public static async Task ClassInitAsync(TestContext context)
         {
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(useGateway: false);
-            database = client
-                .CreateDatabaseAsync(
+            EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
-                    cancellationToken: default)
-                .Result
-                .Database;
-            container = database
-                .CreateContainerAsync(
+                    cancellationToken: default);
+
+            EndToEndTraceWriterBaselineTests.container = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/id",
-                    throughput: 20000)
-                .Result
-                .Container;
+                    throughput: 20000);
 
             for (int i = 0; i < 100; i++)
             {
@@ -51,14 +46,17 @@
                         { "id", CosmosString.Create(i.ToString()) }
                     });
 
-                _ = container.CreateItemAsync(JToken.Parse(cosmosObject.ToString())).Result;
+                await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
             }
         }
 
         [ClassCleanup()]
-        public static void ClassCleanup()
+        public static async Task ClassCleanupAsync()
         {
-            _ = database.DeleteAsync().Result;
+            if(database != null)
+            {
+                await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
+            }
         }
 
         [TestMethod]
@@ -216,16 +214,14 @@
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
@@ -280,16 +276,14 @@
 
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);

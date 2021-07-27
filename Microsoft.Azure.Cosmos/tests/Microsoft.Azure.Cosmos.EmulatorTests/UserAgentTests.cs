@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using (CosmosClient client = TestCommon.CreateCosmosClient(clientOptions))
             {
-                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
+                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy(client.ClientId).UserAgentContainer;
 
                 string userAgentString = userAgentContainer.UserAgent;
                 Assert.IsTrue(userAgentString.Contains(suffix));
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ValidateUniqueClientIdHeader()
         {
-            EnvironmentInformation.ResetCounter();
+            CosmosClient.numberOfClientsCreated = 0;
             using (CosmosClient client = TestCommon.CreateCosmosClient())
             {
                 string firstClientId = this.GetClientIdFromCosmosClient(client);
@@ -83,17 +83,169 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public void VerifyUserAgentContent()
         {
             EnvironmentInformation envInfo = new EnvironmentInformation();
-            Cosmos.UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer();
+            Cosmos.UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer(clientId: 0);
             string serialization = userAgentContainer.UserAgent;
 
             Assert.IsTrue(serialization.Contains(envInfo.ProcessArchitecture));
             string[] values = serialization.Split('|');
             Assert.AreEqual($"cosmos-netstandard-sdk/{envInfo.ClientVersion}", values[0]);
             Assert.AreEqual(envInfo.DirectVersion, values[1]);
-            Assert.AreEqual(envInfo.ClientId, values[2]);
+            Assert.AreEqual("0", values[2]);
             Assert.AreEqual(envInfo.ProcessArchitecture, values[3]);
             Assert.AreEqual(envInfo.OperatingSystem, values[4]);
             Assert.AreEqual(envInfo.RuntimeFramework, values[5]);
+        }
+
+        [TestMethod]
+        public async Task VerifyUserAgentWithRegionConfiguration()
+        {
+            string databaseName = Guid.NewGuid().ToString();
+            string containerName = Guid.NewGuid().ToString();
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+
+                // N - None. The user did not configure anything
+                string userAgentContentToValidate = "|N|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+                {
+                    LimitToEndpoint = true
+                };
+                // D - Disabled endpoint discovery, N - None. The user did not configure anything
+                string userAgentContentToValidate = "|DN|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+                {
+                    ApplicationRegion = Regions.EastUS
+                };
+
+                // S - Single application region is set
+                string userAgentContentToValidate = "|S|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+                {
+                    LimitToEndpoint = false,
+                    ApplicationRegion = null,
+                    ApplicationPreferredRegions = new List<string>()
+                    {
+                        Regions.EastUS,
+                        Regions.WestUS
+                    }
+                };
+
+                // L - List of region is set
+                string userAgentContentToValidate = "|L|";
+                await this.ValidateUserAgentStringAsync(
+                    cosmosClientOptions,
+                    userAgentContentToValidate,
+                    databaseName,
+                    containerName);
+            }
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient())
+            {
+                await client.GetDatabase(databaseName).DeleteStreamAsync();
+            }
+        }
+
+        [TestMethod]
+        public void VerifyDefaultUserAgentContainsRegionConfig()
+        {
+            UserAgentContainer userAgentContainer = new Cosmos.UserAgentContainer(clientId: 0);
+            Assert.IsTrue(userAgentContainer.UserAgent.Contains("|NS|"));
+        }
+
+        [TestMethod]
+        public void VerifyClientIDForUserAgentString()
+        {
+            CosmosClient.numberOfClientsCreated = 0; // reset
+            const int max = 10;
+            for (int i = 1; i < max + 5; i++)
+            {
+                using (CosmosClient client = TestCommon.CreateCosmosClient())
+                {
+                    string userAgentString = client.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
+                    if (i <= max)
+                    {
+                        Assert.AreEqual(userAgentString.Split('|')[2], i.ToString());
+                    }
+                    else
+                    {
+                        Assert.AreEqual(userAgentString.Split('|')[2], max.ToString());
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public async Task VerifyClientIDIncrements_Concurrent()
+        {
+            CosmosClient.numberOfClientsCreated = 0; // reset
+            const int max = 10;
+            List<int> expected = new List<int>();
+            for (int i = 1; i < max + 5; i++)
+            {
+                expected.Add(i > max ? max : i);
+            }
+
+            List<Task<CosmosClient>> tasks = new List<Task<CosmosClient>>();
+            for (int i = 1; i < max + 5; i++)
+            {
+                tasks.Add(Task.Factory.StartNew(() => TestCommon.CreateCosmosClient()));
+            }
+
+            await Task.WhenAll(tasks);
+            List<int> actual = tasks.Select(r => 
+                        int.Parse(r.Result.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent.Split('|')[2])).ToList();
+            actual.Sort();
+            CollectionAssert.AreEqual(expected, actual);
+        }
+
+        private async Task ValidateUserAgentStringAsync(
+            CosmosClientOptions cosmosClientOptions,
+            string userAgentContentToValidate,
+            string databaseName,
+            string containerName)
+        {
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                RequestCallBack = (request, cancellationToken) =>
+                {
+                    string userAgent = request.Headers.UserAgent.ToString();
+                    Assert.IsTrue(userAgent.Contains(userAgentContentToValidate));
+                    return null;
+                }
+            };
+
+            cosmosClientOptions.HttpClientFactory = () => new HttpClient(httpClientHandlerHelper);
+
+            using (CosmosClient client = TestCommon.CreateCosmosClient(cosmosClientOptions))
+            {
+                Cosmos.Database db = await client.CreateDatabaseIfNotExistsAsync(databaseName);
+                await db.CreateContainerIfNotExistsAsync(containerName, "/pk");
+            }
         }
 
         [TestMethod]
@@ -121,7 +273,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using (CosmosClient client = TestCommon.CreateCosmosClient(cosmosClientOptions))
             {
-                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
+                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy(client.ClientId).UserAgentContainer;
 
                 string userAgentString = userAgentContainer.UserAgent;
                 if (setApplicationName)
@@ -152,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using (CosmosClient client = TestCommon.CreateCosmosClient(cosmosClientOptions))
             {
-                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
+                Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy(client.ClientId).UserAgentContainer;
 
                 string userAgentString = userAgentContainer.UserAgent;
                 if (setApplicationName)
@@ -170,25 +322,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private sealed class MacUserAgentStringClientOptions : CosmosClientOptions
         {
-            internal override ConnectionPolicy GetConnectionPolicy()
+            internal override ConnectionPolicy GetConnectionPolicy(int clientId)
             {
-                ConnectionPolicy connectionPolicy = base.GetConnectionPolicy();
-                MacOsUserAgentContainer userAgent = new MacOsUserAgentContainer();
-                
-                this.SetUserAgentFeatures(userAgent);
+                ConnectionPolicy connectionPolicy = base.GetConnectionPolicy(clientId);
+                MacOsUserAgentContainer userAgent = this.CreateUserAgentContainer(clientId);
 
                 connectionPolicy.UserAgentContainer = userAgent;
 
                 return connectionPolicy;
             }
+
+            internal MacOsUserAgentContainer CreateUserAgentContainer(int clientId)
+            {
+                CosmosClientOptionsFeatures features = CosmosClientOptionsFeatures.NoFeatures;
+                if (this.AllowBulkExecution)
+                {
+                    features |= CosmosClientOptionsFeatures.AllowBulkExecution;
+                }
+
+                if (this.HttpClientFactory != null)
+                {
+                    features |= CosmosClientOptionsFeatures.HttpClientFactory;
+                }
+
+                string featureString = null;
+                if (features != CosmosClientOptionsFeatures.NoFeatures)
+                {
+                    featureString = Convert.ToString((int)features, 2).PadLeft(8, '0');
+                }
+
+                return new MacOsUserAgentContainer(
+                            clientId: clientId,
+                            features: featureString,
+                            suffix: this.ApplicationName);
+            }
         }
 
         private sealed class MacOsUserAgentContainer : Cosmos.UserAgentContainer
         {
+            public MacOsUserAgentContainer(int clientId,
+                                            string features = null,
+                                            string regionConfiguration = "N",
+                                            string suffix = null)
+                                               : base(clientId,
+                                                     features,
+                                                     regionConfiguration,
+                                                     suffix)
+            {
+            }
+
             protected override void GetEnvironmentInformation(
                 out string clientVersion,
                 out string directVersion,
-                out string clientId,
                 out string processArchitecture,
                 out string operatingSystem,
                 out string runtimeFramework)
@@ -199,7 +384,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 base.GetEnvironmentInformation(
                     clientVersion: out clientVersion,
                     directVersion: out directVersion,
-                    clientId: out clientId,
                     processArchitecture: out processArchitecture,
                     operatingSystem: out _,
                     runtimeFramework: out runtimeFramework);
@@ -218,10 +402,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private string GetClientIdFromCosmosClient(CosmosClient client)
         {
-            Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy().UserAgentContainer;
+            Cosmos.UserAgentContainer userAgentContainer = client.ClientOptions.GetConnectionPolicy(client.ClientId).UserAgentContainer;
             string userAgentString = userAgentContainer.UserAgent;
             string clientId = userAgentString.Split('|')[2];
-            Assert.AreEqual(2, clientId.Length);
             return clientId;
         }
     }

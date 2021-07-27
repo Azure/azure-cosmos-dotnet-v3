@@ -1346,17 +1346,23 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal async Task<DocumentServiceResponse> ProcessRequestAsync(
+        internal Task<DocumentServiceResponse> ProcessRequestAsync(
             DocumentServiceRequest request,
             IDocumentClientRetryPolicy retryPolicyInstance,
             CancellationToken cancellationToken)
         {
-            await this.EnsureValidClientAsync(NoOpTrace.Singleton);
+            return this.ProcessRequestAsync(request, retryPolicyInstance, NoOpTrace.Singleton, cancellationToken);
+        }
 
-            if (retryPolicyInstance != null)
-            {
-                retryPolicyInstance.OnBeforeSendRequest(request);
-            }
+        internal async Task<DocumentServiceResponse> ProcessRequestAsync(
+            DocumentServiceRequest request,
+            IDocumentClientRetryPolicy retryPolicyInstance,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            await this.EnsureValidClientAsync(trace);
+
+            retryPolicyInstance?.OnBeforeSendRequest(request);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -1728,7 +1734,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<Document>> CreateDocumentInlineAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options, bool disableAutomaticIdGeneration, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-            if (options == null || options.PartitionKey == null)
+            if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
                     await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
@@ -5480,17 +5486,14 @@ namespace Microsoft.Azure.Cosmos
                         headers))
                     {
                         request.Headers[HttpConstants.HttpHeaders.XDate] = DateTime.UtcNow.ToString("r");
-                        if (options == null || options.PartitionKeyRangeId == null)
+                        if (options?.PartitionKeyRangeId == null)
                         {
                             await this.AddPartitionKeyInformationAsync(
                                 request,
                                 options);
                         }
 
-                        if (retryPolicyInstance != null)
-                        {
-                            retryPolicyInstance.OnBeforeSendRequest(request);
-                        }
+                        retryPolicyInstance?.OnBeforeSendRequest(request);
 
                         request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
                         return new StoredProcedureResponse<TValue>(await this.ExecuteProcedureAsync(
@@ -5683,7 +5686,7 @@ namespace Microsoft.Azure.Cosmos
         private async Task<ResourceResponse<Document>> UpsertDocumentInlineAsync(string documentsFeedOrDatabaseLink, object document, Documents.Client.RequestOptions options, bool disableAutomaticIdGeneration, CancellationToken cancellationToken)
         {
             IDocumentClientRetryPolicy requestRetryPolicy = this.ResetSessionTokenRetryPolicy.GetRequestPolicy();
-            if (options == null || options.PartitionKey == null)
+            if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
                     await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
@@ -6646,11 +6649,11 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyDefinition partitionKeyDefinition = collection.PartitionKey;
 
             PartitionKeyInternal partitionKey;
-            if (options != null && options.PartitionKey != null && options.PartitionKey.Equals(Documents.PartitionKey.None))
+            if (options?.PartitionKey != null && options.PartitionKey.Equals(Documents.PartitionKey.None))
             {
                 partitionKey = collection.GetNoneValue();
             }
-            else if (options != null && options.PartitionKey != null)
+            else if (options?.PartitionKey != null)
             {
                 partitionKey = options.PartitionKey.InternalKey;
             }
@@ -6671,7 +6674,7 @@ namespace Microsoft.Azure.Cosmos
             // For backward compatibility, if collection doesn't have partition key defined, we assume all documents
             // have empty value for it and user doesn't need to specify it explicitly.
             PartitionKeyInternal partitionKey;
-            if (options == null || options.PartitionKey == null)
+            if (options?.PartitionKey == null)
             {
                 if (partitionKeyDefinition == null || partitionKeyDefinition.Paths.Count == 0)
                 {

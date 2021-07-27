@@ -640,6 +640,49 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task PartitionKeyRangeGoneTracePlumbingTest()
+        {
+            ITrace trace = Trace.GetRootTrace("TestTrace");
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
+            partitionKeyDefinition.Paths.Add("pk");
+
+            const string collectionRid = "DvZRAOvLgDM=";
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId(collectionRid);
+            containerProperties.Id = "TestContainer";
+            containerProperties.PartitionKey = partitionKeyDefinition;
+
+
+            Mock<Common.CollectionCache> collectionCache = new Mock<Common.CollectionCache>(MockBehavior.Strict);
+            collectionCache.Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), default, trace))
+                .ReturnsAsync(containerProperties);
+
+            CollectionRoutingMap collectionRoutingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(new List<Tuple<PartitionKeyRange, ServiceIdentity>>(), collectionRid);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                MockBehavior.Strict,
+                new Mock<ICosmosAuthorizationTokenProvider>().Object,
+                new Mock<IStoreModel>().Object,
+                collectionCache.Object);
+            partitionKeyRangeCache.Setup(c => c.TryLookupAsync(collectionRid, null, It.IsAny<DocumentServiceRequest>(), default, trace))
+                .ReturnsAsync(collectionRoutingMap);
+
+            string collectionLink = "dbs/DvZRAA==/colls/DvZRAOvLgDM=/";
+            PartitionKeyRangeGoneRetryPolicy policy = new PartitionKeyRangeGoneRetryPolicy(
+                collectionCache.Object,
+                partitionKeyRangeCache.Object,
+                collectionLink,
+                null,
+                trace);
+
+            ShouldRetryResult shouldRetryResult = await policy.ShouldRetryAsync(
+                new DocumentClientException("partition gone", HttpStatusCode.Gone, SubStatusCodes.PartitionKeyRangeGone),
+                default);
+
+            Assert.IsNotNull(shouldRetryResult);
+            Assert.IsTrue(shouldRetryResult.ShouldRetry);
+            Assert.AreEqual(0, shouldRetryResult.BackoffTime.Ticks);
+        }
+
+        [TestMethod]
         public async Task InvalidPartitionRetryPolicyWithNextRetryPolicy()
         {
             using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();

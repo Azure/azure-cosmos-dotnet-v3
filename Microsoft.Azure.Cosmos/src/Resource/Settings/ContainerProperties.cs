@@ -690,6 +690,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
             }
+
+            if (this.ClientEncryptionPolicy != null)
+            {
+                this.ClientEncryptionPolicy.ValidatePartitionKeyPathsAreNotEncrypted(this.PartitionKeyPathTokens);
+            }
         }
     }
 }

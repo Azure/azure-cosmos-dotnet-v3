@@ -81,7 +81,10 @@ namespace Microsoft.Azure.Cosmos
         public async Task<AccountProperties> InitializeReaderAsync()
         {
             AccountProperties databaseAccount = await GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                this.serviceEndpoint, this.connectionPolicy.PreferredLocations, this.GetDatabaseAccountAsync);
+                defaultEndpoint: this.serviceEndpoint,
+                locations: this.connectionPolicy.PreferredLocations,
+                getDatabaseAccountFn: this.GetDatabaseAccountAsync,
+                cancellationToken: default);
 
             return databaseAccount;
         }

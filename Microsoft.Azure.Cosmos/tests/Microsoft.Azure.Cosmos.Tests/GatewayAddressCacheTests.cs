@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// Tests for <see cref="GatewayAddressCache"/>.
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
     public class GatewayAddressCacheTests
     {
         private const string DatabaseAccountApiEndpoint = "https://endpoint.azure.com";
-        private Mock<IAuthorizationTokenProvider> mockTokenProvider;
+        private Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider;
         private Mock<IServiceConfigurationReader> mockServiceConfigReader;
         private int targetReplicaSetSize = 4;
         private PartitionKeyRangeIdentity testPartitionKeyRangeIdentity;
@@ -34,9 +35,9 @@ namespace Microsoft.Azure.Cosmos
 
         public GatewayAddressCacheTests()
         {
-            this.mockTokenProvider = new Mock<IAuthorizationTokenProvider>();
-            this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>()))
-                .Returns(new ValueTask<(string, string)>(("token!", null)));
+            this.mockTokenProvider = new Mock<ICosmosAuthorizationTokenProvider>();
+            this.mockTokenProvider.Setup(foo => foo.GetUserAuthorizationTokenAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Documents.Collections.INameValueCollection>(), It.IsAny<AuthorizationTokenType>(), It.IsAny<ITrace>()))
+                .Returns(new ValueTask<string>("token!"));
             this.mockServiceConfigReader = new Mock<IServiceConfigurationReader>();
             this.mockServiceConfigReader.Setup(foo => foo.SystemReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
             this.mockServiceConfigReader.Setup(foo => foo.UserReplicationPolicy).Returns(new ReplicationPolicy() { MaxReplicaSetSize = this.targetReplicaSetSize });
@@ -129,7 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 SynchronizationContext.SetSynchronizationContext(syncContext);
                 syncContext.Post(_ =>
                 {
-                    UserAgentContainer container = new UserAgentContainer();
+                    UserAgentContainer container = new UserAgentContainer(clientId: 0);
                     FakeMessageHandler messageHandler = new FakeMessageHandler();
 
                     AccountProperties databaseAccount = new AccountProperties();

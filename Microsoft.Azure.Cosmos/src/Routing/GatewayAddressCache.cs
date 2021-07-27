@@ -41,10 +41,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly Protocol protocol;
         private readonly string protocolFilter;
-        private readonly IAuthorizationTokenProvider tokenProvider;
+        private readonly ICosmosAuthorizationTokenProvider tokenProvider;
         private readonly bool enableTcpConnectionEndpointRediscovery;
 
-        private CosmosHttpClient httpClient;
+        private readonly CosmosHttpClient httpClient;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public GatewayAddressCache(
             Uri serviceEndpoint,
             Protocol protocol,
-            IAuthorizationTokenProvider tokenProvider,
+            ICosmosAuthorizationTokenProvider tokenProvider,
             IServiceConfigurationReader serviceConfigReader,
             CosmosHttpClient httpClient,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
@@ -432,29 +432,33 @@ namespace Microsoft.Azure.Cosmos.Routing
             string resourceTypeToSign = PathsHelper.GetResourcePath(resourceType);
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
-            (string token, string _) = await this.tokenProvider.GetUserAuthorizationAsync(
-                resourceAddress,
-                resourceTypeToSign,
-                HttpConstants.HttpMethods.Get,
-                headers,
-                AuthorizationTokenType.PrimaryMasterKey);
-
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
-
-            Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
-
-            string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                uri: targetEndpoint,
-                additionalHeaders: headers,
-                resourceType: resourceType,
-                timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                cancellationToken: default))
+            using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                return documentServiceResponse;
+                string token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                    resourceAddress,
+                    resourceTypeToSign,
+                    HttpConstants.HttpMethods.Get,
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey,
+                    trace);
+
+                headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+
+                Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
+
+                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                    uri: targetEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: resourceType,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                    cancellationToken: default))
+                {
+                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                    return documentServiceResponse;
+                }
             }
         }
 
@@ -489,47 +493,53 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             headers.Set(HttpConstants.HttpHeaders.XDate, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
             string token = null;
-            try
-            {
-                token = (await this.tokenProvider.GetUserAuthorizationAsync(
-                    collectionRid,
-                    resourceTypeToSign,
-                    HttpConstants.HttpMethods.Get,
-                    headers,
-                    AuthorizationTokenType.PrimaryMasterKey)).token;
-            }
-            catch (UnauthorizedException)
-            {
-            }
 
-            if (token == null && request != null && request.IsNameBased)
+            using (ITrace trace = Trace.GetRootTrace(nameof(GetMasterAddressesViaGatewayAsync), TraceComponent.Authorization, TraceLevel.Info))
             {
-                // User doesn't have rid based resource token. Maybe he has name based.
-                string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
-                token = (await this.tokenProvider.GetUserAuthorizationAsync(
-                        collectionAltLink,
+                try
+                {
+                    token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                        collectionRid,
                         resourceTypeToSign,
                         HttpConstants.HttpMethods.Get,
                         headers,
-                        AuthorizationTokenType.PrimaryMasterKey)).token;
-            }
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        trace);
+                }
+                catch (UnauthorizedException)
+                {
+                }
 
-            headers.Set(HttpConstants.HttpHeaders.Authorization, token);
+                if (token == null && request != null && request.IsNameBased)
+                {
+                    // User doesn't have rid based resource token. Maybe he has name based.
+                    string collectionAltLink = PathsHelper.GetCollectionPath(request.ResourceAddress);
+                    token = await this.tokenProvider.GetUserAuthorizationTokenAsync(
+                            collectionAltLink,
+                            resourceTypeToSign,
+                            HttpConstants.HttpMethods.Get,
+                            headers,
+                            AuthorizationTokenType.PrimaryMasterKey,
+                            trace);
+                }
 
-            Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
+                headers.Set(HttpConstants.HttpHeaders.Authorization, token);
 
-            string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
-            using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
-                uri: targetEndpoint,
-                additionalHeaders: headers,
-                resourceType: ResourceType.Document,
-                timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                cancellationToken: default))
-            {
-                DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
-                GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
-                return documentServiceResponse; 
+                Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
+
+                string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                    uri: targetEndpoint,
+                    additionalHeaders: headers,
+                    resourceType: ResourceType.Document,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                    cancellationToken: default))
+                {
+                    DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                    GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                    return documentServiceResponse;
+                }
             }
         }
 

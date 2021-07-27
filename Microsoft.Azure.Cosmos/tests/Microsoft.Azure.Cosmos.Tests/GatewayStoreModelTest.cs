@@ -116,11 +116,11 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            GatewayStoreModel storeModel = new GatewayStoreModel(
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
                 ConsistencyLevel.Eventual,
@@ -191,14 +191,17 @@ namespace Microsoft.Azure.Cosmos
 
                     dsr.Headers.Add(HttpConstants.HttpHeaders.SessionToken, Guid.NewGuid().ToString());
 
-                    await GatewayStoreModel.ApplySessionTokenAsync(
-                        dsr,
-                        ConsistencyLevel.Session,
-                        new Mock<ISessionContainer>().Object,
-                        partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
-                        clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
+                    await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+                    {
+                        await GatewayStoreModel.ApplySessionTokenAsync(
+                           dsr,
+                           ConsistencyLevel.Session,
+                           new Mock<ISessionContainer>().Object,
+                           partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                           clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object);
 
-                    Assert.IsNull(dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                        Assert.IsNull(dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                    });
                 }
             }
 
@@ -214,15 +217,17 @@ namespace Microsoft.Azure.Cosmos
 
             dsrQueryPlan.Headers.Add(HttpConstants.HttpHeaders.SessionToken, Guid.NewGuid().ToString());
 
-            await GatewayStoreModel.ApplySessionTokenAsync(
-                dsrQueryPlan,
-                ConsistencyLevel.Session,
-                new Mock<ISessionContainer>().Object,
-                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
-                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
+            await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+            {
+                await GatewayStoreModel.ApplySessionTokenAsync(
+                    dsrQueryPlan,
+                    ConsistencyLevel.Session,
+                    new Mock<ISessionContainer>().Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object);
 
-
-            Assert.IsNull(dsrQueryPlan.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                Assert.IsNull(dsrQueryPlan.Headers[HttpConstants.HttpHeaders.SessionToken]);
+            });
         }
 
         [TestMethod]
@@ -263,15 +268,17 @@ namespace Microsoft.Azure.Cosmos
                         string dsrSessionToken = Guid.NewGuid().ToString();
                         dsr.Headers.Add(HttpConstants.HttpHeaders.SessionToken, dsrSessionToken);
 
-                        await GatewayStoreModel.ApplySessionTokenAsync(
-                            dsr,
-                            ConsistencyLevel.Session,
-                            new Mock<ISessionContainer>().Object,
-                            partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
-                            clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
+                        await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+                        {
+                            await GatewayStoreModel.ApplySessionTokenAsync(
+                                dsr,
+                                ConsistencyLevel.Session,
+                                new Mock<ISessionContainer>().Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object);
 
-
-                        Assert.AreEqual(dsrSessionToken, dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                            Assert.AreEqual(dsrSessionToken, dsr.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                        });
                     }
 
                     {
@@ -286,22 +293,24 @@ namespace Microsoft.Azure.Cosmos
                         Mock<ISessionContainer> sMock = new Mock<ISessionContainer>();
                         sMock.Setup(x => x.ResolveGlobalSessionToken(dsrNoSessionToken)).Returns(dsrSessionToken);
 
-                        await GatewayStoreModel.ApplySessionTokenAsync(
-                            dsrNoSessionToken,
-                            ConsistencyLevel.Session,
-                            sMock.Object,
-                            partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
-                            clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
-
-
-                        if (dsrNoSessionToken.IsReadOnlyRequest || dsrNoSessionToken.OperationType == OperationType.Batch)
+                        await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
                         {
-                            Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
-                        }
-                        else
-                        {
-                            Assert.IsNull(dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
-                        }
+                            await GatewayStoreModel.ApplySessionTokenAsync(
+                                dsrNoSessionToken,
+                                ConsistencyLevel.Session,
+                                sMock.Object,
+                                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object);
+
+                            if (dsrNoSessionToken.IsReadOnlyRequest || dsrNoSessionToken.OperationType == OperationType.Batch)
+                            {
+                                Assert.AreEqual(dsrSessionToken, dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                            }
+                            else
+                            {
+                                Assert.IsNull(dsrNoSessionToken.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                            }
+                        });
                     }
 
                     {
@@ -369,15 +378,17 @@ namespace Microsoft.Azure.Cosmos
             string sessionToken = Guid.NewGuid().ToString();
             dsrSprocExecute.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
 
-            await GatewayStoreModel.ApplySessionTokenAsync(
-                dsrSprocExecute,
-                ConsistencyLevel.Session,
-                new Mock<ISessionContainer>().Object,
-                partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
-                clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), this.GetGatewayStoreModelForConsistencyTest(), null, null).Object);
+            await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+            {
+                await GatewayStoreModel.ApplySessionTokenAsync(
+                    dsrSprocExecute,
+                    ConsistencyLevel.Session,
+                    new Mock<ISessionContainer>().Object,
+                    partitionKeyRangeCache: new Mock<PartitionKeyRangeCache>(null, null, null).Object,
+                    clientCollectionCache: new Mock<ClientCollectionCache>(new SessionContainer("testhost"), gatewayStoreModel, null, null).Object);
 
-
-            Assert.AreEqual(sessionToken, dsrSprocExecute.Headers[HttpConstants.HttpHeaders.SessionToken]);
+                Assert.AreEqual(sessionToken, dsrSprocExecute.Headers[HttpConstants.HttpHeaders.SessionToken]);
+            });
         }
 
         [TestMethod]
@@ -392,11 +403,11 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            GatewayStoreModel storeModel = new GatewayStoreModel(
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
                 ConsistencyLevel.Eventual,
@@ -454,11 +465,11 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
             SessionContainer sessionContainer = new SessionContainer(string.Empty);
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            GatewayStoreModel storeModel = new GatewayStoreModel(
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
                 ConsistencyLevel.Eventual,
@@ -518,11 +529,11 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
             SessionContainer sessionContainer = new SessionContainer(string.Empty);
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            GatewayStoreModel storeModel = new GatewayStoreModel(
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
                 ConsistencyLevel.Eventual,
@@ -567,9 +578,9 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionConsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
-
-            using (DocumentServiceRequest request =
+            await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+            {
+                using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
                     Documents.OperationType.Read,
                     Documents.ResourceType.Collection,
@@ -577,9 +588,10 @@ namespace Microsoft.Azure.Cosmos
                     new MemoryStream(Encoding.UTF8.GetBytes("collection")),
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
-            {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
-            }
+                {
+                    await this.TestGatewayStoreModelProcessMessageAsync(gatewayStoreModel, request);
+                }
+            });
         }
 
         /// <summary>
@@ -589,9 +601,9 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenForSessionInconsistentResourceType()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
-
-            using (DocumentServiceRequest request =
+            await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+            {
+                using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
                     Documents.OperationType.Query,
                     Documents.ResourceType.Document,
@@ -599,9 +611,10 @@ namespace Microsoft.Azure.Cosmos
                     new MemoryStream(Encoding.UTF8.GetBytes("document")),
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
-            {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
-            }
+                {
+                    await this.TestGatewayStoreModelProcessMessageAsync(gatewayStoreModel, request);
+                }
+            });
         }
 
         /// <summary>
@@ -611,9 +624,9 @@ namespace Microsoft.Azure.Cosmos
         [TestMethod]
         public async Task TestSessionTokenAvailability()
         {
-            GatewayStoreModel storeModel = GetGatewayStoreModelForConsistencyTest();
-
-            using (DocumentServiceRequest request =
+            await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
+            {
+                using (DocumentServiceRequest request =
                 DocumentServiceRequest.Create(
                     Documents.OperationType.Read,
                     Documents.ResourceType.Collection,
@@ -621,22 +634,22 @@ namespace Microsoft.Azure.Cosmos
                     new MemoryStream(Encoding.UTF8.GetBytes("collection")),
                     AuthorizationTokenType.PrimaryMasterKey,
                     null))
-            {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
-            }
+                {
+                    await this.TestGatewayStoreModelProcessMessageAsync(gatewayStoreModel, request);
+                }
 
-            using (DocumentServiceRequest request =
-                DocumentServiceRequest.Create(
-                    Documents.OperationType.Query,
-                    Documents.ResourceType.Document,
-                    new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
-                    new MemoryStream(Encoding.UTF8.GetBytes("document")),
-                    AuthorizationTokenType.PrimaryMasterKey,
-                    null))
-            {
-                await TestGatewayStoreModelProcessMessageAsync(storeModel, request);
-            }
-
+                using (DocumentServiceRequest request =
+                    DocumentServiceRequest.Create(
+                        Documents.OperationType.Query,
+                        Documents.ResourceType.Document,
+                        new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
+                        new MemoryStream(Encoding.UTF8.GetBytes("document")),
+                        AuthorizationTokenType.PrimaryMasterKey,
+                        null))
+                {
+                    await this.TestGatewayStoreModelProcessMessageAsync(gatewayStoreModel, request);
+                }
+            });
         }
 
         [TestMethod]
@@ -664,11 +677,11 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
             SessionContainer sessionContainer = new SessionContainer(string.Empty);
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            GatewayStoreModel storeModel = new GatewayStoreModel(
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
                 ConsistencyLevel.Eventual,
@@ -696,6 +709,40 @@ namespace Microsoft.Azure.Cosmos
                     Assert.AreEqual(updatedSessionToken, sessionContainer.GetSessionToken("dbs/OVJwAA==/colls/OVJwAOcMtA0="));
                 }
             }
+        }
+
+        [TestMethod]
+        public async Task GatewayStatsDurationTest()
+        {
+            bool failedOnce = false;
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = async request =>
+            {
+                await Task.Delay(1000);
+                if (!failedOnce)
+                {
+                    failedOnce = true;
+                    throw new OperationCanceledException();
+                }
+
+                return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
+            };
+
+            HttpMessageHandler mockMessageHandler = new MockMessageHandler(sendFunc);
+            CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(mockMessageHandler),
+                                                                                    DocumentClientEventSource.Instance);
+            Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow);
+            
+            await cosmosHttpClient.SendHttpAsync(() => new ValueTask<HttpRequestMessage>(new HttpRequestMessage(HttpMethod.Get, "http://someuri.com")),
+                                                  ResourceType.Document,
+                                                  HttpTimeoutPolicyDefault.Instance,
+                                                  clientSideRequestStatistics,
+                                                  CancellationToken.None);
+
+            Assert.AreEqual(clientSideRequestStatistics.HttpResponseStatisticsList.Count, 2);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].Duration.TotalMilliseconds >= 1000);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[1].Duration.TotalMilliseconds >= 1000);
+            Assert.IsTrue(clientSideRequestStatistics.HttpResponseStatisticsList[0].RequestStartTime < 
+                          clientSideRequestStatistics.HttpResponseStatisticsList[1].RequestStartTime);
         }
 
         [TestMethod]
@@ -730,11 +777,11 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
             SessionContainer sessionContainer = new SessionContainer(string.Empty);
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            GatewayStoreModel storeModel = new GatewayStoreModel(
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager,
                 sessionContainer,
                 ConsistencyLevel.Eventual,
@@ -779,9 +826,10 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private GatewayStoreModel GetGatewayStoreModelForConsistencyTest()
+        private async Task GetGatewayStoreModelForConsistencyTest(
+            Func<GatewayStoreModel, Task> executeWithGatewayStoreModel)
         {
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> messageHandler = async request =>
+            static async Task<HttpResponseMessage> messageHandler(HttpRequestMessage request)
             {
                 String content = await request.Content.ReadAsStringAsync();
                 if (content.Equals("document"))
@@ -797,17 +845,16 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    IEnumerable<string> enumerable;
-                    Assert.IsFalse(request.Headers.TryGetValues("x-ms-session-token", out enumerable));
+                    Assert.IsFalse(request.Headers.TryGetValues("x-ms-session-token", out IEnumerable<string> enumerable));
                 }
                 return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
-            };
+            }
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
             mockDocumentClient.Setup(client => client.ConsistencyLevel).Returns(Documents.ConsistencyLevel.Session);
 
-            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
 
             SessionContainer sessionContainer = new SessionContainer(string.Empty);
             sessionContainer.SetSessionToken(
@@ -818,8 +865,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
             HttpMessageHandler httpMessageHandler = new MockMessageHandler(messageHandler);
 
-            GatewayStoreModel storeModel = new GatewayStoreModel(
-               endpointManager,
+            using GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
                 sessionContainer,
                 ConsistencyLevel.Eventual,
                 eventSource,
@@ -830,7 +877,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache).Object;
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
-            return storeModel;
+            await executeWithGatewayStoreModel(storeModel);
         }
 
         private async Task TestGatewayStoreModelProcessMessageAsync(GatewayStoreModel storeModel, DocumentServiceRequest request)

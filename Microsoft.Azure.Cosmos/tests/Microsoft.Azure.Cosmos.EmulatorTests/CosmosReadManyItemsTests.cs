@@ -253,6 +253,83 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReadManyTestWithIncorrectIntendedContainerRid()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                await this.Container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity("pk", i.ToString()));
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 2; i++)
+            {
+                itemList.Add((i.ToString(), new PartitionKey("pk")));
+            }           
+
+            // pass incorrect Rid.
+            ReadManyRequestOptions readManyRequestOptions = new ReadManyRequestOptions
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers["x-ms-cosmos-is-client-encrypted"] = bool.TrueString;
+                    headers["x-ms-cosmos-intended-collection-rid"] = "iCoRrecTrID=";
+                }
+            };
+
+            FeedResponse<ToDoActivity> feedResponse;
+            try
+            {
+                feedResponse = await this.Container.ReadManyItemsAsync<ToDoActivity>(itemList, readManyRequestOptions);
+                Assert.Fail("ReadManyItemsAsync execution should have failed. ");
+            }
+            catch(CosmosException ex)
+            {
+                if (ex.StatusCode != HttpStatusCode.BadRequest || ex.SubStatusCode != 1024)
+                {
+                    Assert.Fail("ReadManyItemsAsync execution should have failed with the StatusCode: BadRequest and SubStatusCode: 1024. ");
+                }
+            }
+
+            using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList , readManyRequestOptions))
+            {
+                if(responseMessage.StatusCode != HttpStatusCode.BadRequest ||
+                    !string.Equals(responseMessage.Headers.Get("x-ms-substatus"), "1024"))
+                {
+                    Assert.Fail("ReadManyItemsStreamAsync execution should have failed with the StatusCode: BadRequest and SubStatusCode: 1024. ");
+                }
+            }
+
+            // validate by passing correct Rid.
+            ContainerInlineCore containerInternal = (ContainerInlineCore)this.Container;
+            string rid = await containerInternal.GetCachedRIDAsync(forceRefresh: false, NoOpTrace.Singleton, cancellationToken: default);
+
+            readManyRequestOptions = new ReadManyRequestOptions
+            {
+                AddRequestHeaders = (headers) =>
+                {
+                    headers["x-ms-cosmos-is-client-encrypted"] = bool.TrueString;
+                    headers["x-ms-cosmos-intended-collection-rid"] = rid;
+                }
+            };
+            
+            feedResponse = await this.Container.ReadManyItemsAsync<ToDoActivity>(itemList, readManyRequestOptions);
+            Assert.AreEqual(feedResponse.Count, 2);
+
+            using (ResponseMessage responseMessage = await this.Container.ReadManyItemsStreamAsync(itemList, readManyRequestOptions))
+            {
+                Assert.AreEqual(responseMessage.StatusCode, HttpStatusCode.OK);
+
+                Assert.IsNotNull(responseMessage);
+                Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
+                Assert.IsNotNull(responseMessage.Diagnostics);
+
+                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                                        CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
+                Assert.AreEqual(items.Length, 2);
+            }
+        }
+
+        [TestMethod]
         public async Task ReadMany404ExceptionTest()
         {
             Database database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());

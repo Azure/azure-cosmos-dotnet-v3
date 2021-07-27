@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 return this.onChanges(context, stream, cancellationToken);
             }
 
-            return this.onChangesWithManualCheckpoint(context, stream, context.TryCheckpointAsync, cancellationToken);
+            return this.onChangesWithManualCheckpoint(context, stream, context.CheckpointAsync, cancellationToken);
         }
     }
 
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 return this.onChanges(context, changes, cancellationToken);
             }
 
-            return this.onChangesWithManualCheckpoint(context, changes, context.TryCheckpointAsync, cancellationToken);
+            return this.onChangesWithManualCheckpoint(context, changes, context.CheckpointAsync, cancellationToken);
         }
 
         private IReadOnlyCollection<T> AsIReadOnlyCollection(Stream stream)

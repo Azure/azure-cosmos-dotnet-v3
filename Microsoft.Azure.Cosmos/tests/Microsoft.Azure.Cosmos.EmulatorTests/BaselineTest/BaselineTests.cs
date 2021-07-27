@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
     /// </summary>
     /// <typeparam name="TInput">The type of the input for each test (which derives from BaselineTestInput).</typeparam>
     /// <typeparam name="TOutput">The type of the output for each test (which derives from BaselineTestOutput).</typeparam>
+    [TestCategory("UpdateContract")]
     public abstract class BaselineTests<TInput, TOutput> where TInput : BaselineTestInput where TOutput : BaselineTestOutput
     {
         /// <summary>
@@ -138,6 +139,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
             Assert.IsTrue(
                 matched,
                 $@"
+                    Please run the ..\azure-cosmos-dotnet-v3\UpdateContracts.ps1 script to update the baselines.
                     Expected: {baselineTextSuffix},
                     Actual:   {outputTextSuffix},
                     OutputPath: {outputPath},

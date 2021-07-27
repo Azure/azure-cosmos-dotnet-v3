@@ -375,7 +375,7 @@
             documents.Add(undefinedDoc.ToString());
 
             await this.CreateIngestQueryDeleteAsync<AggregateQueryMixedTypes>(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documents,
                 this.TestQueryCrossPartitionAggregateFunctionsWithMixedTypesHelper,
@@ -585,7 +585,7 @@
             };
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 /*CollectionTypes.SinglePartition |*/ CollectionTypes.MultiPartition,
                 documents,
                 this.TestNonValueAggregates);

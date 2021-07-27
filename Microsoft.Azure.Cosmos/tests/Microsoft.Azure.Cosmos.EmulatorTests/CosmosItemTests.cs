@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonSerializer = Json.JsonSerializer;
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -1873,6 +1874,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        public async Task ContainerRecreateScenarioGatewayTest()
+        {
+            ContainerResponse response = await this.database.CreateContainerAsync(
+                        new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/pk"));
+
+            Container createdContainer = (ContainerInlineCore)response;
+
+            CosmosClient client1 = TestCommon.CreateCosmosClient(useGateway: true);
+            CosmosClient client2 = TestCommon.CreateCosmosClient(useGateway: true);
+
+            Container container1 = client1.GetContainer(this.database.Id, createdContainer.Id);
+            Container container2 = client2.GetContainer(this.database.Id, createdContainer.Id);
+            Cosmos.Database database2 = client2.GetDatabase(this.database.Id);
+
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk2002", "id2002");
+            await container1.CreateItemAsync<ToDoActivity>(item);
+
+            await container2.DeleteContainerAsync();
+            await database2.CreateContainerAsync(createdContainer.Id, "/pk");
+
+            container2 = database2.GetContainer(this.Container.Id);
+            await container2.CreateItemAsync<ToDoActivity>(item);
+
+            // should not throw exception
+            await this.Container.ReadItemAsync<ToDoActivity>("id2002", new Cosmos.PartitionKey("pk2002"));
+        }
+
         [Ignore]
         [TestMethod]
         public async Task BatchPatchConditionTest()
@@ -2702,6 +2731,40 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(regionsContacted.Count, 1);
             Assert.AreEqual(regionsContacted[0].region, Regions.SouthCentralUS);
             Assert.IsNotNull(regionsContacted[0].uri);
+        }
+
+        [TestMethod]
+        public async Task HaLayerDoesNotThrowNullOnGoneExceptionTest()
+        {
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                TransportClientHandlerFactory = (x) =>
+                    new TransportClientWrapper(client: x, interceptor: (uri, resource, dsr) =>
+                    {
+                        dsr.RequestContext.ClientRequestStatistics.GetType().GetProperty("IsCpuOverloaded").SetValue(
+                            dsr.RequestContext.ClientRequestStatistics, true);
+                        if (resource.operationType.IsReadOperation())
+                        {
+                            throw Documents.Rntbd.TransportExceptions.GetGoneException(
+                                uri,
+                                Guid.NewGuid());
+                        }
+                    })
+            };
+
+            CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions);
+            Container container = cosmosClient.GetContainer(this.database.Id, this.Container.Id);
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            await container.CreateItemAsync<ToDoActivity>(testItem);
+
+            try
+            {
+                await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+            }
+            catch (CosmosException ex)
+            {
+                Assert.AreEqual(ex.StatusCode, HttpStatusCode.ServiceUnavailable);
+            }
         }
 
 #if PREVIEW

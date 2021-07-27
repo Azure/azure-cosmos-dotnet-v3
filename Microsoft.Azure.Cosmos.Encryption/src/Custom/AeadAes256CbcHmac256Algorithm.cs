@@ -198,10 +198,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 catch (Exception)
                 {
-                    if (aesAlg != null)
-                    {
-                        aesAlg.Dispose();
-                    }
+                    aesAlg?.Dispose();
 
                     throw;
                 }
@@ -352,10 +349,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 catch (Exception)
                 {
-                    if (aesAlg != null)
-                    {
-                        aesAlg.Dispose();
-                    }
+                    aesAlg?.Dispose();
 
                     throw;
                 }

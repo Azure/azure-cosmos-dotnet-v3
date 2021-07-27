@@ -347,6 +347,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             testDoc.Sensitive_ArrayFormat = null;
             testDoc.Sensitive_StringFormat = null;
+            testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2 = null;
 
             ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                    testDoc,
@@ -355,6 +356,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
+
+            // run query on document with null property value.
+            QueryDefinition withEncryptedParameter = encryptionContainer.CreateQueryDefinition(
+                    "SELECT * FROM c where c.Sensitive_StringFormat = @Sensitive_StringFormat AND c.Sensitive_ArrayFormat = @Sensitive_ArrayFormat" +
+                    " AND c.Sensitive_IntFormat = @Sensitive_IntFormat" +
+                    " AND c.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2 = @Sensitive_StringFormatL2" +
+                    " AND c.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_DecimalFormatL2 = @Sensitive_DecimalFormatL2");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_StringFormat",
+                    testDoc.Sensitive_StringFormat,
+                    "/Sensitive_StringFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_ArrayFormat",
+                    testDoc.Sensitive_ArrayFormat,
+                    "/Sensitive_ArrayFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_IntFormat",
+                    testDoc.Sensitive_IntFormat,
+                    "/Sensitive_IntFormat");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_StringFormatL2",
+                    testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2,
+                    "/Sensitive_NestedObjectFormatL1");
+
+            await withEncryptedParameter.AddParameterAsync(
+                    "@Sensitive_DecimalFormatL2",
+                    testDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_DecimalFormatL2,
+                    "/Sensitive_NestedObjectFormatL1");
+
+            TestDoc expectedDoc = new TestDoc(testDoc);
+            await MdeEncryptionTests.ValidateQueryResultsAsync(
+                encryptionContainer,
+                queryDefinition: withEncryptedParameter,
+                expectedDoc: expectedDoc);
 
             // no access to key.
             testEncryptionKeyStoreProvider.RevokeAccessSet = true;
@@ -511,7 +550,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             await MdeEncryptionTests.ValidateQueryResultsAsync(
                 MdeEncryptionTests.encryptionContainer,
-                "SELECT c.id, c.PK, c.NonSensitive FROM c",
+                "SELECT c.id, c.PK, c.NonSensitive, c.NonSensitiveInt FROM c",
                 expectedDoc);
         }
 
@@ -521,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
 
             // string/int
-            string[] arrayofStringValues = new string[] { testDoc1.Sensitive_StringFormat, "randomValue" };
+            string[] arrayofStringValues = new string[] { testDoc1.Sensitive_StringFormat, "randomValue", null };
 
             QueryDefinition withEncryptedParameter = MdeEncryptionTests.encryptionContainer.CreateQueryDefinition(
                     "SELECT * FROM c where array_contains(@Sensitive_StringFormat, c.Sensitive_StringFormat) " +
@@ -703,6 +742,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionReadManyItemAsync()
+        {
+            TestDoc testDoc = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+
+            TestDoc testDoc2 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+            {
+                (testDoc.Id, new PartitionKey(testDoc.PK)),
+                (testDoc2.Id, new PartitionKey(testDoc2.PK))
+            };
+
+            FeedResponse<TestDoc> response = await encryptionContainer.ReadManyItemsAsync<TestDoc>(itemList);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+            VerifyExpectedDocResponse(testDoc, response.Resource.ElementAt(0));
+            VerifyExpectedDocResponse(testDoc2, response.Resource.ElementAt(1));
+
+            // stream test.
+            ResponseMessage responseStream = await encryptionContainer.ReadManyItemsStreamAsync(itemList);
+
+            Assert.IsTrue(responseStream.IsSuccessStatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            JObject contentJObjects = TestCommon.FromStream<JObject>(responseStream.Content);
+
+            if(contentJObjects.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents)
+            {
+                VerifyExpectedDocResponse(testDoc, documents.ElementAt(0).ToObject<TestDoc>());
+                VerifyExpectedDocResponse(testDoc2, documents.ElementAt(1).ToObject<TestDoc>());
+            }
+            else
+            {
+                Assert.Fail("ResponseMessage from ReadManyItemsStreamAsync did not have a valid response. ");
+            }
+        }
+
+        [TestMethod]
         public async Task EncryptionChangeFeedDecryptionSuccessful()
         {
             TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainerForChangeFeed);
@@ -835,15 +912,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyPk };
 
-            Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            await encryptionContainer.InitializeEncryptionAsync();
-
             try
             {
-                await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
-                Assert.Fail("Expected item creation with PK specified to be encrypted to fail.");
+                Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
+                Assert.Fail("CreateContainerAsync operation with PK specified to be encrypted should have failed. ");
             }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+            catch (ArgumentException)
             {
             }
 
@@ -1572,6 +1646,122 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         }
 
         [TestMethod]
+        public async Task EncryptionPatchItem()
+        {
+            TestDoc docPostPatching = await MdeEncryptionTests.MdeCreateItemAsync(MdeEncryptionTests.encryptionContainer);
+            docPostPatching.NonSensitive = Guid.NewGuid().ToString();
+            docPostPatching.NonSensitiveInt++;
+            docPostPatching.Sensitive_StringFormat = Guid.NewGuid().ToString();
+            docPostPatching.Sensitive_DateFormat = new DateTime(2020, 02, 02);
+            docPostPatching.Sensitive_DecimalFormat = 11.11m;
+            docPostPatching.Sensitive_IntArray[1] = 1;
+            docPostPatching.Sensitive_IntMultiDimArray[1, 0] = 7;
+            docPostPatching.Sensitive_IntFormat = 2020;
+            docPostPatching.Sensitive_BoolFormat = false;
+            docPostPatching.Sensitive_FloatFormat = 2020.20f;
+
+            // Maximum 10 operations at a time (current limit)
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.Increment("/NonSensitiveInt", 1),
+                PatchOperation.Replace("/NonSensitive", docPostPatching.NonSensitive),
+                PatchOperation.Replace("/Sensitive_StringFormat", docPostPatching.Sensitive_StringFormat),
+                PatchOperation.Replace("/Sensitive_DateFormat", docPostPatching.Sensitive_DateFormat),
+                PatchOperation.Replace("/Sensitive_DecimalFormat", docPostPatching.Sensitive_DecimalFormat),
+                PatchOperation.Set("/Sensitive_IntArray/1", docPostPatching.Sensitive_IntArray[1]),
+                PatchOperation.Set("/Sensitive_IntMultiDimArray/1/0", docPostPatching.Sensitive_IntMultiDimArray[1,0]),
+                PatchOperation.Replace("/Sensitive_IntFormat", docPostPatching.Sensitive_IntFormat),
+                PatchOperation.Replace("/Sensitive_BoolFormat", docPostPatching.Sensitive_BoolFormat),
+                PatchOperation.Replace("/Sensitive_FloatFormat", docPostPatching.Sensitive_FloatFormat),
+            };
+
+            await MdeEncryptionTests.MdePatchItemAsync(
+                MdeEncryptionTests.encryptionContainer,
+                patchOperations,
+                docPostPatching,
+                HttpStatusCode.OK);
+
+            docPostPatching.Sensitive_ArrayFormat = new TestDoc.Sensitive_ArrayData[]
+            {
+                new TestDoc.Sensitive_ArrayData
+                {
+                    Sensitive_ArrayIntFormat = 1111,
+                    Sensitive_ArrayDecimalFormat = 1111.11m
+                },
+                new TestDoc.Sensitive_ArrayData
+                {
+                    Sensitive_ArrayIntFormat = 2222,
+                    Sensitive_ArrayDecimalFormat = 2222.22m
+                }
+            };
+
+            docPostPatching.Sensitive_ArrayMultiTypes.SetValue(
+                new TestDoc.Sensitive_ArrayMultiType()
+                {
+                    Sensitive_NestedObjectFormatL0 = new TestDoc.Sensitive_NestedObjectL0()
+                    {
+                        Sensitive_IntFormatL0 = 123,
+                        Sensitive_DecimalFormatL0 = 123.1m,
+                    },
+                    Sensitive_StringArrayMultiType = new string[1] { "sensitivedata" },
+                    Sensitive_ArrayMultiTypeDecimalFormat = 123.2m,
+                    Sensitive_IntArrayMultiType = new int[2] { 1, 2 }
+                },
+                0,
+                1);
+
+            docPostPatching.Sensitive_NestedObjectFormatL1 = new TestDoc.Sensitive_NestedObjectL1()
+            {
+                Sensitive_IntArrayL1 = new int[2] { 999, 100 },
+                Sensitive_IntFormatL1 = 1999,
+                Sensitive_DecimalFormatL1 = 1999.1m,
+                Sensitive_ArrayFormatL1 = new TestDoc.Sensitive_ArrayData[]
+                {
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 0,
+                        Sensitive_ArrayDecimalFormat = 0.1m
+                    },
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 1,
+                        Sensitive_ArrayDecimalFormat = 2.1m
+                    },
+                    new TestDoc.Sensitive_ArrayData
+                    {
+                        Sensitive_ArrayIntFormat = 2,
+                        Sensitive_ArrayDecimalFormat = 3.1m
+                    }
+                }
+            };
+
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add("/Sensitive_ArrayFormat/1", docPostPatching.Sensitive_ArrayFormat[1]));
+            patchOperations.Add(PatchOperation.Replace("/Sensitive_ArrayMultiTypes/0/1", docPostPatching.Sensitive_ArrayMultiTypes[0, 1]));
+            patchOperations.Add(PatchOperation.Remove("/Sensitive_NestedObjectFormatL1/Sensitive_NestedObjectFormatL2"));
+            patchOperations.Add(PatchOperation.Set("/Sensitive_NestedObjectFormatL1/Sensitive_ArrayFormatL1/0", docPostPatching.Sensitive_NestedObjectFormatL1.Sensitive_ArrayFormatL1[0]));
+
+            await MdeEncryptionTests.MdePatchItemAsync(
+                MdeEncryptionTests.encryptionContainer,
+                patchOperations,
+                docPostPatching,
+                HttpStatusCode.OK);
+
+            patchOperations.Add(PatchOperation.Increment("/Sensitive_IntFormat", 1));
+            try
+            {
+                await MdeEncryptionTests.encryptionContainer.PatchItemAsync<TestDoc>(
+                    docPostPatching.Id,
+                    new PartitionKey(docPostPatching.PK),
+                    patchOperations);
+            }
+            catch(InvalidOperationException ex)
+            {
+                Assert.AreEqual("Increment patch operation is not allowed for encrypted path '/Sensitive_IntFormat'.", ex.Message);
+            }
+        }
+
+        [TestMethod]
         public async Task EncryptionTransactionalBatchWithCustomSerializer()
         {
             CustomSerializer customSerializer = new CustomSerializer();
@@ -1764,19 +1954,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             while (changeIterator.HasMoreResults)
             {
-                try
+                FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
+                if (testDocs.StatusCode == HttpStatusCode.NotModified)
                 {
-                    FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
-                    Assert.AreEqual(testDocs.Count, 2);
-
-                    VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
-                    VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
-                }
-                catch (CosmosException ex)
-                {
-                    Assert.IsTrue(ex.Message.Contains("Response status code does not indicate success: NotModified (304)"));
                     break;
                 }
+
+                Assert.AreEqual(testDocs.Count, 2);
+
+                VerifyExpectedDocResponse(testDoc1, testDocs.Resource.ElementAt(0));
+                VerifyExpectedDocResponse(testDoc2, testDocs.Resource.ElementAt(1));
             }
         }
 
@@ -1890,7 +2077,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     IReadOnlyCollection<TestDoc> changes,
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    Func<Task> tryCheckpointAsync,
                     CancellationToken cancellationToken) =>
                 {
                     changeFeedReturnedDocs.AddRange(changes);
@@ -1994,7 +2181,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 (
                     ChangeFeedProcessorContext context,
                     Stream changes,
-                    Func<Task<(bool isSuccess, Exception error)>> tryCheckpointAsync,
+                    Func<Task> tryCheckpointAsync,
                     CancellationToken cancellationToken) =>
                 {
                     string changeFeed = string.Empty;
@@ -2126,6 +2313,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             VerifyExpectedDocResponse(testDoc, replaceResponse.Resource);
             return replaceResponse;
         }
+
+        private static async Task<ItemResponse<TestDoc>> MdePatchItemAsync(
+            Container container,
+            List<PatchOperation> patchOperations,
+            TestDoc expectedTestDoc,
+            HttpStatusCode expectedStatusCode)
+        {
+            ItemResponse<TestDoc> patchResponse = await container.PatchItemAsync<TestDoc>(
+                expectedTestDoc.Id,
+                new PartitionKey(expectedTestDoc.PK),
+                patchOperations);
+
+            Assert.AreEqual(expectedStatusCode, patchResponse.StatusCode);
+            VerifyExpectedDocResponse(expectedTestDoc, patchResponse.Resource);
+            return patchResponse;
+        }
+
         private static ItemRequestOptions MdeGetRequestOptions(
             string ifMatchEtag = null)
         {
@@ -2221,8 +2425,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                         for (int k = 0; k < expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_IntArrayMultiType.Length; k++)
                         {
-                            Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[k],
-                                verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_StringArrayMultiType[k]);
+                            Assert.AreEqual(expectedDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_IntArrayMultiType[k],
+                                verifyDoc.Sensitive_ArrayMultiTypes[i,j].Sensitive_IntArrayMultiType[k]);
                         }
                     }
                 }
@@ -2231,41 +2435,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             if (expectedDoc.Sensitive_NestedObjectFormatL1 != null)
             {
                 Assert.AreEqual(expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_IntFormatL1, verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_IntFormatL1);
-                Assert.AreEqual(
-                    expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_IntFormatL2,
-                    verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_IntFormatL2);
 
-                Assert.AreEqual(
-                    expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_IntFormatL3,
-                    verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_IntFormatL3);
+                if (expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2 == null)
+                {
+                    Assert.IsNull(verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2);
+                }
+                else
+                {
+                    Assert.AreEqual(
+                        expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2,
+                        verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_StringFormatL2);
 
-                Assert.AreEqual(
-                   expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_DecimalFormatL3,
-                   verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_DecimalFormatL3);
+                    Assert.AreEqual(
+                        expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_IntFormatL3,
+                        verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_IntFormatL3);
 
-                Assert.AreEqual(
-                   expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayIntFormat,
-                   verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayIntFormat);
+                    Assert.AreEqual(
+                       expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_DecimalFormatL3,
+                       verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_DecimalFormatL3);
 
-                Assert.AreEqual(
-                   expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayDecimalFormat,
-                   verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayDecimalFormat);
+                    Assert.AreEqual(
+                       expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayIntFormat,
+                       verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayIntFormat);
 
-                Assert.AreEqual(
-                   expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayDecimalFormat,
-                   verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayDecimalFormat);
+                    Assert.AreEqual(
+                       expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayDecimalFormat,
+                       verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayFormatL3[0].Sensitive_ArrayDecimalFormat);
 
-                Assert.AreEqual(
-                   expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayIntFormat,
-                   verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayIntFormat);
+                    Assert.AreEqual(
+                       expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayDecimalFormat,
+                       verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayDecimalFormat);
 
-                Assert.AreEqual(
-                  expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0,
-                  verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0);
+                    Assert.AreEqual(
+                       expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayIntFormat,
+                       verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_ArrayIntFormat);
 
-                Assert.AreEqual(
-                  expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0,
-                  verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0);
+                    Assert.AreEqual(
+                      expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0,
+                      verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_IntFormatL0);
+
+                    Assert.AreEqual(
+                      expectedDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0,
+                      verifyDoc.Sensitive_NestedObjectFormatL1.Sensitive_NestedObjectFormatL2.Sensitive_NestedObjectFormatL3.Sensitive_ArrayWithObjectFormat[0].Sensitive_NestedObjectFormatL0.Sensitive_DecimalFormatL0);
+                }
             }
             else
             {
@@ -2278,6 +2490,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(expectedDoc.Sensitive_FloatFormat, verifyDoc.Sensitive_FloatFormat);
             Assert.AreEqual(expectedDoc.Sensitive_BoolFormat, verifyDoc.Sensitive_BoolFormat);
             Assert.AreEqual(expectedDoc.NonSensitive, verifyDoc.NonSensitive);
+            Assert.AreEqual(expectedDoc.NonSensitiveInt, verifyDoc.NonSensitiveInt);
         }
 
         public class TestDoc
@@ -2289,6 +2502,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             public string PK { get; set; }
 
             public string NonSensitive { get; set; }
+
+            public int NonSensitiveInt { get; set; }
 
             public string Sensitive_StringFormat { get; set; }
 
@@ -2356,7 +2571,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public class Sensitive_NestedObjectL2
             {
-                public int Sensitive_IntFormatL2 { get; set; }
+                public string Sensitive_StringFormatL2 { get; set; }
                 public decimal Sensitive_DecimalFormatL2 { get; set; }
                 public Sensitive_ArrayData[] Sensitive_ArrayFormatL2 { get; set; }
                 public Sensitive_NestedObjectL3 Sensitive_NestedObjectFormatL3 { get; set; }
@@ -2375,6 +2590,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 this.Id = other.Id;
                 this.PK = other.PK;
                 this.NonSensitive = other.NonSensitive;
+                this.NonSensitiveInt = other.NonSensitiveInt;
                 this.Sensitive_StringFormat = other.Sensitive_StringFormat;
                 this.Sensitive_DateFormat = other.Sensitive_DateFormat;
                 this.Sensitive_DecimalFormat = other.Sensitive_DecimalFormat;
@@ -2394,6 +2610,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.Id == doc.Id
                        && this.PK == doc.PK
                        && this.NonSensitive == doc.NonSensitive
+                       && this.NonSensitiveInt == doc.NonSensitiveInt
                        && this.Sensitive_StringFormat == doc.Sensitive_StringFormat
                        && this.Sensitive_DateFormat == doc.Sensitive_DateFormat
                        && this.Sensitive_DecimalFormat == doc.Sensitive_DecimalFormat
@@ -2413,6 +2630,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                        && this.Id == doc.Id
                        && this.PK == doc.PK
                        && this.NonSensitive == doc.NonSensitive
+                       && this.NonSensitiveInt == doc.NonSensitiveInt
                        && this.Sensitive_StringFormat != doc.Sensitive_StringFormat;
             }
             public override int GetHashCode()
@@ -2421,6 +2639,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.PK);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.NonSensitive);
+                hashCode = (hashCode * -1521134295) + EqualityComparer<int>.Default.GetHashCode(this.NonSensitiveInt);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Sensitive_StringFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<DateTime>.Default.GetHashCode(this.Sensitive_DateFormat);
                 hashCode = (hashCode * -1521134295) + EqualityComparer<Decimal>.Default.GetHashCode(this.Sensitive_DecimalFormat);
@@ -2441,6 +2660,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Id = Guid.NewGuid().ToString(),
                     PK = partitionKey ?? Guid.NewGuid().ToString(),
                     NonSensitive = Guid.NewGuid().ToString(),
+                    NonSensitiveInt = 10,
                     Sensitive_StringFormat = Guid.NewGuid().ToString(),
                     Sensitive_DateFormat = new DateTime(1987, 12, 25),
                     Sensitive_DecimalFormat = 472.3108m,
@@ -2469,18 +2689,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     Sensitive_ArrayMultiTypes = new Sensitive_ArrayMultiType[,]
                     {
                         {
-                        new Sensitive_ArrayMultiType()
+                            new Sensitive_ArrayMultiType()
                             {
                                 Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
                                 {
                                     Sensitive_IntFormatL0 = 888,
                                     Sensitive_DecimalFormatL0 = 888.1m,
                                 },
-                                Sensitive_StringArrayMultiType = new string[2] { "sensitivedata1a", "verysensitivedata1a"},
+                                Sensitive_StringArrayMultiType = new string[3] { "sensitivedata1a", "verysensitivedata1a", null},
                                 Sensitive_ArrayMultiTypeDecimalFormat = 10.2m,
                                 Sensitive_IntArrayMultiType = new int[2] { 999, 1000 }
                             },
-                         new Sensitive_ArrayMultiType()
+                            new Sensitive_ArrayMultiType()
                             {
                                 Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
                                 {
@@ -2493,7 +2713,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                             }
                         },
                         {
-                         new Sensitive_ArrayMultiType()
+                            new Sensitive_ArrayMultiType()
                             {
                                 Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
                                 {
@@ -2504,7 +2724,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                                 Sensitive_ArrayMultiTypeDecimalFormat = 9876.2m,
                                 Sensitive_IntArrayMultiType = new int[2] { 1, 2 }
                             },
-                          new Sensitive_ArrayMultiType()
+                            new Sensitive_ArrayMultiType()
                             {
                                 Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
                                 {
@@ -2523,55 +2743,55 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                         Sensitive_IntFormatL1 = 1999,
                         Sensitive_DecimalFormatL1 = 1999.1m,
                         Sensitive_ArrayFormatL1 = new Sensitive_ArrayData[]
-                    {
-                        new Sensitive_ArrayData
                         {
-                            Sensitive_ArrayIntFormat = 1,
-                            Sensitive_ArrayDecimalFormat = 2.1m
+                            new Sensitive_ArrayData
+                            {
+                                Sensitive_ArrayIntFormat = 1,
+                                Sensitive_ArrayDecimalFormat = 2.1m
+                            },
+                            new Sensitive_ArrayData
+                            {
+                                Sensitive_ArrayIntFormat = 2,
+                                Sensitive_ArrayDecimalFormat = 3.1m
+                            }
                         },
-                        new Sensitive_ArrayData
-                        {
-                            Sensitive_ArrayIntFormat = 2,
-                            Sensitive_ArrayDecimalFormat = 3.1m
-                        }
-                    },
                         Sensitive_NestedObjectFormatL2 = new Sensitive_NestedObjectL2()
                         {
-                            Sensitive_IntFormatL2 = 2000,
+                            Sensitive_StringFormatL2 = "sensitiveData",
                             Sensitive_DecimalFormatL2 = 2000.1m,
                             Sensitive_ArrayFormatL2 = new Sensitive_ArrayData[]
-                    {
-                        new Sensitive_ArrayData
-                        {
-                            Sensitive_ArrayIntFormat = 2,
-                            Sensitive_ArrayDecimalFormat = 3.1m
-                        }
-                    },
+                            {
+                                new Sensitive_ArrayData
+                                {
+                                    Sensitive_ArrayIntFormat = 2,
+                                    Sensitive_ArrayDecimalFormat = 3.1m
+                                }
+                            },
                             Sensitive_NestedObjectFormatL3 = new Sensitive_NestedObjectL3()
                             {
                                 Sensitive_IntFormatL3 = 3000,
                                 Sensitive_DecimalFormatL3 = 3000.1m,
                                 Sensitive_ArrayFormatL3 = new Sensitive_ArrayData[]
-                    {
-                        new Sensitive_ArrayData
-                        {
-                            Sensitive_ArrayIntFormat = 3,
-                            Sensitive_ArrayDecimalFormat = 4.1m,
-                        }
-                    },
+                                {
+                                    new Sensitive_ArrayData
+                                    {
+                                        Sensitive_ArrayIntFormat = 3,
+                                        Sensitive_ArrayDecimalFormat = 4.1m,
+                                    }
+                                },
                                 Sensitive_ArrayWithObjectFormat = new Sensitive_ArrayDataWithObject[]
-                    {
-                        new Sensitive_ArrayDataWithObject
-                        {
-                            Sensitive_ArrayIntFormat = 4,
-                            Sensitive_ArrayDecimalFormat = 5.1m,
-                            Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
-                            {
-                            Sensitive_IntFormatL0 = 888,
-                            Sensitive_DecimalFormatL0 = 888.1m,
-                            }
-                        }
-                    }
+                                {
+                                    new Sensitive_ArrayDataWithObject
+                                    {
+                                        Sensitive_ArrayIntFormat = 4,
+                                        Sensitive_ArrayDecimalFormat = 5.1m,
+                                        Sensitive_NestedObjectFormatL0 = new Sensitive_NestedObjectL0()
+                                        {
+                                            Sensitive_IntFormatL0 = 888,
+                                            Sensitive_DecimalFormatL0 = 888.1m,
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

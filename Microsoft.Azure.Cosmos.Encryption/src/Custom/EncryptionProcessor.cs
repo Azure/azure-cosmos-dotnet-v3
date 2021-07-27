@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             JProperty encryptionPropertiesJProp = item.Property(Constants.EncryptedInfo);
             JObject encryptionPropertiesJObj = null;
-            if (encryptionPropertiesJProp != null && encryptionPropertiesJProp.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
+            if (encryptionPropertiesJProp?.Value != null && encryptionPropertiesJProp.Value.Type == JTokenType.Object)
             {
                 encryptionPropertiesJObj = (JObject)encryptionPropertiesJProp.Value;
             }
@@ -572,7 +572,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken)
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);
-            JArray result = new JArray();
 
             if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
             {
@@ -583,7 +582,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (!(value is JObject document))
                 {
-                    result.Add(value);
                     continue;
                 }
 
@@ -595,25 +593,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         encryptor,
                         diagnosticsContext,
                         cancellationToken);
-
-                    result.Add(decryptedDocument);
                 }
             }
 
-            JObject decryptedResponse = new JObject();
-            foreach (JProperty property in contentJObj.Properties())
-            {
-                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
-                {
-                    decryptedResponse.Add(property.Name, (JToken)result);
-                }
-                else
-                {
-                    decryptedResponse.Add(property.Name, property.Value);
-                }
-            }
-
-            return EncryptionProcessor.BaseSerializer.ToStream(decryptedResponse);
+            // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
+            // and corresponding decrypted properties are added back in the documents.
+            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
         }
     }
 }

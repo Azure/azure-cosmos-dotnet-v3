@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
                apitype: clientOptions.ApiType,
                sendingRequestEventArgs: clientOptions.SendingRequestEventArgs,
                transportClientHandlerFactory: clientOptions.TransportClientHandlerFactory,
-               connectionPolicy: clientOptions.GetConnectionPolicy(),
+               connectionPolicy: clientOptions.GetConnectionPolicy(cosmosClient.ClientId),
                enableCpuMonitor: clientOptions.EnableCpuMonitor,
                storeClientFactory: clientOptions.StoreClientFactory,
                desiredConsistencyLevel: clientOptions.GetDocumentsConsistencyLevel(),
@@ -432,6 +432,19 @@ namespace Microsoft.Azure.Cosmos
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
                     throw new CosmosOperationCanceledException(oe, trace);
+                }
+                catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
+                {
+                    throw new CosmosObjectDisposedException(
+                        objectDisposed, 
+                        this.client, 
+                        trace);
+                }
+                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
+                {
+                    throw new CosmosNullReferenceException(
+                        nullRefException,
+                        trace);
                 }
             }
         }
