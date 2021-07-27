@@ -1523,9 +1523,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch(RequestFailedException)
             {               
-            }        
+            }
 
-            testEncryptionKeyStoreProvider.RevokeAccessSet = true;
+            // testing query read fail due to revoked access.
             try
             {
                 await MdeEncryptionTests.ValidateQueryResultsAsync(
