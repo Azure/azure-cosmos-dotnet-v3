@@ -20,10 +20,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const int BytesToMb = 1024 * 1024;
         internal const int OneKbToBytes = 1024;
 
-        internal const int RequestLatencyMaxMicroSec = Int32.MaxValue;
+        internal const int RequestLatencyMaxMilliSec = Int32.MaxValue;
         internal const int RequestLatencyPrecision = 5;
         internal const string RequestLatencyName = "RequestLatency";
-        internal const string RequestLatencyUnit = "MicroSec";
+        internal const string RequestLatencyUnit = "MilliSecond";
 
         internal const int RequestChargePrecision = 5;
         internal const string RequestChargeName = "RequestCharge";

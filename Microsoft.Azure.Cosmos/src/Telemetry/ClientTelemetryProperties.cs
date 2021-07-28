@@ -46,14 +46,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
+        
+        [JsonProperty(PropertyName = "preferredRegions")]
+        internal IReadOnlyList<string> PreferredRegions { get; set; }
 
+        [JsonProperty(PropertyName = "timeIntervalAggregationInSeconds")]
+        internal double TimeIntervalAggregationInSeconds { get; set; }
+        
         [JsonIgnore]
         private readonly ConnectionMode ConnectionModeEnum;
 
         internal ClientTelemetryProperties(string clientId,
                                    string processId,
                                    string userAgent,
-                                   ConnectionMode connectionMode)
+                                   ConnectionMode connectionMode,
+                                   IReadOnlyList<string> preferredRegions)
         {
             this.ClientId = clientId;
             this.ProcessId = processId;
@@ -61,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ConnectionModeEnum = connectionMode;
             this.ConnectionMode = connectionMode.ToString();
             this.SystemInfo = new List<SystemInfo>();
+            this.PreferredRegions = preferredRegions;
         }
 
         public ClientTelemetryProperties(string dateTimeUtc,
@@ -72,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string applicationRegion,
             string hostEnvInfo,
             bool? acceleratedNetworking,
+            IReadOnlyList<string> preferredRegions,
             List<SystemInfo> systemInfo,
             List<OperationInfo> cacheRefreshInfo,
             List<OperationInfo> operationInfo)
@@ -88,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.SystemInfo = systemInfo;
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
+            this.PreferredRegions = preferredRegions;
         }
     }
 }
