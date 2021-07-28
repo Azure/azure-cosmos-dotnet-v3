@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("PatchItem"))
             {
-                List<PatchOperation> encryptedPatchOperations = await this.PatchItemHelperAsync(
+                List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchOperationsAsync(
                     patchOperations,
                     encryptionSettings,
                     cancellationToken);
@@ -673,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        private async Task<List<PatchOperation>> PatchItemHelperAsync(
+        internal async Task<List<PatchOperation>> EncryptPatchOperationsAsync(
             IReadOnlyList<PatchOperation> patchOperations,
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken = default)
