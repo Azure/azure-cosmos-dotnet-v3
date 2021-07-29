@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal IReadOnlyList<string> PreferredRegions { get; set; }
 
         [JsonProperty(PropertyName = "timeIntervalAggregationInSeconds")]
-        internal double TimeIntervalAggregationInSeconds { get; set; }
+        internal double? TimeIntervalAggregationInSeconds { get; set; }
         
         [JsonIgnore]
         private readonly ConnectionMode ConnectionModeEnum;
@@ -80,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string applicationRegion,
             string hostEnvInfo,
             bool? acceleratedNetworking,
+            double? timeIntervalAggregationInSeconds,
             IReadOnlyList<string> preferredRegions,
             List<SystemInfo> systemInfo,
             List<OperationInfo> cacheRefreshInfo,
@@ -98,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
             this.PreferredRegions = preferredRegions;
+            this.TimeIntervalAggregationInSeconds = timeIntervalAggregationInSeconds;
         }
     }
 }
