@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The maximum number of items to be returned in the enumeration operation.
         /// </value>
-        /// <remarks>This is just a hint to the server which can return less items per page.</remarks>
+        /// <remarks>This is just a hint to the server which can return less or more items per page. If operations in the container are performed through stored procedures or transactional batch, <see href="https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> is preserved when reading items from the Change Feed. As a result, the number of items received could be higher than the specified value so that the items changed by the same transaction are returned as part of one atomic batch.</remarks>
         public int? PageSizeHint
         {
             get => this.pageSizeHint;
