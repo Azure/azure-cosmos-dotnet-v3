@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Diagnostics;
-    using System.Globalization;
     using Microsoft.Azure.Cosmos.Serializer;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// The Cosmos Change Feed request options
