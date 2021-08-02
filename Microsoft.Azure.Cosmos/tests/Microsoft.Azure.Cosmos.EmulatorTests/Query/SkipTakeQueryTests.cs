@@ -23,7 +23,7 @@
             IEnumerable<string> documentsToInsert = util.GetDocuments(numDocuments);
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documentsToInsert,
                 ImplementationAsync,
@@ -128,7 +128,7 @@
             }
 
             await this.CreateIngestQueryDeleteAsync(
-                ConnectionModes.Direct,
+                ConnectionModes.Direct | ConnectionModes.Gateway,
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 documentsToInsert,
                 ImplementationAsync,
