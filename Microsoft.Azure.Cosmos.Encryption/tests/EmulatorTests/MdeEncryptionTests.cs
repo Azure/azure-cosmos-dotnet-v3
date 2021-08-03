@@ -1524,7 +1524,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ContainerProperties containerProperties = new ContainerProperties(Guid.NewGuid().ToString(), "/PK") { ClientEncryptionPolicy = clientEncryptionPolicyWithRevokedKek };
 
             Container encryptionContainer = await database.CreateContainerAsync(containerProperties, 400);
-            
+
+            TestDoc testDoc1 = await MdeEncryptionTests.MdeCreateItemAsync(encryptionContainer);
+
             testEncryptionKeyStoreProvider.RevokeAccessSet = true;
 
             // try creating it and it should fail as it has been revoked.
@@ -1535,6 +1537,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch(RequestFailedException)
             {               
+            }
+
+            // testing query read fail due to revoked access.
+            try
+            {
+                await MdeEncryptionTests.ValidateQueryResultsAsync(
+                encryptionContainer,
+                "SELECT * FROM c",
+                testDoc1);
+                Assert.Fail("Query should have failed, since property path /Sensitive_NestedObjectFormatL1 has been encrypted using Cek with revoked access. ");
+            }
+            catch (RequestFailedException)
+            {
             }
 
             // for unwrap to succeed 
