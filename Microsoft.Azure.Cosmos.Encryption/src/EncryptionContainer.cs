@@ -644,28 +644,14 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(patchOperations));
             }
 
-            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                obsoleteEncryptionSettings: null,
-                cancellationToken: cancellationToken);
-
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("PatchItem"))
             {
-                List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchOperationsAsync(
-                    patchOperations,
-                    encryptionSettings,
-                    cancellationToken);
-
-                ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
+                ResponseMessage responseMessage = await this.PatchItemHelperAsync(
                     id,
                     partitionKey,
-                    encryptedPatchOperations,
+                    patchOperations,
                     requestOptions,
-                    cancellationToken);
-
-                responseMessage.Content = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    encryptionSettings,
                     diagnosticsContext,
                     cancellationToken);
 
@@ -1004,9 +990,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             // The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
             // So when the container being referenced here gets recreated we would end up with a stale encryption settings and container Rid and this would result in BadRequest( and a substatus 1024).
             // This would allow us to refresh the encryption settings and Container Rid, on the premise that the container recreated could possibly be configured with a new encryption policy.
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (!isRetry && CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
             {
                 // Even though the streamPayload position is expected to be 0,
                 // because for MemoryStream we just use the underlying buffer to send over the wire rather than using the Stream APIs
@@ -1075,9 +1059,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (!isRetry && CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
             {
                 // get the latest encryption settings.
                 await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
@@ -1150,9 +1132,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (!isRetry && CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
             {
                 streamPayload.Position = 0;
                 streamPayload = await this.DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
@@ -1225,9 +1205,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (!isRetry && CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
             {
                 streamPayload.Position = 0;
                 streamPayload = await this.DecryptStreamPayloadAndUpdateEncryptionSettingsAsync(
@@ -1252,6 +1230,151 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             return responseMessage;
+        }
+
+        private async Task<ResponseMessage> PatchItemHelperAsync(
+            string id,
+            PartitionKey partitionKey,
+            IReadOnlyList<PatchOperation> patchOperations,
+            PatchItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken,
+            bool isRetry = false)
+        {
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                obsoleteEncryptionSettings: null,
+                cancellationToken: cancellationToken);
+
+            PatchItemRequestOptions clonedRequestOptions = requestOptions;
+
+            if (!isRetry)
+            {
+                if (requestOptions != null)
+                {
+                    clonedRequestOptions = (PatchItemRequestOptions)requestOptions.ShallowCopy();
+                }
+                else
+                {
+                    clonedRequestOptions = new PatchItemRequestOptions();
+                }
+            }
+
+            encryptionSettings.SetRequestHeaders(clonedRequestOptions);
+
+            List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchItemsAsync(
+                   patchOperations,
+                   encryptionSettings,
+                   cancellationToken);
+
+            ResponseMessage responseMessage = await this.container.PatchItemStreamAsync(
+                id,
+                partitionKey,
+                encryptedPatchOperations,
+                clonedRequestOptions,
+                cancellationToken);
+
+            if (!isRetry && CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
+            {
+                // get the latest encryption settings.
+                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                   obsoleteEncryptionSettings: encryptionSettings,
+                   cancellationToken: cancellationToken);
+
+                return await this.PatchItemHelperAsync(
+                    id,
+                    partitionKey,
+                    patchOperations,
+                    clonedRequestOptions,
+                    diagnosticsContext,
+                    cancellationToken,
+                    isRetry: true);
+            }
+
+            responseMessage.Content = await EncryptionProcessor.DecryptAsync(
+                responseMessage.Content,
+                encryptionSettings,
+                diagnosticsContext,
+                cancellationToken);
+
+            return responseMessage;
+        }
+
+        private async Task<List<PatchOperation>> EncryptPatchItemsAsync(
+            IReadOnlyList<PatchOperation> patchOperations,
+            EncryptionSettings encryptionSettings,
+            CancellationToken cancellationToken = default)
+        {
+            List<PatchOperation> encryptedPatchOperations = new List<PatchOperation>(patchOperations.Count);
+
+            foreach (PatchOperation patchOperation in patchOperations)
+            {
+                if (patchOperation.OperationType == PatchOperationType.Remove)
+                {
+                    encryptedPatchOperations.Add(patchOperation);
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(patchOperation.Path) || patchOperation.Path[0] != '/')
+                {
+                    throw new ArgumentException($"Invalid path '{patchOperation.Path}'.");
+                }
+
+                // get the top level path's encryption setting.
+                EncryptionSettingForProperty settingforProperty = encryptionSettings.GetEncryptionSettingForProperty(
+                    patchOperation.Path.Split('/')[1]);
+
+                // non-encrypted path
+                if (settingforProperty == null)
+                {
+                    encryptedPatchOperations.Add(patchOperation);
+                    continue;
+                }
+                else if (patchOperation.OperationType == PatchOperationType.Increment)
+                {
+                    throw new InvalidOperationException($"Increment patch operation is not allowed for encrypted path '{patchOperation.Path}'.");
+                }
+
+                if (!patchOperation.TrySerializeValueParameter(this.CosmosSerializer, out Stream valueParam))
+                {
+                    throw new ArgumentException($"Cannot serialize value parameter for operation: {patchOperation.OperationType}, path: {patchOperation.Path}.");
+                }
+
+                Stream encryptedPropertyValue = await EncryptionProcessor.EncryptValueStreamAsync(
+                    valueParam,
+                    settingforProperty,
+                    cancellationToken);
+
+                switch (patchOperation.OperationType)
+                {
+                    case PatchOperationType.Add:
+                        encryptedPatchOperations.Add(PatchOperation.Add(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    case PatchOperationType.Replace:
+                        encryptedPatchOperations.Add(PatchOperation.Replace(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    case PatchOperationType.Set:
+                        encryptedPatchOperations.Add(PatchOperation.Set(patchOperation.Path, encryptedPropertyValue));
+                        break;
+
+                    default:
+                        throw new NotSupportedException(nameof(patchOperation.OperationType));
+                }
+            }
+
+            return encryptedPatchOperations;
+        }
+
+        internal static bool CheckIfRequestNeedsARetryPostPolicyRefresh(ResponseMessage responseMessage)
+        {
+            if (responseMessage.StatusCode == HttpStatusCode.BadRequest &&
+                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -1369,9 +1492,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 clonedRequestOptions,
                 cancellationToken);
 
-            if (!isRetry &&
-                responseMessage.StatusCode == HttpStatusCode.BadRequest &&
-                string.Equals(responseMessage.Headers.Get(Constants.SubStatusHeader), Constants.IncorrectContainerRidSubStatus))
+            if (!isRetry && CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
             {
                 // get the latest encryption settings.
                 await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
