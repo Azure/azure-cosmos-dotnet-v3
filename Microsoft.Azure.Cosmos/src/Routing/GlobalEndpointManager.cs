@@ -524,21 +524,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
-#nullable disable // Needed because AsyncCache does not have nullable enabled
-                AccountProperties accountProperties = await this.databaseAccountCache.GetAsync(
-                    key: string.Empty,
-                    obsoleteValue: null,
-                    singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
-                        this.defaultEndpoint,
-                        this.connectionPolicy.PreferredLocations,
-                        this.GetDatabaseAccountAsync,
-                        this.cancellationTokenSource.Token),
-                    cancellationToken: this.cancellationTokenSource.Token,
-                    forceRefresh: true);
-
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
-                this.locationCache.OnDatabaseAccountRead(accountProperties);
-#nullable enable
+                this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
+
             }
             finally
             {
@@ -547,6 +535,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                     this.isAccountRefreshInProgress = false;
                 }
             }
+        }
+
+        internal async Task<AccountProperties> GetDatabaseAccountAsync(bool forceRefresh = false)
+        {
+#nullable disable  // Needed because AsyncCache does not have nullable enabled
+            return await this.databaseAccountCache.GetAsync(
+                              key: string.Empty,
+                              obsoleteValue: null,
+                              singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
+                                  this.defaultEndpoint,
+                                  this.connectionPolicy.PreferredLocations,
+                                  this.GetDatabaseAccountAsync,
+                                  this.cancellationTokenSource.Token),
+                              cancellationToken: this.cancellationTokenSource.Token,
+                              forceRefresh: forceRefresh);
+#nullable enable
         }
 
         /// <summary>

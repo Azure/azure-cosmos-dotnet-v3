@@ -489,8 +489,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             );
 
-            FieldInfo httpClient = cosmosClient.DocumentClient.GetType().GetField("httpClient", BindingFlags.NonPublic | BindingFlags.Instance);
-            CosmosHttpClient cosmosHttpClient = (CosmosHttpClient)httpClient.GetValue(cosmosClient.DocumentClient);
+            CosmosHttpClient cosmosHttpClient = cosmosClient.DocumentClient.httpClient;
             HttpClientHandler httpClientHandler = (HttpClientHandler)cosmosHttpClient.HttpMessageHandler;
             Assert.AreEqual(gatewayConnectionLimit, httpClientHandler.MaxConnectionsPerServer);
 

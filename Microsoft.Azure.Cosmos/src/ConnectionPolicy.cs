@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Collections.Specialized;
     using System.Net.Http;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -45,7 +46,11 @@ namespace Microsoft.Azure.Cosmos
             this.MaxConnectionLimit = defaultMaxConcurrentConnectionLimit;
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
-        }
+#if PREVIEW
+            this.EnableClientTelemetry = ConfigurationManager.GetEnvironmentVariable<bool>(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, false);
+#endif
+
+    }
 
         /// <summary>
         /// Automatically populates the <see cref="PreferredLocations"/> for geo-replicated database accounts in the Azure Cosmos DB service,
@@ -204,6 +209,12 @@ namespace Microsoft.Azure.Cosmos
         {
             get;
             set;
+        }
+
+        internal bool EnableClientTelemetry 
+        { 
+            get; 
+            set; 
         }
 
         /// <summary>
