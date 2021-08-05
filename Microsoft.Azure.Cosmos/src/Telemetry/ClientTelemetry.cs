@@ -123,11 +123,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 while (!this.cancellationTokenSource.IsCancellationRequested)
                 {
-                    if (!this.timer.IsRunning)
-                    {
-                        this.timer.Start();
-                    }
-
                     // Load account information if not available, cache is already implemented
                     if (String.IsNullOrEmpty(this.clientTelemetryInfo.GlobalDatabaseAccountName))
                     {
@@ -165,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
                     
-                    this.clientTelemetryInfo.TimeIntervalAggregationInSeconds = Math.Round(this.timer.Elapsed.TotalSeconds, 2);
+                    this.clientTelemetryInfo.TimeIntervalAggregationInSeconds = Math.Round(this.timer.Elapsed.TotalSeconds);
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
 
@@ -202,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                             Cosmos.ConsistencyLevel? consistencyLevel,
                             double requestCharge)
         {
-            DefaultTrace.TraceInformation("Collecting Operation data for Telemetry.");
+            DefaultTrace.TraceVerbose("Collecting Operation data for Telemetry.");
 
             if (cosmosDiagnostics == null)
             {
@@ -292,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             try
             {
-                DefaultTrace.TraceInformation("Started Recording System Usage for telemetry.");
+                DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
                 CpuAndMemoryUsageRecorder systemUsageRecorder = this.diagnosticsHelper.GetUsageRecorder(DiagnosticsHandlerHelper.Telemetrykey);
 
@@ -303,14 +298,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(cpuUsagePayload);
                     }
-                    DefaultTrace.TraceInformation("Recorded CPU Usage for telemetry.");
+                    DefaultTrace.TraceVerbose("Recorded CPU Usage for telemetry.");
 
                     SystemInfo memoryUsagePayload = ClientTelemetryHelper.RecordMemoryUsage(systemUsageRecorder);
                     if (memoryUsagePayload != null)
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(memoryUsagePayload);
                     }
-                    DefaultTrace.TraceInformation("Recorded Memory Usage for telemetry.");
+                    DefaultTrace.TraceVerbose("Recorded Memory Usage for telemetry.");
                 }
             }
             catch (Exception ex)
@@ -338,6 +333,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceInformation("Sending Telemetry Data to " + endpointUrl.AbsoluteUri);
 
                 string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
+                
+                // Serialized the given data, Now reset Timer and SystemInfo Dictionary for new data.
+                this.Reset();
 
                 using HttpRequestMessage request = new HttpRequestMessage
                 {
@@ -390,10 +388,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceError("Exception while sending telemetry data : " + ex.Message);
             }
-            finally
-            {
-                this.Reset();
-            }
         }
 
         /// <summary>
@@ -404,6 +398,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.clientTelemetryInfo.SystemInfo.Clear();
             // Reset the timer
             this.timer.Reset();
+            this.timer.Start(); //Resume the timer from zero
         }
 
         /// <summary>

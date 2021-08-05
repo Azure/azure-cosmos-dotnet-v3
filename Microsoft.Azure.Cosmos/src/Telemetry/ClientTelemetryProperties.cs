@@ -47,9 +47,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         [JsonProperty(PropertyName = "operationInfo")]
         internal List<OperationInfo> OperationInfo { get; set; }
         
+        /// <summary>
+        /// Preferred Region set by the client
+        /// </summary>
         [JsonProperty(PropertyName = "preferredRegions")]
         internal IReadOnlyList<string> PreferredRegions { get; set; }
 
+        /// <summary>
+        /// This property tells, in how much time interval we are actually sending aggregated data. 
+        /// It is a round off value 
+        /// </summary>
         [JsonProperty(PropertyName = "timeIntervalAggregationInSeconds")]
         internal double? TimeIntervalAggregationInSeconds { get; set; }
         

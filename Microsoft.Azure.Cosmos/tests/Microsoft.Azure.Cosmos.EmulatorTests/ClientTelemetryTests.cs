@@ -33,8 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
 
-            CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
-
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
                 RequestCallBack = (request, cancellation) =>
@@ -69,6 +67,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "region2"
             };
 
+            CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
+
             this.cosmosClient = cosmosClientBuilder
                                         .WithApplicationPreferredRegions(preferredRegionList)
                                         .WithTelemetryEnabled()
@@ -76,7 +76,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             this.container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
-
         }
 
         [TestCleanup]
@@ -239,6 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             this.WaitAndAssert(4);
         }
+
 
         private void WaitAndAssert(int expectedOperationCount, int milliseconds = 2000)
         {

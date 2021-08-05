@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         internal static async Task<AccountProperties> SetAccountNameAsync(DocumentClient documentclient)
         {
-            DefaultTrace.TraceInformation("Getting Account Information for Telemetry.");
+            DefaultTrace.TraceVerbose("Getting Account Information for Telemetry.");
             try
             {
                 if (documentclient.GlobalEndpointManager != null)
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (azMetadata == null)
             {
-                DefaultTrace.TraceInformation("Getting VM Metadata Information for Telemetry.");
+                DefaultTrace.TraceVerbose("Getting VM Metadata Information for Telemetry.");
                 try
                 {
                     static ValueTask<HttpRequestMessage> CreateRequestMessage()
