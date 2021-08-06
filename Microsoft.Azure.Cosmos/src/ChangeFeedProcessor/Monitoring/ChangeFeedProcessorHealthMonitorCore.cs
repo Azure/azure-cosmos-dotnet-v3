@@ -39,41 +39,47 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
 
         public override Task NotifyLeaseAcquireAsync(string leaseToken)
         {
+            DefaultTrace.TraceInformation("Lease with token {0}: acquired", leaseToken);
+
             if (this.acquireDelegate != null)
             {
                 return this.acquireDelegate(leaseToken);
             }
-
-            DefaultTrace.TraceInformation("Lease with token {0}: acquired", leaseToken);
-
-            return Task.CompletedTask;
+            else
+            {
+                return Task.CompletedTask;
+            }
         }
 
         public override Task NotifyLeaseReleaseAsync(string leaseToken)
         {
+            DefaultTrace.TraceInformation("Lease with token {0}: released", leaseToken);
+
             if (this.releaseDelegate != null)
             {
                 return this.releaseDelegate(leaseToken);
             }
-
-            DefaultTrace.TraceInformation("Lease with token {0}: released", leaseToken);
-
-            return Task.CompletedTask;
+            else
+            {
+                return Task.CompletedTask;
+            }
         }
 
         public override Task NotifyErrorAsync(
              string leaseToken,
              Exception exception)
         {
+            Extensions.TraceException(exception);
+            DefaultTrace.TraceError($"Error detected for lease {leaseToken}. ");
+
             if (this.errorDelegate != null)
             {
                 return this.errorDelegate(leaseToken, exception);
             }
-
-            Extensions.TraceException(exception);
-            DefaultTrace.TraceError($"Error detected for lease {leaseToken}. ");
-
-            return Task.CompletedTask;
+            else
+            {
+                return Task.CompletedTask;
+            }
         }
     }
 }
