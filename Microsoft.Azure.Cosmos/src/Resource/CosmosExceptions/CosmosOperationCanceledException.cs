@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosOperationCanceledException(
             OperationCanceledException originalException,
             ITrace trace)
+            : base(originalException.CancellationToken)
         {
             this.originalException = originalException ?? throw new ArgumentNullException(nameof(originalException));
             if (trace == null)
