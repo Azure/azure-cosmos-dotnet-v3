@@ -550,9 +550,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private class IndexEqualityComparer : IEqualityComparer<Index>
+        private class IndexEqualityComparer : IEqualityComparer<Documents.Index>
         {
-            public bool Equals(Index index1, Index index2)
+            public bool Equals(Documents.Index index1, Documents.Index index2)
             {
                 if (Object.ReferenceEquals(index1, index2))
                 {
@@ -609,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return true;
             }
 
-            public int GetHashCode(Index index)
+            public int GetHashCode(Documents.Index index)
             {
                 int hashCode = 0;
                 hashCode = hashCode ^ (int)index.Kind;
@@ -658,8 +658,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     return false;
                 }
 
-                HashSet<Index> indexes1 = new HashSet<Index>(includedPath1.Indexes, indexEqualityComparer);
-                HashSet<Index> indexes2 = new HashSet<Index>(includedPath2.Indexes, indexEqualityComparer);
+                HashSet<Documents.Index> indexes1 = new HashSet<Documents.Index>(includedPath1.Indexes, indexEqualityComparer);
+                HashSet<Documents.Index> indexes2 = new HashSet<Documents.Index>(includedPath2.Indexes, indexEqualityComparer);
 
                 return indexes1.SetEquals(indexes2);
             }
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 int hashCode = 0;
                 hashCode = hashCode ^ includedPath.Path.GetHashCode();
-                foreach (Index index in includedPath.Indexes)
+                foreach (Documents.Index index in includedPath.Indexes)
                 {
                     hashCode = hashCode ^ indexEqualityComparer.GetHashCode(index);
                 }
