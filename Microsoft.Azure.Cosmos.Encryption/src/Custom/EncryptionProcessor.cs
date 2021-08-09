@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
                 using (diagnosticsContext.CreateScope("EncryptionProcessor.DeserializeAndDecryptResponseAsync"))
                 {
-                    (JObject decryptedDocument, DecryptionContext _) = await EncryptionProcessor.DecryptAsync(
+                    await EncryptionProcessor.DecryptAsync(
                         document,
                         encryptor,
                         diagnosticsContext,
