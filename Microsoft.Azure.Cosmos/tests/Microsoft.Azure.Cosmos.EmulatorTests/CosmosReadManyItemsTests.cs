@@ -392,6 +392,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReadManyItemsFromNonPartitionedContainers()
+        {
+            ContainerInternal container = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(this.database,
+                                                                                                             Guid.NewGuid().ToString());
+            for (int i = 0; i < 5; i++)
+            {
+                await NonPartitionedContainerHelper.CreateItemInNonPartitionedContainer(container, "id" + i.ToString());
+            }
+
+            // read using PartitionKey.None pk value
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 10; i++)
+            {
+                itemList.Add(("id" + i.ToString(), PartitionKey.None));
+            }
+
+            using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+            {
+                Assert.IsNotNull(responseMessage);
+                Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
+                Assert.IsNotNull(responseMessage.Diagnostics);
+
+                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
+                                        CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
+                Assert.AreEqual(items.Length, 5);
+            }
+        }
+
+        [TestMethod]
         [DataRow(HttpStatusCode.NotFound)]
         public async Task ReadManyExceptionsTest(HttpStatusCode statusCode)
         {
