@@ -224,20 +224,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
                     .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(1,
-                                                        ClientTelemetryOptions.RequestLatencyMaxMilliSec,
+                                                        ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
-            long totalElapsedTimeInMilliSeconds = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
+            long totalElapsedTime = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
             try
             {
-                latency.RecordValue(totalElapsedTimeInMilliSeconds * ClientTelemetryOptions.AdjustmentFactor);
+                latency.RecordValue(totalElapsedTime * ClientTelemetryOptions.AdjustmentFactor);
             } 
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTimeInMilliSeconds + "  Exception : " + ex.Message);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTime + "  Exception : " + ex.Message);
             }
 
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.AdjustmentFactor);
@@ -297,15 +297,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     if (cpuUsagePayload != null)
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(cpuUsagePayload);
+                        DefaultTrace.TraceVerbose("Recorded CPU Usage for telemetry.");
                     }
-                    DefaultTrace.TraceVerbose("Recorded CPU Usage for telemetry.");
-
+                   
                     SystemInfo memoryUsagePayload = ClientTelemetryHelper.RecordMemoryUsage(systemUsageRecorder);
                     if (memoryUsagePayload != null)
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(memoryUsagePayload);
+                        DefaultTrace.TraceVerbose("Recorded Memory Usage for telemetry.");
                     }
-                    DefaultTrace.TraceVerbose("Recorded Memory Usage for telemetry.");
                 }
             }
             catch (Exception ex)
