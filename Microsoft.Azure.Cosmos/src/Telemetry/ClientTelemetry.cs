@@ -329,9 +329,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 DefaultTrace.TraceInformation("Sending Telemetry Data to " + endpointUrl.AbsoluteUri);
 
                 string json = JsonConvert.SerializeObject(this.clientTelemetryInfo, ClientTelemetryOptions.JsonSerializerSettings);
-                
-                // Serialized the given data, Now reset Timer and SystemInfo Dictionary for new data.
-                this.Reset();
 
                 using HttpRequestMessage request = new HttpRequestMessage
                 {
@@ -383,6 +380,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Exception while sending telemetry data : " + ex.Message);
+            }
+            finally
+            {
+                // Reset SystemInfo Dictionary for new data.
+                this.Reset();
             }
         }
 
