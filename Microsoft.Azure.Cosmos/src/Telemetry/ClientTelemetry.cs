@@ -226,14 +226,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
 
-            long totalElapsedTime = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
+            long totalElapsedTimeInMs = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
             try
             {
-                latency.RecordValue(totalElapsedTime * ClientTelemetryOptions.PrecisionFactor);
+                latency.RecordValue(totalElapsedTimeInMs * ClientTelemetryOptions.PrecisionFactor);
             } 
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTime + "  Exception : " + ex.Message);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTimeInMs + "  Exception : " + ex.Message);
             }
 
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.PrecisionFactor);
