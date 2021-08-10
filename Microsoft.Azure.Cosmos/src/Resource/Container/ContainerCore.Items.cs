@@ -298,7 +298,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            PartitionKeyDefinition partitionKeyDefinition;
+            PartitionKeyDefinition partitionKeyDefinition = null;
             try
             {
                 partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
