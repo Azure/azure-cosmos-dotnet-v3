@@ -11,12 +11,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Metadata that a key wrapping provider can use to wrap/unwrap data encryption keys.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-         class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
+    public class EncryptionKeyWrapMetadata : IEquatable<EncryptionKeyWrapMetadata>
     {
         // For JSON deserialize
         private EncryptionKeyWrapMetadata()
