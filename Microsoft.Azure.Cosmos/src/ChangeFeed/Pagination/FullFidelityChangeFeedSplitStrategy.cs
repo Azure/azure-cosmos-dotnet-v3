@@ -35,57 +35,62 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
-                this.containerUri,
-                trace,
-                cancellationToken);
+            await Task.CompletedTask;
 
-            //this.clientContext.Client.
+            //ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
+            //    this.containerUri,
+            //    trace,
+            //    cancellationToken);
 
-            IRoutingMapProvider routingMapProvider = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
+            //////this.clientContext.Client.
 
-            List<Range<string>> ranges = await this.feedRangeProvider.GetEffectiveRangesAsync(
-                routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
+            //IRoutingMapProvider routingMapProvider = await this.clientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
 
-            return await this.GetTargetPartitionKeyRangesAsync(
-                resourceLink,
-                collectionResourceId,
-                ranges,
-                forceRefresh,
-                childTrace);
+            //List<Range<string>> ranges = await this.feedRangeProvider.GetEffectiveRangesAsync(
+            //    routingMapProvider, collectionResourceId, partitionKeyDefinition, trace);
 
+            //return await this.GetTargetPartitionKeyRangesAsync(
+            //    resourceLink,
+            //    collectionResourceId,
+            //    ranges,
+            //    forceRefresh,
+            //    childTrace);
 
+            //List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+            //    this.container.LinkUri,
+            //    await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken: cancellationToken),
+            //    containerProperties.PartitionKey,
+            //    feedRange,
+            //    forceRefresh: false,
+            //    trace);
+            //return TryCatch<List<FeedRangeEpk>>.FromResult(
+            //    overlappingRanges.Select(range => new FeedRangeEpk(
+            //        new Documents.Routing.Range<string>(
+            //            min: range.MinInclusive,
+            //            max: range.MaxExclusive,
+            //            isMinInclusive: true,
+            //            isMaxInclusive: false))).ToList());
 
-            List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-                this.container.LinkUri,
-                await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken: cancellationToken),
-                containerProperties.PartitionKey,
-                feedRange,
-                forceRefresh: false,
-                trace);
-            return TryCatch<List<FeedRangeEpk>>.FromResult(
-                overlappingRanges.Select(range => new FeedRangeEpk(
-                    new Documents.Routing.Range<string>(
-                        min: range.MinInclusive,
-                        max: range.MaxExclusive,
-                        isMinInclusive: true,
-                        isMaxInclusive: false))).ToList());
+            //// Check how many parent partitions. If 1 partition -- go to archival rerefence.
 
-            // Check how many parent partitions. If 1 partition -- go to archival rerefence.
+            // parent strategy code
+            //
+            //
+            //
+            //
+            //// TODO: remove this line.
+            //List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
 
-            // TODO: remove this line.
-            List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
-            
-            List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);
+            //List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);
 
-            foreach (FeedRangeInternal childRange in childRanges)
-            {
-                //childRange.GetPartitionKeyRangesAsync();
+            //foreach (FeedRangeInternal childRange in childRanges)
+            //{
+            //    //childRange.GetPartitionKeyRangesAsync();
 
-                CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> childPaginator =
-                    this.partitionRangeEnumeratorCreator(new CosmosPagination.FeedRangeState<ChangeFeedState>(childRange, rangeState.State));
-                enumerators.Enqueue(childPaginator);
-            }
+            //    CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> childPaginator =
+            //        this.partitionRangeEnumeratorCreator(new CosmosPagination.FeedRangeState<ChangeFeedState>(childRange, rangeState.State));
+            //    enumerators.Enqueue(childPaginator);
+            //}
         }
     }
 }

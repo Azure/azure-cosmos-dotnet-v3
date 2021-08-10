@@ -53,6 +53,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            // TODO: remove this line.
+            List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
+
             List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(range, trace, cancellationToken);
             if (childRanges.Count == 0)
             {

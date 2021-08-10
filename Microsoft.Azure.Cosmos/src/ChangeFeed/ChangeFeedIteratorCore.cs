@@ -192,8 +192,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                             paginationOptions,
                             cancellationToken);
                     ISplitStrategy<Pagination.ChangeFeedPage, ChangeFeedState> splitStrategy =
-                        changeFeedMode.CreateSplitStrategy(documentContainer, partitionRangeEnumeratorCreator,
-                        this.clientContext);
+                        changeFeedMode.CreateSplitStrategy(documentContainer, partitionRangeEnumeratorCreator, this.clientContext);
 
                     CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                         documentContainer,
