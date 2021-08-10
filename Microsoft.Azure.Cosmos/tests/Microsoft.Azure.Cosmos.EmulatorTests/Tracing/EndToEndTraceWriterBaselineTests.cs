@@ -26,22 +26,17 @@
         public static Container container;
 
         [ClassInitialize()]
-        public static void ClassInit(TestContext context)
+        public static async Task ClassInitAsync(TestContext context)
         {
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(useGateway: false);
-            database = client
-                .CreateDatabaseAsync(
+            EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     Guid.NewGuid().ToString(),
-                    cancellationToken: default)
-                .Result
-                .Database;
-            container = database
-                .CreateContainerAsync(
+                    cancellationToken: default);
+
+            EndToEndTraceWriterBaselineTests.container = await EndToEndTraceWriterBaselineTests.database.CreateContainerAsync(
                     id: Guid.NewGuid().ToString(),
                     partitionKeyPath: "/id",
-                    throughput: 20000)
-                .Result
-                .Container;
+                    throughput: 20000);
 
             for (int i = 0; i < 100; i++)
             {
@@ -51,14 +46,17 @@
                         { "id", CosmosString.Create(i.ToString()) }
                     });
 
-                _ = container.CreateItemAsync(JToken.Parse(cosmosObject.ToString())).Result;
+                await container.CreateItemAsync(JToken.Parse(cosmosObject.ToString()));
             }
         }
 
         [ClassCleanup()]
-        public static void ClassCleanup()
+        public static async Task ClassCleanupAsync()
         {
-            _ = database.DeleteAsync().Result;
+            if(database != null)
+            {
+                await EndToEndTraceWriterBaselineTests.database.DeleteStreamAsync();
+            }
         }
 
         [TestMethod]
@@ -216,16 +214,14 @@
                 List<ITrace> traces = new List<ITrace>();
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
@@ -280,16 +276,14 @@
 
                 while (feedIterator.HasMoreResults)
                 {
-                    try
-                    {
-                        FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
-                        ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
-                        traces.Add(trace);
-                    }
-                    catch (CosmosException ce) when (ce.StatusCode == System.Net.HttpStatusCode.NotModified)
+                    FeedResponse<JToken> responseMessage = await feedIterator.ReadNextAsync(cancellationToken: default);
+                    if (responseMessage.StatusCode == System.Net.HttpStatusCode.NotModified)
                     {
                         break;
                     }
+
+                    ITrace trace = ((CosmosTraceDiagnostics)responseMessage.Diagnostics).Value;
+                    traces.Add(trace);
                 }
 
                 ITrace traceForest = TraceJoiner.JoinTraces(traces);
@@ -879,7 +873,7 @@
                 CosmosClient bulkClient = TestCommon.CreateCosmosClient(builder => builder.WithBulkExecution(true));
                 Container bulkContainer = bulkClient.GetContainer(database.Id, container.Id);
                 List<Task<ItemResponse<ToDoActivity>>> createItemsTasks = new List<Task<ItemResponse<ToDoActivity>>>();
-                for (int i = 0; i < 100; i++)
+                for (int i = 0; i < 10; i++)
                 {
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
                     createItemsTasks.Add(bulkContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.id)));
@@ -897,12 +891,59 @@
                     traces.Add(trace);
                 }
 
-                ITrace joinedTrace = TraceJoiner.JoinTraces(traces);
                 endLineNumber = GetLineNumber();
 
-                inputs.Add(new Input("Bulk Operation", joinedTrace, startLineNumber, endLineNumber));
+                foreach (ITrace trace in traces)
+                {
+                    inputs.Add(new Input("Bulk Operation", trace, startLineNumber, endLineNumber));
+                }
             }
             //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Bulk with retry on throttle
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                string errorMessage = "Mock throttle exception" + Guid.NewGuid().ToString();
+                Guid exceptionActivityId = Guid.NewGuid();
+                // Set a small retry count to reduce test time
+                CosmosClient throttleClient = TestCommon.CreateCosmosClient(builder =>
+                    builder.WithThrottlingRetryOptions(TimeSpan.FromSeconds(5), 3)
+                    .WithBulkExecution(true)
+                    .WithTransportClientHandlerFactory(transportClient => new TransportClientWrapper(
+                           transportClient,
+                           (uri, resourceOperation, request) => TransportClientHelper.ReturnThrottledStoreResponseOnItemOperation(
+                                uri,
+                                resourceOperation,
+                                request,
+                                exceptionActivityId,
+                                errorMessage)))
+                    );
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions();
+                Container containerWithThrottleException = throttleClient.GetContainer(
+                    database.Id,
+                    container.Id);
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                ITrace trace = null;
+                try
+                {
+                    ItemResponse<ToDoActivity> createResponse = await containerWithThrottleException.CreateItemAsync<ToDoActivity>(
+                      item: testItem,
+                      partitionKey: new PartitionKey(testItem.id),
+                      requestOptions: requestOptions);
+                    Assert.Fail("Should have thrown a throttling exception");
+                }
+                catch (CosmosException ce) when ((int)ce.StatusCode == (int)Documents.StatusCodes.TooManyRequests)
+                {
+                    trace = ((CosmosTraceDiagnostics)ce.Diagnostics).Value;
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Bulk Operation With Throttle", trace, startLineNumber, endLineNumber));
+            }
 
             this.ExecuteTestSuite(inputs);
         }
@@ -921,10 +962,16 @@
             {
                 startLineNumber = GetLineNumber();
                 TimeSpan delayTime = TimeSpan.FromSeconds(2);
+                RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
                 CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-                    builder.AddCustomHandlers(new RequestHandlerSleepHelper(delayTime)));
+                    builder.AddCustomHandlers(requestHandler));
 
                 DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+                EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
+                    databaseResponse.Diagnostics.ToString(),
+                    requestHandler.FullHandlerName,
+                    delayTime);
+
                 ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
                 await databaseResponse.Database.DeleteAsync();
                 endLineNumber = GetLineNumber();
@@ -953,6 +1000,58 @@
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public async Task ReadManyAsync()
+        {
+            List<Input> inputs = new List<Input>();
+
+            int startLineNumber;
+            int endLineNumber;
+
+            for (int i = 0; i < 5; i++)
+            {
+                ToDoActivity item = ToDoActivity.CreateRandomToDoActivity("pk" + i, "id" + i);
+                await container.CreateItemAsync(item);
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i, new PartitionKey(i.ToString())));
+            }
+
+            //----------------------------------------------------------------
+            //  Read Many Stream
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                ITrace trace;
+                using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+                {
+                    trace = responseMessage.Trace;
+                }
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Read Many Stream Api", trace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Read Many Typed
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                FeedResponse<ToDoActivity> feedResponse = await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                ITrace trace = ((CosmosTraceDiagnostics)feedResponse.Diagnostics).Value;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Read Many Typed Api", trace, startLineNumber, endLineNumber));
+            }
+            //----------------------------------------------------------------
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         public override Output ExecuteTest(Input input)
         {
             ITrace traceForBaselineTesting = CreateTraceForBaslineTesting(input.Trace, parent: null);
@@ -960,8 +1059,12 @@
             string text = TraceWriter.TraceToText(traceForBaselineTesting);
             string json = TraceWriter.TraceToJson(traceForBaselineTesting);
 
-            // AssertTraceProperites(input.Trace);
-
+            AssertTraceProperites(input.Trace);
+            Assert.IsTrue(text.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {text}");
+            Assert.IsTrue(json.Contains("Client Side Request Stats"), $"All diagnostics should have request stats: {json}");
+            Assert.IsTrue(text.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {text}");
+            Assert.IsTrue(json.Contains("Client Configuration"), $"All diagnostics should have Client Configuration: {json}");
+            
             return new Output(text, JToken.Parse(json).ToString(Newtonsoft.Json.Formatting.Indented));
         }
 
@@ -983,8 +1086,62 @@
             return convertedTrace;
         }
 
+        private static void AssertCustomHandlerTime(
+            string diagnostics, 
+            string handlerName,
+            TimeSpan delay)
+        {
+            JObject jObject = JObject.Parse(diagnostics);
+            JObject handlerChild = EndToEndTraceWriterBaselineTests.FindChild(
+                handlerName, 
+                jObject);
+            Assert.IsNotNull(handlerChild);
+            JToken delayToken = handlerChild["duration in milliseconds"];
+            Assert.IsNotNull(delayToken);
+            double itraceDelay = delayToken.ToObject<double>();
+            Assert.IsTrue(TimeSpan.FromMilliseconds(itraceDelay) > delay);
+        }
+
+        private static JObject FindChild(
+            string name,
+            JObject jObject)
+        {
+            if(jObject == null)
+            {
+                return null;
+            }
+
+            JToken nameToken = jObject["name"];
+            if(nameToken != null && nameToken.ToString() == name)
+            {
+                return jObject;
+            }
+
+            JArray jArray = jObject["children"]?.ToObject<JArray>();
+            if(jArray != null)
+            {
+                foreach(JObject child in jArray)
+                {
+                    JObject response = EndToEndTraceWriterBaselineTests.FindChild(name, child);
+                    if(response != null)
+                    {
+                        return response;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+
         private static void AssertTraceProperites(ITrace trace)
         {
+            if (trace.Name == "ReadManyItemsStreamAsync" || 
+                trace.Name == "ReadManyItemsAsync")
+            {
+                return; // skip test for read many as the queries are done in parallel
+            }
+
             if (trace.Children.Count == 0)
             {
                 // Base case
@@ -1086,7 +1243,7 @@
         private sealed class TraceForBaselineTesting : ITrace
         {
             public readonly Dictionary<string, object> data;
-            public readonly List<TraceForBaselineTesting> children;
+            public readonly List<ITrace> children;
 
             public TraceForBaselineTesting(
                 string name,
@@ -1098,7 +1255,7 @@
                 this.Level = level;
                 this.Component = component;
                 this.Parent = parent;
-                this.children = new List<TraceForBaselineTesting>();
+                this.children = new List<ITrace>();
                 this.data = new Dictionary<string, object>();
             }
 
@@ -1150,8 +1307,13 @@
             public ITrace StartChild(string name, TraceComponent component, TraceLevel level, [CallerMemberName] string memberName = "", [CallerFilePath] string sourceFilePath = "", [CallerLineNumber] int sourceLineNumber = 0)
             {
                 TraceForBaselineTesting child = new TraceForBaselineTesting(name, level, component, parent: this);
-                this.children.Add(child);
+                this.AddChild(child);
                 return child;
+            }
+
+            public void AddChild(ITrace trace)
+            {
+                this.children.Add(trace);
             }
 
             public static TraceForBaselineTesting GetRootTrace()

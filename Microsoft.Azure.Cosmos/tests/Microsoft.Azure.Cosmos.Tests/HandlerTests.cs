@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Net;
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -45,6 +47,39 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Assert.IsNull(handler);
+        }
+
+        [TestMethod]
+        public void HandlerOrderIfTelemetryIsEnabled()
+        {
+
+#if PREVIEW
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, "true");
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+#else
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(enableTelemetry: true);
+#endif
+            Type[] types = new Type[]
+            {
+                typeof(RequestInvokerHandler),
+                typeof(DiagnosticsHandler),
+                typeof(RetryHandler),
+                typeof(TelemetryHandler),
+                typeof(RouterHandler)
+            };
+
+            RequestHandler handler = client.RequestHandler;
+            foreach (Type type in types)
+            {
+                Assert.IsTrue(type.Equals(handler.GetType()));
+                handler = handler.InnerHandler;
+            }
+            Assert.IsNull(handler);
+
+#if PREVIEW
+            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
+#endif   
+
         }
 
         [TestMethod]
@@ -191,6 +226,52 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task QueryRequestOptionsDedicatedGatewayRequestOptions()
+        {
+            TimeSpan maxStaleness = TimeSpan.FromMinutes(5);
+
+            DedicatedGatewayRequestOptions dedicatedGatewayRequestOptions = new DedicatedGatewayRequestOptions
+            {
+                MaxIntegratedCacheStaleness = maxStaleness
+            };
+
+            List<RequestOptions> requestOptions = new List<RequestOptions>
+            {
+                new ItemRequestOptions
+                {
+                    DedicatedGatewayRequestOptions = dedicatedGatewayRequestOptions
+                },
+                new QueryRequestOptions
+                {
+                    DedicatedGatewayRequestOptions = dedicatedGatewayRequestOptions
+                },
+            };
+
+            foreach (RequestOptions option in requestOptions)
+            {
+                TestHandler testHandler = new TestHandler((request, cancellationToken) =>
+                {
+                    Assert.AreEqual(maxStaleness.TotalMilliseconds.ToString(CultureInfo.InvariantCulture), request.Headers[HttpConstants.HttpHeaders.DedicatedGatewayPerRequestCacheStaleness]);
+
+                    return TestHandler.ReturnSuccess();
+                });
+
+                using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+                RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null)
+                {
+                    InnerHandler = testHandler
+                };
+                RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"));
+                requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+                requestMessage.ResourceType = ResourceType.Document;
+                requestMessage.OperationType = OperationType.Read;
+                requestMessage.RequestOptions = option;
+                await invoker.SendAsync(requestMessage, new CancellationToken());
+            }
+        }
+
+        [TestMethod]
         public async Task QueryRequestOptionsSessionToken()
         {
             const string SessionToken = "SessionToken";
@@ -223,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task ConsistencyLevelClient()
         {
             List<Cosmos.ConsistencyLevel> cosmosLevels = Enum.GetValues(typeof(Cosmos.ConsistencyLevel)).Cast<Cosmos.ConsistencyLevel>().ToList();
-            foreach(Cosmos.ConsistencyLevel clientLevel in cosmosLevels)
+            foreach (Cosmos.ConsistencyLevel clientLevel in cosmosLevels)
             {
                 using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                    accountConsistencyLevel: Cosmos.ConsistencyLevel.Strong,

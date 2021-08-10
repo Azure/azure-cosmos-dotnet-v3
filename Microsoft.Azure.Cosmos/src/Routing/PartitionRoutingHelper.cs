@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             bool isContinuationExpected,
             bool hasLogicalPartitionKey,
             bool allowDCount,
+            bool allowNonValueAggregates,
             PartitionKeyDefinition partitionKeyDefinition,
             QueryPartitionProvider queryPartitionProvider,
             string clientApiVersion,
@@ -57,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyDefinition: partitionKeyDefinition,
                 requireFormattableOrderByQuery: VersionUtility.IsLaterThan(clientApiVersion, HttpConstants.VersionDates.v2016_11_14),
                 isContinuationExpected: isContinuationExpected,
-                allowNonValueAggregateQuery: false,
+                allowNonValueAggregateQuery: allowNonValueAggregates,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount);
             if (!tryGetPartitionQueryExecutionInfo.Succeeded)
@@ -66,8 +67,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             PartitionedQueryExecutionInfo queryExecutionInfo = tryGetPartitionQueryExecutionInfo.Result;
-            if (queryExecutionInfo == null ||
-                queryExecutionInfo.QueryRanges == null ||
+            if (queryExecutionInfo?.QueryRanges == null ||
                 queryExecutionInfo.QueryInfo == null ||
                 queryExecutionInfo.QueryRanges.Any(range => range.Min == null || range.Max == null))
             {
@@ -158,8 +158,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                     DocumentClientException exception = new DocumentClientException(
                         RMResources.UnsupportedCrossPartitionQuery,
                         HttpStatusCode.BadRequest,
-                        SubStatusCodes.Unknown);
+                        SubStatusCodes.CrossPartitionQueryNotServable);
 
+                    exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
                     throw exception;
                 }
             }
@@ -435,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
                     }
 
-                    if (initialContinuationToken != null && initialContinuationToken.Range != null)
+                    if (initialContinuationToken?.Range != null)
                     {
                         range = initialContinuationToken.Range;
                     }

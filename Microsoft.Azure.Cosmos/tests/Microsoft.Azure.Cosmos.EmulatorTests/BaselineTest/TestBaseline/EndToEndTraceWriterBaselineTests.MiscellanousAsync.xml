@@ -4,10 +4,16 @@
       <Description>Custom Handler</Description>
       <Setup><![CDATA[
     TimeSpan delayTime = TimeSpan.FromSeconds(2);
+    RequestHandler requestHandler = new RequestHandlerSleepHelper(delayTime);
     CosmosClient cosmosClient = TestCommon.CreateCosmosClient(builder =>
-        builder.AddCustomHandlers(new RequestHandlerSleepHelper(delayTime)));
+        builder.AddCustomHandlers(requestHandler));
 
     DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+    EndToEndTraceWriterBaselineTests.AssertCustomHandlerTime(
+        databaseResponse.Diagnostics.ToString(),
+        requestHandler.FullHandlerName,
+        delayTime);
+
     ITrace trace = ((CosmosTraceDiagnostics)databaseResponse.Diagnostics).Value;
     await databaseResponse.Database.DeleteAsync();
 ]]></Setup>
@@ -20,25 +26,23 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            ├── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                        (
-                                            [Client Side Request Stats]
-                                            Redacted To Not Change The Baselines From Run To Run
-                                            [PointOperationStatisticsTraceDatum]
-                                            Redacted To Not Change The Baselines From Run To Run
-                                        )
+        ├── Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        └── Microsoft.Azure.Cosmos.EmulatorTests.Tracing.EndToEndTraceWriterBaselineTests+RequestHandlerSleepHelper(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                            └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                    (
+                                        [Client Side Request Stats]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                        [PointOperationStatisticsTraceDatum]
+                                        Redacted To Not Change The Baselines From Run To Run
+                                    )
 ]]></Text>
       <Json><![CDATA[{
   "name": "CreateDatabaseAsync",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Transport",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -53,99 +57,53 @@
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "RequestHandler",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "name": "Waiting for Initialization of client to complete",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "RequestHandler",
           "caller info": {
             "member": "MemberName",
             "file": "FilePath",
             "line": 42
           },
           "start time": "12:00:00:000",
+          "duration in milliseconds": 0
+        },
+        {
+          "name": "Microsoft.Azure.Cosmos.EmulatorTests.Tracing.EndToEndTraceWriterBaselineTests+RequestHandlerSleepHelper",
+          "id": "00000000-0000-0000-0000-000000000000",
+          "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
-              "name": "Waiting for Initialization of client to complete",
+              "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "Unknown",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
-              "children": []
-            },
-            {
-              "name": "Send Async",
-              "id": "00000000-0000-0000-0000-000000000000",
-              "component": "RequestHandler",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
-              "start time": "12:00:00:000",
-              "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
-                  "name": "Send Async",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
-                      "name": "Send Async",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "RequestHandler",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
-                      "data": {},
                       "children": [
                         {
-                          "name": "Send Async",
+                          "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
-                          "caller info": {
-                            "member": "MemberName",
-                            "file": "FilePath",
-                            "line": 42
-                          },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
                           "children": [
                             {
-                              "name": "Send Async",
+                              "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
                               "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "RequestHandler",
                               "caller info": {
                                 "member": "MemberName",
                                 "file": "FilePath",
@@ -153,26 +111,10 @@
                               },
                               "start time": "12:00:00:000",
                               "duration in milliseconds": 0,
-                              "data": {},
-                              "children": [
-                                {
-                                  "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
-                                  "id": "00000000-0000-0000-0000-000000000000",
-                                  "component": "Transport",
-                                  "caller info": {
-                                    "member": "MemberName",
-                                    "file": "FilePath",
-                                    "line": 42
-                                  },
-                                  "start time": "12:00:00:000",
-                                  "duration in milliseconds": 0,
-                                  "data": {
-                                    "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                                    "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                                  },
-                                  "children": []
-                                }
-                              ]
+                              "data": {
+                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                                "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                              }
                             }
                           ]
                         }
@@ -210,23 +152,21 @@
     │       Redacted To Not Change The Baselines From Run To Run
     │   )
     └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-        └── Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-            └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                    └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                        └── Send Async(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                            └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
-                                    (
-                                        [Client Side Request Stats]
-                                        Redacted To Not Change The Baselines From Run To Run
-                                        [PointOperationStatisticsTraceDatum]
-                                        Redacted To Not Change The Baselines From Run To Run
-                                    )
+        └── Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+            └── Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                └── Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                    └── Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                        └── Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+                                (
+                                    [Client Side Request Stats]
+                                    Redacted To Not Change The Baselines From Run To Run
+                                    [PointOperationStatisticsTraceDatum]
+                                    Redacted To Not Change The Baselines From Run To Run
+                                )
 ]]></Text>
       <Json><![CDATA[{
   "name": "CreateDatabaseAsync",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Transport",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -241,72 +181,36 @@
     {
       "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
       "id": "00000000-0000-0000-0000-000000000000",
-      "component": "RequestHandler",
-      "caller info": {
-        "member": "MemberName",
-        "file": "FilePath",
-        "line": 42
-      },
       "start time": "12:00:00:000",
       "duration in milliseconds": 0,
-      "data": {},
       "children": [
         {
-          "name": "Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler",
+          "name": "Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler",
           "id": "00000000-0000-0000-0000-000000000000",
-          "component": "RequestHandler",
-          "caller info": {
-            "member": "MemberName",
-            "file": "FilePath",
-            "line": 42
-          },
           "start time": "12:00:00:000",
           "duration in milliseconds": 0,
-          "data": {},
           "children": [
             {
-              "name": "Send Async",
+              "name": "Microsoft.Azure.Cosmos.Handlers.RetryHandler",
               "id": "00000000-0000-0000-0000-000000000000",
-              "component": "RequestHandler",
-              "caller info": {
-                "member": "MemberName",
-                "file": "FilePath",
-                "line": 42
-              },
               "start time": "12:00:00:000",
               "duration in milliseconds": 0,
-              "data": {},
               "children": [
                 {
-                  "name": "Send Async",
+                  "name": "Microsoft.Azure.Cosmos.Handlers.RouterHandler",
                   "id": "00000000-0000-0000-0000-000000000000",
-                  "component": "RequestHandler",
-                  "caller info": {
-                    "member": "MemberName",
-                    "file": "FilePath",
-                    "line": 42
-                  },
                   "start time": "12:00:00:000",
                   "duration in milliseconds": 0,
-                  "data": {},
                   "children": [
                     {
-                      "name": "Send Async",
+                      "name": "Microsoft.Azure.Cosmos.Handlers.TransportHandler",
                       "id": "00000000-0000-0000-0000-000000000000",
-                      "component": "RequestHandler",
-                      "caller info": {
-                        "member": "MemberName",
-                        "file": "FilePath",
-                        "line": 42
-                      },
                       "start time": "12:00:00:000",
                       "duration in milliseconds": 0,
-                      "data": {},
                       "children": [
                         {
-                          "name": "Send Async",
+                          "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
                           "id": "00000000-0000-0000-0000-000000000000",
-                          "component": "RequestHandler",
                           "caller info": {
                             "member": "MemberName",
                             "file": "FilePath",
@@ -314,26 +218,10 @@
                           },
                           "start time": "12:00:00:000",
                           "duration in milliseconds": 0,
-                          "data": {},
-                          "children": [
-                            {
-                              "name": "Microsoft.Azure.Cosmos.GatewayStoreModel Transport Request",
-                              "id": "00000000-0000-0000-0000-000000000000",
-                              "component": "Transport",
-                              "caller info": {
-                                "member": "MemberName",
-                                "file": "FilePath",
-                                "line": 42
-                              },
-                              "start time": "12:00:00:000",
-                              "duration in milliseconds": 0,
-                              "data": {
-                                "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
-                                "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
-                              },
-                              "children": []
-                            }
-                          ]
+                          "data": {
+                            "Client Side Request Stats": "Redacted To Not Change The Baselines From Run To Run",
+                            "PointOperationStatisticsTraceDatum": "Redacted To Not Change The Baselines From Run To Run"
+                          }
                         }
                       ]
                     }

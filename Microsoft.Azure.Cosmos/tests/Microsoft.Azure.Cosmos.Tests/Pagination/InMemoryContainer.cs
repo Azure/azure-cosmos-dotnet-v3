@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             PartitionKeyDefinition partitionKeyDefinition)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
-            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: null);
+            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(Cosmos.UInt128.MaxValue));
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
             this.partitionedRecords[fullRange] = new Records();
@@ -632,6 +632,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     queryState = default;
                 }
 
+                ImmutableDictionary<string, string>.Builder additionalHeaders = ImmutableDictionary.CreateBuilder<string, string>();
+                additionalHeaders.Add("x-ms-documentdb-partitionkeyrangeid", "0");
+                additionalHeaders.Add("x-ms-test-header", "true");
+
                 return Task.FromResult(
                     TryCatch<QueryPage>.FromResult(
                         new QueryPage(
@@ -641,7 +645,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                             responseLengthInBytes: 1337,
                             cosmosQueryExecutionInfo: default,
                             disallowContinuationTokenMessage: default,
-                            additionalHeaders: default,
+                            additionalHeaders: additionalHeaders.ToImmutable(),
                             state: queryState)));
             }
         }
@@ -1278,7 +1282,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private static PartitionKeyHashRange FeedRangeEpkToHashRange(FeedRangeEpk feedRangeEpk)
         {
             PartitionKeyHash? start = feedRangeEpk.Range.Min == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Min);
-            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
+            PartitionKeyHash? end = feedRangeEpk.Range.Max == string.Empty || feedRangeEpk.Range.Max == "FF" ? (PartitionKeyHash?)null : PartitionKeyHash.Parse(feedRangeEpk.Range.Max);
             PartitionKeyHashRange hashRange = new PartitionKeyHashRange(start, end);
             return hashRange;
         }

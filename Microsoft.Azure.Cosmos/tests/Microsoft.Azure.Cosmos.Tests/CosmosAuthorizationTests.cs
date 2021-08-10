@@ -82,12 +82,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
                 "VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=",
-                defaultDateTime: new DateTime(2020, 9, 21, 9, 9, 9, DateTimeKind.Utc));
+                defaultDateTime: new DateTime(2030, 9, 21, 9, 9, 9, DateTimeKind.Utc));
 
             using AuthorizationTokenProvider cosmosAuthorization = new AuthorizationTokenProviderTokenCredential(
                 simpleEmulatorTokenCredential,
                 new Uri("https://127.0.0.1:8081"),
-                requestTimeout: TimeSpan.FromSeconds(30),
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1));
 
             {
@@ -100,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxNjAwNjc5MzQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE2MDA2ODI5NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0"
+                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0"
                     , token);
                 Assert.IsNull(payload);
             }
@@ -115,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxNjAwNjc5MzQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE2MDA2ODI5NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0"
+                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0"
                     , token);
                 Assert.IsNull(payload);
             }
@@ -130,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxNjAwNjc5MzQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE2MDA2ODI5NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0"
+                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0"
                     , token);
                 Assert.IsNull(payload);
             }
@@ -145,7 +144,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: toLarge);
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -159,7 +157,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.MinValue);
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -173,7 +170,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.Zero);
                 Assert.Fail("Should throw ArgumentException");
             }
@@ -187,36 +183,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(-1));
-                Assert.Fail("Should throw ArgumentException");
-            }
-            catch (ArgumentException ae)
-            {
-                Assert.IsTrue(ae.ToString().Contains("backgroundTokenCredentialRefreshInterval"));
-            }
-
-            try
-            {
-                new TokenCredentialCache(
-                    new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.MinValue,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
-                Assert.Fail("Should throw ArgumentException");
-            }
-            catch (ArgumentException ae)
-            {
-                Assert.IsTrue(ae.ToString().Contains("backgroundTokenCredentialRefreshInterval"));
-            }
-
-            try
-            {
-                new TokenCredentialCache(
-                    new Mock<TokenCredential>().Object,
-                    CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.Zero,
-                    backgroundTokenCredentialRefreshInterval: TimeSpan.FromMinutes(1));
                 Assert.Fail("Should throw ArgumentException");
             }
             catch (ArgumentException ae)
@@ -228,13 +195,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             using TokenCredentialCache token = new TokenCredentialCache(
                     new Mock<TokenCredential>().Object,
                     CosmosAuthorizationTests.AccountEndpoint,
-                    requestTimeout: TimeSpan.FromSeconds(15),
                     backgroundTokenCredentialRefreshInterval: TimeSpan.FromMilliseconds(Int32.MaxValue));
 
             using TokenCredentialCache disableBackgroundTask = new TokenCredentialCache(
                    new Mock<TokenCredential>().Object,
                    CosmosAuthorizationTests.AccountEndpoint,
-                   requestTimeout: TimeSpan.FromSeconds(15),
                    backgroundTokenCredentialRefreshInterval: TimeSpan.MaxValue);
         }
 
@@ -250,40 +215,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestTokenCredentialTimeoutAsync()
-        {
-            TestTokenCredential testTokenCredential = new TestTokenCredential(async () =>
-            {
-                await Task.Delay(-1);
-
-                return new AccessToken("AccessToken", DateTimeOffset.MaxValue);
-            });
-
-            TimeSpan timeout = TimeSpan.FromSeconds(1);
-            using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(
-                tokenCredential: testTokenCredential,
-                requestTimeout: timeout))
-            {
-                try
-                {
-                    await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
-                    Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
-                }
-                catch (CosmosException cosmosException)
-                {
-                    Assert.AreEqual(HttpStatusCode.RequestTimeout, cosmosException.StatusCode);
-                    Assert.AreEqual((int)Azure.Documents.SubStatusCodes.FailedToGetAadToken, cosmosException.SubStatusCode);
-                    Assert.AreEqual($"TokenCredential.GetTokenAsync request timed out after {timeout}", cosmosException.InnerException.Message);
-                }
-            }
-        }
-
-        [TestMethod]
         public async Task TestTokenCredentialErrorAsync()
         {
-            Exception exception = new Exception();
+            Exception exceptionToBeThrown = new Exception("Test Error Message");
 
-            TestTokenCredential testTokenCredential = new TestTokenCredential(() => throw exception);
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() => throw exceptionToBeThrown);
 
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
@@ -292,18 +228,17 @@ namespace Microsoft.Azure.Cosmos.Tests
                     await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
                     Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
                 }
-                catch (CosmosException cosmosException)
+                catch (Exception exception)
                 {
-                    Assert.AreEqual(HttpStatusCode.Unauthorized, cosmosException.StatusCode);
-                    Assert.AreEqual((int)Azure.Documents.SubStatusCodes.FailedToGetAadToken, cosmosException.SubStatusCode);
-
+                    // It should just throw the original exception and not be wrapped in a CosmosException.
+                    // This avoids any confusion on where the error was thrown from.
                     Assert.IsTrue(object.ReferenceEquals(
                         exception,
-                        cosmosException.InnerException));
+                        exceptionToBeThrown));
                 }
 
                 // TokenCredential.GetTokenAsync() is retried for 3 times, so it should have been invoked for 4 times.
-                Assert.AreEqual(3, testTokenCredential.NumTimesInvoked);
+                Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
             }
         }
 
@@ -377,35 +312,35 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             });
 
+            using ITrace trace = Trace.GetRootTrace("test");
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
 
                 // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
 
                 // Token refreshes fails except for the first time, but the cached token will be served as long as it is valid.
                 await Task.Delay(TimeSpan.FromSeconds(3));
-                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
 
                 // Cache token has expired, and it fails to refresh.
                 await Task.Delay(TimeSpan.FromSeconds(2));
 
                 try
                 {
-                    await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+                    await tokenCredentialCache.GetTokenAsync(trace);
                     Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
                 }
-                catch (CosmosException cosmosException)
+                catch (Exception thrownException)
                 {
-                    Assert.AreEqual(HttpStatusCode.Unauthorized, cosmosException.StatusCode);
-                    Assert.AreEqual((int)Azure.Documents.SubStatusCodes.FailedToGetAadToken, cosmosException.SubStatusCode);
-
+                    // It should just throw the original exception and not be wrapped in a CosmosException
+                    // This avoids any confusion on where the error was thrown from.
                     Assert.IsTrue(object.ReferenceEquals(
                         exception,
-                        cosmosException.InnerException));
+                        thrownException));
                 }
             }
         }
@@ -440,13 +375,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private TokenCredentialCache CreateTokenCredentialCache(
-            TokenCredential tokenCredential,
-            TimeSpan? requestTimeout = null)
+            TokenCredential tokenCredential)
         {
             return new TokenCredentialCache(
                 tokenCredential,
                 CosmosAuthorizationTests.AccountEndpoint,
-                requestTimeout: requestTimeout ?? TimeSpan.FromSeconds(15),
                 backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(5));
         }
 

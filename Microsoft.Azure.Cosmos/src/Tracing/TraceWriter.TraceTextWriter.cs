@@ -382,12 +382,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.TopLine);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.Header);
                     stringBuilder.AppendLine(AddressResolutionStatisticsTextTable.Singleton.MiddleLine);
-                    foreach (AddressResolutionStatistics stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics.Values)
+                    foreach (KeyValuePair<string, AddressResolutionStatistics> stat in clientSideRequestStatisticsTraceDatum.EndpointToAddressResolutionStatistics)
                     {
                         string row = AddressResolutionStatisticsTextTable.Singleton.GetRow(
-                            stat.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
-                            stat.EndTime.HasValue ? stat.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
-                            stat.TargetEndpoint);
+                            stat.Value.StartTime.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture),
+                            stat.Value.EndTime.HasValue ? stat.Value.EndTime.Value.ToString("hh:mm:ss:fff", CultureInfo.InvariantCulture) : "NO END TIME",
+                            stat.Value.TargetEndpoint);
                         stringBuilder.AppendLine(row);
                     }
 
@@ -436,6 +436,35 @@ namespace Microsoft.Azure.Cosmos.Tracing
                             catch (Exception)
                             {
                                 // This method throws if there is no exception.
+                            }
+                        }
+                    }
+
+                    if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Any())
+                    {
+                        stringBuilder.AppendLine("Http Response Statistics");
+                        foreach (HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
+                        {
+                            stringBuilder.AppendLine($"{space}HttpResponse");
+                            stringBuilder.AppendLine($"{space}{space}RequestStartTime: {stat.RequestStartTime.ToString("o", CultureInfo.InvariantCulture)}");
+                            stringBuilder.AppendLine($"{space}{space}DurationInMs: {stat.Duration.TotalMilliseconds:0.00}");
+                            stringBuilder.AppendLine($"{space}{space}RequestUri: {stat.RequestUri}");
+                            stringBuilder.AppendLine($"{space}{space}ResourceType: {stat.ResourceType}");
+                            stringBuilder.AppendLine($"{space}{space}HttpMethod: {stat.HttpMethod}");
+
+                            if (stat.Exception != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}ExceptionType: {stat.Exception.GetType()}");
+                                stringBuilder.AppendLine($"{space}{space}ExceptionMessage: {stat.Exception.Message}");
+                            }
+
+                            if (stat.HttpResponseMessage != null)
+                            {
+                                stringBuilder.AppendLine($"{space}{space}StatusCode: {stat.HttpResponseMessage.StatusCode}");
+                                if (!stat.HttpResponseMessage.IsSuccessStatusCode)
+                                {
+                                    stringBuilder.AppendLine($"{space}{space}ReasonPhrase: {stat.HttpResponseMessage.ReasonPhrase}");
+                                }
                             }
                         }
                     }

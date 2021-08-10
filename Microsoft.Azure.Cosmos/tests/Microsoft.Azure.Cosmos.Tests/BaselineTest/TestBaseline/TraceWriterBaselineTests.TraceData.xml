@@ -16,7 +16,8 @@
                 method: HttpMethod.Post,
                 requestUri: "http://localhost.com",
                 requestSessionToken: nameof(PointOperationStatisticsTraceDatum.RequestSessionToken),
-                responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken));
+                responseSessionToken: nameof(PointOperationStatisticsTraceDatum.ResponseSessionToken),
+                beLatencyInMs: "0.42");
             rootTrace.AddDatum("Point Operation Statistics", datum);
         }
 ]]></Setup>
@@ -37,7 +38,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -56,10 +56,10 @@
       "RequestUri": "http://localhost.com",
       "ErrorMessage": null,
       "RequestSessionToken": "RequestSessionToken",
-      "ResponseSessionToken": "ResponseSessionToken"
+      "ResponseSessionToken": "ResponseSessionToken",
+      "BELatencyInMs": "0.42"
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -80,7 +80,8 @@
                 method: default,
                 requestUri: default,
                 requestSessionToken: default,
-                responseSessionToken: default);
+                responseSessionToken: default,
+                beLatencyInMs: default);
             rootTrace.AddDatum("Point Operation Statistics Default", datum);
         }
 ]]></Setup>
@@ -101,7 +102,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -120,10 +120,10 @@
       "RequestUri": null,
       "ErrorMessage": null,
       "RequestSessionToken": null,
-      "ResponseSessionToken": null
+      "ResponseSessionToken": null,
+      "BELatencyInMs": null
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -182,7 +182,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -192,8 +191,7 @@
   "duration in milliseconds": 0,
   "data": {
     "Query Metrics": "Retrieved Document Count                 :           2,000             \r\nRetrieved Document Size                  :       1,125,600 bytes       \r\nOutput Document Count                    :           2,000             \r\nOutput Document Size                     :       1,125,600 bytes       \r\nIndex Utilization                        :          100.00 %           \r\nTotal Query Execution Time               :           33.67 milliseconds\r\n  Query Preparation Time                 :            0.19 milliseconds\r\n  Index Lookup Time                      :            0.36 milliseconds\r\n  Document Load Time                     :            9.58 milliseconds\r\n  Runtime Execution Times                :            0.12 milliseconds\r\n  Document Write Time                    :           18.10 milliseconds\r\n\r\nIndex Utilization Information\r\n  Utilized Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Single Indexes\r\n    Index Spec: IndexDocumentExpression\r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Utilized Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n  Potential Composite Indexes\r\n    Index Spec: \r\n    Index Impact Score: IndexImpactScore\r\n    ---\r\n"
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -216,8 +214,9 @@
                 DateTime.MinValue,
                 DateTime.MaxValue,
                 "http://localhost.com");
-            datum.EndpointToAddressResolutionStatistics["asdf"] = mockStatistics;
-            datum.EndpointToAddressResolutionStatistics["asdf2"] = mockStatistics;
+
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", mockStatistics);
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", mockStatistics);
 
             datum.FailedReplicas.Add(uri1);
             datum.FailedReplicas.Add(uri2);
@@ -225,7 +224,7 @@
             datum.RegionsContactedWithName.Add(("local", uri1));
             datum.RegionsContactedWithName.Add(("local", uri2));
 
-            datum.RequestEndTimeUtc = DateTime.MaxValue;
+            TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 DateTime.MinValue,
@@ -246,11 +245,14 @@
                     itemLSN: 15,
                     sessionToken: new SimpleSessionToken(42),
                     usingLocalLSN: true,
-                    activityId: Guid.Empty.ToString()),
+                    activityId: Guid.Empty.ToString(),
+                    backendRequestDurationInMs: "4.2",
+                    transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 ResourceType.Document,
                 OperationType.Query,
                 uri1);
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+
+            TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats", datum);
         }
 ]]></Setup>
@@ -305,7 +307,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -348,13 +349,63 @@
           "ResourceType": "Document",
           "OperationType": "Query",
           "LocationEndpoint": "http://someuri1.com/",
-          "ActivityId": "00000000-0000-0000-0000-000000000000",
-          "StoreResult": "StorePhysicalAddress: http://storephysicaladdress.com/, LSN: 1337, GlobalCommittedLsn: 1234, PartitionKeyRangeId: 42, IsValid: True, StatusCode: 0, SubStatusCode: 0, RequestCharge: 3.14, ItemLSN: 15, SessionToken: 42, UsingLocalLSN: True, TransportException: null"
+          "StoreResult": {
+            "ActivityId": "00000000-0000-0000-0000-000000000000",
+            "StatusCode": "0",
+            "SubStatusCode": "Unknown",
+            "LSN": 1337,
+            "PartitionKeyRangeId": "42",
+            "GlobalCommittedLSN": 1234,
+            "ItemLSN": 15,
+            "UsingLocalLSN": true,
+            "QuorumAckedLSN": 23,
+            "SessionToken": "42",
+            "CurrentWriteQuorum": 3,
+            "CurrentReplicaSetSize": 4,
+            "NumberOfReadRegions": 13,
+            "IsClientCpuOverloaded": false,
+            "IsValid": true,
+            "StorePhysicalAddress": "http://storephysicaladdress.com/",
+            "RequestCharge": 3.14,
+            "BELatencyInMs": "4.2",
+            "RntbdRequestStats": [
+              {
+                "EventName": "Created",
+                "StartTime": "2021-12-31T23:59:59.059Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "ChannelAcquisitionStarted",
+                "StartTime": "2021-12-31T23:59:59.06Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Pipelined",
+                "StartTime": "2021-12-31T23:59:59.061Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Transit Time",
+                "StartTime": "2021-12-31T23:59:59.062Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Received",
+                "StartTime": "2021-12-31T23:59:59.063Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Completed",
+                "StartTime": "2021-12-31T23:59:59.064Z",
+                "DurationInMicroSec": "0"
+              }
+            ],
+            "TransportException": null
+          }
         }
       ]
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -368,18 +419,14 @@
             ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
             datum.ContactedReplicas.Add(default);
 
-            ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics mockStatistics = new ClientSideRequestStatisticsTraceDatum.AddressResolutionStatistics(
-                default,
-                default,
-                targetEndpoint: "asdf");
-            datum.EndpointToAddressResolutionStatistics["asdf"] = default;
-            datum.EndpointToAddressResolutionStatistics["asdf2"] = default;
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf", default);
+            TraceWriterBaselineTests.GetPrivateField<Dictionary<string, AddressResolutionStatistics>>(datum, "endpointToAddressResolutionStats").Add("asdf2", default);
 
             datum.FailedReplicas.Add(default);
 
             datum.RegionsContactedWithName.Add(default);
 
-            datum.RequestEndTimeUtc = default;
+            TraceWriterBaselineTests.SetEndRequestTime(datum, default);
 
             StoreResponseStatistics storeResponseStatistics = new StoreResponseStatistics(
                 requestStartTime: default,
@@ -400,11 +447,14 @@
                     itemLSN: default,
                     sessionToken: default,
                     usingLocalLSN: default,
-                    activityId: default),
+                    activityId: default,
+                    backendRequestDurationInMs: default,
+                     transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                 resourceType: default,
                 operationType: default,
-                locationEndpoint: default); ;
-            datum.StoreResponseStatisticsList.Add(storeResponseStatistics);
+                locationEndpoint: default);
+
+            TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats Default", datum);
         }
 ]]></Setup>
@@ -454,7 +504,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -490,13 +539,176 @@
           "ResourceType": "Database",
           "OperationType": "Create",
           "LocationEndpoint": null,
-          "ActivityId": null,
-          "StoreResult": "StorePhysicalAddress: , LSN: 0, GlobalCommittedLsn: 0, PartitionKeyRangeId: , IsValid: False, StatusCode: 0, SubStatusCode: 0, RequestCharge: 0, ItemLSN: 0, SessionToken: , UsingLocalLSN: False, TransportException: null"
+          "StoreResult": {
+            "ActivityId": null,
+            "StatusCode": "0",
+            "SubStatusCode": "Unknown",
+            "LSN": 0,
+            "PartitionKeyRangeId": null,
+            "GlobalCommittedLSN": 0,
+            "ItemLSN": 0,
+            "UsingLocalLSN": false,
+            "QuorumAckedLSN": 0,
+            "SessionToken": null,
+            "CurrentWriteQuorum": 0,
+            "CurrentReplicaSetSize": 0,
+            "NumberOfReadRegions": 0,
+            "IsClientCpuOverloaded": false,
+            "IsValid": false,
+            "StorePhysicalAddress": null,
+            "RequestCharge": 0,
+            "BELatencyInMs": null,
+            "RntbdRequestStats": [
+              {
+                "EventName": "Created",
+                "StartTime": "2021-12-31T23:59:59.059Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "ChannelAcquisitionStarted",
+                "StartTime": "2021-12-31T23:59:59.06Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Pipelined",
+                "StartTime": "2021-12-31T23:59:59.061Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Transit Time",
+                "StartTime": "2021-12-31T23:59:59.062Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Received",
+                "StartTime": "2021-12-31T23:59:59.063Z",
+                "DurationInMicroSec": "1000"
+              },
+              {
+                "EventName": "Completed",
+                "StartTime": "2021-12-31T23:59:59.064Z",
+                "DurationInMicroSec": "0"
+              }
+            ],
+            "TransportException": null
+          }
         }
       ]
     }
+  }
+}]]></Json>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>Client Side Request Stats For Gateway Request</Description>
+      <Setup><![CDATA[
+        TraceForBaselineTesting rootTrace;
+        using (rootTrace = TraceForBaselineTesting.GetRootTrace())
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
+            TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
+
+            HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                new Uri("http://someUri1.com"),
+                HttpMethod.Get,
+                ResourceType.Document,
+                new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
+                exception: null);
+
+            TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
+
+            HttpResponseStatistics httpResponseStatisticsException = new HttpResponseStatistics(
+                DateTime.MinValue,
+                DateTime.MaxValue,
+                new Uri("http://someUri1.com"),
+                HttpMethod.Get,
+                ResourceType.Document,
+                responseMessage: null,
+                exception: new OperationCanceledException());
+            TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
+
+            rootTrace.AddDatum("Client Side Request Stats", datum);
+        }
+]]></Setup>
+    </Input>
+    <Output>
+      <Text><![CDATA[.
+└── Trace For Baseline Testing(00000000-0000-0000-0000-000000000000)  Unknown-Component  MemberName@FilePath:42  12:00:00:000  0.00 milliseconds  
+        (
+            [Client Side Request Stats]
+            Start Time: 12:00:00:000
+            End Time: 11:59:59:999
+            Contacted Replicas
+            Failed to Contact Replicas
+            Regions Contacted
+            Address Resolution Statistics
+            ┌────────────────┬──────────────┬──────────────────────────────────────────────────┐
+            │Start Time (utc)│End Time (utc)│Endpoint                                          │
+            ├────────────────┼──────────────┼──────────────────────────────────────────────────┤
+            └────────────────┴──────────────┴──────────────────────────────────────────────────┘
+            Store Response Statistics
+            Http Response Statistics
+              HttpResponse
+                RequestStartTime: 0001-01-01T00:00:00.0000000
+                DurationInMs: 315537897600000.00
+                RequestUri: http://someuri1.com/
+                ResourceType: Document
+                HttpMethod: GET
+                StatusCode: OK
+              HttpResponse
+                RequestStartTime: 0001-01-01T00:00:00.0000000
+                DurationInMs: 315537897600000.00
+                RequestUri: http://someuri1.com/
+                ResourceType: Document
+                HttpMethod: GET
+                ExceptionType: System.OperationCanceledException
+                ExceptionMessage: The operation was canceled.
+        )
+]]></Text>
+      <Json><![CDATA[{
+  "name": "Trace For Baseline Testing",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "caller info": {
+    "member": "MemberName",
+    "file": "FilePath",
+    "line": 42
   },
-  "children": []
+  "start time": "12:00:00:000",
+  "duration in milliseconds": 0,
+  "data": {
+    "Client Side Request Stats": {
+      "Id": "AggregatedClientSideRequestStatistics",
+      "ContactedReplicas": [],
+      "RegionsContacted": [],
+      "FailedReplicas": [],
+      "AddressResolutionStatistics": [],
+      "StoreResponseStatistics": [],
+      "HttpResponseStats": [
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "DurationInMs": 315537897600000,
+          "RequestUri": "http://someuri1.com/",
+          "ResourceType": "Document",
+          "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
+          "StatusCode": "OK"
+        },
+        {
+          "StartTimeUTC": "0001-01-01T00:00:00",
+          "DurationInMs": 315537897600000,
+          "RequestUri": "http://someuri1.com/",
+          "ResourceType": "Document",
+          "HttpMethod": "GET",
+          "ActivityId": "00000000-0000-0000-0000-000000000000",
+          "ExceptionType": "System.OperationCanceledException",
+          "ExceptionMessage": "The operation was canceled."
+        }
+      ]
+    }
+  }
 }]]></Json>
     </Output>
   </Result>
@@ -531,7 +743,6 @@
       <Json><![CDATA[{
   "name": "Trace For Baseline Testing",
   "id": "00000000-0000-0000-0000-000000000000",
-  "component": "Unknown",
   "caller info": {
     "member": "MemberName",
     "file": "FilePath",
@@ -543,8 +754,7 @@
     "CPU History": {
       "CPU History": "(0001-01-01T00:00:00.0000000 42.000), (0001-01-01T00:00:00.0000000 23.000)"
     }
-  },
-  "children": []
+  }
 }]]></Json>
     </Output>
   </Result>

@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 });
             }
 
-            StoreResponse sendDirectFunc(Uri uri, DocumentServiceRequest request)
+            StoreResponse sendDirectFunc(TransportAddressUri uri, DocumentServiceRequest request)
             {
                 return new StoreResponse()
                 {
@@ -254,13 +254,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static ServerStoreModel MockServerStoreModel(
             object sessionContainer, 
-            Func<Uri, DocumentServiceRequest, StoreResponse> sendDirectFunc)
+            Func<TransportAddressUri, DocumentServiceRequest, StoreResponse> sendDirectFunc)
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
 
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    It.IsAny<Uri>(), It.IsAny<DocumentServiceRequest>()))
+                    It.IsAny<TransportAddressUri>(), It.IsAny<DocumentServiceRequest>()))
                     .ReturnsAsync(sendDirectFunc);
 
             AddressInformation[] addressInformation = GetMockAddressInformation();
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return await Task.FromResult(new HttpResponseMessage((HttpStatusCode)responseStatusCode));
             }
 
-            GatewayStoreModel storeModel = MockGatewayStoreModel(sendFunc);
+            using GatewayStoreModel storeModel = MockGatewayStoreModel(sendFunc);
 
             using (new ActivityScope(Guid.NewGuid()))
             {

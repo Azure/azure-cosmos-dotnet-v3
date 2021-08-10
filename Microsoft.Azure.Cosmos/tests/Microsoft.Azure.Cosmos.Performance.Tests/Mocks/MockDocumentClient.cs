@@ -42,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
+            bool? isClientTelemetryEnabled = null,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
             MockDocumentClient documentClient = new MockDocumentClient();
@@ -56,6 +57,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         IgnoreNullValues = true,
                     });
+            }
+
+            if (isClientTelemetryEnabled.HasValue && isClientTelemetryEnabled.Value)
+            {
+                cosmosClientBuilder.WithTelemetryEnabled();
             }
 
             documentClient.dummyHeaderNames = new string[100];
@@ -97,7 +103,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return Convert.ToBase64String(randomEntries);
         }
 
-        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(this.globalEndpointManager.Object, new ConnectionPolicy());
+        internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
+            this.globalEndpointManager.Object,
+            new ConnectionPolicy(), 
+            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object));
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
@@ -154,8 +163,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<string>(),
                     It.IsAny<string>(),
                     It.IsAny<bool>(),
-                    It.IsAny<CancellationToken>(),
-                    It.IsAny<ITrace>())).Returns(Task.FromResult(containerProperties));
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>())).Returns(Task.FromResult(containerProperties));
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                    {
+                        Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
+                    },
+                string.Empty);
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null);
             this.partitionKeyRangeCache.Setup(
@@ -166,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                             It.IsAny<CancellationToken>(),
                             It.IsAny<ITrace>()
                         )
-                ).Returns(Task.FromResult<CollectionRoutingMap>(null));
+                ).Returns(Task.FromResult<CollectionRoutingMap>(routingMap));
 
             List<PartitionKeyRange> result = new List<PartitionKeyRange>
             {
@@ -266,9 +283,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             mockTransportClient.Setup(
                 client => client.InvokeResourceOperationAsync(
-                    It.IsAny<Uri>(),
+                    It.IsAny<TransportAddressUri>(),
                     It.Is<DocumentServiceRequest>(e => this.IsValidDsr(e))))
-                    .Returns((Uri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
+                    .Returns((TransportAddressUri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
 
             return mockTransportClient.Object;
         }

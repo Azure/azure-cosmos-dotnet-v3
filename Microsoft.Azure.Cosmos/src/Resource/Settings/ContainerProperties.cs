@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
     /// The partition key is the first level 'country' property in all the documents within this container.
     /// <code language="c#">
     /// <![CDATA[
-    ///     Container container = await client.GetDatabase("dbName").Containers.CreateAsync("MyCollection", "/country", 50000} );
+    ///     Container container = await client.GetDatabase("dbName").Containers.CreateAsync("MyCollection", "/country", 50000);
     ///     ContainerProperties containerProperties = container.Resource;
     /// ]]>
     /// </code>
@@ -689,6 +689,11 @@ namespace Microsoft.Azure.Cosmos
                 && this.indexingPolicyInternal.ExcludedPaths.Count == 0)
             {
                 this.indexingPolicyInternal.IncludedPaths.Add(new IncludedPath() { Path = IndexingPolicy.DefaultPath });
+            }
+
+            if (this.ClientEncryptionPolicy != null)
+            {
+                this.ClientEncryptionPolicy.ValidatePartitionKeyPathsAreNotEncrypted(this.PartitionKeyPathTokens);
             }
         }
     }

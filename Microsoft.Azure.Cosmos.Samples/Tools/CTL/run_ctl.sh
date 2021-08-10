@@ -128,7 +128,21 @@ else
 dotnetparameters="$dotnetparameters --ctl_logging_context $ctl_logging_context"
 fi
 
-if [ -z "ctl_precreated_documents" ]
+if [ -z "$ctl_telemetry_endpoint" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_telemetry_endpoint $ctl_telemetry_endpoint"
+fi
+
+if [ -z "$ctl_telemetry_schedule_in_sec" ]
+then
+dotnetparameters="$dotnetparameters"
+else
+dotnetparameters="$dotnetparameters --ctl_telemetry_schedule_in_sec $ctl_telemetry_schedule_in_sec"
+fi
+
+if [ -z "$ctl_precreated_documents" ]
 then
 dotnetparameters="$dotnetparameters"
 else
