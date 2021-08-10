@@ -42,14 +42,22 @@ namespace Microsoft.Azure.Cosmos
                                                                                 ITrace trace,
                                                                                 CancellationToken cancellationToken)
         {
-            string resourceId = await this.container.GetCachedRIDAsync(cancellationToken);
-            IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
-                                await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
+            IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap;
+            string resourceId;
+            try
+            {
+                resourceId = await this.container.GetCachedRIDAsync(cancellationToken);
+                partitionKeyRangeItemMap = await this.CreatePartitionKeyRangeItemListMapAsync(items, trace, cancellationToken);
+            }
+            catch (CosmosException ex)
+            {
+                return ex.ToCosmosResponseMessage(request: null);
+            }
 
             List<ResponseMessage>[] queryResponses = await this.ReadManyTaskHelperAsync(partitionKeyRangeItemMap,
-                                                                readManyRequestOptions,
-                                                                trace,
-                                                                cancellationToken);
+                                                                                readManyRequestOptions,
+                                                                                trace,
+                                                                                cancellationToken);
 
             return this.CombineStreamsFromQueryResponses(queryResponses, resourceId, trace); // also disposes the response messages
         }
@@ -60,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
                                                                             CancellationToken cancellationToken)
         {
             IDictionary<PartitionKeyRange, List<(string, PartitionKey)>> partitionKeyRangeItemMap =
-                                await this.CreatePartitionKeyRangeItemListMapAsync(items, cancellationToken);
+                                await this.CreatePartitionKeyRangeItemListMapAsync(items, trace, cancellationToken);
 
             List<ResponseMessage>[] queryResponses = await this.ReadManyTaskHelperAsync(partitionKeyRangeItemMap,
                                                                 readManyRequestOptions,
@@ -116,6 +124,7 @@ namespace Microsoft.Azure.Cosmos
 
         private async Task<IDictionary<PartitionKeyRange, List<(string, PartitionKey)>>> CreatePartitionKeyRangeItemListMapAsync(
             IReadOnlyList<(string, PartitionKey)> items,
+            ITrace trace,
             CancellationToken cancellationToken = default)
         {
             CollectionRoutingMap collectionRoutingMap = await this.container.GetRoutingMapAsync(cancellationToken);
@@ -125,7 +134,8 @@ namespace Microsoft.Azure.Cosmos
 
             foreach ((string id, PartitionKey pk) item in items)
             {
-                Documents.Routing.PartitionKeyInternal partitionKeyInternal = await this.GetPartitionKeyInternalAsync(item.pk, cancellationToken);
+                Documents.Routing.PartitionKeyInternal partitionKeyInternal = 
+                            await this.GetPartitionKeyInternalAsync(item.pk, trace, cancellationToken);
                 string effectivePartitionKeyValue = partitionKeyInternal.GetEffectivePartitionKeyString(this.partitionKeyDefinition);
                 PartitionKeyRange partitionKeyRange = collectionRoutingMap.GetRangeByEffectivePartitionKey(effectivePartitionKeyValue);
                 if (partitionKeyRangeItemMap.TryGetValue(partitionKeyRange, out List<(string, PartitionKey)> itemList))
@@ -373,15 +383,16 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private async Task<Documents.Routing.PartitionKeyInternal> GetPartitionKeyInternalAsync(PartitionKey partitionKey,
+        private ValueTask<Documents.Routing.PartitionKeyInternal> GetPartitionKeyInternalAsync(PartitionKey partitionKey,
+                                                                                    ITrace trace,
                                                                                     CancellationToken cancellationToken)
         {
             if (partitionKey.IsNone)
             {
-                return await this.container.GetNonePartitionKeyValueAsync(NoOpTrace.Singleton, cancellationToken).ConfigureAwait(false);
+                return await this.container.GetNonePartitionKeyValueAsync(trace, cancellationToken).ConfigureAwait(false);
             }
 
-            return partitionKey.InternalKey;
+            return new ValueTask<Documents.Routing.PartitionKeyInternal>(partitionKey.InternalKey);
         }
 
         private class ReadManyFeedResponseEnumerable<T> : IEnumerable<T>

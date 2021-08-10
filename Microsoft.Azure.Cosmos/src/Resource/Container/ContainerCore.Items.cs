@@ -298,7 +298,17 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            ReadManyHelper readManyHelper = new ReadManyQueryHelper(await this.GetPartitionKeyDefinitionAsync(),
+            PartitionKeyDefinition partitionKeyDefinition;
+            try
+            {
+                partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
+            }
+            catch (CosmosException ex)
+            {
+                ex.ToCosmosResponseMessage(request: null);
+            }
+
+            ReadManyHelper readManyHelper = new ReadManyQueryHelper(partitionKeyDefinition,
                                                                     this);
 
             return await readManyHelper.ExecuteReadManyRequestAsync(items,
