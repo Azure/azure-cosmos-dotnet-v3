@@ -161,13 +161,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.AdjustmentFactor);
+                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.PrecisionFactor);
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.AdjustmentFactor);
+                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.PrecisionFactor);
 
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }

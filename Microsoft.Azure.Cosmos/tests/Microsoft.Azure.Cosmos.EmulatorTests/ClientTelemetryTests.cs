@@ -264,8 +264,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
                 Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
 
-                Console.WriteLine(telemetryInfo.TimeIntervalAggregationInSeconds);
-                Assert.AreNotEqual(0, telemetryInfo.TimeIntervalAggregationInSeconds);
             }
             Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");
 

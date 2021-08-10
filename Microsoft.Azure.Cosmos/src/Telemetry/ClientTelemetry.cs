@@ -40,7 +40,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly DiagnosticsHandlerHelper diagnosticsHelper;
 
         private readonly CancellationTokenSource cancellationTokenSource;
-        private readonly Stopwatch timer = new Stopwatch();
 
         private Task telemetryTask;
 
@@ -106,7 +105,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private void StartObserverTask()
         {
-            this.timer.Start();
             this.telemetryTask = Task.Run(this.EnrichAndSendAsync, this.cancellationTokenSource.Token);
         }
 
@@ -159,8 +157,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
                         = Interlocked.Exchange(ref this.operationInfoMap, new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>());
-                    
-                    this.clientTelemetryInfo.TimeIntervalAggregationInSeconds = Math.Round(this.timer.Elapsed.TotalSeconds);
 
                     this.clientTelemetryInfo.OperationInfo = ClientTelemetryHelper.ToListWithMetricsInfo(operationInfoSnapshot);
 
@@ -233,14 +229,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             long totalElapsedTime = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
             try
             {
-                latency.RecordValue(totalElapsedTime * ClientTelemetryOptions.AdjustmentFactor);
+                latency.RecordValue(totalElapsedTime * ClientTelemetryOptions.PrecisionFactor);
             } 
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTime + "  Exception : " + ex.Message);
             }
 
-            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.AdjustmentFactor);
+            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.PrecisionFactor);
             try
             {
                 requestcharge.RecordValue(requestChargeToRecord);
@@ -396,9 +392,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private void Reset()
         {
             this.clientTelemetryInfo.SystemInfo.Clear();
-            // Reset the timer
-            this.timer.Reset();
-            this.timer.Start(); //Resume the timer from zero
         }
 
         /// <summary>
