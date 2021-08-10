@@ -137,8 +137,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed
                     ChangeFeedProcessorUserException cfpException = exception as ChangeFeedProcessorUserException;
                     Assert.IsNotNull(cfpException);
                     Assert.ReferenceEquals(exceptionToPropagate, exception.InnerException);
-                    Assert.IsNotNull(cfpException.ExceptionContext.Diagnostics);
-                    Assert.IsNotNull(cfpException.ExceptionContext.Headers);
+                    Assert.IsNotNull(cfpException.ChangeFeedProcessorContext.Diagnostics);
+                    Assert.IsNotNull(cfpException.ChangeFeedProcessorContext.Headers);
                     return Task.CompletedTask;
                 })
                 .WithLeaseContainer(this.LeaseContainer).Build();

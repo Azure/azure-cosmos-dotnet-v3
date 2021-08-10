@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos
             ChangeFeedProcessorContext context)
             : base(ChangeFeedProcessorUserException.DefaultMessage, originalException)
         {
-            this.ExceptionContext = context;
+            this.ChangeFeedProcessorContext = context;
         }
 
         /// <summary>
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Contextual information that identifies which was the payload that was delivered to the delegate when this error occurred.
         /// </summary>
-        public ChangeFeedProcessorContext ExceptionContext { get; private set; }
+        public ChangeFeedProcessorContext ChangeFeedProcessorContext { get; private set; }
 
         /// <summary>
         /// Sets the System.Runtime.Serialization.SerializationInfo with information about the exception.

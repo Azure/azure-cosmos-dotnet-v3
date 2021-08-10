@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     using System;
     using System.IO;
     using System.Runtime.Serialization.Formatters.Binary;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Exceptions;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -26,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             ChangeFeedProcessorUserException ex = new ChangeFeedProcessorUserException(exception, changeFeedProcessorContext);
             Assert.AreEqual(exception.Message, ex.InnerException.Message);
             Assert.AreEqual(exception, ex.InnerException);
-            Assert.ReferenceEquals(changeFeedProcessorContext, ex.ExceptionContext);
+            Assert.ReferenceEquals(changeFeedProcessorContext, ex.ChangeFeedProcessorContext);
         }
 
         // Tests the GetObjectData method and the serialization ctor.

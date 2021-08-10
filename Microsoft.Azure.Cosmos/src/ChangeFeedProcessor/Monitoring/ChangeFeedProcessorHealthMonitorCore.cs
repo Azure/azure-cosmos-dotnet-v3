@@ -37,35 +37,43 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
             this.releaseDelegate = delegateCallback;
         }
 
-        public override Task NotifyLeaseAcquireAsync(string leaseToken)
+        public override async Task NotifyLeaseAcquireAsync(string leaseToken)
         {
             DefaultTrace.TraceInformation("Lease with token {0}: acquired", leaseToken);
 
             if (this.acquireDelegate != null)
             {
-                return this.acquireDelegate(leaseToken);
-            }
-            else
-            {
-                return Task.CompletedTask;
+                try
+                {
+                    await this.acquireDelegate(leaseToken);
+                }
+                catch (Exception ex)
+                {
+                    Extensions.TraceException(ex);
+                    DefaultTrace.TraceError($"Lease acquire notification failed for {leaseToken}. ");
+                }
             }
         }
 
-        public override Task NotifyLeaseReleaseAsync(string leaseToken)
+        public override async Task NotifyLeaseReleaseAsync(string leaseToken)
         {
             DefaultTrace.TraceInformation("Lease with token {0}: released", leaseToken);
 
             if (this.releaseDelegate != null)
             {
-                return this.releaseDelegate(leaseToken);
-            }
-            else
-            {
-                return Task.CompletedTask;
+                try
+                {
+                    await this.releaseDelegate(leaseToken);
+                }
+                catch (Exception ex)
+                {
+                    Extensions.TraceException(ex);
+                    DefaultTrace.TraceError($"Lease release notification failed for {leaseToken}. ");
+                }
             }
         }
 
-        public override Task NotifyErrorAsync(
+        public override async Task NotifyErrorAsync(
              string leaseToken,
              Exception exception)
         {
@@ -74,11 +82,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Monitoring
 
             if (this.errorDelegate != null)
             {
-                return this.errorDelegate(leaseToken, exception);
-            }
-            else
-            {
-                return Task.CompletedTask;
+                try
+                {
+                    await this.errorDelegate(leaseToken, exception);
+                }
+                catch (Exception ex)
+                {
+                    Extensions.TraceException(ex);
+                    DefaultTrace.TraceError($"Error notification failed for {leaseToken}. ");
+                }
             }
         }
     }
