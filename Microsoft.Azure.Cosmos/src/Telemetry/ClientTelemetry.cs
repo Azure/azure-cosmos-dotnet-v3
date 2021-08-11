@@ -131,15 +131,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     // Load host information if not available (it caches the information)
                     AzureVMMetadata azMetadata = await ClientTelemetryHelper.LoadAzureVmMetaDataAsync(this.httpClient);
 
-                    if (azMetadata != null)
+                    Compute vmInformation = azMetadata?.Compute;
+                    if (vmInformation != null)
                     {
-                        Compute vmInformation = azMetadata.Compute;
-                        if (vmInformation != null)
-                        {
-                            this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
-                            this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
-                            //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
-                        }
+                        this.clientTelemetryInfo.ApplicationRegion = vmInformation.Location;
+                        this.clientTelemetryInfo.HostEnvInfo = ClientTelemetryOptions.GetHostInformation(vmInformation);
+                        //TODO: Set AcceleratingNetwork flag from instance metadata once it is available.
                     }
 
                     await Task.Delay(observingWindow, this.cancellationTokenSource.Token);
@@ -229,14 +226,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             long totalElapsedTimeInMs = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
             try
             {
-                latency.RecordValue(totalElapsedTimeInMs * ClientTelemetryOptions.PrecisionFactor);
+                latency.RecordValue(totalElapsedTimeInMs * ClientTelemetryOptions.HistogramPrecisionFactor);
             } 
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTimeInMs + "  Exception : " + ex.Message);
             }
 
-            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.PrecisionFactor);
+            long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
             try
             {
                 requestcharge.RecordValue(requestChargeToRecord);
