@@ -389,7 +389,8 @@ namespace Microsoft.Azure.Cosmos
         {
             if (partitionKey.IsNone)
             {
-                return await this.container.GetNonePartitionKeyValueAsync(trace, cancellationToken).ConfigureAwait(false);
+                return new ValueTask<Documents.Routing.PartitionKeyInternal>(
+                    this.container.GetNonePartitionKeyValueAsync(trace, cancellationToken));
             }
 
             return new ValueTask<Documents.Routing.PartitionKeyInternal>(partitionKey.InternalKey);
