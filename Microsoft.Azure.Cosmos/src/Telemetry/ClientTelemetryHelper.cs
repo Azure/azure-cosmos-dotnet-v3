@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>Async Task</returns>
         internal static async Task<AccountProperties> SetAccountNameAsync(DocumentClient documentclient)
         {
-            DefaultTrace.TraceInformation("Getting Account Information for Telemetry.");
+            DefaultTrace.TraceVerbose("Getting Account Information for Telemetry.");
             try
             {
                 if (documentclient.GlobalEndpointManager != null)
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (azMetadata == null)
             {
-                DefaultTrace.TraceInformation("Getting VM Metadata Information for Telemetry.");
+                DefaultTrace.TraceVerbose("Getting VM Metadata Information for Telemetry.");
                 try
                 {
                     static ValueTask<HttpRequestMessage> CreateRequestMessage()
@@ -161,13 +161,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationInfo payloadForLatency = entry.Key;
                 payloadForLatency.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestLatencyName, ClientTelemetryOptions.RequestLatencyUnit);
-                payloadForLatency.SetAggregators(entry.Value.latency);
+                payloadForLatency.SetAggregators(entry.Value.latency, ClientTelemetryOptions.HistogramPrecisionFactor);
 
                 payloadWithMetricInformation.Add(payloadForLatency);
 
                 OperationInfo payloadForRequestCharge = payloadForLatency.Copy();
                 payloadForRequestCharge.MetricInfo = new MetricInfo(ClientTelemetryOptions.RequestChargeName, ClientTelemetryOptions.RequestChargeUnit);
-                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.AdjustmentFactor);
+                payloadForRequestCharge.SetAggregators(entry.Value.requestcharge, ClientTelemetryOptions.HistogramPrecisionFactor);
 
                 payloadWithMetricInformation.Add(payloadForRequestCharge);
             }
