@@ -15,15 +15,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         internal const String RequestKey = "telemetry";
 
-        internal const long AdjustmentFactor = 100;
+        internal const long HistogramPrecisionFactor = 100;
         
         internal const int BytesToMb = 1024 * 1024;
         internal const int OneKbToBytes = 1024;
 
-        internal const int RequestLatencyMaxMicroSec = Int32.MaxValue;
+        internal const int RequestLatencyMax = Int32.MaxValue;
         internal const int RequestLatencyPrecision = 5;
         internal const string RequestLatencyName = "RequestLatency";
-        internal const string RequestLatencyUnit = "MicroSec";
+        internal const string RequestLatencyUnit = "MilliSecond";
 
         internal const int RequestChargePrecision = 5;
         internal const string RequestChargeName = "RequestCharge";
@@ -58,8 +58,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal static readonly JsonSerializerSettings JsonSerializerSettings = new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore };
 
-        internal static readonly int RequestChargeMax = 99999 * Convert.ToInt32(AdjustmentFactor);
-        internal static readonly int RequestChargeMin = 1 * Convert.ToInt32(AdjustmentFactor);
+        internal static readonly int RequestChargeMax = 99999 * Convert.ToInt32(HistogramPrecisionFactor);
+        internal static readonly int RequestChargeMin = 1 * Convert.ToInt32(HistogramPrecisionFactor);
 
         private static Uri vmMetadataUrl;
         private static TimeSpan scheduledTimeSpan = TimeSpan.Zero;

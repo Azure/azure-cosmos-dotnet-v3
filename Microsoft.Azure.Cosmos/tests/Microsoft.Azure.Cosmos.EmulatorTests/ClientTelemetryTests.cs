@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class ClientTelemetryTests : BaseCosmosClientHelper
     {
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
+        private const int scheduledInSeconds = 1;
         private Container container;
 
         private List<ClientTelemetryProperties> actualInfo;
@@ -31,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, "1");
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, telemetryEndpointUrl);
-
-            CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
 
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
@@ -62,18 +61,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             };
 
-            this.cosmosClient = cosmosClientBuilder.WithTelemetryEnabled().WithHttpClientFactory(() => new HttpClient(httpHandler)).Build();
+            List<string> preferredRegionList = new List<string>
+            {
+                "region1",
+                "region2"
+            };
+
+            CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
+
+            this.cosmosClient = cosmosClientBuilder
+                                        .WithApplicationPreferredRegions(preferredRegionList)
+                                        .WithTelemetryEnabled()
+                                        .WithHttpClientFactory(() => new HttpClient(httpHandler)).Build();
 
             this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
             this.container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
-
         }
 
         [TestCleanup]
         public async Task Cleanup()
         {
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetrySchedulingInSeconds, null);
-            Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEnabled, null);
             Environment.SetEnvironmentVariable(ClientTelemetryOptions.EnvPropsClientTelemetryEndpoint, null);
 
             await base.TestCleanup();
@@ -231,6 +239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.WaitAndAssert(4);
         }
 
+
         private void WaitAndAssert(int expectedOperationCount, int milliseconds = 2000)
         {
             Task.Delay(milliseconds).Wait();
@@ -251,6 +260,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 Assert.IsNotNull(telemetryInfo.GlobalDatabaseAccountName, "GlobalDatabaseAccountName is null");
                 Assert.IsNotNull(telemetryInfo.DateTimeUtc, "Timestamp is null");
+                Assert.AreEqual(2, telemetryInfo.PreferredRegions.Count);
+                Assert.AreEqual("region1", telemetryInfo.PreferredRegions[0]);
+                Assert.AreEqual("region2", telemetryInfo.PreferredRegions[1]);
+
             }
             Assert.AreEqual(expectedOperationCount, actualOperationList.Count, "Operation Information Count doesn't Match");
 
