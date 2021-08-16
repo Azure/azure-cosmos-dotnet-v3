@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             long fullFidelityStartLSN = 0;
             string currentDrainedLSNString = null;
             ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
-            while (this.feedIterator.HasMoreResults)
+            while (this.feedIterator.HasMoreResults && !cancellationToken.IsCancellationRequested)
             {
                 response = await this.feedIterator.ReadNextAsync(cancellationToken: cancellationToken);
                 continuationToken = response.ContinuationToken;
@@ -222,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string savedContinuationToken = continuationToken;
             ResponseMessage response = null;
             ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
-            while (this.feedIterator.HasMoreResults)
+            while (this.feedIterator.HasMoreResults && !cancellationToken.IsCancellationRequested)
             {
                 response = await this.feedIterator.ReadNextAsync(cancellationToken);
                 continuationToken = response.ContinuationToken;
