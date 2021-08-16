@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// </summary>
     public sealed class ReencryptionIterator
     {
-        private const int PageSize = 1000;
+        private const int PageSize = 100;
 
         private readonly Container destinationContainer;
         private readonly Container sourceContainer;
@@ -118,33 +118,34 @@ namespace Microsoft.Azure.Cosmos.Encryption
             if (isFullSyncRequired)
             {
                 (responseMessage, reencryptionBulkOperationResponse, continuationToken) = await this.InitiateFullSyncAsync(
-                    continuationToken,
                     fullFidelityStartLsn,
                     cancellationToken);
             }
             else if (this.IsFullFidelityIteratorSupported)
             {
-                 (responseMessage, reencryptionBulkOperationResponse, continuationToken) = await this.GetAndReencryptFFChangesAsync(continuationToken, cancellationToken);
+                 (responseMessage, reencryptionBulkOperationResponse, continuationToken) = await this.GetAndReencryptFFChangesAsync(cancellationToken);
             }
 
-            this.ContinuationToken = BuildModifiedContinuationToken(
-                continuationToken,
-                fullFidelityStartLsn);
+            if (responseMessage.StatusCode == HttpStatusCode.OK)
+            {
+                this.ContinuationToken = BuildModifiedContinuationToken(
+                    continuationToken,
+                    fullFidelityStartLsn);
+            }
 
             return new ReencryptionResponseMessage(responseMessage, this.ContinuationToken, reencryptionBulkOperationResponse);
         }
 
         private async Task<(ResponseMessage, ReencryptionBulkOperationResponse<JObject>, string)> InitiateFullSyncAsync(
-            string continuationToken,
             string fullFidelityStartLSNString,
             CancellationToken cancellationToken)
         {
-            string savedContinuationToken = continuationToken;
             ResponseMessage response = null;
             long currentDrainedLSN = 0;
             long fullFidelityStartLSN = 0;
             string currentDrainedLSNString = null;
             ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
+            string continuationToken = null;
             while (this.feedIterator.HasMoreResults && !cancellationToken.IsCancellationRequested)
             {
                 response = await this.feedIterator.ReadNextAsync(cancellationToken: cancellationToken);
@@ -195,7 +196,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                 (HttpStatusCode)207, // MultiStatus
                                 response.RequestMessage,
                                 "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
-                            continuationToken = savedContinuationToken;
                             break;
                         }
 
@@ -216,16 +216,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         }
 
         private async Task<(ResponseMessage, ReencryptionBulkOperationResponse<JObject>, string)> GetAndReencryptFFChangesAsync(
-            string continuationToken,
             CancellationToken cancellationToken)
         {
-            string savedContinuationToken = continuationToken;
             ResponseMessage response = null;
             ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
             while (this.feedIterator.HasMoreResults && !cancellationToken.IsCancellationRequested)
             {
                 response = await this.feedIterator.ReadNextAsync(cancellationToken);
-                continuationToken = response.ContinuationToken;
                 if (response.StatusCode == HttpStatusCode.NotModified)
                 {
                     if (this.checkIfWritesHaveStoppedCb())
@@ -255,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                         (HttpStatusCode)207, // MultiStatus
                                         response.RequestMessage,
                                         "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
-                                    return (response, bulkOperationResponse, savedContinuationToken);
+                                    return (response, bulkOperationResponse, response.ContinuationToken);
                                 }
                             }
                             else
@@ -264,19 +261,18 @@ namespace Microsoft.Azure.Cosmos.Encryption
                                     HttpStatusCode.InternalServerError,
                                     response.RequestMessage,
                                     "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
-                                return (response, bulkOperationResponse, savedContinuationToken);
+                                return (response, bulkOperationResponse, response.ContinuationToken);
                             }
                         }
                     }
                 }
                 else
                 {
-                    continuationToken = savedContinuationToken;
                     break;
                 }
             }
 
-            return (response, bulkOperationResponse, continuationToken);
+            return (response, bulkOperationResponse, response.ContinuationToken);
         }
 
         private FeedIterator SetChangeFeedIterator(
