@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override HttpStatusCode StatusCode => this.responseMessage.StatusCode;
 
         /// <inheritdoc/>
-        public override bool IsSuccessStatusCode => this.responseMessage.IsSuccessStatusCode;
+        public override bool IsSuccessStatusCode => this.responseMessage.StatusCode == HttpStatusCode.OK && this.responseMessage.IsSuccessStatusCode;
 
         /// <inheritdoc/>
         protected override void Dispose(bool disposing)

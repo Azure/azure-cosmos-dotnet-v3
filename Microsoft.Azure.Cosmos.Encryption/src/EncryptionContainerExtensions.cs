@@ -170,19 +170,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange sourceFeedRange = null,
             string continuationToken = null)
         {
-            CosmosClient encryptionCosmosClient;
-            if (container is not EncryptionContainer encryptionContainer)
-            {
-                throw new ArgumentException("TransferDataWithReencryptionAsync requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-            }
-
-            encryptionCosmosClient = encryptionContainer.EncryptionCosmosClient;
-
-            if (!encryptionCosmosClient.ClientOptions.AllowBulkExecution)
-            {
-                throw new NotSupportedException("GetReencryptionIteratorAsync requires client to be enabled with Bulk Execution. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-            }
-
             if (checkIfWritesHaveStopped == null)
             {
                 throw new ArgumentNullException(nameof(checkIfWritesHaveStopped));
@@ -193,8 +180,25 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new ArgumentNullException(nameof(destinationContainerName));
             }
 
+            if (container is not EncryptionContainer encryptionContainer)
+            {
+                throw new ArgumentException("GetReencryptionIteratorAsync requires the use of an encryption - enabled client. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+
+            CosmosClient encryptionCosmosClient = encryptionContainer.EncryptionCosmosClient;
+
+            if (!encryptionCosmosClient.ClientOptions.AllowBulkExecution)
+            {
+                throw new NotSupportedException("GetReencryptionIteratorAsync requires client to be enabled with Bulk Execution. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
+
             Container destContainer = encryptionCosmosClient.GetContainer(container.Database.Id, destinationContainerName);
             ContainerProperties containerProperties = await container.ReadContainerAsync();
+
+            if (containerProperties.ChangeFeedPolicy.FullFidelityRetention == TimeSpan.Zero && Constants.IsFFChangeFeedSupported)
+            {
+                throw new NotSupportedException("GetReencryptionIteratorAsync requires container to be enabled with FullFidelity ChangeFeedPolicy. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
+            }
 
             ReencryptionIterator reencryptionIterator = new ReencryptionIterator(
                 container,
@@ -203,12 +207,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 sourceFeedRange,
                 changeFeedRequestOptions,
                 continuationToken,
-                checkIfWritesHaveStopped);
-
-            if (containerProperties.ChangeFeedPolicy.FullFidelityRetention == TimeSpan.Zero && reencryptionIterator.IsFullFidelityIteratorSupported)
-            {
-                throw new NotSupportedException("GetReencryptionIteratorAsync requires container to be enabled with FullFidelity ChangeFeedPolicy. Please refer to https://aka.ms/CosmosClientEncryption for more details. ");
-            }
+                checkIfWritesHaveStopped,
+                isFFChangeFeedSupported: Constants.IsFFChangeFeedSupported);
 
             return reencryptionIterator;
         }

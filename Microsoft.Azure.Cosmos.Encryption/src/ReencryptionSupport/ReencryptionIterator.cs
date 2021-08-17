@@ -24,18 +24,13 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly FeedRange feedRange;
         private readonly ReencryptionBulkOperationBuilder reencryptionBulkOperationBuilder;
         private readonly CheckIfWritesHaveStopped checkIfWritesHaveStoppedCb;
+        private readonly bool isFFChangeFeedSupported;
 
         private FeedIterator feedIterator;
 
         private delegate bool CheckIfWritesHaveStopped();
 
         private ChangeFeedRequestOptions changeFeedRequestOptions;
-
-        /// <summary>
-        /// Gets a value indicating whether FullFidelity is supported.
-        /// Fixme: Set to false until we have FullFidelity support.
-        /// </summary>
-        internal bool IsFullFidelityIteratorSupported => false;
 
         /// <summary>
         /// Gets continuation Token
@@ -55,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public async Task<ReencryptionResponseMessage> EncryptNextAsync(
             CancellationToken cancellationToken = default)
         {
-            if (!this.checkIfWritesHaveStoppedCb() && this.IsFullFidelityIteratorSupported == false)
+            if (!this.checkIfWritesHaveStoppedCb() && this.isFFChangeFeedSupported == false)
             {
                 throw new NotSupportedException("Reencryption currently supported only on container with no ongoing changes. To perform reencryption please make sure there is is no data being written to the container. ");
             }
@@ -79,7 +74,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
             FeedRange sourceFeedRange,
             ChangeFeedRequestOptions changeFeedRequestOptions,
             string continuationToken,
-            Func<bool> checkIfWritesHaveStopped)
+            Func<bool> checkIfWritesHaveStopped,
+            bool isFFChangeFeedSupported = false)
         {
             this.sourceContainer = sourceContainer ?? throw new ArgumentNullException(nameof(sourceContainer));
             this.destinationContainer = destinationContainer ?? throw new ArgumentNullException(nameof(destinationContainer));
@@ -90,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             this.HasMoreResults = true;
             this.ContinuationToken = continuationToken;
             this.checkIfWritesHaveStoppedCb = new CheckIfWritesHaveStopped(checkIfWritesHaveStopped);
+            this.isFFChangeFeedSupported = isFFChangeFeedSupported;
         }
 
         private async Task<ReencryptionResponseMessage> EncryptNextCoreAsync(
@@ -99,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             bool isFullSyncRequired = false;
 
-            if (this.IsFullFidelityIteratorSupported)
+            if (this.isFFChangeFeedSupported)
             {
                 if (this.CheckIfFullSyncIsRequired(fullFidelityStartLsn, continuationToken))
                 {
@@ -121,12 +118,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     fullFidelityStartLsn,
                     cancellationToken);
             }
-            else if (this.IsFullFidelityIteratorSupported)
+            else if (this.isFFChangeFeedSupported)
             {
                  (responseMessage, reencryptionBulkOperationResponse, continuationToken) = await this.GetAndReencryptFFChangesAsync(cancellationToken);
             }
 
-            if (responseMessage.StatusCode == HttpStatusCode.OK)
+            if (responseMessage.StatusCode == HttpStatusCode.OK || responseMessage.StatusCode == HttpStatusCode.NotModified)
             {
                 this.ContinuationToken = BuildModifiedContinuationToken(
                     continuationToken,
@@ -152,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 continuationToken = response.ContinuationToken;
                 if (response.StatusCode == HttpStatusCode.NotModified)
                 {
-                    if (!this.IsFullFidelityIteratorSupported)
+                    if (!this.isFFChangeFeedSupported)
                     {
                         this.StoppedWrites();
                     }
@@ -300,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     ChangeFeedMode.Incremental,
                     this.changeFeedRequestOptions);
             }
-            else if (this.IsFullFidelityIteratorSupported)
+            else if (this.isFFChangeFeedSupported)
             {
                 if (string.IsNullOrEmpty(continuationToken))
                 {
