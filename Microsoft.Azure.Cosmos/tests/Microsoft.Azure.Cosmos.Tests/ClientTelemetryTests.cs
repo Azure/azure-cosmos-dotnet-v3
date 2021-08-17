@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net.Http;
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -101,8 +102,19 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void CheckJsonSerializerContract()
         {
-            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct), ClientTelemetryOptions.JsonSerializerSettings);
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, null), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"Direct\",\"systemInfo\":[]}",json);
+        }
+
+        [TestMethod]
+        public void CheckJsonSerializerContractWithPreferredRegions()
+        {
+            List<string> preferredRegion = new List<string>
+            {
+                "region1"
+            };
+            string json = JsonConvert.SerializeObject(new ClientTelemetryProperties("clientId", "", null, ConnectionMode.Direct, preferredRegion), ClientTelemetryOptions.JsonSerializerSettings);
+            Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"Direct\",\"systemInfo\":[],\"preferredRegions\":[\"region1\"]}", json);
         }
 
     }
