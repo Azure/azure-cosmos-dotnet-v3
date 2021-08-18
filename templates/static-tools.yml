@@ -25,7 +25,7 @@ jobs:
       IsSoftware: true
 
   # Analyze source and build output text files for credentials
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
     displayName: 'CredScan'
     inputs:
       toolMajorVersion: V2
