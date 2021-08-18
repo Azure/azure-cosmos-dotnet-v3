@@ -270,21 +270,7 @@ namespace Microsoft.Azure.Cosmos
 
             queryStringBuilder.Append("SELECT * FROM c WHERE ( ");
             for (int i = startIndex; i < totalItemCount; i++)
-            {
-                object[] pkValues;
-                if (items[i].Item2.IsNone)
-                {
-                    pkValues = new object[0];
-                }
-                else
-                {
-                    pkValues = items[i].Item2.InternalKey.ToObjectArray();
-                    if (pkValues.Length != this.partitionKeyDefinition.Paths.Count)
-                    {
-                        throw new ArgumentException("Number of components in the partition key value does not match the definition.");
-                    }
-                }
-                
+            {             
                 string pkParamName = "@param_pk" + i;
                 string idParamName = "@param_id" + i;
                 sqlParameters.Add(new SqlParameter(idParamName, items[i].Item1));
@@ -292,18 +278,37 @@ namespace Microsoft.Azure.Cosmos
                 queryStringBuilder.Append("( ");
                 queryStringBuilder.Append("c.id = ");
                 queryStringBuilder.Append(idParamName);
-                for (int j = 0; j < pkValues.Length; j++)
+                if (items[i].Item2.IsNone)
                 {
-                    queryStringBuilder.Append(" AND ");
-                    queryStringBuilder.Append("c");
-                    queryStringBuilder.Append(this.partitionKeySelectors[j]);
-                    queryStringBuilder.Append(" = ");
-
-                    string pkParamNameForSinglePath = pkParamName + j;
-                    sqlParameters.Add(new SqlParameter(pkParamNameForSinglePath, pkValues[j]));
-                    queryStringBuilder.Append(pkParamNameForSinglePath);
+                    for (int j = 0; j < this.partitionKeySelectors.Count; j++)
+                    {
+                        queryStringBuilder.Append(" AND ");
+                        queryStringBuilder.Append("IS_DEFINED(c");
+                        queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                        queryStringBuilder.Append(") = false");
+                    }
                 }
+                else 
+                {
+                    object[] pkValues = items[i].Item2.InternalKey.ToObjectArray();
+                    if (pkValues.Length != this.partitionKeyDefinition.Paths.Count)
+                    {
+                        throw new ArgumentException("Number of components in the partition key " +
+                            "value does not match the definition.");
+                    }
+                    for (int j = 0; j < this.partitionKeySelectors.Count; j++)
+                    {
+                        queryStringBuilder.Append(" AND ");
+                        queryStringBuilder.Append("c");
+                        queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                        queryStringBuilder.Append(" = ");
 
+                        string pkParamNameForSinglePath = pkParamName + j;
+                        sqlParameters.Add(new SqlParameter(pkParamNameForSinglePath, pkValues[j]));
+                        queryStringBuilder.Append(pkParamNameForSinglePath);
+                    }
+                }
+                
                 queryStringBuilder.Append(" )");
 
                 if (i < totalItemCount - 1)

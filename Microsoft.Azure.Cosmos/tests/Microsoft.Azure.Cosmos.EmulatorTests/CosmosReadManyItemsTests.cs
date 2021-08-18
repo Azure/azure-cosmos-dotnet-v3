@@ -392,6 +392,25 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ReadManyWithNonePkValues()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                await this.Container.CreateItemAsync(new ActivityWithNoPk("id" + i.ToString()),
+                                                     PartitionKey.None);
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i.ToString(), PartitionKey.None));
+            }
+
+            FeedResponse<ActivityWithNoPk> feedResponse = await this.Container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
+            Assert.AreEqual(feedResponse.Count, 5);
+        }
+
+        [TestMethod]
         public async Task ReadManyItemsFromNonPartitionedContainers()
         {
             ContainerInternal container = await NonPartitionedContainerHelper.CreateNonPartitionedContainer(this.database,
@@ -408,16 +427,31 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 itemList.Add(("id" + i.ToString(), PartitionKey.None));
             }
 
-            using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
-            {
-                Assert.IsNotNull(responseMessage);
-                Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
-                Assert.IsNotNull(responseMessage.Diagnostics);
+            FeedResponse<ActivityWithNoPk> feedResponse = await container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
+            Assert.AreEqual(feedResponse.Count, 5);
 
-                ToDoActivity[] items = this.cosmosClient.ClientContext.SerializerCore.FromFeedStream<ToDoActivity>(
-                                        CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
-                Assert.AreEqual(items.Length, 5);
+            // Start inserting documents with same id but new pk values
+            for (int i = 0; i < 5; i++)
+            {
+                await container.CreateItemAsync(new ActivityWithSystemPk("id" + i.ToString(), "newPK"),
+                                                new PartitionKey("newPK"));
             }
+
+            FeedResponse<ActivityWithSystemPk> feedResponseWithPK = await container.ReadManyItemsAsync<ActivityWithSystemPk>(itemList);
+            Assert.AreEqual(feedResponseWithPK.Count, 5);
+
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add(("id" + i.ToString(), new PartitionKey("newPK")));
+            }
+            feedResponseWithPK = await container.ReadManyItemsAsync<ActivityWithSystemPk>(itemList);
+            Assert.AreEqual(feedResponseWithPK.Count, 10);
+
+            // Mixing both None and non-None pk values
+            itemList = new List<(string, PartitionKey)>
+            { ("id0", PartitionKey.None), ("id0", new PartitionKey("newPK")) };
+            feedResponse = await container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
+            Assert.AreEqual(feedResponse.Count, 2);
         }
 
         [TestMethod]
@@ -536,6 +570,33 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 return await base.SendAsync(requestMessage, cancellationToken);
             }
+        }
+
+        private class ActivityWithNoPk
+        {
+            public ActivityWithNoPk(string id)
+            {
+                this.id = id;
+            }
+
+#pragma warning disable IDE1006 // Naming Styles
+            public string id { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
+        }
+
+        private class ActivityWithSystemPk
+        {
+            public ActivityWithSystemPk(string id, string pk)
+            {
+                this.id = id;
+                this._partitionKey = pk;
+            }
+
+#pragma warning disable IDE1006 // Naming Styles
+            public string id { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
+
+            public string _partitionKey { get; set; }
         }
     }
 }
