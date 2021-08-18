@@ -137,74 +137,64 @@ namespace Microsoft.Azure.Cosmos.Encryption
             string fullFidelityStartLSNString,
             CancellationToken cancellationToken)
         {
-            ResponseMessage response = null;
             long currentDrainedLSN = 0;
             long fullFidelityStartLSN = 0;
             string currentDrainedLSNString = null;
             ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
-            string continuationToken = null;
-            while (this.feedIterator.HasMoreResults && !cancellationToken.IsCancellationRequested)
+            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken: cancellationToken);
+            string continuationToken = response.ContinuationToken;
+            if (response.StatusCode == HttpStatusCode.NotModified)
             {
-                response = await this.feedIterator.ReadNextAsync(cancellationToken: cancellationToken);
-                continuationToken = response.ContinuationToken;
-                if (response.StatusCode == HttpStatusCode.NotModified)
+                return (response, bulkOperationResponse, continuationToken);
+            }
+            else
+            {
+                if (response.IsSuccessStatusCode && response.Content != null)
                 {
-                    if (!this.isFFChangeFeedSupported)
+                    JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(response.Content);
+                    if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
                     {
-                        this.StoppedWrites();
+                        throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
                     }
 
-                    break;
-                }
-                else
-                {
-                    if (response.IsSuccessStatusCode && response.Content != null)
+                    ReencryptionBulkOperations<JObject> bulkOperations = new ReencryptionBulkOperations<JObject>(documents.Count);
+                    foreach (JToken value in documents)
                     {
-                        JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(response.Content);
-                        if (!(contentJObj.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents))
+                        if (value is not JObject document)
                         {
-                            throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
+                            continue;
                         }
 
-                        ReencryptionBulkOperations<JObject> bulkOperations = new ReencryptionBulkOperations<JObject>(documents.Count);
-                        foreach (JToken value in documents)
-                        {
-                            if (value is not JObject document)
-                            {
-                                continue;
-                            }
+                        currentDrainedLSNString = document.GetValue("_lsn").ToString();
+                        currentDrainedLSN = long.Parse(currentDrainedLSNString);
+                        fullFidelityStartLSN = long.Parse(fullFidelityStartLSNString);
 
-                            currentDrainedLSNString = document.GetValue("_lsn").ToString();
-                            currentDrainedLSN = long.Parse(currentDrainedLSNString);
-                            fullFidelityStartLSN = long.Parse(fullFidelityStartLSNString);
+                        document.Remove("_lsn");
+                        bulkOperations.Tasks.Add(this.destinationContainer.UpsertItemAsync(
+                            item: document,
+                            new PartitionKey(document.GetValue(this.partitionKey).ToString()),
+                            cancellationToken: default).CaptureReencryptionOperationResponseAsync(document));
+                    }
 
-                            document.Remove("_lsn");
-                            bulkOperations.Tasks.Add(this.destinationContainer.UpsertItemAsync(
-                                item: document,
-                                new PartitionKey(document.GetValue(this.partitionKey).ToString()),
-                                cancellationToken: default).CaptureReencryptionOperationResponseAsync(document));
-                        }
+                    bulkOperationResponse = await bulkOperations.ExecuteAsync();
+                    if (bulkOperationResponse.FailedDocuments.Count > 0)
+                    {
+                        // just send one of the failure response.
+                        response = new ResponseMessage(
+                            (HttpStatusCode)207, // MultiStatus
+                            response.RequestMessage,
+                            "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
+                        return (response, bulkOperationResponse, continuationToken);
+                    }
 
-                        bulkOperationResponse = await bulkOperations.ExecuteAsync();
-                        if (bulkOperationResponse.FailedDocuments.Count > 0)
-                        {
-                            // just send one of the failure response.
-                            response = new ResponseMessage(
-                                (HttpStatusCode)207, // MultiStatus
-                                response.RequestMessage,
-                                "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
-                            break;
-                        }
-
-                        // read out all the changes in the page. Breaking in between can lead to problems if we switch if there are multiple
-                        // changes with same LSN due to, say a batch operation and we would end up missing it in Full Fidelity.
-                        // For an LSN all changes corresponding to it will be returned in the same page.
-                        if (currentDrainedLSN >= fullFidelityStartLSN)
-                        {
-                            string lsnToReplace = this.GetLsnFromContinuationString(continuationToken);
-                            continuationToken = continuationToken.Replace(lsnToReplace, currentDrainedLSNString);
-                            return (response, bulkOperationResponse, continuationToken);
-                        }
+                    // read out all the changes in the page. Breaking in between can lead to problems if we switch if there are multiple
+                    // changes with same LSN due to, say a batch operation and we would end up missing it in Full Fidelity.
+                    // For an LSN all changes corresponding to it will be returned in the same page.
+                    if (currentDrainedLSN >= fullFidelityStartLSN)
+                    {
+                        string lsnToReplace = this.GetLsnFromContinuationString(continuationToken);
+                        continuationToken = continuationToken.Replace(lsnToReplace, currentDrainedLSNString);
+                        return (response, bulkOperationResponse, continuationToken);
                     }
                 }
             }
@@ -215,57 +205,49 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private async Task<(ResponseMessage, ReencryptionBulkOperationResponse<JObject>, string)> GetAndReencryptFFChangesAsync(
             CancellationToken cancellationToken)
         {
-            ResponseMessage response = null;
             ReencryptionBulkOperationResponse<JObject> bulkOperationResponse = null;
-            while (this.feedIterator.HasMoreResults && !cancellationToken.IsCancellationRequested)
+            ResponseMessage response = await this.feedIterator.ReadNextAsync(cancellationToken);
+            if (response.StatusCode == HttpStatusCode.NotModified)
             {
-                response = await this.feedIterator.ReadNextAsync(cancellationToken);
-                if (response.StatusCode == HttpStatusCode.NotModified)
+                if (this.checkIfWritesHaveStoppedCb())
                 {
-                    if (this.checkIfWritesHaveStoppedCb())
-                    {
-                        this.StoppedWrites();
-                    }
-
-                    break;
+                    this.StoppedWrites();
                 }
 
-                if (response.IsSuccessStatusCode && response.Content != null)
-                {
-                    bulkOperationResponse = await this.reencryptionBulkOperationBuilder.ExecuteAsync(response, cancellationToken);
+                return (response, bulkOperationResponse, response.ContinuationToken);
+            }
 
-                    if (bulkOperationResponse.FailedDocuments.Count > 0)
+            if (response.IsSuccessStatusCode && response.Content != null)
+            {
+                bulkOperationResponse = await this.reencryptionBulkOperationBuilder.ExecuteAsync(response, cancellationToken);
+
+                if (bulkOperationResponse.FailedDocuments.Count > 0)
+                {
+                    foreach ((JObject, Exception) failedOperation in bulkOperationResponse.FailedDocuments)
                     {
-                        foreach ((JObject, Exception) failedOperation in bulkOperationResponse.FailedDocuments)
+                        CosmosException ex = (CosmosException)failedOperation.Item2;
+                        if (ex.StatusCode == HttpStatusCode.NotFound)
                         {
-                            CosmosException ex = (CosmosException)failedOperation.Item2;
-                            if (ex.StatusCode == HttpStatusCode.NotFound)
-                            {
-                                JObject metadata = failedOperation.Item1.GetValue("_metadata").ToObject<JObject>();
-                                string operationType = metadata.GetValue("operationType").ToString();
-                                if (!operationType.Equals("delete"))
-                                {
-                                    response = new ResponseMessage(
-                                        (HttpStatusCode)207, // MultiStatus
-                                        response.RequestMessage,
-                                        "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
-                                    return (response, bulkOperationResponse, response.ContinuationToken);
-                                }
-                            }
-                            else
+                            JObject metadata = failedOperation.Item1.GetValue("_metadata").ToObject<JObject>();
+                            string operationType = metadata.GetValue("operationType").ToString();
+                            if (!operationType.Equals("delete"))
                             {
                                 response = new ResponseMessage(
-                                    HttpStatusCode.InternalServerError,
+                                    (HttpStatusCode)207, // MultiStatus
                                     response.RequestMessage,
                                     "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
                                 return (response, bulkOperationResponse, response.ContinuationToken);
                             }
                         }
+                        else
+                        {
+                            response = new ResponseMessage(
+                                HttpStatusCode.InternalServerError,
+                                response.RequestMessage,
+                                "Reencryption Operation failed. Please go through ReencryptionBulkOperationResponse for details regarding failed operations. ");
+                            return (response, bulkOperationResponse, response.ContinuationToken);
+                        }
                     }
-                }
-                else
-                {
-                    break;
                 }
             }
 

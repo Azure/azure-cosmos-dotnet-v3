@@ -157,22 +157,24 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// </summary>
         /// <param name="container"> Source container object. </param>
         /// <param name="destinationContainerName"> Destination Container configured with new policy or key. </param>
-        /// <param name="checkIfWritesHaveStopped"> Callback to check if writes have stopped.The called function should return true if writes have stopped. </param>
-        /// <param name="changeFeedRequestOptions"> Request options. </param>
-        /// <param name="sourceFeedRange"> Feed Range. </param>
-        /// <param name="continuationToken"> continuationToken. </param>
+        /// <param name="checkIfWritesHaveStoppedCb"> Callback to check if writes have stopped.The called function should return true if writes have stopped. </param>
+        /// <param name="changeFeedRequestOptions"> (Optional) Request options. </param>
+        /// <param name="sourceFeedRange"> (Optional) The range to start from. </param>
+        /// <param name="continuationToken"> (Optional) continuationToken: The continuation to resume from. </param>
+        /// <param name="cancellationToken"> (Optional) System.Threading.CancellationToken representing request cancellation. </param>
         /// <returns> true if successfull. </returns>
         public static async Task<ReencryptionIterator> GetReencryptionIteratorAsync(
             this Container container,
             string destinationContainerName,
-            Func<bool> checkIfWritesHaveStopped,
+            Func<bool> checkIfWritesHaveStoppedCb,
             ChangeFeedRequestOptions changeFeedRequestOptions = null,
             FeedRange sourceFeedRange = null,
-            string continuationToken = null)
+            string continuationToken = null,
+            CancellationToken cancellationToken = default)
         {
-            if (checkIfWritesHaveStopped == null)
+            if (checkIfWritesHaveStoppedCb == null)
             {
-                throw new ArgumentNullException(nameof(checkIfWritesHaveStopped));
+                throw new ArgumentNullException(nameof(checkIfWritesHaveStoppedCb));
             }
 
             if (string.IsNullOrEmpty(destinationContainerName))
@@ -193,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
 
             Container destContainer = encryptionCosmosClient.GetContainer(container.Database.Id, destinationContainerName);
-            ContainerProperties containerProperties = await container.ReadContainerAsync();
+            ContainerProperties containerProperties = await container.ReadContainerAsync(cancellationToken: cancellationToken);
 
             if (containerProperties.ChangeFeedPolicy.FullFidelityRetention == TimeSpan.Zero && Constants.IsFFChangeFeedSupported)
             {
@@ -207,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 sourceFeedRange,
                 changeFeedRequestOptions,
                 continuationToken,
-                checkIfWritesHaveStopped,
+                checkIfWritesHaveStoppedCb,
                 isFFChangeFeedSupported: Constants.IsFFChangeFeedSupported);
 
             return reencryptionIterator;
