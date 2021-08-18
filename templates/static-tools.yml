@@ -41,11 +41,11 @@ jobs:
       targetType: F
 
   # AntiMalware scan
-  #- task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
-  #  displayName: 'AntiMalware'
-  #  continueOnError: true # signature refresh failing resulting in tasks failures
-  #  inputs:
-  #    EnableServices: true
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
+    displayName: 'AntiMalware'
+    continueOnError: true # signature refresh failing resulting in tasks failures
+    inputs:
+  #   EnableServices: true
 
   # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
