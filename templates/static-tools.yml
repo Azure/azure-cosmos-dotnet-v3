@@ -25,7 +25,7 @@ jobs:
       IsSoftware: true
 
   # Analyze source and build output text files for credentials
-  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@2
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
     displayName: 'CredScan'
     inputs:
       toolMajorVersion: V2
@@ -41,23 +41,15 @@ jobs:
       targetType: F
 
   # AntiMalware scan
-  #- task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
-  #  displayName: 'AntiMalware'
-  #  continueOnError: true # signature refresh failing resulting in tasks failures
-  #  inputs:
-  #    EnableServices: true
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@3
+    displayName: 'AntiMalware'
+    continueOnError: true # signature refresh failing resulting in tasks failures
+    inputs:
+      EnableServices: true
 
   # Run checks for recently discovered vulnerabilities which are not yet incorporated to another tool
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
     displayName: 'Vulnerability Assessment'
-
-  - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos.sln
-    inputs:
-      command: build
-      projects: 'Microsoft.Azure.Cosmos.sln'
-      configuration: '${{ parameters.BuildConfiguration }}'
-      publishTestResults: true
 
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: 'Component Governance Detection' #https://docs.opensource.microsoft.com/tools/cg.html
