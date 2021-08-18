@@ -51,14 +51,6 @@ jobs:
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-vulnerabilityassessment.VulnerabilityAssessment@0
     displayName: 'Vulnerability Assessment'
 
-  - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos.sln
-    inputs:
-      command: build
-      projects: 'Microsoft.Azure.Cosmos.sln'
-      configuration: '${{ parameters.BuildConfiguration }}'
-      publishTestResults: true
-
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: 'Component Governance Detection' #https://docs.opensource.microsoft.com/tools/cg.html
     inputs:
