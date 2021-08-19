@@ -408,6 +408,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             FeedResponse<ActivityWithNoPk> feedResponse = await this.Container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
             Assert.AreEqual(feedResponse.Count, 5);
+            int j = 0;
+            foreach (ActivityWithNoPk item in feedResponse.Resource)
+            {
+                Assert.AreEqual(item.id, "id" + j);
+                j++;
+            }
         }
 
         [TestMethod]
@@ -422,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // read using PartitionKey.None pk value
             List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 5; i++)
             {
                 itemList.Add(("id" + i.ToString(), PartitionKey.None));
             }
@@ -437,21 +443,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                                 new PartitionKey("newPK"));
             }
 
-            FeedResponse<ActivityWithSystemPk> feedResponseWithPK = await container.ReadManyItemsAsync<ActivityWithSystemPk>(itemList);
-            Assert.AreEqual(feedResponseWithPK.Count, 5);
+            feedResponse = await container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
+            Assert.AreEqual(feedResponse.Count, 5);
+            int j = 0;
+            foreach (ActivityWithNoPk item in feedResponse.Resource)
+            {
+                Assert.AreEqual(item.id, "id" + j);
+                j++;
+            }
 
             for (int i = 0; i < 5; i++)
             {
                 itemList.Add(("id" + i.ToString(), new PartitionKey("newPK")));
             }
-            feedResponseWithPK = await container.ReadManyItemsAsync<ActivityWithSystemPk>(itemList);
+            FeedResponse<ActivityWithSystemPk> feedResponseWithPK = await container.ReadManyItemsAsync<ActivityWithSystemPk>(itemList);
             Assert.AreEqual(feedResponseWithPK.Count, 10);
-
-            // Mixing both None and non-None pk values
-            itemList = new List<(string, PartitionKey)>
-            { ("id0", PartitionKey.None), ("id0", new PartitionKey("newPK")) };
-            feedResponse = await container.ReadManyItemsAsync<ActivityWithNoPk>(itemList);
-            Assert.AreEqual(feedResponse.Count, 2);
+            j = 0;
+            foreach (ActivityWithSystemPk item in feedResponseWithPK.Resource)
+            {
+                Assert.AreEqual(item.id, "id" + (j % 5));
+                if (j > 4)
+                {
+                    Assert.AreEqual(item._partitionKey, "newPK");
+                }
+                else
+                {
+                    Assert.IsNull(item._partitionKey);
+                }
+                j++;
+            }
         }
 
         [TestMethod]
@@ -586,17 +606,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private class ActivityWithSystemPk
         {
-            public ActivityWithSystemPk(string id, string pk)
+            public ActivityWithSystemPk(string id, string _partitionKey)
             {
                 this.id = id;
-                this._partitionKey = pk;
+                this._partitionKey = _partitionKey;
             }
 
 #pragma warning disable IDE1006 // Naming Styles
             public string id { get; set; }
 #pragma warning restore IDE1006 // Naming Styles
 
+#pragma warning disable IDE1006 // Naming Styles
             public string _partitionKey { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
         }
     }
 }

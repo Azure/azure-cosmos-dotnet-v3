@@ -280,11 +280,11 @@ namespace Microsoft.Azure.Cosmos
                 queryStringBuilder.Append(idParamName);
                 if (items[i].Item2.IsNone)
                 {
-                    for (int j = 0; j < this.partitionKeySelectors.Count; j++)
+                    foreach (string partitionKeySelector in this.partitionKeySelectors)
                     {
                         queryStringBuilder.Append(" AND ");
                         queryStringBuilder.Append("IS_DEFINED(c");
-                        queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                        queryStringBuilder.Append(partitionKeySelector);
                         queryStringBuilder.Append(") = false");
                     }
                 }
