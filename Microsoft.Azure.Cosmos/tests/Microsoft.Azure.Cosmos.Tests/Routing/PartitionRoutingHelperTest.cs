@@ -256,6 +256,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 {
                     Query = "SELECT AVG(r.key) FROM r WHERE IS_NUMBER(r.key)",
                     PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
                     ClientApiVersion = "2018-12-31",
                     StatusCode = HttpStatusCode.BadRequest,
                     SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
@@ -265,6 +266,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 {
                     Query = "SELECT COUNT(1), MAX(r.key) FROM r",
                     PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
                     ClientApiVersion = "2018-12-31",
                     StatusCode = HttpStatusCode.BadRequest,
                     SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
@@ -274,6 +276,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 {
                     Query = "SELECT c.age, COUNT(1) as count FROM c GROUP BY c.age",
                     PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
                     ClientApiVersion = "2018-12-31",
                     StatusCode = HttpStatusCode.BadRequest,
                     SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
@@ -291,9 +294,40 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                               FROM c
                               GROUP BY c.age",
                     PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
                     ClientApiVersion = "2018-12-31",
                     StatusCode = HttpStatusCode.BadRequest,
                     SubStatusCode = SubStatusCodes.CrossPartitionQueryNotServable,
+                    Message = RMResources.UnsupportedCrossPartitionQuery
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT * FROM c ORDER BY c.age",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = false,
+                    ClientApiVersion = "2018-12-31",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.Unknown,
+                    Message = RMResources.CrossPartitionQueryDisabled
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT COUNT(1) FROM c WHERE c.age > 18",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2016-07-11",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.Unknown,
+                    Message = RMResources.UnsupportedCrossPartitionQueryWithAggregate
+                },
+                new PartitionRoutingHelperTestCase
+                {
+                    Query = @"SELECT COUNT(1) FROM c WHERE c.age > 18",
+                    PartitionKey = "/key",
+                    EnableCrossPartitionQuery = true,
+                    ClientApiVersion = "2016-05-30",
+                    StatusCode = HttpStatusCode.BadRequest,
+                    SubStatusCode = SubStatusCodes.Unknown,
                     Message = RMResources.UnsupportedCrossPartitionQuery
                 }
             };
@@ -304,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 {
                     IReadOnlyList<Range<string>> _ = PartitionRoutingHelper.GetProvidedPartitionKeyRanges(
                         querySpec: new Cosmos.Query.Core.SqlQuerySpec(testcase.Query),
-                        enableCrossPartitionQuery: true,
+                        enableCrossPartitionQuery: testcase.EnableCrossPartitionQuery,
                         parallelizeCrossPartitionQuery: false,
                         isContinuationExpected: true,
                         hasLogicalPartitionKey: testcase.HasLogicalPartitionKey,
@@ -322,7 +356,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     Assert.AreEqual(testcase.StatusCode, dce.StatusCode);
                     Assert.AreEqual(testcase.SubStatusCode, dce.GetSubStatus());
                     Assert.IsTrue(dce.Message.Contains(testcase.Message));
-                    Assert.IsFalse(string.IsNullOrEmpty(dce.Error.AdditionalErrorInfo));
+                    PartitionedQueryExecutionInfo info = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(dce.Error.AdditionalErrorInfo);
+                    Assert.IsNotNull(info);
                 }
             }
         }
@@ -332,6 +367,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             internal string Query { get; set; }
 
             internal string PartitionKey { get; set; }
+
+            internal bool EnableCrossPartitionQuery { get; set; }
 
             internal string ClientApiVersion { get; set; }
 
