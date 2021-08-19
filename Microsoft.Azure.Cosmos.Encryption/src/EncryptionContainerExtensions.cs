@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <param name="sourceFeedRange"> (Optional) The range to start from. </param>
         /// <param name="continuationToken"> (Optional) continuationToken: The continuation to resume from. </param>
         /// <param name="cancellationToken"> (Optional) System.Threading.CancellationToken representing request cancellation. </param>
-        /// <returns> true if successfull. </returns>
+        /// <returns> Returns a Reencryption Iterator. </returns>
         public static async Task<ReencryptionIterator> GetReencryptionIteratorAsync(
             this Container container,
             string destinationContainerName,
