@@ -108,30 +108,42 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        public override Task<ItemResponse<T>> DeleteItemAsync<T>(
+        public override async Task<ItemResponse<T>> DeleteItemAsync<T>(
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteItemAsync<T>(
-                id,
-                partitionKey,
-                requestOptions,
-                cancellationToken);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("DeleteItem"))
+            {
+                ResponseMessage responseMessage = await this.DeleteItemHelperAsync(
+                    id,
+                    partitionKey,
+                    requestOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+
+                return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
+            }
         }
 
-        public override Task<ResponseMessage> DeleteItemStreamAsync(
+        public override async Task<ResponseMessage> DeleteItemStreamAsync(
             string id,
             PartitionKey partitionKey,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            return this.container.DeleteItemStreamAsync(
-                id,
-                partitionKey,
-                requestOptions,
-                cancellationToken);
+            CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
+            using (diagnosticsContext.CreateScope("DeleteItemStream"))
+            {
+                return await this.DeleteItemHelperAsync(
+                    id,
+                    partitionKey,
+                    requestOptions,
+                    diagnosticsContext,
+                    cancellationToken);
+            }
         }
 
         public override async Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -1002,6 +1014,58 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     encryptionSettings,
                     diagnosticsContext,
                     cancellationToken);
+
+            return responseMessage;
+        }
+
+        private async Task<ResponseMessage> DeleteItemHelperAsync(
+            string id,
+            PartitionKey partitionKey,
+            ItemRequestOptions requestOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken,
+            bool isRetry = false)
+        {
+            EncryptionSettings encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(obsoleteEncryptionSettings: null, cancellationToken: cancellationToken);
+            if (!encryptionSettings.PropertiesToEncrypt.Any())
+            {
+                return await this.container.DeleteItemStreamAsync(
+                    id,
+                    partitionKey,
+                    requestOptions,
+                    cancellationToken);
+            }
+
+            ItemRequestOptions clonedRequestOptions = requestOptions;
+
+            if (!isRetry)
+            {
+                clonedRequestOptions = GetClonedItemRequestOptions(requestOptions);
+            }
+
+            encryptionSettings.SetRequestHeaders(clonedRequestOptions);
+
+            ResponseMessage responseMessage = await this.container.DeleteItemStreamAsync(
+               id,
+               partitionKey,
+               clonedRequestOptions,
+               cancellationToken);
+
+            if (!isRetry && CheckIfRequestNeedsARetryPostPolicyRefresh(responseMessage))
+            {
+                // get the latest encryption settings.
+                await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
+                   obsoleteEncryptionSettings: encryptionSettings,
+                   cancellationToken: cancellationToken);
+
+                responseMessage = await this.DeleteItemHelperAsync(
+                    id,
+                    partitionKey,
+                    clonedRequestOptions,
+                    diagnosticsContext,
+                    cancellationToken,
+                    isRetry: true);
+            }
 
             return responseMessage;
         }
