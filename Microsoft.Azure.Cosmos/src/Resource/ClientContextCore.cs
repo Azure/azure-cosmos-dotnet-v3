@@ -116,7 +116,8 @@ namespace Microsoft.Azure.Cosmos
                      userAgent: connectionPolicy.UserAgentContainer.UserAgent,
                      connectionMode: connectionPolicy.ConnectionMode,
                      authorizationTokenProvider: cosmosClient.AuthorizationTokenProvider,
-                     diagnosticsHelper: DiagnosticsHandlerHelper.Instance());
+                     diagnosticsHelper: DiagnosticsHandlerHelper.Instance(),
+                     preferredRegions: clientOptions.ApplicationPreferredRegions);
             } 
             else
             {
