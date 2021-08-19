@@ -96,6 +96,9 @@ namespace CosmosBenchmark
         [Option(Required = false, HelpText = "Disable core SDK logging")]
         public bool DisableCoreSdkLogging { get; set; }
 
+        [Option(Required = false, HelpText = "Enable Telemetry")]
+        public bool EnableTelemetry { get; set; }
+
         [Option(Required = false, HelpText = "Endpoint to publish results to")]
         public string ResultsEndpoint { get; set; }
 
@@ -166,6 +169,7 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                EnableClientTelemetry = this.EnableTelemetry
             };
 
             if (!string.IsNullOrWhiteSpace(this.ConsistencyLevel))

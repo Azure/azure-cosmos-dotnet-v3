@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using static Microsoft.Azure.Cosmos.Encryption.EmulatorTests.LegacyEncryptionTests;
     using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
     using DataEncryptionKey = Custom.DataEncryptionKey;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class MdeCustomEncryptionTests
@@ -346,6 +347,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
             Assert.AreEqual(1, unwrapcount);
+        }
+
+        [TestMethod]
+        public async Task EncryptionReadManyItemAsync()
+        {
+            TestDoc testDoc = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+
+            TestDoc testDoc2 = await MdeCustomEncryptionTests.CreateItemAsync(MdeCustomEncryptionTests.encryptionContainer, MdeCustomEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>
+            {
+                (testDoc.Id, new PartitionKey(testDoc.PK)),
+                (testDoc2.Id, new PartitionKey(testDoc2.PK))
+            };
+
+            FeedResponse<TestDoc> response = await encryptionContainer.ReadManyItemsAsync<TestDoc>(itemList);
+
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.AreEqual(2, response.Count);
+            VerifyExpectedDocResponse(testDoc, response.Resource.ElementAt(0));
+            VerifyExpectedDocResponse(testDoc2, response.Resource.ElementAt(1));
+
+            // stream test.
+            ResponseMessage responseStream = await encryptionContainer.ReadManyItemsStreamAsync(itemList);
+
+            Assert.IsTrue(responseStream.IsSuccessStatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+
+            JObject contentJObjects = TestCommon.FromStream<JObject>(responseStream.Content);
+
+            if (contentJObjects.SelectToken(Constants.DocumentsResourcePropertyName) is JArray documents)
+            {
+                VerifyExpectedDocResponse(testDoc, documents.ElementAt(0).ToObject<TestDoc>());
+                VerifyExpectedDocResponse(testDoc2, documents.ElementAt(1).ToObject<TestDoc>());
+            }
+            else
+            {
+                Assert.Fail("ResponseMessage from ReadManyItemsStreamAsync did not have a valid response. ");
+            }
         }
 
         [TestMethod]
