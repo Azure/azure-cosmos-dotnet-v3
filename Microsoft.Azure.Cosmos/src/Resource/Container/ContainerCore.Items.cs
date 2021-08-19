@@ -298,14 +298,14 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(trace));
             }
 
-            PartitionKeyDefinition partitionKeyDefinition = null;
+            PartitionKeyDefinition partitionKeyDefinition;
             try
             {
                 partitionKeyDefinition = await this.GetPartitionKeyDefinitionAsync();
             }
             catch (CosmosException ex)
             {
-                ex.ToCosmosResponseMessage(request: null);
+                return ex.ToCosmosResponseMessage(request: null);
             }
 
             ReadManyHelper readManyHelper = new ReadManyQueryHelper(partitionKeyDefinition,
