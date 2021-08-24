@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return isequal;
         }
 
-        internal void SetAggregators(LongConcurrentHistogram histogram, long adjustment = 1)
+        internal void SetAggregators(LongConcurrentHistogram histogram, double adjustment = 1)
         {
             this.MetricInfo.SetAggregators(histogram, adjustment);
         }

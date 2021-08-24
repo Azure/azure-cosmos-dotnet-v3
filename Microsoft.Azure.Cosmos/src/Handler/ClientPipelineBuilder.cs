@@ -105,15 +105,15 @@ namespace Microsoft.Azure.Cosmos
         ///                                                 |
         ///                                    +-----------------------------+
         ///                                    |                             |
+        ///                                    |       TelemetryHandler     |-> Trigger a thread to monitor system usage/operation information and send it to juno
+        ///                                    |                             |
+        ///                                    +-----------------------------+
+        ///                                                 |
+        ///                                                 |
+        ///                                                 |
+        ///                                    +-----------------------------+
+        ///                                    |                             |
         ///                                    |       RetryHandler          |-> RetryPolicy -> ResetSessionTokenRetryPolicyFactory -> ClientRetryPolicy -> ResourceThrottleRetryPolicy
-        ///                                    |                             |
-        ///                                    +-----------------------------+
-        ///                                                 |
-        ///                                                 |
-        ///                                                 |
-        ///                                    +-----------------------------+
-        ///                                    |                             |
-        ///                                    |       Telemetry Handler     |-> Trigger a thread to monitor system usage/operation information and send it to juno
         ///                                    |                             |
         ///                                    +-----------------------------+
         ///                                                 |
@@ -176,15 +176,15 @@ namespace Microsoft.Azure.Cosmos
                 current = current.InnerHandler;
             }
 
-            Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
-            current.InnerHandler = this.retryHandler;
-            current = current.InnerHandler;
-
             if (this.telemetryHandler != null)
             {
                 current.InnerHandler = this.telemetryHandler;
                 current = current.InnerHandler;
             }
+
+            Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
+            current.InnerHandler = this.retryHandler;
+            current = current.InnerHandler;
 
             // Have a router handler
             RequestHandler feedHandler = this.CreateDocumentFeedPipeline();

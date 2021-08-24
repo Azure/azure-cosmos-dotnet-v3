@@ -16,17 +16,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using System.IO;
 
     [TestClass]
     public class ClientTelemetryTests : BaseCosmosClientHelper
     {
         private const string telemetryEndpointUrl = "http://dummy.telemetry.endpoint/";
         private const int scheduledInSeconds = 1;
-        private Container container;
+        private CosmosClientBuilder cosmosClientBuilder;
 
         private List<ClientTelemetryProperties> actualInfo;
+
         [TestInitialize]
-        public async Task TestInitialize()
+        public void TestInitialize()
         {
             this.actualInfo = new List<ClientTelemetryProperties>();
 
@@ -67,15 +69,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 "region2"
             };
 
-            CosmosClientBuilder cosmosClientBuilder = TestCommon.GetDefaultConfiguration();
-
-            this.cosmosClient = cosmosClientBuilder
+            this.cosmosClientBuilder = TestCommon.GetDefaultConfiguration()
                                         .WithApplicationPreferredRegions(preferredRegionList)
                                         .WithTelemetryEnabled()
-                                        .WithHttpClientFactory(() => new HttpClient(httpHandler)).Build();
-
-            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
-            this.container = await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
+                                        .WithHttpClientFactory(() => new HttpClient(httpHandler));
         }
 
         [TestCleanup]
@@ -88,46 +85,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task PointSuccessOperationsTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task PointSuccessOperationsTest(ConnectionMode mode)
         {
+            Container container = await this.GetContainer(mode);
+
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
-            ItemResponse<ToDoActivity> createResponse = await this.container.CreateItemAsync<ToDoActivity>(testItem);
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
             ToDoActivity testItemCreated = createResponse.Resource;
 
             // Read an Item
-            await this.container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
             // Upsert an Item
-            await this.container.UpsertItemAsync<ToDoActivity>(testItem);
+            await container.UpsertItemAsync<ToDoActivity>(testItem);
 
             // Replace an Item
-            await this.container.ReplaceItemAsync<ToDoActivity>(testItemCreated, testItemCreated.id.ToString());
+            await container.ReplaceItemAsync<ToDoActivity>(testItemCreated, testItemCreated.id.ToString());
 
             // Patch an Item
             List<PatchOperation> patch = new List<PatchOperation>()
             {
                 PatchOperation.Add("/new", "patched")
             };
-            await ((ContainerInternal)this.container).PatchItemAsync<ToDoActivity>(
+            await ((ContainerInternal)container).PatchItemAsync<ToDoActivity>(
                 testItem.id,
                 new Cosmos.PartitionKey(testItem.id),
                 patch);
 
             // Delete an Item
-            await this.container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            this.WaitAndAssert(12);
+            this.WaitAndAssert(6);
         }
 
         [TestMethod]
-        public async Task PointReadFailureOperationsTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task PointReadFailureOperationsTest(ConnectionMode mode)
         {
             // Fail Read
             try
             {
-                await this.container.ReadItemAsync<JObject>(
-                    new Guid().ToString(), 
+                Container container = await this.GetContainer(mode);
+                await container.ReadItemAsync<JObject>(
+                    new Guid().ToString(),
                     new Cosmos.PartitionKey(new Guid().ToString()));
             }
             catch (CosmosException ce) when (ce.StatusCode == HttpStatusCode.NotFound)
@@ -139,12 +143,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task StreamReadFailureOperationsTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task StreamReadFailureOperationsTest(ConnectionMode mode)
         {
+            Container container = await this.GetContainer(mode);
+
             // Fail Read
             try
             {
-                await this.container.ReadItemStreamAsync(
+                await container.ReadItemStreamAsync(
                     new Guid().ToString(),
                     new Cosmos.PartitionKey(new Guid().ToString()));
             }
@@ -158,46 +166,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task StreamOperationsTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task StreamOperationsTest(ConnectionMode mode)
         {
+            Container container = await this.GetContainer(mode);
             // Create an item
             var testItem = new { id = "MyTestItemId", partitionKeyPath = "MyTestPkValue", details = "it's working", status = "done" };
-            await this.container
+            await container
                 .CreateItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), 
                 new Cosmos.PartitionKey(testItem.id));
 
             //Upsert an Item
-            await this.container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new Cosmos.PartitionKey(testItem.id));
+            await container.UpsertItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), new Cosmos.PartitionKey(testItem.id));
 
             //Read an Item
-            await this.container.ReadItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.ReadItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
             //Replace an Item
-            await this.container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.ReplaceItemStreamAsync(TestCommon.SerializerCore.ToStream(testItem), testItem.id, new Cosmos.PartitionKey(testItem.id));
 
             // Patch an Item
             List<PatchOperation> patch = new List<PatchOperation>()
             {
                 PatchOperation.Add("/new", "patched")
             };
-            await ((ContainerInternal)this.container).PatchItemStreamAsync(
+            await ((ContainerInternal)container).PatchItemStreamAsync(
                 partitionKey: new Cosmos.PartitionKey(testItem.id),
                 id: testItem.id,
                 patchOperations: patch);
 
             //Delete an Item
-            await this.container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
+            await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
             this.WaitAndAssert(12);
         }
 
         [TestMethod]
-        public async Task BatchOperationsTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task BatchOperationsTest(ConnectionMode mode)
         {
+            Container container = await this.GetContainer(mode);
             using (BatchAsyncContainerExecutor executor = 
                 new BatchAsyncContainerExecutor(
-                    (ContainerInlineCore)this.container, 
-                    ((ContainerInlineCore)this.container).ClientContext,
+                    (ContainerInlineCore)container, 
+                    ((ContainerInlineCore)container).ClientContext,
                     20,
                     Documents.Constants.MaxDirectModeBatchRequestBodySizeInBytes)
                 )
@@ -214,17 +228,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task QueryOperationTest()
+        [DataRow(ConnectionMode.Direct)]
+        [DataRow(ConnectionMode.Gateway)]
+        public async Task QueryOperationTest(ConnectionMode mode)
         {
+            Container container = await this.GetContainer(mode);
+
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue", "MyTestItemId");
-            ItemResponse<ToDoActivity> createResponse = await this.container.CreateItemAsync<ToDoActivity>(testItem);
+            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
 
             if (createResponse.StatusCode == HttpStatusCode.Created)
             { 
                 string sqlQueryText = "SELECT * FROM c";
 
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
-                FeedIterator<object> queryResultSetIterator = this.container.GetItemQueryIterator<object>(queryDefinition);
+                FeedIterator<object> queryResultSetIterator = container.GetItemQueryIterator<object>(queryDefinition);
 
                 List<object> families = new List<object>();
                 while (queryResultSetIterator.HasMoreResults)
@@ -238,7 +256,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
             this.WaitAndAssert(4);
         }
-
 
         private void WaitAndAssert(int expectedOperationCount, int milliseconds = 2000)
         {
@@ -304,6 +321,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             var testItem = new { id = itemId, Status = itemId };
             return new ItemBatchOperation(Documents.OperationType.Create, 0, new Cosmos.PartitionKey(itemId), itemId, TestCommon.SerializerCore.ToStream(testItem));
+        }
+
+        private async Task<Container> GetContainer(ConnectionMode mode)
+        {
+            if (mode == ConnectionMode.Direct)
+            {
+                this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeDirect().Build();
+            }
+
+            if (mode == ConnectionMode.Gateway)
+            {
+                this.cosmosClient = this.cosmosClientBuilder.WithConnectionModeGateway().Build();
+            }
+
+            this.database = await this.cosmosClient.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            return await this.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id");
         }
 
     }

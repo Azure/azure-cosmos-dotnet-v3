@@ -216,21 +216,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                             statusCode: (int)statusCode);
 
             (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge) = this.operationInfoMap
-                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(1,
+                    .GetOrAdd(payloadKey, x => (latency: new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision),
                             requestcharge: new LongConcurrentHistogram(ClientTelemetryOptions.RequestChargeMin,
                                                         ClientTelemetryOptions.RequestChargeMax,
                                                         ClientTelemetryOptions.RequestChargePrecision)));
-
-            long totalElapsedTimeInMs = (long)cosmosDiagnostics.GetClientElapsedTime().TotalMilliseconds;
             try
             {
-                latency.RecordValue(totalElapsedTimeInMs * ClientTelemetryOptions.HistogramPrecisionFactor);
+                latency.RecordValue(cosmosDiagnostics.GetClientElapsedTime().Ticks);
             } 
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Latency Value : " + totalElapsedTimeInMs + "  Exception : " + ex.Message);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : " + ex.Message);
             }
 
             long requestChargeToRecord = (long)(requestCharge * ClientTelemetryOptions.HistogramPrecisionFactor);
