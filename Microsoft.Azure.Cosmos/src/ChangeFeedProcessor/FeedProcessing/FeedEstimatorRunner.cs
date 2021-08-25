@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using static Microsoft.Azure.Cosmos.Container;
 
     /// <summary>
@@ -16,18 +15,22 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
     /// </summary>
     internal sealed class FeedEstimatorRunner
     {
+        private static readonly string EstimationLeaseIdentifier = "Change Feed Estimator";
         private static TimeSpan defaultMonitoringDelay = TimeSpan.FromSeconds(5);
         private readonly ChangeFeedEstimator remainingWorkEstimator;
         private readonly TimeSpan monitoringDelay;
         private readonly ChangesEstimationHandler dispatchEstimation;
+        private readonly ChangeFeedProcessorHealthMonitor healthMonitor;
 
         public FeedEstimatorRunner(
             ChangesEstimationHandler dispatchEstimation,
             ChangeFeedEstimator remainingWorkEstimator,
+            ChangeFeedProcessorHealthMonitor healthMonitor,
             TimeSpan? estimationPeriod = null)
         {
             this.dispatchEstimation = dispatchEstimation;
             this.remainingWorkEstimator = remainingWorkEstimator;
+            this.healthMonitor = healthMonitor;
             this.monitoringDelay = estimationPeriod ?? FeedEstimatorRunner.defaultMonitoringDelay;
         }
 
@@ -64,8 +67,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
             }
             catch (Exception userException)
             {
-                Extensions.TraceException(userException);
-                DefaultTrace.TraceWarning("Exception happened on ChangeFeedEstimatorDispatcher.DispatchEstimation");
+                await this.healthMonitor.NotifyErrorAsync(FeedEstimatorRunner.EstimationLeaseIdentifier, userException);
             }
         }
 
