@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
         ///                                                 |
         ///                                    +-----------------------------+
         ///                                    |                             |
-        ///                                    |       TelemetryHandler     |-> Trigger a thread to monitor system usage/operation information and send it to juno
+        ///                                    |       TelemetryHandler     |-> Trigger a thread to monitor system usage/operation information and sends to an API
         ///                                    |                             |
         ///                                    +-----------------------------+
         ///                                                 |
