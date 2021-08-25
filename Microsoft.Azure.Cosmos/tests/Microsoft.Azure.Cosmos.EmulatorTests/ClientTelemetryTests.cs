@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // Create an item
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity("MyTestPkValue");
-            ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
+            ItemResponse<ToDoActivity> createResponse =await container.CreateItemAsync<ToDoActivity>(testItem);
             ToDoActivity testItemCreated = createResponse.Resource;
 
             // Read an Item
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Delete an Item
             await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            this.WaitAndAssert(6);
+            await this.WaitAndAssert(12);
         }
 
         [TestMethod]
@@ -139,7 +139,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 string message = ce.ToString();
                 Assert.IsNotNull(message);
             }
-            this.WaitAndAssert(2);
+
+            await this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -162,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(message);
             }
 
-            this.WaitAndAssert(2);
+            await this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Delete an Item
             await container.DeleteItemStreamAsync(testItem.id, new Cosmos.PartitionKey(testItem.id));
 
-            this.WaitAndAssert(12);
+            await this.WaitAndAssert(12);
         }
 
         [TestMethod]
@@ -224,7 +225,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 await Task.WhenAll(tasks);
             }
-            this.WaitAndAssert(2);
+
+            await this.WaitAndAssert(2);
         }
 
         [TestMethod]
@@ -254,12 +256,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                 }
             }
-            this.WaitAndAssert(4);
+            await this.WaitAndAssert(4);
         }
 
-        private void WaitAndAssert(int expectedOperationCount, int milliseconds = 2000)
+        private async Task WaitAndAssert(int expectedOperationCount, int millisecondsToWait = 2000)
         {
-            Task.Delay(milliseconds).Wait();
+            // As this feature is thread based execution so waiting to get results and to avoid test flakyness
+            await this.Wait(millisecondsToWait);
 
             Assert.IsNotNull(this.actualInfo, "Telemetry Information not available");
             Assert.IsTrue(this.actualInfo.Count > 0, "Telemetry Information not available");
@@ -315,6 +318,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(operation.MetricInfo.Max >= 0, "MetricInfo Max is not greater than or equal to 0");
                 Assert.IsTrue(operation.MetricInfo.Min >= 0, "MetricInfo Min is not greater than or equal to 0");
             }
+        }
+
+        private async Task Wait(int millisecondsToWait, int timeout = 30000)
+        {
+            int totalTimeTaken = 0;
+            bool isOperationInfoThere = false;
+            do
+            {
+                totalTimeTaken += millisecondsToWait;
+                await Task.Delay(millisecondsToWait);
+                foreach (ClientTelemetryProperties telemetryData in this.actualInfo)
+                {
+                    isOperationInfoThere = telemetryData.OperationInfo.Count > 0;
+                }
+
+                if(!isOperationInfoThere && totalTimeTaken >= timeout)
+                {
+                    throw new TimeoutException("Timeout happens, as operation info is not there, even after " + totalTimeTaken + "Ms");
+                }
+
+            } while (!isOperationInfoThere);
         }
 
         private static ItemBatchOperation CreateItem(string itemId)
