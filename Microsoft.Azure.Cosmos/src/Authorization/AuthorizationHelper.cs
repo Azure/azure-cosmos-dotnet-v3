@@ -259,6 +259,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (authorizationTokenLength > AuthorizationHelper.MaxAadAuthorizationHeaderSize)
                 {
+                    DefaultTrace.TraceError($"Token of type [{authTypeValue.Span.ToString()}] was of size [{authorizationTokenLength}] while the max allowed size is [{AuthorizationHelper.MaxAadAuthorizationHeaderSize}].");
                     throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat, SubStatusCodes.InvalidAuthHeaderFormat);
                 }
             }
@@ -266,11 +267,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (authorizationTokenLength > AuthorizationHelper.MaxResourceTokenAuthorizationHeaderSize)
                 {
+                    DefaultTrace.TraceError($"Token of type [{authTypeValue.Span.ToString()}] was of size [{authorizationTokenLength}] while the max allowed size is [{AuthorizationHelper.MaxResourceTokenAuthorizationHeaderSize}].");
                     throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat, SubStatusCodes.InvalidAuthHeaderFormat);
                 }
             }
             else if (authorizationTokenLength > AuthorizationHelper.MaxAuthorizationHeaderSize)
             {
+                DefaultTrace.TraceError($"Token of type [{authTypeValue.Span.ToString()}] was of size [{authorizationTokenLength}] while the max allowed size is [{AuthorizationHelper.MaxAuthorizationHeaderSize}].");
                 throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat, SubStatusCodes.InvalidAuthHeaderFormat);
             }
 
