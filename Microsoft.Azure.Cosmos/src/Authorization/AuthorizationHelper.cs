@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos
         public const int MaxAuthorizationHeaderSize = 1024;
         public const int DefaultAllowedClockSkewInSeconds = 900;
         public const int DefaultMasterTokenExpiryInSeconds = 900;
+        private const int MaxAadAuthorizationHeaderSize = 16 * 1024;
+        private const int MaxResourceTokenAuthorizationHeaderSize = 8 * 1024;
         private static readonly string AuthorizationFormatPrefixUrlEncoded = HttpUtility.UrlEncode(string.Format(CultureInfo.InvariantCulture, Constants.Properties.AuthorizationFormat,
                 Constants.Properties.MasterToken,
                 Constants.Properties.TokenVersion,
@@ -207,10 +209,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new UnauthorizedException(RMResources.MissingAuthHeader);
             }
 
-            if (authorizationTokenString.Length > AuthorizationHelper.MaxAuthorizationHeaderSize)
-            {
-                throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat);
-            }
+            int authorizationTokenLength = authorizationTokenString.Length;
 
             authorizationTokenString = HttpUtility.UrlDecode(authorizationTokenString);
  
@@ -255,6 +254,28 @@ namespace Microsoft.Azure.Cosmos
             }
 
             ReadOnlyMemory<char> authTypeValue = authType.Slice(typeKeyValueSepartorPosition + 1);
+
+            if (MemoryExtensions.Equals(authTypeValue.Span, Constants.Properties.AadToken.AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                if (authorizationTokenLength > AuthorizationHelper.MaxAadAuthorizationHeaderSize)
+                {
+                    DefaultTrace.TraceError($"Token of type [{authTypeValue.Span.ToString()}] was of size [{authorizationTokenLength}] while the max allowed size is [{AuthorizationHelper.MaxAadAuthorizationHeaderSize}].");
+                    throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat, SubStatusCodes.InvalidAuthHeaderFormat);
+                }
+            }
+            else if (MemoryExtensions.Equals(authTypeValue.Span, Constants.Properties.ResourceToken.AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                if (authorizationTokenLength > AuthorizationHelper.MaxResourceTokenAuthorizationHeaderSize)
+                {
+                    DefaultTrace.TraceError($"Token of type [{authTypeValue.Span.ToString()}] was of size [{authorizationTokenLength}] while the max allowed size is [{AuthorizationHelper.MaxResourceTokenAuthorizationHeaderSize}].");
+                    throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat, SubStatusCodes.InvalidAuthHeaderFormat);
+                }
+            }
+            else if (authorizationTokenLength > AuthorizationHelper.MaxAuthorizationHeaderSize)
+            {
+                DefaultTrace.TraceError($"Token of type [{authTypeValue.Span.ToString()}] was of size [{authorizationTokenLength}] while the max allowed size is [{AuthorizationHelper.MaxAuthorizationHeaderSize}].");
+                throw new UnauthorizedException(RMResources.InvalidAuthHeaderFormat, SubStatusCodes.InvalidAuthHeaderFormat);
+            }
 
             int versionKeyValueSeparatorPosition = version.Span.IndexOf('=');
             if (versionKeyValueSeparatorPosition == -1
