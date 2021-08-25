@@ -468,7 +468,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     clonedRequestOptions),
                 this,
-                clonedRequestOptions);
+                clonedRequestOptions,
+                queryDefinition);
         }
 
         public override FeedIterator GetItemQueryStreamIterator(
@@ -492,7 +493,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continuationToken,
                     clonedRequestOptions),
                 this,
-                clonedRequestOptions);
+                clonedRequestOptions,
+                queryDefinition: new QueryDefinition(queryText));
         }
 
         public override Task<ThroughputResponse> ReplaceThroughputAsync(
@@ -619,6 +621,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 cancellationToken);
 
             return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
+        }
+
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+            PartitionKey partitionKey,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey,
+                requestOptions,
+                cancellationToken);
         }
 
         public async override Task<ResponseMessage> PatchItemStreamAsync(
@@ -889,7 +902,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         internal async Task<Stream> DeserializeAndDecryptResponseAsync(
            Stream content,
            EncryptionSettings encryptionSettings,
-           CancellationToken cancellationToken)
+           CancellationToken cancellationToken,
+           Dictionary<string, string> rootPaths = null)
         {
             if (!encryptionSettings.PropertiesToEncrypt.Any())
             {
@@ -903,17 +917,95 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 throw new InvalidOperationException("Feed Response body contract was violated. Feed response did not have an array of Documents. ");
             }
 
+            JArray results = new JArray();
             foreach (JToken value in documents)
             {
-                if (value is not JObject document)
+                if (rootPaths != null && rootPaths.Any())
                 {
-                    continue;
-                }
+                    if (value.Type == JTokenType.Array)
+                    {
+                        // expecting non Jobject to have(always) a single JToken value as part of document response.
+                        if (rootPaths.Count > 1)
+                        {
+                            throw new InvalidOperationException("DeserializeAndDecryptResponseAsync tried to decrypt document with multiple rootpaths. ");
+                        }
 
-                await EncryptionProcessor.DecryptAsync(
+                        EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(rootPaths.Values.FirstOrDefault());
+                        if (settingsForProperty != null)
+                        {
+                            await EncryptionProcessor.DecryptJTokenAsync(value, settingsForProperty, cancellationToken);
+                        }
+
+                        results.Add(value);
+                    }
+                    else if (value.Type == JTokenType.Object)
+                    {
+                        // star clause from object etc..
+                        if (value.Children().Count() > 1 && rootPaths.Count == 1)
+                        {
+                            EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(rootPaths.Values.FirstOrDefault());
+
+                            if (settingsForProperty != null)
+                            {
+                                await EncryptionProcessor.DecryptJTokenAsync(value, settingsForProperty, cancellationToken);
+                            }
+
+                            results.Add(value);
+                        }
+                        else
+                        {
+                            if (value is JObject document)
+                            {
+                                results.Add(await EncryptionProcessor.DecryptAsync(
+                                document,
+                                encryptionSettings,
+                                cancellationToken,
+                                rootPaths));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // expecting non Jobject to have(always) a single JToken value as part of document response.
+                        if (rootPaths.Count > 1)
+                        {
+                            throw new InvalidOperationException("DeserializeAndDecryptResponseAsync tried to decrypt document with multiple rootpaths. ");
+                        }
+
+                        EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(rootPaths.Values.FirstOrDefault());
+                        if (settingsForProperty != null)
+                        {
+                            // does not get replaced in place since its just a token value not in property name : value format.
+                            results.Add(await EncryptionProcessor.DecryptAndDeserializeValueAsync(value, settingsForProperty, cancellationToken));
+                        }
+                        else
+                        {
+                            results.Add(value);
+                        }
+                    }
+                }
+                else if (value is JObject document)
+                {
+                    results.Add(await EncryptionProcessor.DecryptAsync(
                     document,
                     encryptionSettings,
-                    cancellationToken);
+                    cancellationToken,
+                    rootPaths));
+                }
+
+                continue;
+            }
+
+            foreach (JProperty property in contentJObj.Properties())
+            {
+                if (property.Name.Equals(Constants.DocumentsResourcePropertyName))
+                {
+                    contentJObj[property.Name] = results;
+                }
+                else
+                {
+                    contentJObj[property.Name] = property.Value;
+                }
             }
 
             // the contents get decrypted in place by DecryptAsync.

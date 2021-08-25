@@ -33,6 +33,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         public EncryptionSettingForProperty GetEncryptionSettingForProperty(string propertyName)
         {
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return null;
+            }
+
             this.encryptionSettingsDictByPropertyName.TryGetValue(propertyName, out EncryptionSettingForProperty encryptionSettingsForProperty);
 
             return encryptionSettingsForProperty;

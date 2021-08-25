@@ -1010,6 +1010,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return this.ResponseFactory.CreateItemFeedResponse<T>(responseMessage);
         }
 
+        public override Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+            PartitionKey partitionKey,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default)
+        {
+            return this.container.DeleteAllItemsByPartitionKeyStreamAsync(
+                partitionKey,
+                requestOptions,
+                cancellationToken);
+        }
+
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,

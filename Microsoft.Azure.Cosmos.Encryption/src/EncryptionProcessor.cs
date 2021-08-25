@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -118,7 +119,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public static async Task<JObject> DecryptAsync(
             JObject document,
             EncryptionSettings encryptionSettings,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Dictionary<string, string> rootPaths = null)
         {
             Debug.Assert(document != null);
 
@@ -126,7 +128,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 document,
                 encryptionSettings,
                 CosmosDiagnosticsContext.Create(null),
-                cancellationToken);
+                cancellationToken,
+                rootPaths);
 
             return document;
         }
@@ -252,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return cipherTextWithTypeMarker;
         }
 
-        private static async Task<JToken> DecryptAndDeserializeValueAsync(
+        internal static async Task<JToken> DecryptAndDeserializeValueAsync(
            JToken jToken,
            EncryptionSettingForProperty encryptionSettingForProperty,
            CancellationToken cancellationToken)
@@ -280,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 (TypeMarker)cipherTextWithTypeMarker[0]);
         }
 
-        private static async Task DecryptJTokenAsync(
+        internal static async Task DecryptJTokenAsync(
             JToken jTokenToDecrypt,
             EncryptionSettingForProperty encryptionSettingForProperty,
             CancellationToken cancellationToken)
@@ -321,9 +324,29 @@ namespace Microsoft.Azure.Cosmos.Encryption
             JObject document,
             EncryptionSettings encryptionSettings,
             CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            Dictionary<string, string> rootPaths = null)
         {
             Debug.Assert(diagnosticsContext != null);
+
+            if (rootPaths != null && rootPaths.Count > 0)
+            {
+                foreach (JProperty propertyToDecrypt in (JToken)document)
+                {
+                    string rootPath = rootPaths.Where(keyValue => keyValue.Key.Contains(propertyToDecrypt.Name)).FirstOrDefault().Value;
+                    EncryptionSettingForProperty settingsForProperty = encryptionSettings.GetEncryptionSettingForProperty(rootPath);
+
+                    if (settingsForProperty != null)
+                    {
+                        await DecryptJTokenAsync(
+                            propertyToDecrypt.Value,
+                            settingsForProperty,
+                            cancellationToken);
+                    }
+                }
+
+                return;
+            }
 
             foreach (string propertyName in encryptionSettings.PropertiesToEncrypt)
             {
