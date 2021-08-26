@@ -1175,7 +1175,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
             catch(CosmosException ex)
             {
-                Assert.AreEqual("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details. ", ex.Message);
+                Assert.IsTrue(ex.Message.Contains("Operation has failed due to a possible mismatch in Client Encryption Policy configured on the container. Please refer to https://aka.ms/CosmosClientEncryption for more details."));
             }
 
             // the previous failure would have updated the policy in the cache.
