@@ -135,7 +135,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 #if INTERNAL
         public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
 
-
         public TimeSpan EstimatedClientDelayFromAllCauses
         {
             get
