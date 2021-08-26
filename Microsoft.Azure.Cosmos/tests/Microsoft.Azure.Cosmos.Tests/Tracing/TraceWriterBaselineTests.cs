@@ -338,8 +338,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     {
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue);
 
-                        Uri uri1 = new Uri("http://someUri1.com");
-                        Uri uri2 = new Uri("http://someUri2.com");
+                        TransportAddressUri uri1 = new TransportAddressUri(new Uri("http://someUri1.com"));
+                        TransportAddressUri uri2 = new TransportAddressUri(new Uri("http://someUri2.com"));
 
                         datum.ContactedReplicas.Add(uri1);
                         datum.ContactedReplicas.Add(uri2);
@@ -355,8 +355,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         datum.FailedReplicas.Add(uri1);
                         datum.FailedReplicas.Add(uri2);
 
-                        datum.RegionsContactedWithName.Add(("local", uri1));
-                        datum.RegionsContactedWithName.Add(("local", uri2));
+                        datum.RegionsContacted.Add(("local", uri1.Uri));
+                        datum.RegionsContacted.Add(("local", uri2.Uri));
 
                         TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
 
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 transportRequestStats: TraceWriterBaselineTests.CreateTransportRequestStats()),
                             ResourceType.Document,
                             OperationType.Query,
-                            uri1);
+                            uri1.Uri);
 
                         TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats", datum);
@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
                         datum.FailedReplicas.Add(default);
 
-                        datum.RegionsContactedWithName.Add(default);
+                        datum.RegionsContacted.Add(default);
 
                         TraceWriterBaselineTests.SetEndRequestTime(datum, default);
 
@@ -492,12 +492,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                 {
                     CpuHistoryTraceDatum datum = new CpuHistoryTraceDatum(
-                        new Documents.Rntbd.CpuLoadHistory(
-                            new ReadOnlyCollection<Documents.Rntbd.CpuLoad>(
-                                new List<Documents.Rntbd.CpuLoad>()
+                        new Documents.Rntbd.SystemUsageHistory(
+                            new ReadOnlyCollection<Documents.Rntbd.SystemUsageLoad>(
+                                new List<Documents.Rntbd.SystemUsageLoad>()
                                 {
-                                    new Documents.Rntbd.CpuLoad(DateTime.MinValue, 42),
-                                    new Documents.Rntbd.CpuLoad(DateTime.MinValue, 23),
+                                    new Documents.Rntbd.SystemUsageLoad(
+                                        DateTime.MinValue,
+                                        null,
+                                        42,
+                                        1000),
+                                    new Documents.Rntbd.SystemUsageLoad(
+                                        DateTime.MinValue,
+                                        null,
+                                        23,
+                                        9000),
                                 }),
                             monitoringInterval: TimeSpan.MaxValue));
                     rootTrace.AddDatum("CPU History", datum);

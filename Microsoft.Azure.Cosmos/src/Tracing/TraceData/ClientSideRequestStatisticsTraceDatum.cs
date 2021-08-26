@@ -9,7 +9,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Diagnostics;
     using System.Net.Http;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Rntbd;
 
     internal sealed class ClientSideRequestStatisticsTraceDatum : TraceDatum, IClientSideRequestStatistics
     {
@@ -18,33 +20,38 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private static readonly IReadOnlyList<HttpResponseStatistics> EmptyHttpResponseStatistics = new List<HttpResponseStatistics>();
 
         private readonly object requestEndTimeLock = new object();
-        private readonly long clientSideRequestStatisticsCreateTime;
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
-        private readonly Dictionary<int, DateTime> recordRequestHashCodeToStartTime;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
         private readonly List<HttpResponseStatistics> httpResponseStatistics;
+#if INTERNAL
+        private readonly long clientSideRequestStatisticsCreateTime;
+#endif
 
         private IReadOnlyDictionary<string, AddressResolutionStatistics> shallowCopyOfEndpointToAddressResolutionStatistics = null;
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
+        private SystemUsageHistory systemUsageHistory = null;
 
+#if INTERNAL
         private long? firstStartRequestTimestamp;
         private long? lastStartRequestTimestamp;
         private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
         private bool received429ResponseSinceLastStartRequest = false;
+#endif
 
         public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
         {
             this.RequestStartTimeUtc = startTime;
             this.RequestEndTimeUtc = null;
             this.endpointToAddressResolutionStats = new Dictionary<string, AddressResolutionStatistics>();
-            this.recordRequestHashCodeToStartTime = new Dictionary<int, DateTime>();
-            this.ContactedReplicas = new List<Uri>();
+            this.ContactedReplicas = new List<TransportAddressUri>();
             this.storeResponseStatistics = new List<StoreResponseStatistics>();
-            this.FailedReplicas = new HashSet<Uri>();
-            this.RegionsContactedWithName = new HashSet<(string, Uri)>();
-            this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
+            this.FailedReplicas = new HashSet<TransportAddressUri>();
+            this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
+#if INTERNAL
+            this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
+#endif
         }
 
         public DateTime RequestStartTimeUtc { get; }
@@ -68,24 +75,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        public List<Uri> ContactedReplicas { get; set; }
+        public List<TransportAddressUri> ContactedReplicas { get; set; }
 
-        public HashSet<Uri> FailedReplicas { get; }
+        public HashSet<TransportAddressUri> FailedReplicas { get; }
 
-        public HashSet<Uri> RegionsContacted
-        {
-            get
-            {
-                HashSet<Uri> regionContacted = new HashSet<Uri>();
-                foreach ((string _, Uri uriContacted) in this.RegionsContactedWithName)
-                {
-                    regionContacted.Add(uriContacted);
-                }
-                return regionContacted;
-            }
-        }
-
-        public HashSet<(string, Uri)> RegionsContactedWithName { get; }
+        public HashSet<(string, Uri)> RegionsContacted { get; }
 
         public IReadOnlyList<StoreResponseStatistics> StoreResponseStatisticsList
         {
@@ -121,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        public TimeSpan RequestLatency
+        public TimeSpan? RequestLatency
         {
             get
             {
@@ -130,13 +124,17 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     return this.RequestEndTimeUtc.Value - this.RequestStartTimeUtc;
                 }
 
-                return TimeSpan.MaxValue;
+                return null;
             }
         }
 
-        public bool IsCpuOverloaded { get; private set; } = false;
+        public bool? IsCpuHigh => this.systemUsageHistory?.IsCpuHigh;
 
+        public bool? IsCpuThreadStarvation => this.systemUsageHistory?.IsCpuThreadStarvation;
+
+#if INTERNAL
         public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
+
 
         public TimeSpan EstimatedClientDelayFromAllCauses
         {
@@ -152,10 +150,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 return TimeSpan.FromSeconds(clientDelayInStopWatchTicks / (double)Stopwatch.Frequency);
             }
         }
+#endif
 
         public void RecordRequest(DocumentServiceRequest request)
         {
-            lock (this.recordRequestHashCodeToStartTime)
+#if INTERNAL
+            lock (this.storeResponseStatistics)
             {
                 long timestamp = Stopwatch.GetTimestamp();
                 if (this.received429ResponseSinceLastStartRequest)
@@ -171,60 +171,54 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
                 this.lastStartRequestTimestamp = timestamp;
                 this.received429ResponseSinceLastStartRequest = false;
-
-                this.recordRequestHashCodeToStartTime[request.GetHashCode()] = DateTime.UtcNow;
             }
+#endif
         }
 
-        public void RecordResponse(DocumentServiceRequest request, StoreResult storeResult)
+        public void RecordResponse(
+            DocumentServiceRequest request,
+            StoreResult storeResult,
+            DateTime startTimeUtc,
+            DateTime endTimeUtc)
         {
-            // One DocumentServiceRequest can map to multiple store results
-            DateTime? startDateTime = null;
-            lock (this.recordRequestHashCodeToStartTime)
-            {
-                if (this.recordRequestHashCodeToStartTime.TryGetValue(request.GetHashCode(), out DateTime startRequestTime))
-                {
-                    startDateTime = startRequestTime;
-                }
-                else
-                {
-                    Debug.Fail("DocumentServiceRequest start time not recorded");
-                }
-            }
-
-            DateTime responseTime = this.GetAndUpdateRequestEndTime();
+            this.UpdateRequestEndTime(endTimeUtc);
             Uri locationEndpoint = request.RequestContext.LocationEndpointToRoute;
             string regionName = request.RequestContext.RegionName;
             StoreResponseStatistics responseStatistics = new StoreResponseStatistics(
-                startDateTime,
-                responseTime,
+                startTimeUtc,
+                endTimeUtc,
                 storeResult,
                 request.ResourceType,
                 request.OperationType,
                 locationEndpoint);
 
-            if (storeResult?.IsClientCpuOverloaded ?? false)
-            {
-                this.IsCpuOverloaded = true;
-            }
-
             lock (this.storeResponseStatistics)
             {
                 if (locationEndpoint != null)
                 {
-                    this.RegionsContactedWithName.Add((regionName, locationEndpoint));
+                    this.RegionsContacted.Add((regionName, locationEndpoint));
                 }
 
                 // Reset the shallow copy
                 this.shallowCopyOfStoreResponseStatistics = null;
                 this.storeResponseStatistics.Add(responseStatistics);
-
+#if INTERNAL
                 if (!this.received429ResponseSinceLastStartRequest &&
                     storeResult.StatusCode == StatusCodes.TooManyRequests)
                 {
                     this.received429ResponseSinceLastStartRequest = true;
                 }
+#endif
             }
+        }
+
+        public void RecordException(
+            DocumentServiceRequest request,
+            Exception exception,
+            DateTime startTimeUtc,
+            DateTime endTimeUtc)
+        {
+            this.UpdateRequestEndTime(endTimeUtc);
         }
 
         public string RecordAddressResolutionStart(Uri targetEndpoint)
@@ -252,7 +246,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 return;
             }
 
-            DateTime responseTime = this.GetAndUpdateRequestEndTime();
+            DateTime responseTime = DateTime.UtcNow;
+            this.UpdateRequestEndTime(responseTime);
 
             lock (this.endpointToAddressResolutionStats)
             {
@@ -277,10 +272,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            this.UpdateRequestEndTime(requestEndTimeUtc);
+
             lock (this.httpResponseStatistics)
             {
                 this.shallowCopyOfHttpResponseStatistics = null;
-                DateTime requestEndTimeUtc = this.GetAndUpdateRequestEndTime();
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
@@ -296,10 +293,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            this.UpdateRequestEndTime(requestEndTimeUtc);
+
             lock (this.httpResponseStatistics)
             {
                 this.shallowCopyOfHttpResponseStatistics = null;
-                DateTime requestEndTimeUtc = this.GetAndUpdateRequestEndTime();
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
                                                                            requestEndTimeUtc,
                                                                            request.RequestUri,
@@ -310,18 +309,29 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
-        private DateTime GetAndUpdateRequestEndTime()
+        private DateTime UpdateRequestEndTime(DateTime requestEndTimeUtc)
         {
-            DateTime requestEndTimeUtc = DateTime.UtcNow;
             lock (this.requestEndTimeLock)
             {
                 if (!this.RequestEndTimeUtc.HasValue || requestEndTimeUtc > this.RequestEndTimeUtc)
                 {
                     this.RequestEndTimeUtc = requestEndTimeUtc;
                 }
+
+                this.UpdateSystemUsage();
             }
 
             return requestEndTimeUtc;
+        }
+
+        public void UpdateSystemUsage()
+        {
+            if (this.systemUsageHistory == null ||
+                this.systemUsageHistory.Values.Count == 0 ||
+                this.systemUsageHistory.LastTimestamp + DiagnosticsHandlerHelper.DiagnosticsRefreshInterval < DateTime.UtcNow)
+            {
+                this.systemUsageHistory = DiagnosticsHandlerHelper.Instance.GetDiagnosticsSystemHistory();
+            }
         }
 
         internal override void Accept(ITraceDatumVisitor traceDatumVisitor)
