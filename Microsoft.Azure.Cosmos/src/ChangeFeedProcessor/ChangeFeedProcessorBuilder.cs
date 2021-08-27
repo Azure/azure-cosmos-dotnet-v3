@@ -7,6 +7,11 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using Microsoft.Azure.Cosmos.ChangeFeed.Configuration;
     using Microsoft.Azure.Cosmos.ChangeFeed.LeaseManagement;
+#if PREVIEW
+    using static Microsoft.Azure.Cosmos.Container;
+#else
+    using static Microsoft.Azure.Cosmos.ContainerInternal;
+#endif
 
     /// <summary>
     /// Provides a flexible way to create an instance of <see cref="ChangeFeedProcessor"/> with custom set of parameters.
@@ -25,7 +30,7 @@ namespace Microsoft.Azure.Cosmos
                 ChangeFeedProcessorOptions,
                 ContainerInternal> applyBuilderConfiguration;
 
-        private ChangeFeedProcessorOptions changeFeedProcessorOptions;
+        private readonly ChangeFeedProcessorOptions changeFeedProcessorOptions = new ChangeFeedProcessorOptions();
 
         private ContainerInternal leaseContainer;
         private string InstanceName;
@@ -96,7 +101,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(pollInterval));
             }
 
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.FeedPollDelay = pollInterval;
             return this;
         }
@@ -114,7 +118,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         internal virtual ChangeFeedProcessorBuilder WithStartFromBeginning()
         {
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartFromBeginning = true;
             return this;
         }
@@ -137,7 +140,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(startTime));
             }
 
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.StartTime = startTime;
             return this;
         }
@@ -154,7 +156,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentOutOfRangeException(nameof(maxItemCount));
             }
 
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
             this.changeFeedProcessorOptions.MaxItemCount = maxItemCount;
             return this;
         }
@@ -214,6 +215,69 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Defines a delegate to receive notifications on errors that occur during change feed processor execution.
+        /// </summary>
+        /// <param name="errorDelegate">A delegate to receive notifications for change feed processor related errors.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithErrorNotification(ChangeFeedMonitorErrorDelegate errorDelegate)
+        {
+            if (errorDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(errorDelegate));
+            }
+
+            this.changeFeedProcessorOptions.HealthMonitor.SetErrorDelegate(errorDelegate);
+            return this;
+        }
+
+        /// <summary>
+        /// Defines a delegate to receive notifications on lease acquires that occur during change feed processor execution.
+        /// </summary>
+        /// <param name="acquireDelegate">A delegate to receive notifications when a change feed processor acquires a lease.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithLeaseAcquireNotification(ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate)
+        {
+            if (acquireDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(acquireDelegate));
+            }
+
+            this.changeFeedProcessorOptions.HealthMonitor.SetLeaseAcquireDelegate(acquireDelegate);
+            return this;
+        }
+
+        /// <summary>
+        /// Defines a delegate to receive notifications on lease releases that occur during change feed processor execution.
+        /// </summary>
+        /// <param name="releaseDelegate">A delegate to receive notifications when a change feed processor releases a lease.</param>
+        /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        ChangeFeedProcessorBuilder WithLeaseReleaseNotification(ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate)
+        {
+            if (releaseDelegate == null)
+            {
+                throw new ArgumentNullException(nameof(releaseDelegate));
+            }
+
+            this.changeFeedProcessorOptions.HealthMonitor.SetLeaseReleaseDelegate(releaseDelegate);
+            return this;
+        }
+
+        /// <summary>
         /// Builds a new instance of the <see cref="ChangeFeedProcessor"/> with the specified configuration.
         /// </summary>
         /// <returns>An instance of <see cref="ChangeFeedProcessor"/>.</returns>
@@ -239,16 +303,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new InvalidOperationException("Processor name not specified during creation.");
             }
 
-            this.InitializeDefaultOptions();
             this.applyBuilderConfiguration(this.LeaseStoreManager, this.leaseContainer, this.InstanceName, this.changeFeedLeaseOptions, this.changeFeedProcessorOptions, this.monitoredContainer);
 
             this.isBuilt = true;
             return this.changeFeedProcessor;
-        }
-
-        private void InitializeDefaultOptions()
-        {
-            this.changeFeedProcessorOptions = this.changeFeedProcessorOptions ?? new ChangeFeedProcessorOptions();
         }
     }
 }
