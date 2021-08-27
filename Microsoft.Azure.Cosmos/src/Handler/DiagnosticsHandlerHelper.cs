@@ -26,8 +26,6 @@ namespace Microsoft.Azure.Cosmos.Handler
             historyLength: 120,
             refreshInterval: TimeSpan.FromSeconds(5));
 
-        private readonly SystemUsageMonitor systemUsageMonitor = null;
-
         internal const string Diagnostickey = "diagnostic";
         internal const string Telemetrykey = "telemetry";
 
@@ -44,12 +42,11 @@ namespace Microsoft.Azure.Cosmos.Handler
             // the system information so no need to track it.
 #if INTERNAL
             this.isMonitoringEnabled = false;
-            this.systemUsageMonitor = null;
 #else
             // If the CPU monitor fails for some reason don't block the application
             try
             {
-                this.systemUsageMonitor = SystemUsageMonitor.CreateAndStart(
+                SystemUsageMonitor systemUsageMonitor = SystemUsageMonitor.CreateAndStart(
                     new List<SystemUsageRecorder>
                     {
                         this.diagnosticSystemUsageRecorder,
