@@ -716,25 +716,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             FieldInfo field = transportRequestStats.GetType().GetField("requestCreatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
             field.SetValue(transportRequestStats, defaultDateTime);
 
-            defaultDateTime += TimeSpan.FromMilliseconds(1);
             field = transportRequestStats.GetType().GetField("channelAcquisitionStartedTime", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(transportRequestStats, defaultDateTime);
+            field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            defaultDateTime += TimeSpan.FromMilliseconds(1);
             field = transportRequestStats.GetType().GetField("requestPipelinedTime", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(transportRequestStats, defaultDateTime);
+            field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            defaultDateTime += TimeSpan.FromMilliseconds(1);
             field = transportRequestStats.GetType().GetField("requestSentTime", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(transportRequestStats, defaultDateTime);
+            field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            defaultDateTime += TimeSpan.FromMilliseconds(1);
             field = transportRequestStats.GetType().GetField("requestReceivedTime", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(transportRequestStats, defaultDateTime);
+            field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            defaultDateTime += TimeSpan.FromMilliseconds(1);
             field = transportRequestStats.GetType().GetField("requestCompletedTime", BindingFlags.NonPublic | BindingFlags.Instance);
-            field.SetValue(transportRequestStats, defaultDateTime);
+            field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
             return transportRequestStats;
         }
 
