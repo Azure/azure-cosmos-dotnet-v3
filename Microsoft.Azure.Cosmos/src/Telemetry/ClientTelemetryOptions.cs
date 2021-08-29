@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const double HistogramPrecisionFactor = 100;
         internal const double TicksToMsFactor = 10000;
 
-        internal const int BytesToMb = 1024 * 1024;
+        internal const int KbToMb = 1024;
         internal const int OneKbToBytes = 1024;
 
         internal const long RequestLatencyMax = TimeSpan.TicksPerHour;
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const long MemoryMax = Int64.MaxValue;
         internal const long MemoryMin = 1;
         internal const int MemoryPrecision = 5;
-        internal const String MemoryName = "Memory Remaining";
+        internal const String MemoryName = "MemoryRemaining";
         internal const String MemoryUnit = "MB";
 
         internal const string DefaultVmMetadataUrL = "http://169.254.169.254/metadata/instance?api-version=2020-06-01";
@@ -116,13 +116,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return JObject.Parse(jsonVmInfo).ToObject<AzureVMMetadata>();
         }
 
-        internal static string GetHostInformation(Compute vmInformation) 
+        internal static string GetHostInformation(Compute vmInformation)
         {
             return String.Concat(vmInformation?.OSType, "|",
                     vmInformation?.SKU, "|",
                     vmInformation?.VMSize, "|",
                     vmInformation?.AzEnvironment);
-        } 
+        }
 
         internal static Uri GetClientTelemetryEndpoint()
         {
