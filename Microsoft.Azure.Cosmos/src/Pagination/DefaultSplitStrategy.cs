@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         }
 
         public virtual async Task HandleSplitAsync(
-            FeedRangeState<TState> rangeState,
+            PartitionRangePageAsyncEnumerator<TPage, TState> currentEnumerator,
             IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -38,45 +38,50 @@ namespace Microsoft.Azure.Cosmos.Pagination
             // TODO: remove this line.
             List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
 
-            List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);
+            List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(
+                currentEnumerator.FeedRangeState.FeedRange,
+                trace,
+                cancellationToken);
 
-            foreach (FeedRangeInternal childRange in childRanges)
-            {
-                PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.partitionRangeEnumeratorCreator(
-                    new FeedRangeState<TState>(childRange, rangeState.State));
-                enumerators.Enqueue(childPaginator);
-            }
-        }
-
-        protected async Task<List<FeedRangeEpk>> GetAndValidateChildRangesAsync(
-            FeedRangeInternal range,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            // TODO: remove this line.
-            List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
-
-            List<FeedRangeEpk> childRanges = await this.feedRangeProvider.GetChildRangeAsync(range, trace, cancellationToken);
-            if (childRanges.Count == 0)
-            {
-                throw new InvalidOperationException("Got back no children");
-            }
-
-            if (childRanges.Count == 1)
+            if (childRanges.Count <= 1)
             {
                 // We optimistically assumed that the cache is not stale.
                 // In the event that it is (where we only get back one child / the partition that we think got split)
                 // Then we need to refresh the cache
                 await this.feedRangeProvider.RefreshProviderAsync(trace, cancellationToken);
-                childRanges = await this.feedRangeProvider.GetChildRangeAsync(range, trace, cancellationToken);
+                childRanges = await this.feedRangeProvider.GetChildRangeAsync(
+                    currentEnumerator.FeedRangeState.FeedRange,
+                    trace,
+                    cancellationToken);
             }
 
-            if (childRanges.Count() <= 1)
+            if (childRanges.Count < 1)
             {
-                throw new InvalidOperationException("Expected more than 1 child");
+                string errorMessage = "SDK invariant violated 4795CC37: Must have at least one EPK range in a cross partition enumerator";
+                throw Resource.CosmosExceptions.CosmosExceptionFactory.CreateInternalServerErrorException(
+                    message: errorMessage,
+                    headers: null,
+                    stackTrace: null,
+                    trace: trace,
+                    error: new Microsoft.Azure.Documents.Error { Code = "SDK_invariant_violated_4795CC37", Message = errorMessage });
             }
 
-            return childRanges;
+            if (childRanges.Count == 1)
+            {
+                // On a merge, the 410/1002 results in a single parent
+                // We maintain the current enumerator's range and let the RequestInvokerHandler logic kick in
+                enumerators.Enqueue(currentEnumerator);
+            }
+            else
+            {
+                // Split
+                foreach (FeedRangeInternal childRange in childRanges)
+                {
+                    PartitionRangePageAsyncEnumerator<TPage, TState> childPaginator = this.partitionRangeEnumeratorCreator(
+                        new FeedRangeState<TState>(childRange, currentEnumerator.FeedRangeState.State));
+                    enumerators.Enqueue(childPaginator);
+                }
+            }
         }
     }
 }

@@ -30,12 +30,32 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
         }
 
         public override async Task HandleSplitAsync(
-            CosmosPagination.FeedRangeState<ChangeFeedState> rangeState,
+            CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> currentEnumerator,
             CosmosPagination.IQueue<CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState>> enumerators,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            await Task.CompletedTask;
+            // For 'start from now' we don't need to over back in time and get changes from archival partiton(s).
+            if (currentEnumerator.FeedRangeState.State == ChangeFeedState.Now())
+            {
+                await base.HandleSplitAsync(currentEnumerator, enumerators, trace, cancellationToken);
+                return;
+            }
+
+            List<FeedRangeArchivalPartition> archivalRanges = await this.feedRangeProvider.GetArchivalRangesAsync(
+                currentEnumerator.FeedRangeState.FeedRange,
+                trace,
+                cancellationToken);
+
+            //CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> archivalPaginator =
+            //    this.partitionRangeEnumeratorCreator(new CosmosPagination.FeedRangeState<ChangeFeedState>(
+            //        archivalRange,
+            //        currentEnumerator.FeedRangeState.State));
+            //enumerators.Enqueue(archivalPaginator);
+
+            // TODO: this needs to be done after archival partition is drained.
+            // Continue handle split for child partitions. Default strategy knows how to do that.
+            await base.HandleSplitAsync(currentEnumerator, enumerators, trace, cancellationToken);
 
             //ContainerProperties containerProperties = await this.clientContext.GetCachedContainerPropertiesAsync(
             //    this.containerUri,
@@ -72,25 +92,6 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Pagination
             //            isMaxInclusive: false))).ToList());
 
             //// Check how many parent partitions. If 1 partition -- go to archival rerefence.
-
-            // parent strategy code
-            //
-            //
-            //
-            //
-            //// TODO: remove this line.
-            //List<FeedRangeEpk> allRanges = await this.feedRangeProvider.GetFeedRangesAsync(trace, cancellationToken);
-
-            //List<FeedRangeEpk> childRanges = await this.GetAndValidateChildRangesAsync(rangeState.FeedRange, trace, cancellationToken);
-
-            //foreach (FeedRangeInternal childRange in childRanges)
-            //{
-            //    //childRange.GetPartitionKeyRangesAsync();
-
-            //    CosmosPagination.PartitionRangePageAsyncEnumerator<ChangeFeedPage, ChangeFeedState> childPaginator =
-            //        this.partitionRangeEnumeratorCreator(new CosmosPagination.FeedRangeState<ChangeFeedState>(childRange, rangeState.State));
-            //    enumerators.Enqueue(childPaginator);
-            //}
         }
     }
 }

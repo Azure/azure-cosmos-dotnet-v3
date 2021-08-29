@@ -227,6 +227,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer.Object,
                 state,
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer.Object),
                 cancellationToken: default);
 
             (int _, double requestCharge) = await DrainUntilNotModifedAsync(enumerator);
@@ -343,6 +344,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer.Object,
                 state,
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer.Object),
                 cancellationToken: default);
 
             (int _, double requestCharge) = await DrainUntilSuccessAsync(enumerator);
@@ -405,6 +407,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 documentContainer.Object,
                 state,
                 ChangeFeedPaginationOptions.Default,
+                CreateDefaultSplitStrategy(documentContainer.Object),
                 cancellationToken: default);
 
             try

@@ -257,6 +257,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 trace,
                 cancellationToken);
 
+        public Task<TryCatch<List<FeedRangeArchivalPartition>>> MonadicGetArchivalRangesAsync(
+            FeedRangeInternal feedRange,
+            ITrace trace,
+            CancellationToken cancellationToken) => this.documentContainer.MonadicGetArchivalRangesAsync(
+                feedRange,
+                trace,
+                cancellationToken);
+
         public Task<TryCatch> MonadicRefreshProviderAsync(
             ITrace trace,
             CancellationToken cancellationToken) => this.documentContainer.MonadicRefreshProviderAsync(trace, cancellationToken);

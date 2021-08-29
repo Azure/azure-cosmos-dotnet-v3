@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -110,17 +111,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         {
             try
             {
-                ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
-                    this.container.LinkUri,
-                    trace,
-                    cancellationToken);
-                List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
-                    this.container.LinkUri,
-                    await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken: cancellationToken),
-                    containerProperties.PartitionKey,
-                    feedRange,
-                    forceRefresh: false,
-                    trace);
+                List<PartitionKeyRange> overlappingRanges = await this.GetOverlappingRangesAsync(feedRange, trace, cancellationToken);
                 return TryCatch<List<FeedRangeEpk>>.FromResult(
                     overlappingRanges.Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
@@ -132,6 +123,52 @@ namespace Microsoft.Azure.Cosmos.Pagination
             catch (Exception ex)
             {
                 return TryCatch<List<FeedRangeEpk>>.FromException(ex);
+            }
+        }
+
+        public async Task<TryCatch<List<FeedRangeArchivalPartition>>> MonadicGetArchivalRangesAsync(
+            FeedRangeInternal feedRange,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                // TODO: do we need to refresh provider?
+                IRoutingMapProvider routingMap = await this.container.ClientContext.DocumentClient.GetPartitionKeyRangeCacheAsync(trace);
+                string containerRid = await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken);
+                PartitionKeyDefinition pkDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+                IEnumerable<string> splitPKRangeIds = await feedRange.GetPartitionKeyRangesAsync(
+                    routingMap,
+                    containerRid,
+                    pkDefinition,
+                    cancellationToken,
+                    trace);
+
+                int splitPKRangeCount = splitPKRangeIds.Count();
+                if (splitPKRangeCount == 0)
+                {
+                    throw new ArgumentException(nameof(feedRange));
+                }
+                else if (splitPKRangeCount != 1)
+                {
+                    // TODO: FFCF: implement multiple splits.
+                    // This is a corner case, for real split (not dimulated one) there would be only split partition.
+                    return TryCatch<List<FeedRangeArchivalPartition>>.FromResult(null);
+                }
+
+                string pkRangeId = splitPKRangeIds.First();
+
+                // Get active PK ranges overlapping with the split range.
+                List<PartitionKeyRange> overlappingRanges = await this.GetOverlappingRangesAsync(feedRange, trace, cancellationToken);
+
+                ArchivalPartitionHelper helper = new ArchivalPartitionHelper();
+                List<FeedRangeArchivalPartition> archivalRanges = helper.GetArchivalRanges(pkRangeId, overlappingRanges, cancellationToken, trace);
+
+                return TryCatch<List<FeedRangeArchivalPartition>>.FromException(new NotImplementedException());
+            }
+            catch (Exception ex)
+            {
+                return TryCatch<List<FeedRangeArchivalPartition>>.FromException(ex);
             }
         }
 
@@ -425,6 +462,21 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             return additionalHeaders;
+        }
+        private async Task<List<PartitionKeyRange>> GetOverlappingRangesAsync(FeedRangeInternal feedRange, ITrace trace, CancellationToken cancellationToken)
+        {
+            ContainerProperties containerProperties = await this.container.ClientContext.GetCachedContainerPropertiesAsync(
+                this.container.LinkUri,
+                trace,
+                cancellationToken);
+            List<PartitionKeyRange> overlappingRanges = await this.cosmosQueryClient.GetTargetPartitionKeyRangeByFeedRangeAsync(
+                this.container.LinkUri,
+                await this.container.GetCachedRIDAsync(forceRefresh: false, trace, cancellationToken: cancellationToken),
+                containerProperties.PartitionKey,
+                feedRange,
+                forceRefresh: false,
+                trace);
+            return overlappingRanges;
         }
     }
 }

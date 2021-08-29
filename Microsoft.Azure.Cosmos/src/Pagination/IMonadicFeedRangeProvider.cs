@@ -21,6 +21,11 @@ namespace Microsoft.Azure.Cosmos.Pagination
             ITrace trace,
             CancellationToken cancellationToken);
 
+        Task<TryCatch<List<FeedRangeArchivalPartition>>> MonadicGetArchivalRangesAsync(
+            FeedRangeInternal feedRange,
+            ITrace trace,
+            CancellationToken cancellationToken);
+
         Task<TryCatch> MonadicRefreshProviderAsync(
             ITrace trace, 
             CancellationToken cancellationToken);

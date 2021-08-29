@@ -11,5 +11,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract void Visit(FeedRangePartitionKeyRange feedRange);
 
         public abstract void Visit(FeedRangeEpk feedRange);
+
+        public abstract void Visit(FeedRangeArchivalPartition feedRange);
     }
 }

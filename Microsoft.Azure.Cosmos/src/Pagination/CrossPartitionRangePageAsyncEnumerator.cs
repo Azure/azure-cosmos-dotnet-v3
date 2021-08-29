@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     if (IsSplitException(exception))
                     {
                         await this.splitStrategy.HandleSplitAsync(
-                            currentPaginator.FeedRangeState,
+                            currentPaginator,
                             enumerators,
                             childTrace,
                             this.cancellationToken);
@@ -247,17 +247,6 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
 
             return enumerators.Peek()?.FeedRangeState;
-        }
-
-        private interface IQueue<T> : IEnumerable<T>
-        {
-            T Peek();
-
-            void Enqueue(T item);
-
-            T Dequeue();
-
-            public int Count { get; }
         }
 
         private sealed class PriorityQueueWrapper<T> : IQueue<T>

@@ -60,6 +60,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
+        public Task<TryCatch<List<FeedRangeArchivalPartition>>> MonadicGetArchivalRangesAsync(
+            FeedRangeInternal feedRange,
+            ITrace trace,
+            CancellationToken cancellationToken) =>
+                this.monadicDocumentContainer.MonadicGetArchivalRangesAsync(feedRange, trace, cancellationToken);
+
+        public Task<List<FeedRangeArchivalPartition>> GetArchivalRangesAsync(
+            FeedRangeInternal feedRange,
+            ITrace trace,
+            CancellationToken cancellationToken) => TryCatch<List<FeedRangeArchivalPartition>>.UnsafeGetResultAsync(
+                this.MonadicGetArchivalRangesAsync(feedRange, trace, cancellationToken),
+                cancellationToken);
+
         public Task RefreshProviderAsync(ITrace trace, CancellationToken cancellationToken) => TryCatch.UnsafeWaitAsync(
             this.MonadicRefreshProviderAsync(trace, cancellationToken),
             cancellationToken);

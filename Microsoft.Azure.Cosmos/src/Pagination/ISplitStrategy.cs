@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
         where TState : State
     {
         Task HandleSplitAsync(
-            FeedRangeState<TState> rangeState,
+            PartitionRangePageAsyncEnumerator<TPage, TState> currentEnumerator,
             IQueue<PartitionRangePageAsyncEnumerator<TPage, TState>> enumerators,
             ITrace trace,
             CancellationToken cancellationToken);
