@@ -51,6 +51,9 @@ namespace Microsoft.Azure.Cosmos
                 this.telemetryHandler = new TelemetryHandler(telemetry);
                 Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
             }
+#else
+            this.diagnosticsHandler = null;
+            this.telemetryHandler = null;
 #endif
 
             this.UseRetryPolicy();
@@ -163,9 +166,11 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+#if !INTERNAL
             Debug.Assert(this.diagnosticsHandler != null, nameof(this.diagnosticsHandler));
             current.InnerHandler = this.diagnosticsHandler;
             current = current.InnerHandler;
+#endif
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;

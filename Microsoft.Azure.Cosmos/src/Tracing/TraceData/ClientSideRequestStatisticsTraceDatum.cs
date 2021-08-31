@@ -150,13 +150,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 // Reset the shallow copy
                 this.shallowCopyOfStoreResponseStatistics = null;
                 this.storeResponseStatistics.Add(responseStatistics);
-#if INTERNAL
-                if (!this.received429ResponseSinceLastStartRequest &&
-                    storeResult.StatusCode == StatusCodes.TooManyRequests)
-                {
-                    this.received429ResponseSinceLastStartRequest = true;
-                }
-#endif
             }
         }
 
