@@ -291,6 +291,36 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        // When disposing, the internal cancellationtoken should be signaled
+        [TestMethod]
+        [Timeout(30000)]
+        public async Task TestTokenCredentialBackgroundRefreshAsync_OnDispose()
+        {
+            string token1 = "Token1";
+            bool firstTimeGetToken = true;
+
+            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            {
+                if (firstTimeGetToken)
+                {
+                    firstTimeGetToken = false;
+
+                    return new ValueTask<AccessToken>(new AccessToken(token1, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10)));
+                }
+                else
+                {
+                    throw new Exception("Should not call twice");
+                }
+            });
+
+            TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.FromMilliseconds(100));
+            string t1 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+            tokenCredentialCache.Dispose();
+            Assert.AreEqual(token1, t1);
+
+            await Task.Delay(1000);
+        }
+
         [TestMethod]
         public async Task TestTokenCredentialFailedToRefreshAsync()
         {
@@ -377,10 +407,17 @@ namespace Microsoft.Azure.Cosmos.Tests
         private TokenCredentialCache CreateTokenCredentialCache(
             TokenCredential tokenCredential)
         {
+            return this.CreateTokenCredentialCache(tokenCredential, TimeSpan.FromSeconds(5));
+        }
+
+        private TokenCredentialCache CreateTokenCredentialCache(
+            TokenCredential tokenCredential,
+            TimeSpan refreshInterval)
+        {
             return new TokenCredentialCache(
                 tokenCredential,
                 CosmosAuthorizationTests.AccountEndpoint,
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(5));
+                backgroundTokenCredentialRefreshInterval: refreshInterval);
         }
 
         private async Task GetAndVerifyTokenAsync(TokenCredentialCache tokenCredentialCache)

@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing
                 {
                     await this.EstimateAsync(cancellationToken);
                 }
-                catch (TaskCanceledException canceledException)
+                catch (OperationCanceledException canceledException)
                 {
                     if (cancellationToken.IsCancellationRequested)
                     {
