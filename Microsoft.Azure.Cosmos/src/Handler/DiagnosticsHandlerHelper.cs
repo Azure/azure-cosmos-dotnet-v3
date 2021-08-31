@@ -32,17 +32,21 @@ namespace Microsoft.Azure.Cosmos.Handler
         private bool isMonitoringEnabled = false;
 
         /// <summary>
-        /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there
+        /// Singleton to make sure only one instance of DiagnosticHandlerHelper is there.
+        /// The system usage collection is disabled for internal builds so it is set to null to avoid
+        /// compute for accidentally creating an instance or trying to use it.
         /// </summary>
-        public static readonly DiagnosticsHandlerHelper Instance = new DiagnosticsHandlerHelper();
+        public static readonly DiagnosticsHandlerHelper Instance =
+#if INTERNAL
+            null; 
+#else
+            new DiagnosticsHandlerHelper();
+#endif
 
         private DiagnosticsHandlerHelper()
         {
-            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
-            // the system information so no need to track it.
-#if INTERNAL
             this.isMonitoringEnabled = false;
-#else
+
             // If the CPU monitor fails for some reason don't block the application
             try
             {
@@ -60,7 +64,6 @@ namespace Microsoft.Azure.Cosmos.Handler
                 DefaultTrace.TraceError(ex.Message);
                 this.isMonitoringEnabled = false;
             }
-#endif
         }
 
         /// <summary>

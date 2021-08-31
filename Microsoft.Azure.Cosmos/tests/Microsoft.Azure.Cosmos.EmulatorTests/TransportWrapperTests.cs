@@ -90,7 +90,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string diagnostics = cosmosException.Diagnostics.ToString();
             Assert.IsNotNull(diagnostics);
             Assert.IsTrue(diagnostics.Contains("TransportException: A client transport error occurred: The connection failed"));
-            Assert.IsTrue(diagnostics.Contains("CPU history: not available"));
         }
 
         private void ValidateTransportException(ResponseMessage responseMessage)

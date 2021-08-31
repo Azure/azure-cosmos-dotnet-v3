@@ -40,6 +40,9 @@ namespace Microsoft.Azure.Cosmos
             this.PartitionKeyRangeHandler = new PartitionKeyRangeHandler(client);
             Debug.Assert(this.PartitionKeyRangeHandler.InnerHandler == null, "The PartitionKeyRangeHandler.InnerHandler must be null to allow other handlers to be linked.");
 
+            // Disable system usage for internal builds. Cosmos DB owns the VMs and already logs
+            // the system information so no need to track it.
+#if !INTERNAL
             this.diagnosticsHandler = new DiagnosticsHandler();
             Debug.Assert(this.diagnosticsHandler.InnerHandler == null, nameof(this.diagnosticsHandler));
 
@@ -48,6 +51,8 @@ namespace Microsoft.Azure.Cosmos
                 this.telemetryHandler = new TelemetryHandler(telemetry);
                 Debug.Assert(this.telemetryHandler.InnerHandler == null, nameof(this.telemetryHandler));
             }
+#endif
+
             this.UseRetryPolicy();
             this.AddCustomHandlers(customHandlers);
         }
