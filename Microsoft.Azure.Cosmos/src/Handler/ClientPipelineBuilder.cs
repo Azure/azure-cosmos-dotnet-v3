@@ -166,11 +166,15 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            // Public SDK should always have the diagnostics handler
 #if !INTERNAL
             Debug.Assert(this.diagnosticsHandler != null, nameof(this.diagnosticsHandler));
-            current.InnerHandler = this.diagnosticsHandler;
-            current = current.InnerHandler;
 #endif
+            if (this.diagnosticsHandler != null)
+            {
+                current.InnerHandler = this.diagnosticsHandler;
+                current = current.InnerHandler;
+            }
 
             Debug.Assert(this.retryHandler != null, nameof(this.retryHandler));
             current.InnerHandler = this.retryHandler;
