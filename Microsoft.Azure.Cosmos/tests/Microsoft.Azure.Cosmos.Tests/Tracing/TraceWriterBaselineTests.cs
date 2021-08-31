@@ -498,12 +498,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                                 {
                                     new Documents.Rntbd.SystemUsageLoad(
                                         DateTime.MinValue,
-                                        null,
+                                        this.GetThreadInfo(),
                                         42,
                                         1000),
                                     new Documents.Rntbd.SystemUsageLoad(
                                         DateTime.MinValue,
-                                        null,
+                                        this.GetThreadInfo(),
                                         23,
                                         9000),
                                 }),
@@ -517,6 +517,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             //----------------------------------------------------------------
 
             this.ExecuteTestSuite(inputs);
+        }
+
+        private Documents.Rntbd.ThreadInformation GetThreadInfo()
+        {
+            Documents.Rntbd.ThreadInformation threadInfo = Documents.Rntbd.ThreadInformation.Get();
+            Type threadInfoType = threadInfo.GetType();
+            FieldInfo prop = threadInfoType.GetField("<AvailableThreads>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+            prop.SetValue(threadInfo, null);
+
+            prop = threadInfoType.GetField("<IsThreadStarving>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+            prop.SetValue(threadInfo, null);
+
+            prop = threadInfoType.GetField("<MinThreads>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+            prop.SetValue(threadInfo, null);
+
+            prop = threadInfoType.GetField("<MaxThreads>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+            prop.SetValue(threadInfo, null);
+
+            prop = threadInfoType.GetField("<ThreadWaitIntervalInMs>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+            prop.SetValue(threadInfo, null);
+
+            return threadInfo;
         }
 
         [TestMethod]
