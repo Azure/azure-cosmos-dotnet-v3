@@ -23,21 +23,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
         private readonly List<HttpResponseStatistics> httpResponseStatistics;
-#if INTERNAL
-        private readonly long clientSideRequestStatisticsCreateTime;
-#endif
 
         private IReadOnlyDictionary<string, AddressResolutionStatistics> shallowCopyOfEndpointToAddressResolutionStatistics = null;
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
         private SystemUsageHistory systemUsageHistory = null;
-
-#if INTERNAL
-        private long? firstStartRequestTimestamp;
-        private long? lastStartRequestTimestamp;
-        private long cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks = 0;
-        private bool received429ResponseSinceLastStartRequest = false;
-#endif
 
         public ClientSideRequestStatisticsTraceDatum(DateTime startTime)
         {
@@ -49,9 +39,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<TransportAddressUri>();
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
-#if INTERNAL
-            this.clientSideRequestStatisticsCreateTime = Stopwatch.GetTimestamp();
-#endif
         }
 
         public DateTime RequestStartTimeUtc { get; }
@@ -132,46 +119,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public bool? IsCpuThreadStarvation => this.systemUsageHistory?.IsCpuThreadStarvation;
 
-#if INTERNAL
-        public TimeSpan EstimatedClientDelayFromRateLimiting => TimeSpan.FromSeconds(this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks / (double)Stopwatch.Frequency);
-
-        public TimeSpan EstimatedClientDelayFromAllCauses
-        {
-            get
-            {
-                if (!this.lastStartRequestTimestamp.HasValue || !this.firstStartRequestTimestamp.HasValue)
-                {
-                    return TimeSpan.Zero;
-                }
-
-                // Stopwatch ticks are not equivalent to DateTime ticks
-                long clientDelayInStopWatchTicks = this.lastStartRequestTimestamp.Value - this.firstStartRequestTimestamp.Value;
-                return TimeSpan.FromSeconds(clientDelayInStopWatchTicks / (double)Stopwatch.Frequency);
-            }
-        }
-#endif
-
         public void RecordRequest(DocumentServiceRequest request)
         {
-#if INTERNAL
-            lock (this.storeResponseStatistics)
-            {
-                long timestamp = Stopwatch.GetTimestamp();
-                if (this.received429ResponseSinceLastStartRequest)
-                {
-                    long lastTimestamp = this.lastStartRequestTimestamp ?? this.clientSideRequestStatisticsCreateTime;
-                    this.cumulativeEstimatedDelayDueToRateLimitingInStopwatchTicks += timestamp - lastTimestamp;
-                }
-
-                if (!this.firstStartRequestTimestamp.HasValue)
-                {
-                    this.firstStartRequestTimestamp = timestamp;
-                }
-
-                this.lastStartRequestTimestamp = timestamp;
-                this.received429ResponseSinceLastStartRequest = false;
-            }
-#endif
         }
 
         public void RecordResponse(
