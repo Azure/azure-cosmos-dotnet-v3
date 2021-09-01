@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         private readonly PartitionSynchronizer synchronizer;
         private readonly PartitionController sut;
         private readonly PartitionSupervisorFactory partitionSupervisorFactory;
+        private readonly Mock<ChangeFeedProcessorHealthMonitor> healthMonitor;
 
         public PartitionControllerTests()
         {
@@ -49,7 +50,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             DocumentServiceLeaseContainer leaseContainer = Mock.Of<DocumentServiceLeaseContainer>();
 
             this.synchronizer = Mock.Of<PartitionSynchronizer>();
-            this.sut = new PartitionControllerCore(leaseContainer, this.leaseManager, this.partitionSupervisorFactory, this.synchronizer);
+            this.healthMonitor = new Mock<ChangeFeedProcessorHealthMonitor>();
+            this.sut = new PartitionControllerCore(leaseContainer, this.leaseManager, this.partitionSupervisorFactory, this.synchronizer, this.healthMonitor.Object);
         }
 
         [TestInitialize]
@@ -83,6 +85,15 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
+        public async Task AddLease_ShouldNotify_Monitor()
+        {
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseAcquireAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
         public async Task AddLease_ShouldRunObserver_WhenCalled()
         {
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
@@ -96,8 +107,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
 
-            Mock.Get(this.partitionProcessor)
-                .Verify(p => p.RunAsync(It.IsAny<CancellationToken>()), Times.Once);
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Never);
         }
 
         [TestMethod]
@@ -224,23 +235,39 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         }
 
         [TestMethod]
-        public async Task AddLease_ShouldFail_IfLeaseAcquireThrows()
+        public async Task Controller_ShouldNotify_IfProcessingFails()
         {
             Mock.Get(this.partitionProcessor)
                 .Reset();
 
-            Mock.Get(this.leaseManager)
-                .Reset();
+            Mock<PartitionSupervisor> supervisor = new Mock<PartitionSupervisor>();
+
+            Exception exception = new NotImplementedException();
+
+            ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+
+            supervisor
+                .Setup(s => s.RunAsync(It.IsAny<CancellationToken>()))
+                .Callback((CancellationToken ct) =>
+                {
+                    manualResetEvent.Set();
+                    throw exception;
+                });
+
+            Mock.Get(this.partitionSupervisorFactory)
+                .Setup(f => f.Create(this.lease))
+                .Returns(supervisor.Object);
+
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+
+            bool timeout = manualResetEvent.WaitOne(100);
+            Assert.IsTrue(timeout, "Partition supervisor not started");
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, exception), Times.Once);
 
             Mock.Get(this.leaseManager)
-                .Setup(manager => manager.AcquireAsync(this.lease))
-                .Throws(new NullReferenceException());
-
-            Mock.Get(this.leaseManager)
-                .Setup(manager => manager.ReleaseAsync(this.lease))
-                .Returns(Task.CompletedTask);
-
-            await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
         }
 
         [TestMethod]
@@ -262,8 +289,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             await Assert.ThrowsExceptionAsync<NullReferenceException>(() => this.sut.AddOrUpdateLeaseAsync(this.lease)).ConfigureAwait(false);
 
-            Mock.Get(this.leaseManager)
-                .Verify(manager => manager.ReleaseAsync(It.IsAny<DocumentServiceLease>()), Times.Once);
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseAcquireAsync(this.lease.CurrentLeaseToken), Times.Never);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
         }
 
         [TestMethod]
@@ -287,6 +317,37 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Mock.Get(this.partitionProcessor)
                 .Verify(processor => processor.RunAsync(It.IsAny<CancellationToken>()), Times.Never);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyErrorAsync(this.lease.CurrentLeaseToken, It.Is<Exception>(ex => ex is NullReferenceException)), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseAcquireAsync(this.lease.CurrentLeaseToken), Times.Never);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task Shutdown_ShouldNotify_Monitor()
+        {
+            Mock.Get(this.leaseManager)
+                .Reset();
+
+            Mock.Get(this.partitionProcessor)
+                .Reset();
+
+            await this.sut.AddOrUpdateLeaseAsync(this.lease).ConfigureAwait(false);
+
+            await Task.Delay(100);
+
+            await this.sut.ShutdownAsync().ConfigureAwait(false);
+
+            Mock.Get(this.leaseManager)
+                .Verify(manager => manager.ReleaseAsync(this.lease), Times.Once);
+
+            this.healthMonitor
+                .Verify(m => m.NotifyLeaseReleaseAsync(this.lease.CurrentLeaseToken), Times.Once);
         }
 
         public Task InitializeAsync()

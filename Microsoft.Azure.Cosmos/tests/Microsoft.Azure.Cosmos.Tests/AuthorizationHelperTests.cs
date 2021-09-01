@@ -305,5 +305,78 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(result, urlEncoded);
             }
         }
+
+        [TestMethod]
+        public void AuthorizationTokenLengthTest()
+        {
+            // Master Token (limit 1024)
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 100, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 1024 + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 8*1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, (8*1024) + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 16*1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, (16*1024) + 1, shouldParse: false);
+
+            // Resource Token (limit 8*1024)
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 100, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 1024 + 1, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 8 * 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, (8 * 1024) + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, 16 * 1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.ResourceToken, (16 * 1024) + 1, shouldParse: false);
+
+            // AAD Token (limit 16*1024)
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 100, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 1024 + 1, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 8 * 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, (8 * 1024) + 1, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, 16 * 1024, shouldParse: true);
+            this.ValidateTokenParsing(Constants.Properties.AadToken, (16 * 1024) + 1, shouldParse: false);
+        }
+
+        private void ValidateTokenParsing(string tokenType, int length, bool shouldParse)
+        {
+            string token = this.GenerateSampleToken(tokenType, length, out string expectedParsedToken);
+
+            try
+            {
+                AuthorizationHelper.ParseAuthorizationToken(
+                    token,
+                    out ReadOnlyMemory<char> type,
+                    out ReadOnlyMemory<char> version,
+                    out ReadOnlyMemory<char> parsedToken);
+
+                if (shouldParse)
+                {
+                    Assert.AreEqual(tokenType, type.ToString());
+                    Assert.AreEqual("1.0", version.ToString());
+                    Assert.AreEqual(expectedParsedToken, parsedToken.ToString());
+                }
+                else
+                {
+                    Assert.Fail($"Parsing token of type [{tokenType}] and length [{length}] should have failed.");
+                }
+            }
+            catch (Exception exception)
+            {
+                if (shouldParse)
+                {
+                    Assert.Fail($"Parsing token of type [{tokenType}] and length [{length}] should have succeeded.\n{exception}");
+                }
+
+                Assert.AreEqual(typeof(UnauthorizedException), exception.GetType());
+                StringAssert.Contains(exception.Message, RMResources.InvalidAuthHeaderFormat);
+            }
+        }
+
+        private string GenerateSampleToken(string tokenType, int length, out string tokenValue)
+        {
+            string tokenPrefix = $"type%3d{tokenType}%26ver%3d1.0%26sig%3d";
+            tokenValue = new string('a', length - tokenPrefix.Length);
+            return tokenPrefix + tokenValue;
+        }
     }
 }
