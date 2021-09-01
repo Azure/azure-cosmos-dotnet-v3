@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Handler
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);
 
         private readonly SystemUsageRecorder telemetrySystemUsageRecorder = new SystemUsageRecorder(
-            identifier: Diagnostickey,
+            identifier: Telemetrykey,
             historyLength: 120,
             refreshInterval: TimeSpan.FromSeconds(5));
 
