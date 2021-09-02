@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
             }
-            this.Consistency = consistency?.ToString();
+            this.Consistency = consistency?.ToString().ToUpper();
             this.DatabaseName = databaseName;
             this.ContainerName = containerName;
             this.Operation = operation?.ToOperationTypeString();
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ContainerName = containerName;
             this.Operation = operation;
             this.Resource = resource;
-            this.Consistency = consistency;
+            this.Consistency = consistency.ToUpper();
             this.StatusCode = statusCode;
             this.ResponseSizeInBytes = responseSizeInBytes;
             this.MetricInfo = metricInfo;

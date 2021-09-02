@@ -92,11 +92,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>ReportPayload</returns>
         internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageRecorder)
         {
-            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(1,
+            LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
                                                         ClientTelemetryOptions.CpuMax,
                                                         ClientTelemetryOptions.CpuPrecision);
 
-            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(1,
+            LongConcurrentHistogram memoryHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.MemoryMin,
                                                            ClientTelemetryOptions.MemoryMax,
                                                            ClientTelemetryOptions.MemoryPrecision);
 
@@ -110,14 +110,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 float? cpuValue = systemUsage.CpuUsage;
                 if (cpuValue.HasValue && !float.IsNaN(cpuValue.Value))
                 {
-                    cpuHistogram.RecordValue((long)cpuValue);
+                    cpuHistogram.RecordValue((long)(cpuValue * ClientTelemetryOptions.HistogramPrecisionFactor));
                 }
 
                 long? memoryLoad = systemUsage.MemoryUsage;
                 if (memoryLoad.HasValue)
                 {
-                    long memoryLoadInMb = memoryLoad.Value / ClientTelemetryOptions.BytesToMb;
-                    memoryHistogram.RecordValue(memoryLoadInMb);
+                    memoryHistogram.RecordValue(memoryLoad.Value);
                 }
             }
 
@@ -125,14 +124,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             if (memoryHistogram.TotalCount > 0)
             {
                 memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryInfoPayload.SetAggregators(memoryHistogram);
+                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMb);
             }
 
             SystemInfo cpuInfoPayload = null;
             if (cpuHistogram.TotalCount > 0)
             {
                 cpuInfoPayload = new SystemInfo(ClientTelemetryOptions.CpuName, ClientTelemetryOptions.CpuUnit);
-                cpuInfoPayload.SetAggregators(cpuHistogram);
+                cpuInfoPayload.SetAggregators(cpuHistogram, ClientTelemetryOptions.HistogramPrecisionFactor);
             }
 
             return (cpuInfoPayload, memoryInfoPayload);

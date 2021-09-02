@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionModeEnum = connectionMode;
-            this.ConnectionMode = connectionMode.ToString();
+            this.ConnectionMode = connectionMode.ToString().ToUpper();
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
         }
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
-            this.ConnectionMode = connectionMode;
+            this.ConnectionMode = connectionMode.ToUpper();
             this.GlobalDatabaseAccountName = globalDatabaseAccountName;
             this.ApplicationRegion = applicationRegion;
             this.HostEnvInfo = hostEnvInfo;
