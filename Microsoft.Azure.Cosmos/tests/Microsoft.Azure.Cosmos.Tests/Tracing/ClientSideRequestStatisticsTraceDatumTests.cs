@@ -166,7 +166,9 @@
                 datum.RecordRequest(ClientSideRequestStatisticsTraceDatumTests.requestDsr);
                 datum.RecordResponse(
                     ClientSideRequestStatisticsTraceDatumTests.requestDsr,
-                    ClientSideRequestStatisticsTraceDatumTests.storeResult);
+                    ClientSideRequestStatisticsTraceDatumTests.storeResult,
+                    DateTime.MinValue,
+                    DateTime.MaxValue);
             }
         }
     }
