@@ -7,7 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Net;
+    using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
 
@@ -179,6 +181,13 @@ namespace Microsoft.Azure.Cosmos
             this.Resource = CosmosElementSerializer.GetResources<T>(
                 cosmosArray: cosmosElements,
                 serializerCore: serializerCore);
+
+            IndexUtilizationInfo indexUtilization = IndexUtilizationInfo.CreateFromString(responseMessageHeaders.IndexUtilizationText);
+            StringBuilder stringBuilder = new StringBuilder();
+            IndexMetricWriter indexMetricWriter = new IndexMetricWriter(stringBuilder);
+            indexMetricWriter.WriteIndexMetrics(indexUtilization);
+
+            this.IndexMetrics = stringBuilder.ToString();
         }
 
         public override string ContinuationToken => this.Headers.ContinuationToken;
@@ -194,6 +203,8 @@ namespace Microsoft.Azure.Cosmos
         public override int Count { get; }
 
         internal CosmosQueryResponseMessageHeaders QueryHeaders { get; }
+
+        public override string IndexMetrics { get; }
 
         public override IEnumerator<T> GetEnumerator()
         {

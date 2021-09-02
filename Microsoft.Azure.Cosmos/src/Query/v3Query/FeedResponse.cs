@@ -43,6 +43,11 @@ namespace Microsoft.Azure.Cosmos
         public abstract int Count { get; }
 
         /// <summary>
+        /// Gets the Index Metrics .
+        /// </summary>
+        public abstract string IndexMetrics { get; }
+
+        /// <summary>
         /// Get an enumerator of the object
         /// </summary>
         /// <returns>An instance of an Enumerator</returns>
