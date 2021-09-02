@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using JsonWriter = Json.JsonWriter;
     using PartitionKey = Documents.PartitionKey;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
+    using System.Reflection;
 
     [TestClass]
     public class CosmosItemTests : BaseCosmosClientHelper
@@ -2741,8 +2742,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 TransportClientHandlerFactory = (x) =>
                     new TransportClientWrapper(client: x, interceptor: (uri, resource, dsr) =>
                     {
-                        dsr.RequestContext.ClientRequestStatistics.GetType().GetProperty("IsCpuOverloaded").SetValue(
-                            dsr.RequestContext.ClientRequestStatistics, true);
+                        dsr.RequestContext.ClientRequestStatistics.GetType().GetField("systemUsageHistory", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(
+                            dsr.RequestContext.ClientRequestStatistics, 
+                            new Documents.Rntbd.SystemUsageHistory(new List<Documents.Rntbd.SystemUsageLoad>()
+                            {
+                                new Documents.Rntbd.SystemUsageLoad(
+                                    DateTime.UtcNow,
+                                    Documents.Rntbd.ThreadInformation.Get(),
+                                    80,
+                                    9000),
+                                new Documents.Rntbd.SystemUsageLoad(
+                                    DateTime.UtcNow - TimeSpan.FromSeconds(10),
+                                    Documents.Rntbd.ThreadInformation.Get(),
+                                    95,
+                                    9000)
+                            }.AsReadOnly(),
+                            TimeSpan.FromMinutes(1)));
                         if (resource.operationType.IsReadOperation())
                         {
                             throw Documents.Rntbd.TransportExceptions.GetGoneException(
