@@ -282,18 +282,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 DefaultTrace.TraceVerbose("Started Recording System Usage for telemetry.");
 
-                CpuAndMemoryUsageRecorder systemUsageRecorder = this.diagnosticsHelper.GetUsageRecorder(DiagnosticsHandlerHelper.Telemetrykey);
+                SystemUsageHistory systemUsageRecorder = this.diagnosticsHelper.GetClientTelemtrySystemHistory();
 
                 if (systemUsageRecorder != null )
                 {
-                    SystemInfo cpuUsagePayload = ClientTelemetryHelper.RecordCpuUsage(systemUsageRecorder);
+                    (SystemInfo cpuUsagePayload, SystemInfo memoryUsagePayload) = ClientTelemetryHelper.RecordSystemUsage(systemUsageRecorder);
                     if (cpuUsagePayload != null)
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(cpuUsagePayload);
                         DefaultTrace.TraceVerbose("Recorded CPU Usage for telemetry.");
                     }
-                   
-                    SystemInfo memoryUsagePayload = ClientTelemetryHelper.RecordMemoryUsage(systemUsageRecorder);
+
                     if (memoryUsagePayload != null)
                     {
                         this.clientTelemetryInfo.SystemInfo.Add(memoryUsagePayload);
