@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
@@ -212,6 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
                 await this.GetAndVerifyTokenAsync(tokenCredentialCache);
+                this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }
         }
 
@@ -240,6 +242,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 // TokenCredential.GetTokenAsync() is retried for 3 times, so it should have been invoked for 4 times.
                 Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
+                this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }
         }
 
@@ -289,6 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(token2, t3);
 
                 Assert.AreEqual(2, testTokenCredential.NumTimesInvoked);
+                this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }
         }
 
@@ -316,6 +320,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential, TimeSpan.FromMilliseconds(100));
             string t1 = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
+            this.ValidateSemaphoreIsReleased(tokenCredentialCache);
+
             tokenCredentialCache.Dispose();
             Assert.AreEqual(token1, t1);
 
@@ -373,6 +379,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                         exception,
                         thrownException));
                 }
+
+                this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }
         }
 
@@ -382,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // When multiple thread calls TokenCredentialCache.GetTokenAsync and a valid cached token
             // is not available, TokenCredentialCache will only create one task to get token.
             int numTasks = 100;
-            bool delayTokenRefresh= true;
+            bool delayTokenRefresh = true;
             TestTokenCredential testTokenCredential = new TestTokenCredential(async () =>
             {
                 while (delayTokenRefresh)
@@ -407,12 +415,21 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     waitForTasksToStart = tasks.Where(x => x.Status == TaskStatus.Created).Any();
                     await Task.Delay(TimeSpan.FromMilliseconds(10));
-                } while(waitForTasksToStart);
+                } while (waitForTasksToStart);
+
+                // Verify a task took the semaphore lock
+                int waitCount = int.MinValue;
+                do
+                {
+                    waitCount = this.GetSemaphoreCurrentCount(tokenCredentialCache);
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                } while (waitCount > 0);
 
                 delayTokenRefresh = false;
 
                 await Task.WhenAll(tasks);
 
+                this.ValidateSemaphoreIsReleased(tokenCredentialCache);
                 Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
             }
         }
@@ -431,6 +448,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenCredential,
                 CosmosAuthorizationTests.AccountEndpoint,
                 backgroundTokenCredentialRefreshInterval: refreshInterval);
+        }
+
+        private int GetSemaphoreCurrentCount(TokenCredentialCache tokenCredentialCache)
+        {
+            Type type = typeof(TokenCredentialCache);
+            FieldInfo sempahoreFieldInfo = type.GetField("isTokenRefreshingLock", BindingFlags.NonPublic | BindingFlags.Instance);
+            SemaphoreSlim semaphoreSlim = (SemaphoreSlim)sempahoreFieldInfo.GetValue(tokenCredentialCache);
+            return semaphoreSlim.CurrentCount;
+        }
+
+        private void ValidateSemaphoreIsReleased(TokenCredentialCache tokenCredentialCache)
+        {
+            int currentCount = this.GetSemaphoreCurrentCount(tokenCredentialCache);
+            Assert.AreEqual(1, currentCount);
         }
 
         private async Task GetAndVerifyTokenAsync(TokenCredentialCache tokenCredentialCache)
