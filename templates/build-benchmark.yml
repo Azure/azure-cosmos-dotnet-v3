@@ -1,10 +1,9 @@
-# File: templates/build-preview.yml
+# File: templates/build-benchmark.yml
 
 parameters:
   BuildConfiguration: ''
   Arguments: ''
   VmImage: ''
-  OS: 'Windows'
 
 jobs:
 
