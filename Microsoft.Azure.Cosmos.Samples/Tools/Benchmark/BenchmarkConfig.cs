@@ -169,7 +169,7 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-#if PREVIEW
+#if ProjectRef
                 EnableClientTelemetry = this.EnableTelemetry
 #endif
             };
