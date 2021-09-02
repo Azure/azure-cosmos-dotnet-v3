@@ -215,17 +215,17 @@ namespace Microsoft.Azure.Cosmos
         {
             DateTimeOffset? initialExpireTime = this.cachedAccessToken?.ExpiresOn;
 
-            await this.isTokenRefreshingLock.WaitAsync();
-
-            // Token was already refreshed successfully from another thread.
-            if (this.cachedAccessToken.HasValue &&
-                (!initialExpireTime.HasValue || this.cachedAccessToken.Value.ExpiresOn != initialExpireTime.Value))
-            {
-                return this.cachedAccessToken.Value;
-            }
-
             try
             {
+                await this.isTokenRefreshingLock.WaitAsync();
+
+                // Token was already refreshed successfully from another thread.
+                if (this.cachedAccessToken.HasValue &&
+                    (!initialExpireTime.HasValue || this.cachedAccessToken.Value.ExpiresOn != initialExpireTime.Value))
+                {
+                    return this.cachedAccessToken.Value;
+                }
+
                 this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
                     requestContext: this.tokenRequestContext,
                     cancellationToken: default);

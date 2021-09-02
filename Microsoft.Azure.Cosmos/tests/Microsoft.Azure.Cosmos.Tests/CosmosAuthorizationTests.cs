@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Security.Cryptography.X509Certificates;
@@ -381,12 +382,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             // When multiple thread calls TokenCredentialCache.GetTokenAsync and a valid cached token
             // is not available, TokenCredentialCache will only create one task to get token.
             int numTasks = 100;
-
-            TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
+            bool delayTokenRefresh= true;
+            TestTokenCredential testTokenCredential = new TestTokenCredential(async () =>
             {
-                Task.Delay(TimeSpan.FromSeconds(3)).Wait();
+                while (delayTokenRefresh)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                }
 
-                return new ValueTask<AccessToken>(this.AccessToken);
+                return this.AccessToken;
             });
 
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
@@ -395,8 +399,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 for (int i = 0; i < numTasks; i++)
                 {
-                    tasks[i] = this.GetAndVerifyTokenAsync(tokenCredentialCache);
+                    tasks[i] = Task.Run(() => this.GetAndVerifyTokenAsync(tokenCredentialCache));
                 }
+
+                bool waitForTasksToStart = false;
+                do
+                {
+                    waitForTasksToStart = tasks.Where(x => x.Status == TaskStatus.Created).Any();
+                    await Task.Delay(TimeSpan.FromMilliseconds(10));
+                } while(waitForTasksToStart);
+
+                delayTokenRefresh = false;
 
                 await Task.WhenAll(tasks);
 
@@ -422,9 +435,10 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private async Task GetAndVerifyTokenAsync(TokenCredentialCache tokenCredentialCache)
         {
+            string result = await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton);
             Assert.AreEqual(
                 this.AccessToken.Token,
-                await tokenCredentialCache.GetTokenAsync(NoOpTrace.Singleton));
+                result);
         }
 
         private sealed class TestTokenCredential : TokenCredential
@@ -445,7 +459,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(1, requestContext.Scopes.Length);
                 Assert.AreEqual(CosmosAuthorizationTests.ExpectedScope, requestContext.Scopes[0]);
 
-                return this.accessTokenFunc().Result;
+                return this.accessTokenFunc().GetAwaiter().GetResult();
             }
 
             public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
