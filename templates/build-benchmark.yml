@@ -1,0 +1,28 @@
+# File: templates/build-preview.yml
+
+parameters:
+  BuildConfiguration: ''
+  Arguments: ''
+  VmImage: ''
+  OS: 'Windows'
+
+jobs:
+
+- job:
+  displayName: CosmosBenchmark ${{ parameters.BuildConfiguration }} 
+  pool:
+    vmImage: ${{ parameters.VmImage }}
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.CosmosBenchmark 
+    inputs: 
+      command: build  
+      configuration: $(parameters.BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects:  'Microsoft.Azure.Cosmos.Samples/Tools/Benchmark/CosmosBenchmark.sln' 
+      arguments: -p:Optimize=true
+      versioningScheme: OFF

@@ -22,8 +22,6 @@ namespace CosmosBenchmark
 
         private readonly string executionItemPartitionKey;
         private readonly string executionItemId;
-        private readonly QueryDefinition queryDefinition;
-        private readonly QueryRequestOptions queryRequestOptions;
         private bool initialized = false;
 
         public QueryTSinglePkV3BenchmarkOperation(
