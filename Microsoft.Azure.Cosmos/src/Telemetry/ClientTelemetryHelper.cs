@@ -88,9 +88,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Record System Usage and return recorded metrics
         /// </summary>
-        /// <param name="systemUsageRecorder"></param>
+        /// <param name="systemUsageHistory"></param>
         /// <returns>ReportPayload</returns>
-        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageRecorder)
+        internal static (SystemInfo cpuInfo, SystemInfo memoryInfo) RecordSystemUsage(SystemUsageHistory systemUsageHistory)
         {
             LongConcurrentHistogram cpuHistogram = new LongConcurrentHistogram(ClientTelemetryOptions.CpuMin,
                                                         ClientTelemetryOptions.CpuMax,
@@ -100,12 +100,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                            ClientTelemetryOptions.MemoryMax,
                                                            ClientTelemetryOptions.MemoryPrecision);
 
-            if (systemUsageRecorder.Values == null)
+            if (systemUsageHistory.Values == null)
             {
                 return (null, null);
             }
 
-            foreach (SystemUsageLoad systemUsage in systemUsageRecorder.Values)
+            DefaultTrace.TraceInformation("System Usage recorded by telemetry is : " + systemUsageHistory);
+
+            foreach (SystemUsageLoad systemUsage in systemUsageHistory.Values)
             {
                 float? cpuValue = systemUsage.CpuUsage;
                 if (cpuValue.HasValue && !float.IsNaN(cpuValue.Value))
