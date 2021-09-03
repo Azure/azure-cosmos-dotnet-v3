@@ -16,13 +16,14 @@ namespace CosmosCTL
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
-        private InitializationResult initializationResult;
+        private Utils.InitializationResult initializationResult;
+
         public async Task InitializeAsync(
             CTLConfig config,
             CosmosClient cosmosClient,
             ILogger logger)
         {
-            this.initializationResult = await CreateDatabaseAndContainerAsync(config, cosmosClient);
+            this.initializationResult = await Utils.CreateDatabaseAndContainerAsync(config, cosmosClient);
 
             if (this.initializationResult.CreatedDatabase)
             {
@@ -91,49 +92,6 @@ namespace CosmosCTL
             }
 
             stopWatch.Stop();
-        }
-        private static async Task<InitializationResult> CreateDatabaseAndContainerAsync(
-            CTLConfig config,
-            CosmosClient cosmosClient)
-        {
-            InitializationResult result = new InitializationResult()
-            {
-                CreatedDatabase = false,
-                CreatedContainer = false
-            };
-
-            Database database;
-
-            try
-            {
-                database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database, config.Throughput);
-                result.CreatedDatabase = true;
-                database = databaseResponse.Database;
-            }
-
-            Container container;
-            
-            try
-            {
-                container = await database.GetContainer(config.Collection).ReadContainerAsync();
-            }
-            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
-                result.CreatedContainer = true;
-            }
-
-            return result;
-        }
-        private struct InitializationResult
-        {
-            public bool CreatedDatabase;
-            public bool CreatedContainer;
-            public int InsertedDocuments;
         }
     }
 }

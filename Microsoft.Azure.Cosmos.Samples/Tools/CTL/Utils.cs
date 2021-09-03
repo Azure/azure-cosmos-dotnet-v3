@@ -121,5 +121,48 @@ namespace CosmosCTL
 
             return document;
         }
+
+        public static async Task<InitializationResult> CreateDatabaseAndContainerAsync(
+            CTLConfig config,
+            CosmosClient cosmosClient)
+        {
+            InitializationResult result = new InitializationResult()
+            {
+                CreatedDatabase = false,
+                CreatedContainer = false
+            };
+
+            Database database;
+            try
+            {
+                database = await cosmosClient.GetDatabase(config.Database).ReadAsync();
+            }
+            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                DatabaseResponse databaseResponse = await cosmosClient.CreateDatabaseAsync(config.Database, config.Throughput);
+                result.CreatedDatabase = true;
+                database = databaseResponse.Database;
+            }
+
+            Container container;
+            try
+            {
+                container = await database.GetContainer(config.Collection).ReadContainerAsync();
+            }
+            catch (CosmosException exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                await database.CreateContainerAsync(config.Collection, $"/{config.CollectionPartitionKey}");
+                result.CreatedContainer = true;
+            }
+
+            return result;
+        }
+
+        public struct InitializationResult
+        {
+            public bool CreatedDatabase;
+            public bool CreatedContainer;
+            public long InsertedDocuments;
+        }
     }
 }
