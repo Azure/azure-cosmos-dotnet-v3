@@ -39,7 +39,8 @@ namespace CosmosCTL
             if (config.PreCreatedDocuments > 0)
             {
                 logger.LogInformation("Pre-populating {0} documents", config.PreCreatedDocuments);
-                await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> insertedDocuments = await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                this.initializationResult.InsertedDocuments = insertedDocuments[config.Collection].Count;
             }
         }
 
@@ -61,10 +62,17 @@ namespace CosmosCTL
 
             try
             {
+                object lockObject = new object();
+                long documentTotal = 0;
                 ChangeFeedProcessor changeFeedProcessor = cosmosClient.GetContainer(config.Database, config.Collection)
                     .GetChangeFeedProcessorBuilder<SimpleItem>("ctlProcessor",
                     (IReadOnlyCollection<SimpleItem> docs, CancellationToken token) =>
                     {
+                        lock (lockObject)
+                        {
+                            documentTotal += docs.Count;
+                        }
+
                         metrics.Measure.Counter.Increment(documentCounter, docs.Count);
                         return Task.CompletedTask;
                     })
@@ -111,6 +119,14 @@ namespace CosmosCTL
                     }
 
                     previousMin = sortedRange.Max;
+                }
+
+                if (config.PreCreatedDocuments > 0)
+                {
+                    if (this.initializationResult.InsertedDocuments != documentTotal)
+                    {
+                        logger.LogError($"Expected to receive {this.initializationResult.InsertedDocuments} documents and got {documentTotal}");
+                    }
                 }
             }
             catch (Exception ex)
@@ -172,6 +188,7 @@ namespace CosmosCTL
         {
             public bool CreatedDatabase;
             public bool CreatedContainer;
+            public long InsertedDocuments;
         }
 
         private class SimpleItem
