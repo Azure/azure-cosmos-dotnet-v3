@@ -97,7 +97,14 @@ namespace CosmosCTL
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Failure while looping through query");
+                    StringBuilder errorDetail = new StringBuilder();
+                    errorDetail.AppendLine("Failure while looping through query.");
+                    foreach (string c in allContinuations)
+                    {
+                        errorDetail.AppendLine($"Continuation: {c}");
+                    }
+
+                    logger.LogError(ex, errorDetail.ToString());
                 }
             }
 
