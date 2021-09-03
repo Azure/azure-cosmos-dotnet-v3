@@ -8,11 +8,12 @@ namespace CosmosCTL
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Net;
     using System.Diagnostics;
     using App.Metrics;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using System.Text;
+    using App.Metrics.Counter;
 
     internal class QueryScenario : ICTLScenario
     {
@@ -53,10 +54,13 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
+            CounterOptions documentCounter = new CounterOptions { Name = "#Documents received", Context = loggingContextIdentifier };
             while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
             {
+                // To really debug what happened on the query, having a list of all continuations would be useful.
+                List<string> allContinuations = new List<string>();
                 int documentTotal = 0;
-                string continuation = null;
+                string continuation;
                 Container container = cosmosClient.GetContainer(config.Database, config.Collection);
                 FeedIterator<Dictionary<string, string>> query = container.GetItemQueryIterator<Dictionary<string, string>>("select * from c");
                 try
@@ -65,22 +69,29 @@ namespace CosmosCTL
                     {
                         FeedResponse<Dictionary<string, string>> response = await query.ReadNextAsync();
                         documentTotal += response.Count;
+                        metrics.Measure.Counter.Increment(documentCounter, response.Count);
                         continuation = response.ContinuationToken;
-                        if (response.StatusCode == HttpStatusCode.NotModified)
+                        allContinuations.Add(continuation);
+                        if (continuation != null)
                         {
-                            break;
+                            // Use continuation to paginate on the query instead of draining just the initial query
+                            // This validates that we can indeed move forward with the continuation
+                            query = container.GetItemQueryIterator<Dictionary<string, string>>("select * from c", continuation);
                         }
                     }
 
                     if (config.PreCreatedDocuments > 0)
                     {
-                        if (this.initializationResult.InsertedDocuments == documentTotal)
+                        if (this.initializationResult.InsertedDocuments != documentTotal)
                         {
-                            logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {this.initializationResult.InsertedDocuments}");
-                        }
-                        else
-                        {
-                            logger.LogError($"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
+                            StringBuilder errorDetail = new StringBuilder();
+                            errorDetail.AppendLine($"Expected to read {this.initializationResult.InsertedDocuments} but got {documentTotal}");
+                            foreach (string c in allContinuations)
+                            {
+                                errorDetail.AppendLine($"Continuation: {c}");
+                            }
+
+                            logger.LogError(errorDetail.ToString());
                         }
                     }
                 }

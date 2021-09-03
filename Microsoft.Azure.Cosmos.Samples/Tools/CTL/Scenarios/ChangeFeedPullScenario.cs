@@ -13,6 +13,7 @@ namespace CosmosCTL
     using App.Metrics;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Logging;
+    using App.Metrics.Counter;
 
     internal class ChangeFeedPullScenario : ICTLScenario
     {
@@ -53,19 +54,22 @@ namespace CosmosCTL
         {
             Stopwatch stopWatch = Stopwatch.StartNew();
 
+            CounterOptions documentCounter = new CounterOptions { Name = "#Documents received", Context = loggingContextIdentifier };
             while (stopWatch.Elapsed <= config.RunningTimeDurationAsTimespan)
             {
                 int documentTotal = 0;
                 string continuation = null;
                 Container container = cosmosClient.GetContainer(config.Database, config.Collection);
-                FeedIterator<Dictionary<string, string>> changeFeedPull = container.GetChangeFeedIterator<Dictionary<string, string>>
-                                                                                (ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
+                FeedIterator<Dictionary<string, string>> changeFeedPull 
+                    = container.GetChangeFeedIterator<Dictionary<string, string>>(ChangeFeedStartFrom.Beginning(), ChangeFeedMode.Incremental);
+
                 try
                 {
                     while (changeFeedPull.HasMoreResults)
                     {
                         FeedResponse<Dictionary<string, string>> response = await changeFeedPull.ReadNextAsync();
                         documentTotal += response.Count;
+                        metrics.Measure.Counter.Increment(documentCounter, response.Count);
                         continuation = response.ContinuationToken;
                         if (response.StatusCode == HttpStatusCode.NotModified)
                         {
