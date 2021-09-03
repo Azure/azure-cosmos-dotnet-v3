@@ -37,7 +37,8 @@ namespace CosmosCTL
             if (config.PreCreatedDocuments > 0)
             {
                 logger.LogInformation("Pre-populating {0} documents", config.PreCreatedDocuments);
-                await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                IReadOnlyDictionary<string, IReadOnlyList<Dictionary<string, string>>> insertedDocuments = await Utils.PopulateDocumentsAsync(config, logger, new List<Container>() { cosmosClient.GetContainer(config.Database, config.Collection) });
+                this.initializationResult.InsertedDocuments = insertedDocuments[config.Collection].Count;
             }
         }
 
@@ -71,19 +72,21 @@ namespace CosmosCTL
                         }
                     }
 
-                    if (config.PreCreatedDocuments == documentTotal)
+                    if (config.PreCreatedDocuments > 0)
                     {
-                        logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {config.PreCreatedDocuments}");
-                    }
-                    else
-                    {
-                        logger.LogError($"The prepopulated documents and the new documents don't match.  Preconfigured Docs = {config.PreCreatedDocuments}, New Documents = {documentTotal}");
-                        logger.LogError(continuation);
+                        if (this.initializationResult.InsertedDocuments == documentTotal)
+                        {
+                            logger.LogInformation($"Success: The number of new documents match the number of pre-created documents: {this.initializationResult.InsertedDocuments}");
+                        }
+                        else
+                        {
+                            logger.LogError($"The prepopulated documents and the change feed documents don't match.  Preconfigured Docs = {this.initializationResult.InsertedDocuments}, Change feed Documents = {documentTotal}.{Environment.NewLine}{continuation}");
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Failure while looping through new documents");
+                    logger.LogError(ex, "Failure while looping through change feed documents");
                 }
             }
 
@@ -130,6 +133,7 @@ namespace CosmosCTL
         {
             public bool CreatedDatabase;
             public bool CreatedContainer;
+            public int InsertedDocuments;
         }
     }
 }
