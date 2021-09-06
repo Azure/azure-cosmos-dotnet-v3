@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal const String RequestKey = "telemetry";
 
         internal const double HistogramPrecisionFactor = 100;
-        internal const double TicksToMsFactor = 10000;
+        internal const double TicksToMsFactor = TimeSpan.TicksPerMillisecond;
 
         internal const int KbToMb = 1024;
         internal const int OneKbToBytes = 1024;
