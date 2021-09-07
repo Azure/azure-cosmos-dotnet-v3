@@ -5415,6 +5415,16 @@
           "Attributes": [],
           "MethodInfo": "System.String SouthIndia;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String SwedenCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SwedenCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SwedenSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SwedenSouth;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SwitzerlandNorth": {
           "Type": "Field",
           "Attributes": [],
