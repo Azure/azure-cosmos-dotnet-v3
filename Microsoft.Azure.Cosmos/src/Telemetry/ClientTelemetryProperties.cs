@@ -71,6 +71,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.PreferredRegions = preferredRegions;
         }
 
+        /// <summary>
+        /// Needed by Serializer to deserialize the json
+        /// </summary>
+        /// <param name="dateTimeUtc"></param>
+        /// <param name="clientId"></param>
+        /// <param name="processId"></param>
+        /// <param name="userAgent"></param>
+        /// <param name="connectionMode"></param>
+        /// <param name="globalDatabaseAccountName"></param>
+        /// <param name="applicationRegion"></param>
+        /// <param name="hostEnvInfo"></param>
+        /// <param name="acceleratedNetworking"></param>
+        /// <param name="preferredRegions"></param>
+        /// <param name="systemInfo"></param>
+        /// <param name="cacheRefreshInfo"></param>
+        /// <param name="operationInfo"></param>
         public ClientTelemetryProperties(string dateTimeUtc,
             string clientId,
             string processId,
@@ -89,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ClientId = clientId;
             this.ProcessId = processId;
             this.UserAgent = userAgent;
-            this.ConnectionMode = connectionMode.ToUpper();
+            this.ConnectionMode = connectionMode;
             this.GlobalDatabaseAccountName = globalDatabaseAccountName;
             this.ApplicationRegion = applicationRegion;
             this.HostEnvInfo = hostEnvInfo;
