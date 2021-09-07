@@ -366,19 +366,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                 // Cache token has expired, and it fails to refresh.
                 await Task.Delay(TimeSpan.FromSeconds(2));
 
-                try
+                // Simulate multiple concurrent request on the failed token
+                List<Task> tasks = new List<Task>();
+                for (int i = 0; i < 20; i++)
                 {
-                    await tokenCredentialCache.GetTokenAsync(trace);
-                    Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
+                    Task task = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await tokenCredentialCache.GetTokenAsync(trace);
+                            Assert.Fail("TokenCredentialCache.GetTokenAsync() is expected to fail but succeeded");
+                        }
+                        catch (Exception thrownException)
+                        {
+                            // It should just throw the original exception and not be wrapped in a CosmosException
+                            // This avoids any confusion on where the error was thrown from.
+                            Assert.IsTrue(object.ReferenceEquals(
+                                exception,
+                                thrownException), $"Incorrect exception thrown: Expected: {exception}; Actual: {thrownException}");
+                        }
+                    });
+                    tasks.Add(task);
                 }
-                catch (Exception thrownException)
-                {
-                    // It should just throw the original exception and not be wrapped in a CosmosException
-                    // This avoids any confusion on where the error was thrown from.
-                    Assert.IsTrue(object.ReferenceEquals(
-                        exception,
-                        thrownException));
-                }
+                
+                await Task.WhenAll(tasks);
 
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }
@@ -418,12 +429,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 } while (waitForTasksToStart);
 
                 // Verify a task took the semaphore lock
-                int waitCount = int.MinValue;
+                bool isRefreshing = false;
                 do
                 {
-                    waitCount = this.GetSemaphoreCurrentCount(tokenCredentialCache);
+                    isRefreshing = this.IsTokenRefreshInProgress(tokenCredentialCache);
                     await Task.Delay(TimeSpan.FromMilliseconds(10));
-                } while (waitCount > 0);
+                } while (!isRefreshing);
 
                 delayTokenRefresh = false;
 
@@ -448,6 +459,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 tokenCredential,
                 CosmosAuthorizationTests.AccountEndpoint,
                 backgroundTokenCredentialRefreshInterval: refreshInterval);
+        }
+
+        private bool IsTokenRefreshInProgress(TokenCredentialCache tokenCredentialCache)
+        {
+            Type type = typeof(TokenCredentialCache);
+            FieldInfo sempahoreFieldInfo = type.GetField("currentRefreshOperation", BindingFlags.NonPublic | BindingFlags.Instance);
+            Task refreshToken = (Task)sempahoreFieldInfo.GetValue(tokenCredentialCache);
+            return refreshToken != null;
         }
 
         private int GetSemaphoreCurrentCount(TokenCredentialCache tokenCredentialCache)
