@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.ProcessId = processId;
             this.UserAgent = userAgent;
             this.ConnectionModeEnum = connectionMode;
-            this.ConnectionMode = connectionMode.ToString().ToUpper();
+            this.ConnectionMode = GetConnectionModeString(connectionMode);
             this.SystemInfo = new List<SystemInfo>();
             this.PreferredRegions = preferredRegions;
         }
@@ -98,6 +98,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.CacheRefreshInfo = cacheRefreshInfo;
             this.OperationInfo = operationInfo;
             this.PreferredRegions = preferredRegions;
+        }
+
+        private static string GetConnectionModeString(ConnectionMode connectionMode)
+        {
+            return connectionMode switch
+            {
+                Cosmos.ConnectionMode.Direct => "DIRECT",
+                Cosmos.ConnectionMode.Gateway => "GATEWAY",
+                _ => connectionMode.ToString().ToUpper(),
+            };
         }
     }
 }

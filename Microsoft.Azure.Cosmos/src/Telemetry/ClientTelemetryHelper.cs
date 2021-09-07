@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             if (memoryHistogram.TotalCount > 0)
             {
                 memoryInfoPayload = new SystemInfo(ClientTelemetryOptions.MemoryName, ClientTelemetryOptions.MemoryUnit);
-                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMb);
+                memoryInfoPayload.SetAggregators(memoryHistogram, ClientTelemetryOptions.KbToMbFactor);
             }
 
             SystemInfo cpuInfoPayload = null;

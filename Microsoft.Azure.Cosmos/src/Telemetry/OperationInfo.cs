@@ -62,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.GreaterThan1Kb = responseSizeInBytes > ClientTelemetryOptions.OneKbToBytes;
             }
-            this.Consistency = consistency?.ToString().ToUpper();
+            this.Consistency = GetConsistencyString(consistency);
             this.DatabaseName = databaseName;
             this.ContainerName = containerName;
             this.Operation = operation?.ToOperationTypeString();
@@ -91,6 +91,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.StatusCode = statusCode;
             this.ResponseSizeInBytes = responseSizeInBytes;
             this.MetricInfo = metricInfo;
+        }
+
+        private static string GetConsistencyString(Cosmos.ConsistencyLevel? consistency)
+        {
+            if (consistency == null)
+            {
+                return null;
+            }
+
+            return consistency switch
+            {
+                Cosmos.ConsistencyLevel.Strong => "STRONG",
+                Cosmos.ConsistencyLevel.Session => "SESSION",
+                Cosmos.ConsistencyLevel.Eventual => "EVENTUAL",
+                Cosmos.ConsistencyLevel.ConsistentPrefix => "CONSISTENTPREFIX",
+                Cosmos.ConsistencyLevel.BoundedStaleness => "BOUNDEDSTALENESS",
+                _ => consistency.ToString().ToUpper(),
+            };
         }
 
         public OperationInfo Copy()
