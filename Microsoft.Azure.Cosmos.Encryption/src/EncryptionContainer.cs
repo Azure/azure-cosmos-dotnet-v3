@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("PatchItem"))
             {
-                List<PatchOperation> encryptedPatchOperations = await this.PatchItemHelperAsync(
+                List<PatchOperation> encryptedPatchOperations = await this.EncryptPatchOperationsAsync(
                     patchOperations,
                     encryptionSettings,
                     cancellationToken);
@@ -673,7 +673,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
             }
         }
 
-        private async Task<List<PatchOperation>> PatchItemHelperAsync(
+        internal async Task<List<PatchOperation>> EncryptPatchOperationsAsync(
             IReadOnlyList<PatchOperation> patchOperations,
             EncryptionSettings encryptionSettings,
             CancellationToken cancellationToken = default)
@@ -910,29 +910,10 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     continue;
                 }
 
-                try
-                {
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                        document,
-                        encryptionSettings,
-                        cancellationToken);
-                }
-
-                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
-                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
-                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
-                catch (Exception)
-                {
-                    // most likely the encryption policy has changed.
-                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                        obsoleteEncryptionSettings: encryptionSettings,
-                        cancellationToken: cancellationToken);
-
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                        document,
-                        encryptionSettings,
-                        cancellationToken);
-                }
+                await EncryptionProcessor.DecryptAsync(
+                    document,
+                    encryptionSettings,
+                    cancellationToken);
             }
 
             // the contents get decrypted in place by DecryptAsync.
@@ -1297,33 +1278,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
             foreach (JObject document in documents)
             {
-                try
-                {
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                        document,
-                        encryptionSettings,
-                        cancellationToken);
+                JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
+                    document,
+                    encryptionSettings,
+                    cancellationToken);
 
-                    decryptedItems.Add(decryptedDocument.ToObject<T>());
-                }
-
-                // we cannot rely currently on a specific exception, this is due to the fact that the run time issue can be variable,
-                // we can hit issue with either Json serialization say an item was not encrypted but the policy shows it as encrypted,
-                // or we could hit a MicrosoftDataEncryptionException from MDE lib etc.
-                catch (Exception)
-                {
-                    // most likely the encryption policy has changed.
-                    encryptionSettings = await this.GetOrUpdateEncryptionSettingsFromCacheAsync(
-                        obsoleteEncryptionSettings: encryptionSettings,
-                        cancellationToken: cancellationToken);
-
-                    JObject decryptedDocument = await EncryptionProcessor.DecryptAsync(
-                           document,
-                           encryptionSettings,
-                           cancellationToken);
-
-                    decryptedItems.Add(decryptedDocument.ToObject<T>());
-                }
+                decryptedItems.Add(decryptedDocument.ToObject<T>());
             }
 
             return decryptedItems;
@@ -1385,9 +1345,17 @@ namespace Microsoft.Azure.Cosmos.Encryption
                     isRetry: true);
             }
 
-            Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(responseMessage.Content, encryptionSettings, cancellationToken);
+            if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
+            {
+                Stream decryptedContent = await this.DeserializeAndDecryptResponseAsync(
+                    responseMessage.Content,
+                    encryptionSettings,
+                    cancellationToken);
 
-            return new DecryptedResponseMessage(responseMessage, decryptedContent);
+                return new DecryptedResponseMessage(responseMessage, decryptedContent);
+            }
+
+            return responseMessage;
         }
     }
 }

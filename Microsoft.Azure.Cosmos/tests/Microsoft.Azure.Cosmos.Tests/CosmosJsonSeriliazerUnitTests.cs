@@ -186,7 +186,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             mockUserJsonSerializer.Setup(x => x.FromStream<ToDoActivity>(storedProcedureExecuteResponse.Content)).Callback<Stream>(input => input.Dispose()).Returns(new ToDoActivity());
 
             // Verify all the user types use the user specified version
-            cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
+            Assert.IsNotNull(itemResponseFromFactory.Diagnostics);
             cosmosResponseFactory.CreateStoredProcedureExecuteResponse<ToDoActivity>(storedProcedureExecuteResponse);
 
             // Throw if the setups were not called
