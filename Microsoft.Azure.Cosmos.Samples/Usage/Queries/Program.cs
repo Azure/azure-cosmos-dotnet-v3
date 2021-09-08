@@ -90,6 +90,8 @@
 
             await Program.QueryWithSqlParameters(container);
 
+            await Program.QueryWithContinuationTokens(container);
+
             // Uncomment to Cleanup
             //await cosmosDatabase.DeleteAsync();
         }
@@ -223,6 +225,61 @@
             }
         }
         // </QueryWithSqlParameters>
+
+        // <QueryWithContinuationTokens>
+        private static async Task QueryWithContinuationTokens(Container container)
+        {
+            // Query using two properties within each item. WHERE Id == "" AND Address.City == ""
+            // notice here how we are doing an equality comparison on the string value of City
+
+            QueryDefinition query = new QueryDefinition("SELECT * FROM c");
+            string continuation = null;
+
+            List<Family> results = new List<Family>();
+            using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
+                query,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1
+                }))
+            {
+                // Execute first page of query
+                FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
+
+                results.AddRange(response);
+                if (response.Diagnostics != null)
+                {
+                    Console.WriteLine($"\nQueryWithSqlParameters Diagnostics: {response.Diagnostics.ToString()}");
+                }
+
+                // Get continuation token
+                continuation = response.ContinuationToken;
+            }
+
+            // Resume query execution using the continuation token
+            using (FeedIterator<Family> resultSetIterator = container.GetItemQueryIterator<Family>(
+                query,
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1
+                },
+                continuationToken: continuation))
+            {
+                while (resultSetIterator.HasMoreResults)
+                {
+                    FeedResponse<Family> response = await resultSetIterator.ReadNextAsync();
+
+                    results.AddRange(response);
+                    if (response.Diagnostics != null)
+                    {
+                        Console.WriteLine($"\nQueryWithSqlParameters Diagnostics: {response.Diagnostics.ToString()}");
+                    }
+
+                    Assert("Expected 2 families", results.Count == 2);
+                }
+            }
+        }
+        // </QueryWithContinuationTokens>
 
         // <QueryPartitionedContainerInParallelAsync>
         private static async Task QueryPartitionedContainerInParallelAsync(Container container)
