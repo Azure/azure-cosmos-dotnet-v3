@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
@@ -332,43 +333,52 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestTokenCredentialFailedToRefreshAsync()
         {
             string token = "Token";
-            bool firstTimeGetToken = true;
+            bool throwExceptionOnGetToken = false;
             Exception exception = new Exception();
 
             TestTokenCredential testTokenCredential = new TestTokenCredential(() =>
             {
-                if (firstTimeGetToken)
-                {
-                    firstTimeGetToken = false;
-
-                    return new ValueTask<AccessToken>(new AccessToken(token, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(6)));
-                }
-                else
+                if (throwExceptionOnGetToken)
                 {
                     throw exception;
                 }
+                else
+                {
+                    return new ValueTask<AccessToken>(new AccessToken(token, DateTimeOffset.UtcNow + TimeSpan.FromSeconds(8)));
+                }
             });
 
-            using ITrace trace = Trace.GetRootTrace("test");
+            using ITrace trace = Cosmos.Tracing.Trace.GetRootTrace("test");
             using (TokenCredentialCache tokenCredentialCache = this.CreateTokenCredentialCache(testTokenCredential))
             {
                 Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
+                throwExceptionOnGetToken = true;
 
-                // Token is valid for 6 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
+                // Token is valid for 10 seconds. Client TokenCredentialRefreshBuffer is set to 5 seconds.
                 // After waiting for 2 seconds, the cache token is still valid, but it will be refreshed in the background.
                 await Task.Delay(TimeSpan.FromSeconds(2));
                 Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(1, testTokenCredential.NumTimesInvoked);
 
                 // Token refreshes fails except for the first time, but the cached token will be served as long as it is valid.
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                // Wait for the background refresh to occur. It should fail but the cached token should still be valid
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                while (testTokenCredential.NumTimesInvoked != 3)
+                {
+                    Assert.IsTrue(stopwatch.Elapsed.TotalSeconds < 10, "The background task did not start in 10 seconds");
+                    await Task.Delay(200);
+                }
                 Assert.AreEqual(token, await tokenCredentialCache.GetTokenAsync(trace));
+                Assert.AreEqual(3, testTokenCredential.NumTimesInvoked, $"The cached token was not used. Waited time for background refresh: {stopwatch.Elapsed.TotalSeconds} seconds");
 
                 // Cache token has expired, and it fails to refresh.
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                throwExceptionOnGetToken = true;
 
                 // Simulate multiple concurrent request on the failed token
                 List<Task> tasks = new List<Task>();
-                for (int i = 0; i < 20; i++)
+                for (int i = 0; i < 40; i++)
                 {
                     Task task = Task.Run(async () =>
                     {
@@ -390,6 +400,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
                 
                 await Task.WhenAll(tasks);
+
+                this.ValidateSemaphoreIsReleased(tokenCredentialCache);
+
+
+                // Simulate multiple concurrent request that should succeed after a failure
+                throwExceptionOnGetToken = false;
+                int numGetTokenCallsAfterFailures = testTokenCredential.NumTimesInvoked;
+                tasks = new List<Task>();
+                for (int i = 0; i < 40; i++)
+                {
+                    Task task = Task.Run(async () => await tokenCredentialCache.GetTokenAsync(trace));
+                    tasks.Add(task);
+                }
+
+                await Task.WhenAll(tasks);
+                Assert.AreEqual(numGetTokenCallsAfterFailures+1, testTokenCredential.NumTimesInvoked, "There should only be 1 GetToken call to get the new token after the failures");
 
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);
             }
