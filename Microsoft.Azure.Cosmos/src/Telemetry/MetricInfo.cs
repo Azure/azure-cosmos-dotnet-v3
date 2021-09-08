@@ -48,13 +48,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal long Count { get; set; }
 
         [JsonProperty(PropertyName = "min")]
-        internal long Min { get; set; }
+        internal double Min { get; set; }
 
         [JsonProperty(PropertyName = "max")]
-        internal long Max { get; set; }
+        internal double Max { get; set; }
 
         [JsonProperty(PropertyName = "percentiles")]
-        internal IReadOnlyDictionary<Double, Double> Percentiles { get; set; }
+        internal IReadOnlyDictionary<double, double> Percentiles { get; set; }
 
         /// <summary>
         /// It will set the current object with the aggregated values from the given histogram
@@ -62,15 +62,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="histogram"></param>
         /// <param name="adjustment"></param>
         /// <returns>MetricInfo</returns>
-        internal MetricInfo SetAggregators(LongConcurrentHistogram histogram, long adjustment = 1)
+        internal MetricInfo SetAggregators(LongConcurrentHistogram histogram, double adjustment = 1)
         {
             if (histogram != null)
             {
                 this.Count = histogram.TotalCount;
                 this.Max = histogram.GetMaxValue() / adjustment;
                 this.Min = histogram.GetMinValue() / adjustment;
-                this.Mean = histogram.GetMean() / Convert.ToDouble(adjustment);
-                IReadOnlyDictionary<Double, Double> percentile = new Dictionary<Double, Double>
+                this.Mean = histogram.GetMean() / adjustment;
+                IReadOnlyDictionary<double, double> percentile = new Dictionary<double, double>
                 {
                     { ClientTelemetryOptions.Percentile50,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile50) / adjustment },
                     { ClientTelemetryOptions.Percentile90,  histogram.GetValueAtPercentile(ClientTelemetryOptions.Percentile90) / adjustment },

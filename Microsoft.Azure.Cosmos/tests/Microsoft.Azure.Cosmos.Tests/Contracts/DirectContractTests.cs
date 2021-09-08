@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Numerics.Vectors", new Version(4, 5, 0) },
                 { "Newtonsoft.Json", new Version(10, 0, 2) },
                 { "Microsoft.Bcl.AsyncInterfaces", new Version(1, 0, 0) },
-                { "System.Configuration.ConfigurationManager", new Version(4, 5, 0) },
+                { "System.Configuration.ConfigurationManager", new Version(4, 7, 0) },
                 { "System.Memory", new Version(4, 5, 4) },
                 { "System.Buffers", new Version(4, 5, 1) },
                 { "System.Runtime.CompilerServices.Unsafe", new Version(4, 5, 3) },
