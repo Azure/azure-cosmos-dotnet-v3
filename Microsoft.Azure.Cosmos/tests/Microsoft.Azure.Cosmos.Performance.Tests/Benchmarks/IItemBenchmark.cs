@@ -23,5 +23,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public Task DeleteItemNotExists();
 
         public Task ReadFeed();
+
+        public Task QuerySinglePage();
     }
 }
