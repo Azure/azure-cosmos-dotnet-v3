@@ -116,7 +116,28 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadFeed()
         {
-            FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>();
+            using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>();
+            while (resultIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
+                if (response.StatusCode != HttpStatusCode.OK || response.Resource.Count() == 0)
+                {
+                    throw new Exception();
+                }
+
+                this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
+            }
+        }
+
+        public async Task QuerySinglePage()
+        {
+            using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
+                "select * from T",
+                requestOptions: new QueryRequestOptions()
+                {
+                    PartitionKey = new PartitionKey("dummyValue"),
+                });
+
             while (resultIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
